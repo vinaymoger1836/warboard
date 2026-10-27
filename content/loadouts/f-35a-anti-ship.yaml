@@ -1,0 +1,19 @@
+id: f-35a-anti-ship
+kind: loadout
+name: Anti-ship (internal JSM)
+platform: f-35a
+roles: [anti_ship]
+items:
+  - { station: bay_l_out, weapon: jsm, count: 1 }
+  - { station: bay_r_out, weapon: jsm, count: 1 }
+  - { station: bay_l_in, weapon: aim-120d, count: 1 }
+  - { station: bay_r_in, weapon: aim-120d, count: 1 }
+provenance:
+  confidence: medium
+  notes: >-
+    JSM fits the F-35A bays (source).
+  estimates:
+    - items
+  sources:
+    - { title: "Lockheed Martin F-35 Lightning II (specifications F-35A)", url: "https://en.wikipedia.org/wiki/Lockheed_Martin_F-35_Lightning_II", accessed: 2026-10-27 }
+    - { title: "Joint Strike Missile", url: "https://en.wikipedia.org/wiki/Joint_Strike_Missile", accessed: 2026-10-27 }

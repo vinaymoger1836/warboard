@@ -1,0 +1,21 @@
+id: an-alq-99
+kind: ew_suite
+name: AN/ALQ-99 tactical jamming pod
+ew_type: stand_off
+bands: [VHF, UHF, L, S, C, X, Ku]   # 64 MHz to 20 GHz in 10 bands
+j_db: 30
+max_range_km: 200
+simultaneous_targets: 4
+field_of_regard_deg: 120
+provenance:
+  confidence: low
+  notes: >-
+    Frequency coverage 64 MHz-20 GHz and 6.8-10.8 kW output per pod are from the source; jamming power class and geometry are estimates.
+  estimates:
+    - j_db
+    - max_range_km
+    - simultaneous_targets
+    - field_of_regard_deg
+  sources:
+    - { title: "AN/ALQ-99", url: "https://en.wikipedia.org/wiki/AN/ALQ-99", accessed: 2026-10-27 }
+    - { title: "Boeing EA-18G Growler (specifications)", url: "https://en.wikipedia.org/wiki/Boeing_EA-18G_Growler", accessed: 2026-10-27 }

@@ -1,0 +1,140 @@
+# Default realism profile: every tuning constant of the engine (doc 02 §17).
+# Values marked in doc 02 are copied from it; the rest are reasoned values
+# listed under provenance.estimates until golden scenarios pin them.
+id: default
+kind: realism
+name: Default realism
+
+time:                                # doc 02 §3
+  tick_fine_ms: 100
+  tick_coarse_ms: 1000
+  esm_period_s: 2
+  satellite_period_s: 5
+  fusion_period_s: 1
+  tewa_period_s: 1
+  logistics_period_s: 10
+  ground_combat_period_s: 60
+  ai_tactical_period_s: 1
+  ai_operational_period_s: 30
+  ai_strategic_period_s: 300
+  hash_checkpoint_ticks: 600
+
+earth:                               # doc 02 §5, §7.1
+  radius_m: 6371008.8                # IUGG mean radius
+  radio_k_factor: 1.3333333333333333 # 4/3 effective Earth
+  horizon_coefficient: 4.12          # km per √m, 4/3 Earth
+
+radar:                               # doc 02 §7.1
+  pd_steepness_k: 8
+  track_confirm_hits: 2
+  track_confirm_window_scans: 3
+  track_drop_misses: 3
+  clutter_alt_land_m: 300
+  clutter_alt_sea_m: 50
+  doppler_notch_radial_mps: 25
+  doppler_notch_pd_factor: 0.2
+  los_sample_divisor: 64
+
+passive:                             # doc 02 §7.2
+  esm_bearing_sigma_default_deg: 2   # doc 02 gives 1–3°
+  irst_afterburner_factor: 3
+  irst_aspect_factor: { head_on: 1.0, beam: 1.5, tail: 3.0 }
+  eo_gsd_type_m: 1
+  eo_gsd_class_m: 3
+  visual_range_km: { open: 4, forest: 0.5, urban: 0.3, mountain: 2 }
+  visual_night_factor: 0.3
+
+satellites:                          # doc 02 §7.3
+  eo_min_sun_elevation_deg: 10
+  downlink_delay_default_min: 15
+
+fusion:                              # doc 02 §8
+  age_out_min: { air: 2, surface: 30, subsurface: 30, ground: 120 }
+  fixed_sites_kept: true
+  ellipse_growth_kt: { air: 1200, surface: 35, subsurface: 30, ground: 40 }
+  datalink_latency_default_s: 2
+  c2_report_delay_s: 60
+
+ew:                                  # doc 02 §9
+  sidelobe_gain_db: -30
+  main_beam_gain_db: 0
+  gps_jam_cep_factor: 5
+  comms_jam_latency_factor: 3
+  seeker_jam_effect: 0.5
+  arm_memory_pk_factor: 0.5
+
+weapons:                             # doc 02 §10
+  pn_gain_min: 3
+  pn_gain_max: 4
+  sea_skim_min_alt_m: 5
+  sea_skim_max_alt_m: 15
+  range_calibration_tolerance: 0.1
+
+endgame:                             # doc 02 §11
+  maneuver_g_ratio: 3
+  maneuver_floor: 0.2
+  pk_min: 0
+  pk_max: 0.99
+  aspect:
+    active_radar:      { head_on: 1.0, beam: 0.8, tail: 0.9 }
+    semi_active_radar: { head_on: 1.0, beam: 0.7, tail: 0.85 }
+    ir:                { head_on: 0.6, beam: 0.8, tail: 1.0 }
+    imaging_ir:        { head_on: 0.85, beam: 0.9, tail: 1.0 }
+    anti_radiation:    { head_on: 1.0, beam: 1.0, tail: 1.0 }
+    command:           { head_on: 1.0, beam: 0.75, tail: 0.85 }
+  cep_distribution: rayleigh
+
+tewa:                                # doc 02 §12
+  ciws_layer_min_km: 2
+  ciws_layer_max_km: 4
+  soft_kill_window_s: 30
+  kill_assessment_s: 5
+  iads_autonomous_reaction_factor: 2
+
+damage:                              # doc 02 §13
+  ship_out_of_action_fraction: 0.25
+  ship_sink_delay_min: 30
+  warhead_multiplier:
+    blast: 1.0
+    blast_fragmentation: 0.8
+    penetrator: 1.4
+    hit_to_kill: 0.6
+    shaped_charge: 1.2
+  runway_repair_min_h: 4
+  runway_repair_max_h: 12
+
+logistics:                           # doc 02 §6
+  fuel_reserve_fraction: 0.1
+
+ground:                              # doc 02 §14 (Phase 11 placeholders)
+  lanchester_coefficient: 0.05
+  random_variation: 0.2
+  defender_terrain_factor: { open: 1.0, forest: 1.5, urban: 2.0, mountain: 2.0 }
+
+provenance:
+  confidence: estimate
+  notes: >-
+    Design constants from docs/02-simulation-engine.md; the sources cover the
+    physical ones (Earth radius, 4/3-Earth radio horizon, proportional
+    navigation gain, Rayleigh miss distance). Estimates are tuned by the
+    golden scenarios (doc 08 §3).
+  estimates:
+    - passive.irst_aspect_factor
+    - passive.visual_range_km.mountain
+    - fusion.age_out_min.subsurface
+    - fusion.ellipse_growth_kt
+    - ew.gps_jam_cep_factor
+    - ew.comms_jam_latency_factor
+    - ew.seeker_jam_effect
+    - ew.arm_memory_pk_factor
+    - endgame.aspect
+    - tewa.kill_assessment_s
+    - tewa.iads_autonomous_reaction_factor
+    - damage.ship_sink_delay_min
+    - damage.warhead_multiplier
+    - ground
+  sources:
+    - { title: "Earth radius (IUGG mean radius R1)", url: "https://en.wikipedia.org/wiki/Earth_radius", accessed: 2026-10-27 }
+    - { title: "Radio horizon (4/3 effective Earth radius)", url: "https://en.wikipedia.org/wiki/Radio_horizon", accessed: 2026-10-27 }
+    - { title: "Proportional navigation", url: "https://en.wikipedia.org/wiki/Proportional_navigation", accessed: 2026-10-27 }
+    - { title: "Circular error probable (Rayleigh distribution)", url: "https://en.wikipedia.org/wiki/Circular_error_probable", accessed: 2026-10-27 }

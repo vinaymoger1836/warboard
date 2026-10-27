@@ -1,0 +1,34 @@
+id: kh-35
+kind: weapon
+name: Kh-35 / 3M24 Uran (surface-launched)
+category: ashm
+targets: [surface]
+target_class: anti_ship_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.8
+  max_range_km: 130
+  min_range_km: 5
+  cruise_alt_m: 12            # 10-15 m en route
+  terminal_alt_m: 4
+guidance:
+  midcourse: [inertial]
+  terminal: active_radar
+  seeker_range_km: 20
+  seeker_eccm: 0.4
+warhead_kg: 145
+warhead: shaped_charge
+pk_base: { surface_ship: 0.8 }
+countermeasure_resistance: { chaff: 0.4 }
+mass_kg: 610
+station_category: [uran_launcher]
+provenance:
+  confidence: medium
+  estimates:
+    - profile.min_range_km
+    - guidance.seeker_range_km
+    - guidance.seeker_eccm
+    - pk_base
+    - countermeasure_resistance
+  sources:
+    - { title: "Kh-35", url: "https://en.wikipedia.org/wiki/Kh-35", accessed: 2026-10-27 }

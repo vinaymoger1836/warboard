@@ -33,7 +33,8 @@ allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 [advisories]
 ignore = [
     # unsafe-libyaml (the parser under serde_yaml) is archived/unmaintained.
-    # serde_yaml kept by decision for P0 (the stack is locked on it); revisit
-    # when content loading grows in P1. See docs/versions.md.
-    { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml via serde_yaml; accepted for P0, revisit in P1" },
+    # serde_yaml kept by decision in P0 and again in P1 for content loading:
+    # content files are our own, and a switch only touches wb-content's
+    # loader. See docs/versions.md.
+    { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml via serde_yaml; kept by P1 decision (trusted input)" },
 ]

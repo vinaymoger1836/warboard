@@ -1,0 +1,10 @@
+id: test-battery
+kind: system
+name: Test battery
+deploy_as: site
+setup_min: 5
+components:
+  - { platform: test-launcher, count: 4, role: launcher, magazine: { test-sam: 16 } }
+emcon_default: blink
+iads_capable: true
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

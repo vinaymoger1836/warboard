@@ -1,0 +1,18 @@
+id: test-fighter
+kind: platform
+name: Test fighter
+category: aircraft/fighter
+target_class: fighter
+mobility: { cruise_speed_mach: 0.9, max_speed_mach: 1.6, ceiling_m: 15000, sustained_g: 5 }
+signature: { rcs_m2: { front: 0.1, side: 1, rear: 0.5, top: 2 } }
+fuel: { internal_kg: 8000, burn_kg_h: { cruise: 2600 }, aar: boom }
+stations:
+  - { id: bay, kind: internal, categories: [aam_medium, bomb_900kg], max_kg: 1000, capacity: 2 }
+  - { id: pylon, kind: external, categories: [bomb_900kg], max_kg: 1000 }
+sensors: [test-radar]
+ew: [test-jammer]
+countermeasures: { test-chaff: 30 }
+datalinks: [test-link]
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+turnaround_min: 60
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

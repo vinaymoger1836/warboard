@@ -1,0 +1,42 @@
+id: a330-mrtt
+kind: platform
+name: A330 MRTT
+category: aircraft/tanker
+target_class: tanker
+crew: 3
+mobility:
+  cruise_speed_mach: 0.82
+  max_speed_mach: 0.86
+  ceiling_m: 12500
+  sustained_g: 1.5
+  min_runway_m: 2500
+signature:
+  rcs_m2: { front: 50, side: 200, rear: 50, top: 300 }
+  ir: { cruise: 2.0 }
+  visual_size_m: 58.8
+fuel:
+  internal_kg: 111000
+  burn_kg_h: { cruise: 5800 }
+tanker:
+  offload_kg: 50000
+  transfer_rate_kg_min: 3600  # boom maximum flow
+  systems: [boom, probe]
+countermeasures: { chaff-generic: 60, flare-generic: 60 }
+datalinks: [link-16]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 120
+provenance:
+  confidence: medium
+  notes: >-
+    Source: 111,000 kg fuel without extra tanks, boom flow up to 3,600 kg/min, underwing probe-and-drogue pods; boom and receptacle fit vary by customer.
+  estimates:
+    - crew
+    - mobility
+    - signature
+    - fuel.burn_kg_h
+    - tanker.offload_kg
+    - countermeasures
+    - durability
+    - turnaround_min
+  sources:
+    - { title: "Airbus A330 MRTT", url: "https://en.wikipedia.org/wiki/Airbus_A330_MRTT", accessed: 2026-10-27 }

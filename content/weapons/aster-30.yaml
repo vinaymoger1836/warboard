@@ -1,0 +1,43 @@
+id: aster-30
+kind: weapon
+name: Aster 30 Block 1
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 5
+  max_speed_mach: 4.5
+  coast_tau_s: { sea_level: 15, high_alt: 50 }
+  min_speed_mach: 1.0
+  max_range_km: 120
+  min_range_km: 3
+  max_g: 50
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 15
+  seeker_eccm: 0.7
+warhead_kg: 15
+warhead: blast_fragmentation
+lethal_radius_m: 2
+pk_base: { fighter: 0.8, bomber: 0.85, cruise_missile: 0.75, anti_ship_missile: 0.75, ballistic_missile: 0.5, uav: 0.85, aew: 0.85 }
+countermeasure_resistance: { chaff: 0.7 }
+mass_kg: 450
+station_category: [sylver_a50]
+envelope: { min_alt_m: 3, max_alt_m: 20000 }
+provenance:
+  confidence: medium
+  estimates:
+    - profile.boost_s
+    - profile.coast_tau_s
+    - profile.min_speed_mach
+    - profile.min_range_km
+    - profile.max_g
+    - guidance.seeker_range_km
+    - guidance.seeker_eccm
+    - pk_base
+    - countermeasure_resistance
+    - envelope.min_alt_m
+  sources:
+    - { title: "Aster (missile family)", url: "https://en.wikipedia.org/wiki/Aster_(missile_family)", accessed: 2026-10-27 }

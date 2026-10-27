@@ -1,0 +1,14 @@
+id: test-doctrine
+kind: doctrine
+name: Test doctrine
+aggression: 0.5
+risk_tolerance: 0.5
+emcon_discipline: 0.5
+emcon_default: blink
+missile_reserve_fraction: 0.2
+launch_doctrine: no_escape_zone
+shots_per_target: 2
+cap_aircraft: 2
+cap_rotation_min: 90
+reaction_time_s: 60
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

@@ -1,0 +1,19 @@
+id: f-35a-strike
+kind: loadout
+name: Strike (internal)
+platform: f-35a
+roles: [strike]
+items:
+  - { station: bay_l_out, weapon: gbu-31, count: 1 }
+  - { station: bay_r_out, weapon: gbu-31, count: 1 }
+  - { station: bay_l_in, weapon: aim-120d, count: 1 }
+  - { station: bay_r_in, weapon: aim-120d, count: 1 }
+provenance:
+  confidence: medium
+  notes: >-
+    Two 2,000 lb JDAMs on the outboard bay stations, AMRAAMs inboard.
+  estimates:
+    - items
+  sources:
+    - { title: "Lockheed Martin F-35 Lightning II (specifications F-35A)", url: "https://en.wikipedia.org/wiki/Lockheed_Martin_F-35_Lightning_II", accessed: 2026-10-27 }
+    - { title: "Joint Direct Attack Munition", url: "https://en.wikipedia.org/wiki/Joint_Direct_Attack_Munition", accessed: 2026-10-27 }

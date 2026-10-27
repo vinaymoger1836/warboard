@@ -1,0 +1,10 @@
+id: test-jammer
+kind: ew_suite
+name: Test jammer
+ew_type: self_protection
+bands: [X]
+j_db: 20
+max_range_km: 50
+simultaneous_targets: 2
+field_of_regard_deg: 360
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

@@ -1,0 +1,44 @@
+id: su-57
+kind: platform
+name: Su-57
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.9      # supercruise Mach 1.3
+  max_speed_mach: 2.0
+  ceiling_m: 18800
+  sustained_g: 6.5
+  min_runway_m: 1500
+signature:
+  rcs_m2: { front: 0.3, side: 3, rear: 1, top: 3 }
+  external_stores_rcs_multiplier: 6
+  ir: { cruise: 1.2, afterburner: 4.0 }
+  visual_size_m: 20.1
+fuel:
+  internal_kg: 9700
+  burn_kg_h: { cruise: 3200, military: 6800, afterburner: 20000 }
+  aar: probe
+stations:
+  - { id: main_bays,  kind: internal, categories: [aam_medium, agm, bomb_500kg], max_kg: 3000, capacity: 4 }
+  - { id: side_bays,  kind: internal, categories: [aam_short], max_kg: 300, capacity: 2 }
+  - { id: external,   kind: external, categories: [aam_medium, ashm, agm, arm, bomb_500kg], max_kg: 4500, capacity: 6 }
+countermeasures: { chaff-generic: 60, flare-generic: 60 }
+durability: { model: aircraft, p_kill_on_hit: 0.75 }
+turnaround_min: 75
+provenance:
+  confidence: low
+  notes: >-
+    Source: 6 internal + 6 external hardpoints, 7,500 kg payload, RCS estimates of 0.1-0.5 m2 and 0.1-1 m2 (front taken as 0.3). The N036 radar is not in the P1 seed set.
+  estimates:
+    - mobility.cruise_speed_mach
+    - mobility.sustained_g
+    - mobility.min_runway_m
+    - signature
+    - fuel.burn_kg_h
+    - stations
+    - countermeasures
+    - durability
+    - turnaround_min
+  sources:
+    - { title: "Sukhoi Su-57 (specifications; RCS estimates incl. F-35)", url: "https://en.wikipedia.org/wiki/Sukhoi_Su-57", accessed: 2026-10-27 }

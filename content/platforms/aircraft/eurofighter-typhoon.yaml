@@ -1,0 +1,46 @@
+id: eurofighter-typhoon
+kind: platform
+name: Eurofighter Typhoon
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.9      # supercruise about Mach 1.1-1.5 by source
+  max_speed_mach: 2.0
+  ceiling_m: 16764
+  climb_rate_mps: 315
+  sustained_g: 7
+  min_runway_m: 1500
+signature:
+  rcs_m2: { front: 1, side: 5, rear: 3, top: 8 }
+  external_stores_rcs_multiplier: 1.5
+  ir: { cruise: 1.0, afterburner: 3.0 }
+  visual_size_m: 15.96
+fuel:
+  internal_kg: 4500
+  burn_kg_h: { cruise: 2200, military: 4500, afterburner: 13000 }
+  aar: probe
+stations:
+  - { id: wing_outer, kind: external, categories: [aam_short, aam_medium], max_kg: 600, capacity: 4 }
+  - { id: wing_inner, kind: external, categories: [aam_medium, agm, ashm, bomb_900kg], max_kg: 4000, capacity: 4 }
+  - { id: fuselage,   kind: external, categories: [aam_medium, bomb_500kg], max_kg: 3000, capacity: 5 }
+countermeasures: { chaff-generic: 60, flare-generic: 60 }
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+turnaround_min: 60
+provenance:
+  confidence: medium
+  notes: >-
+    Source: 13 stations (8 under-wing, 5 under-fuselage), >9,000 kg payload, internal fuel about 4,500 kg, Mach 2.35 at 11 km (kept at 2.0 for a loaded aircraft). CAPTOR and PIRATE are not in the P1 seed set.
+  estimates:
+    - mobility.cruise_speed_mach
+    - mobility.max_speed_mach
+    - mobility.sustained_g
+    - mobility.min_runway_m
+    - signature
+    - fuel.burn_kg_h
+    - stations
+    - countermeasures
+    - durability
+    - turnaround_min
+  sources:
+    - { title: "Eurofighter Typhoon (specifications)", url: "https://en.wikipedia.org/wiki/Eurofighter_Typhoon", accessed: 2026-10-27 }

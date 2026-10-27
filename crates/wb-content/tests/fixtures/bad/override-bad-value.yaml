@@ -1,0 +1,10 @@
+# file: platforms/aircraft/bad-override-value.yaml
+# expect: content/platforms/aircraft/bad-override-value.yaml: mobility.max_speed_mach: invalid type: string "fast", expected f64
+id: bad-override-value
+kind: platform
+custom: true
+extends: test-fighter
+name: Bad
+overrides:
+  mobility.max_speed_mach: fast
+provenance: { confidence: estimate }

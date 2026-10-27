@@ -1,0 +1,45 @@
+id: r-77-1
+kind: weapon
+name: R-77-1 (RVV-SD)
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 6
+  max_speed_mach: 4.0
+  coast_tau_s: { sea_level: 16, high_alt: 50 }
+  min_speed_mach: 1.1
+  max_range_km: 110
+  min_range_km: 1.5
+  max_g: 40
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 16
+  seeker_eccm: 0.5
+warhead_kg: 22.5
+warhead: blast_fragmentation
+pk_base: { fighter: 0.7, bomber: 0.8, helicopter: 0.75, cruise_missile: 0.45, uav: 0.8 }
+countermeasure_resistance: { chaff: 0.6, towed_decoy: 0.3 }
+mass_kg: 190
+station_category: [aam_medium]
+envelope: { min_alt_m: 5000, max_alt_m: 25000 }
+provenance:
+  confidence: medium
+  notes: >-
+    Source: 190 kg, Mach 4, 110 km for R-77-1; warhead 22.5 kg is the R-77 figure. The source lists a 5-25 km altitude band; the lower limit is kept as given but is likely the launch band.
+  estimates:
+    - profile.boost_s
+    - profile.coast_tau_s
+    - profile.min_speed_mach
+    - profile.min_range_km
+    - profile.max_g
+    - guidance.seeker_range_km
+    - guidance.seeker_eccm
+    - warhead_kg
+    - pk_base
+    - countermeasure_resistance
+    - envelope.min_alt_m
+  sources:
+    - { title: "R-77", url: "https://en.wikipedia.org/wiki/R-77", accessed: 2026-10-27 }

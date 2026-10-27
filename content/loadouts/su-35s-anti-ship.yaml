@@ -1,0 +1,18 @@
+id: su-35s-anti-ship
+kind: loadout
+name: Anti-ship
+platform: su-35s
+roles: [anti_ship]
+items:
+  - { station: wing_inner, weapon: kh-35u, count: 2 }
+  - { station: wing_outer, weapon: r-77-1, count: 2 }
+  - { station: fuselage, weapon: r-77-1, count: 2 }
+provenance:
+  confidence: medium
+  notes: >-
+    Kh-35 is listed among Su-35 launch platforms (source).
+  estimates:
+    - items
+  sources:
+    - { title: "Sukhoi Su-35 (specifications Su-35S)", url: "https://en.wikipedia.org/wiki/Sukhoi_Su-35", accessed: 2026-10-27 }
+    - { title: "Kh-35", url: "https://en.wikipedia.org/wiki/Kh-35", accessed: 2026-10-27 }

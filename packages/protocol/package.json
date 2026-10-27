@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "gen": "cargo test -q -p wb-core -p wb-sim --features wb-core/ts,wb-sim/ts export_bindings",
+    "gen": "cargo test -q -p wb-core -p wb-sim -p wb-content --features wb-core/ts,wb-sim/ts,wb-content/ts export_bindings && cargo run -q -p wb-cli -- content schema --out src/generated/content.schema.json",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "eslint src"
   }

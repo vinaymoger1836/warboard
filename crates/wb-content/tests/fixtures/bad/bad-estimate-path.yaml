@@ -1,0 +1,9 @@
+# file: countermeasures/bad-estimate.yaml
+# expect: content/countermeasures/bad-estimate.yaml: provenance.estimates[0]: `effect_pct` is not a field of this entry
+id: bad-estimate
+kind: countermeasure
+name: Bad
+cm_type: flare
+effect: 0.3
+defeats: [ir]
+provenance: { confidence: low, estimates: [effect_pct], sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

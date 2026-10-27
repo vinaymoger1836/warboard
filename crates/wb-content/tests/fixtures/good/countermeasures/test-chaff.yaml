@@ -1,0 +1,7 @@
+id: test-chaff
+kind: countermeasure
+name: Test chaff
+cm_type: chaff
+effect: 0.2
+defeats: [active_radar, semi_active_radar]
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

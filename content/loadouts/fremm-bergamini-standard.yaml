@@ -1,0 +1,18 @@
+id: fremm-bergamini-standard
+kind: loadout
+name: Standard
+platform: fremm-bergamini
+roles: [air_defence, anti_ship]
+items:
+  - { station: sylver, weapon: aster-30, count: 8 }
+  - { station: sylver, weapon: aster-15, count: 8 }
+  - { station: teseo, weapon: teseo-mk2a, count: 8 }
+provenance:
+  confidence: medium
+  notes: >-
+    16 Sylver A50 cells for Aster 15 and 30 (split is an estimate), 8 Teseo Mk2/A.
+  estimates:
+    - items
+  sources:
+    - { title: "FREMM multipurpose frigate (Italian GP variant)", url: "https://en.wikipedia.org/wiki/FREMM_multipurpose_frigate", accessed: 2026-10-27 }
+    - { title: "Aster (missile family)", url: "https://en.wikipedia.org/wiki/Aster_(missile_family)", accessed: 2026-10-27 }

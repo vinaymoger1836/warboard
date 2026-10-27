@@ -1,0 +1,9 @@
+# file: loadouts/bad-capacity.yaml
+# expect: content/loadouts/bad-capacity.yaml: items[0].count: station `bay` holds 2, the loadout needs 3
+id: bad-capacity
+kind: loadout
+name: Bad
+platform: test-fighter
+items:
+  - { station: bay, weapon: test-aam, count: 3 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

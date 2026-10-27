@@ -1,0 +1,10 @@
+# file: loadouts/bad-weight.yaml
+# expect: content/loadouts/bad-weight.yaml: items[1].count: station `pylon` takes at most 1000 kg, the loadout puts 1800 kg on it
+id: bad-weight
+kind: loadout
+name: Bad
+platform: test-fighter
+items:
+  - { station: pylon, weapon: test-bomb, count: 1 }
+  - { station: pylon, weapon: test-bomb, count: 1 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

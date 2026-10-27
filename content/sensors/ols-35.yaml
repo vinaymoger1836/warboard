@@ -1,0 +1,21 @@
+id: ols-35
+kind: sensor
+name: OLS-35 IRST
+sensor_type: irst
+role: [irst, targeting]
+irst:
+  r_ref_km: 50
+  i_ref: 1
+  field_of_regard_deg: 180
+  scan_period_s: 2
+provenance:
+  confidence: low
+  notes: >-
+    Fitted ahead of the Su-35 cockpit (sources); no detection range is published there.
+  estimates:
+    - irst.r_ref_km
+    - irst.field_of_regard_deg
+    - irst.scan_period_s
+  sources:
+    - { title: "Sukhoi Su-35 (specifications Su-35S)", url: "https://en.wikipedia.org/wiki/Sukhoi_Su-35", accessed: 2026-10-27 }
+    - { title: "Infrared search and track (OLS-35)", url: "https://en.wikipedia.org/wiki/Infrared_search_and_track", accessed: 2026-10-27 }

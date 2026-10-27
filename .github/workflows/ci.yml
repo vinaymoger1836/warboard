@@ -33,6 +33,15 @@ jobs:
       - run: cargo test --workspace
       - name: Lint canary (f64::sin and HashMap in wb-sim must fail clippy)
         run: bash scripts/lint-canary.sh
+      - name: Content check
+        run: cargo run -q -p wb-cli -- content check
+      - name: Content build twice, same hash
+        run: |
+          a=$(cargo run -q -p wb-cli -- content build --out build/a.wbpack)
+          b=$(cargo run -q -p wb-cli -- content build --out build/b.wbpack)
+          echo "content hash: $a"
+          test "$a" = "$b"
+          cmp build/a.wbpack build/b.wbpack
 
   deny:
     name: Licences and advisories (cargo-deny)
@@ -62,8 +71,10 @@ jobs:
           node-version-file: .nvmrc
       - name: Build wb-wasm
         run: node crates/wb-wasm/scripts/build-wasm.mjs
-      - name: Generate TypeScript types (ts-rs)
-        run: cargo test -q -p wb-core -p wb-sim --features wb-core/ts,wb-sim/ts export_bindings
+      - name: Generate TypeScript types (ts-rs) and the content JSON Schema
+        run: |
+          cargo test -q -p wb-core -p wb-sim -p wb-content --features wb-core/ts,wb-sim/ts,wb-content/ts export_bindings
+          cargo run -q -p wb-cli -- content schema
       - name: Determinism check, 10,000 ticks
         run: bash scripts/determinism-check.sh
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

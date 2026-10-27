@@ -1,0 +1,30 @@
+id: an-apg-81
+kind: sensor
+name: AN/APG-81 AESA
+sensor_type: radar
+role: [air_search, fire_control, ground_mapping]
+radar:
+  band: X
+  r_ref_km: 150
+  sigma_ref_m2: 1
+  scan_period_s: 2
+  field_of_regard_deg: 120
+  clutter_rejection: 0.85
+  pulse_doppler: true
+  eccm_db: 20
+  erp_class_dbw: 75
+  fire_channels: 8
+provenance:
+  confidence: low
+  notes: >-
+    Source gives track-while-scan beyond 150 km; taken as the 50% range against 1 m2.
+  estimates:
+    - radar.r_ref_km
+    - radar.scan_period_s
+    - radar.clutter_rejection
+    - radar.eccm_db
+    - radar.erp_class_dbw
+    - radar.fire_channels
+  sources:
+    - { title: "AN/APG-81", url: "https://en.wikipedia.org/wiki/AN/APG-81", accessed: 2026-10-27 }
+    - { title: "Lockheed Martin F-35 Lightning II (specifications F-35A)", url: "https://en.wikipedia.org/wiki/Lockheed_Martin_F-35_Lightning_II", accessed: 2026-10-27 }

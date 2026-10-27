@@ -1,0 +1,18 @@
+id: taranto
+kind: base
+name: Taranto naval base
+base_type: port
+country: ita
+lat_deg: 40.4711
+lon_deg: 17.2431
+ship_berths: 20
+provenance:
+  confidence: low
+  notes: >-
+    Coordinates are the city's; the naval station is on the Mar Piccolo. Berth count is an estimate until P2 curates bases.
+  estimates:
+    - lat_deg
+    - lon_deg
+    - ship_berths
+  sources:
+    - { title: "Taranto", url: "https://en.wikipedia.org/wiki/Taranto", accessed: 2026-10-27 }

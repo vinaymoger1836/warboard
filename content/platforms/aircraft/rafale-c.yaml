@@ -1,0 +1,47 @@
+id: rafale-c
+kind: platform
+name: Rafale C
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 1.8
+  ceiling_m: 15835
+  climb_rate_mps: 304.8
+  sustained_g: 6.5
+  min_runway_m: 1200
+signature:
+  rcs_m2: { front: 1, side: 5, rear: 3, top: 8 }
+  external_stores_rcs_multiplier: 1.5
+  ir: { cruise: 0.9, afterburner: 3.0 }
+  visual_size_m: 15.3
+fuel:
+  internal_kg: 4700
+  burn_kg_h: { cruise: 2000, military: 4200, afterburner: 12000 }
+  aar: probe
+stations:
+  - { id: wingtip,    kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+  - { id: wing_outer, kind: external, categories: [aam_short, aam_medium], max_kg: 600, capacity: 2 }
+  - { id: wing_mid,   kind: external, categories: [aam_medium, agm, ashm, bomb_500kg], max_kg: 2400, capacity: 2 }
+  - { id: wing_inner, kind: external, categories: [aam_medium, agm, ashm, bomb_900kg], max_kg: 3000, capacity: 2 }
+  - { id: fuselage,   kind: external, categories: [aam_medium, bomb_500kg], max_kg: 3300, capacity: 6 }
+countermeasures: { chaff-generic: 60, flare-generic: 60 }
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+turnaround_min: 60
+provenance:
+  confidence: medium
+  notes: >-
+    Source: 14 external hardpoints, 9,500 kg external fuel and ordnance, +9/-3.6 g. Reduced RCS is described only qualitatively. RBE2 radar, SPECTRA, MICA and Meteor are not in the P1 seed set.
+  estimates:
+    - mobility.cruise_speed_mach
+    - mobility.sustained_g
+    - mobility.min_runway_m
+    - signature
+    - fuel.burn_kg_h
+    - stations
+    - countermeasures
+    - durability
+    - turnaround_min
+  sources:
+    - { title: "Dassault Rafale (specifications)", url: "https://en.wikipedia.org/wiki/Dassault_Rafale", accessed: 2026-10-27 }

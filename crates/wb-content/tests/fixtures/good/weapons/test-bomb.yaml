@@ -1,0 +1,12 @@
+id: test-bomb
+kind: weapon
+name: Test bomb
+category: bomb
+targets: [ground]
+profile: { kind: glide, max_speed_mach: 0.9, max_range_km: 20 }
+guidance: { midcourse: [gps], terminal: gps_ins }
+warhead_kg: 400
+cep_m: 10
+mass_kg: 900
+station_category: [bomb_900kg]
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

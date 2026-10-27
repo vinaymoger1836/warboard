@@ -1,0 +1,18 @@
+id: f-35a-air-superiority
+kind: loadout
+name: Air superiority (internal)
+platform: f-35a
+roles: [air_superiority]
+items:
+  - { station: bay_l_in, weapon: aim-120d, count: 1 }
+  - { station: bay_l_out, weapon: aim-120d, count: 1 }
+  - { station: bay_r_out, weapon: aim-120d, count: 1 }
+  - { station: bay_r_in, weapon: aim-120d, count: 1 }
+provenance:
+  confidence: medium
+  notes: >-
+    Four AMRAAMs in the bays keep the stealth configuration.
+  estimates:
+    - items
+  sources:
+    - { title: "Lockheed Martin F-35 Lightning II (specifications F-35A)", url: "https://en.wikipedia.org/wiki/Lockheed_Martin_F-35_Lightning_II", accessed: 2026-10-27 }

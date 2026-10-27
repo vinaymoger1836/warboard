@@ -1,0 +1,38 @@
+id: mq-9a
+kind: platform
+name: MQ-9A Reaper
+category: aircraft/uav
+target_class: uav
+crew: 0
+mobility:
+  cruise_speed_mach: 0.26     # 313 km/h
+  max_speed_mach: 0.39        # 482 km/h
+  ceiling_m: 15420
+  sustained_g: 2
+  min_runway_m: 1500
+signature:
+  rcs_m2: { front: 1, side: 3, rear: 1, top: 5 }
+  ir: { cruise: 0.1 }
+  visual_size_m: 20.1
+fuel:
+  internal_kg: 1800           # 4,000 lb
+  burn_kg_h: { cruise: 67 }
+stations:
+  - { id: inner, kind: external, categories: [agm, bomb_250kg], max_kg: 1360, capacity: 2 }
+  - { id: mid,   kind: external, categories: [agm, bomb_250kg, aam_short], max_kg: 544, capacity: 2 }
+  - { id: outer, kind: external, categories: [agm, aam_short], max_kg: 182, capacity: 2 }
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 120
+provenance:
+  confidence: medium
+  notes: >-
+    Source: 4,000 lb fuel, 27 h endurance (burn derived from both), 6 pylons rated 1,500 / 600 / 200 lb each. Lynx SAR and MTS-B are not in the P1 seed set.
+  estimates:
+    - mobility.sustained_g
+    - mobility.min_runway_m
+    - signature
+    - fuel.burn_kg_h
+    - durability
+    - turnaround_min
+  sources:
+    - { title: "General Atomics MQ-9 Reaper (specifications MQ-9A)", url: "https://en.wikipedia.org/wiki/General_Atomics_MQ-9_Reaper", accessed: 2026-10-27 }

@@ -1,0 +1,11 @@
+id: test-launcher
+kind: platform
+name: Test launcher
+category: ground/launcher
+target_class: launcher
+mobility: { road_speed_kmh: 60 }
+signature: { rcs_m2: { front: 20, side: 30, rear: 20, top: 40 } }
+stations:
+  - { id: tubes, kind: launcher, categories: [test_tube], capacity: 4 }
+durability: { model: ground, damage_points: 100 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

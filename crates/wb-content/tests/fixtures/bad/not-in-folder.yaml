@@ -1,0 +1,14 @@
+# file: stray.yaml
+# expect: content/stray.yaml: is not in a content folder
+id: stray
+kind: weapon
+name: Bad weapon
+category: aam
+targets: [air]
+guidance: { terminal: active_radar }
+warhead_kg: 20
+pk_base: { fighter: 0.7 }
+mass_kg: 150
+station_category: [aam_medium]
+profile: { kind: rocket, boost_s: 6, max_speed_mach: 4, coast_tau_s: { sea_level: 18, high_alt: 60 }, min_speed_mach: 1.1, max_range_km: 100 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

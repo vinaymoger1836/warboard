@@ -1,0 +1,8 @@
+# file: sensors/bad-block.yaml
+# expect: content/sensors/bad-block.yaml: esm: is required when sensor_type is esm
+id: bad-block
+kind: sensor
+name: Bad
+sensor_type: esm
+role: [esm]
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

@@ -1,0 +1,23 @@
+id: an-msq-104
+kind: platform
+name: AN/MSQ-104 engagement control station (Patriot)
+category: ground/c2
+target_class: c2_node
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 15, side: 30, rear: 15, top: 45 }
+  visual_size_m: 12
+datalinks: [link-16]
+durability: { model: ground, damage_points: 100 }
+provenance:
+  confidence: low
+  notes: >-
+    Engagement Control Station of the Patriot fire unit.
+  estimates:
+    - mobility
+    - signature
+    - durability
+  sources:
+    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }

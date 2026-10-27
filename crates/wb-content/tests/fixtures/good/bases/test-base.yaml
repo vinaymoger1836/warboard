@@ -1,0 +1,10 @@
+id: test-base
+kind: base
+name: Test air base
+base_type: air_base
+country: tst
+lat_deg: 54.0
+lon_deg: 19.0
+runway_length_m: 2500
+aircraft_capacity: 40
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

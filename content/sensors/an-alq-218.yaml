@@ -1,0 +1,23 @@
+id: an-alq-218
+kind: sensor
+name: AN/ALQ-218 receiver
+sensor_type: esm
+role: [esm, elint]
+esm:
+  bands: [UHF, L, S, C, X, Ku]
+  r_ref_km: 400
+  erp_ref_dbw: 80
+  bearing_sigma_deg: 1
+  field_of_regard_deg: 360
+provenance:
+  confidence: low
+  notes: >-
+    Wideband wingtip receivers on the EA-18G (source); range, ERP reference and accuracy are estimates.
+  estimates:
+    - esm.bands
+    - esm.r_ref_km
+    - esm.erp_ref_dbw
+    - esm.bearing_sigma_deg
+  sources:
+    - { title: "AN/ALQ-218", url: "https://en.wikipedia.org/wiki/AN/ALQ-218", accessed: 2026-10-27 }
+    - { title: "Boeing EA-18G Growler (specifications)", url: "https://en.wikipedia.org/wiki/Boeing_EA-18G_Growler", accessed: 2026-10-27 }

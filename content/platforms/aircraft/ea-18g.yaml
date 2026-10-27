@@ -1,0 +1,49 @@
+id: ea-18g
+kind: platform
+name: EA-18G Growler
+category: aircraft/ew
+target_class: ew_aircraft
+crew: 2
+mobility:
+  cruise_speed_mach: 0.85
+  max_speed_mach: 1.8
+  ceiling_m: 15000
+  sustained_g: 6
+  min_runway_m: 1500
+signature:
+  rcs_m2: { front: 1, side: 8, rear: 3, top: 10 }
+  external_stores_rcs_multiplier: 2
+  ir: { cruise: 1.0, afterburner: 3.0 }
+  visual_size_m: 18.3
+fuel:
+  internal_kg: 6323           # 13,940 lb
+  burn_kg_h: { cruise: 2800, military: 5500, afterburner: 15000 }
+  aar: probe
+stations:
+  - { id: wing_outer, kind: external, categories: [aam_medium, arm], max_kg: 1000, capacity: 2 }
+  - { id: wing_mid,   kind: external, categories: [arm, agm, bomb_900kg], max_kg: 2400, capacity: 2 }
+  - { id: fuselage,   kind: external, categories: [aam_medium], max_kg: 400, capacity: 2 }
+sensors: [an-alq-218]
+ew: [an-alq-99]
+countermeasures: { chaff-generic: 60, flare-generic: 60 }
+datalinks: [link-16]
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+turnaround_min: 75
+provenance:
+  confidence: medium
+  notes: >-
+    Source: up to five ALQ-99 pods plus typically two AIM-120 or AGM-88. Pod stations are modelled through the EW suite, so only weapon stations are listed.
+  estimates:
+    - mobility.cruise_speed_mach
+    - mobility.sustained_g
+    - mobility.min_runway_m
+    - signature
+    - fuel.burn_kg_h
+    - stations
+    - countermeasures
+    - durability
+    - turnaround_min
+  sources:
+    - { title: "Boeing EA-18G Growler (specifications)", url: "https://en.wikipedia.org/wiki/Boeing_EA-18G_Growler", accessed: 2026-10-27 }
+    - { title: "AN/ALQ-218", url: "https://en.wikipedia.org/wiki/AN/ALQ-218", accessed: 2026-10-27 }
+    - { title: "AN/ALQ-99", url: "https://en.wikipedia.org/wiki/AN/ALQ-99", accessed: 2026-10-27 }

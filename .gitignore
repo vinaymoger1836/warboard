@@ -3,6 +3,9 @@ CLAUDE.md
 # Rust build output
 target/
 
+# Content pack (run `wb content build`)
+build/
+
 # JS dependencies and build output
 node_modules/
 dist/

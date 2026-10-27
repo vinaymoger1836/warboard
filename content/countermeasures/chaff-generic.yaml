@@ -1,0 +1,14 @@
+id: chaff-generic
+kind: countermeasure
+name: Chaff cartridge
+cm_type: chaff
+effect: 0.3
+defeats: [active_radar, semi_active_radar]
+mass_kg: 0.2
+provenance:
+  confidence: low
+  estimates:
+    - effect
+    - mass_kg
+  sources:
+    - { title: "Chaff (countermeasure)", url: "https://en.wikipedia.org/wiki/Chaff_(countermeasure)", accessed: 2026-10-27 }

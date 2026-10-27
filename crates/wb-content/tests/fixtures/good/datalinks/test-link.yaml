@@ -1,0 +1,9 @@
+id: test-link
+kind: datalink
+name: Test link
+latency_s: 2
+capacity_tracks: 100
+range_km: 300
+engage_on_remote: true
+jam_resistance: 0.5
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

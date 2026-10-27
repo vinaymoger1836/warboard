@@ -1,0 +1,8 @@
+# file: platforms/aircraft/bad-extends-kind.yaml
+# expect: content/platforms/aircraft/bad-extends-kind.yaml: extends: `test-aam` is a weapon, not a platform
+id: bad-extends-kind
+kind: platform
+custom: true
+extends: test-aam
+name: Bad
+provenance: { confidence: estimate }

@@ -1,0 +1,12 @@
+id: rus
+kind: country
+name: Russia
+iso2: RU
+iso3: RUS
+flag: ru
+doctrine: ru-default
+datalinks: []
+provenance:
+  confidence: high
+  sources:
+    - { title: "ISO 3166-1 alpha-3", url: "https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3", accessed: 2026-10-27 }

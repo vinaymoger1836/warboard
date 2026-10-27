@@ -1,0 +1,24 @@
+id: m903
+kind: platform
+name: M903 launching station (Patriot)
+category: ground/launcher
+target_class: launcher
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 25, side: 50, rear: 25, top: 75 }
+  visual_size_m: 12
+stations:
+  - { id: canisters, kind: launcher, categories: [patriot_mse_canister], capacity: 12 }
+durability: { model: ground, damage_points: 100 }
+provenance:
+  confidence: medium
+  notes: >-
+    Source: 12 PAC-3 MSE canisters (3 rows of 4), or mixes with PAC-3 and PAC-2.
+  estimates:
+    - mobility
+    - signature
+    - durability
+  sources:
+    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }

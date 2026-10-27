@@ -1,0 +1,36 @@
+id: fremm-bergamini
+kind: platform
+name: FREMM Bergamini class (GP)
+category: ship/frigate
+target_class: surface_ship
+crew: 199
+mobility:
+  cruise_speed_kt: 15
+  max_speed_kt: 30            # "in excess of 30 kn"
+  turn_radius_m: 450
+signature:
+  rcs_m2: { front: 3000, side: 12000, rear: 3000, top: 10000 }
+  ir: { cruise: 5 }
+  acoustic_db: 115
+  visual_size_m: 144.6
+fuel:
+  range_nm: 6800              # at 15 kn
+stations:
+  - { id: sylver, kind: vls, categories: [sylver_a50], capacity: 16 }
+  - { id: teseo,  kind: launcher, categories: [teseo_launcher], capacity: 8 }
+sensors:
+  - { sensor: kronos-grand-naval, height_m: 30 }
+datalinks: [link-16]
+durability: { model: ship, damage_points: 6700 }
+provenance:
+  confidence: medium
+  notes: >-
+    Source (Italy): 6,700 t, 144.6 m, CODLAG, in excess of 30 kn, 6,800 nmi at 15 kn, 199 crew (GP), Kronos Grand Naval, 16-cell Sylver A50 for Aster 15/30, 8 Teseo Mk2/A (GP). Damage points scale with displacement (doc 02 13). Radar height 30 m follows doc 02 7.1.
+  estimates:
+    - mobility.turn_radius_m
+    - signature
+    - sensors[0].height_m
+    - durability
+  sources:
+    - { title: "FREMM multipurpose frigate (Italian GP variant)", url: "https://en.wikipedia.org/wiki/FREMM_multipurpose_frigate", accessed: 2026-10-27 }
+    - { title: "Otomat (Teseo Mk2/A)", url: "https://en.wikipedia.org/wiki/Otomat", accessed: 2026-10-27 }

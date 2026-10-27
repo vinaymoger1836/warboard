@@ -1,0 +1,9 @@
+# file: countermeasures/bad-sources.yaml
+# expect: content/countermeasures/bad-sources.yaml: provenance.sources: is empty; add at least one public source
+id: bad-sources
+kind: countermeasure
+name: Bad
+cm_type: flare
+effect: 0.3
+defeats: [ir]
+provenance: { confidence: medium, sources: [] }

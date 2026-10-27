@@ -1,0 +1,9 @@
+# file: countermeasures/bad-confidence.yaml
+# expect: content/countermeasures/bad-confidence.yaml: provenance: missing field `confidence`
+id: bad-confidence
+kind: countermeasure
+name: Bad
+cm_type: flare
+effect: 0.3
+defeats: [ir]
+provenance: { sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

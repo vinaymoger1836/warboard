@@ -1,0 +1,30 @@
+id: 91n6e-radar
+kind: sensor
+name: 91N6E panoramic radar
+sensor_type: radar
+role: [air_search]
+radar:
+  band: S
+  r_ref_km: 250
+  sigma_ref_m2: 1
+  max_range_km: 340
+  scan_period_s: 12
+  field_of_regard_deg: 360
+  clutter_rejection: 0.9
+  pulse_doppler: true
+  eccm_db: 25
+  erp_class_dbw: 90
+  fire_channels: 0
+provenance:
+  confidence: low
+  notes: >-
+    Source gives a 340 km detection range with jamming protection; the 1 m2 reference range is an estimate.
+  estimates:
+    - radar.band
+    - radar.r_ref_km
+    - radar.scan_period_s
+    - radar.clutter_rejection
+    - radar.eccm_db
+    - radar.erp_class_dbw
+  sources:
+    - { title: "S-400 missile system (components, missile table)", url: "https://en.wikipedia.org/wiki/S-400_missile_system", accessed: 2026-10-27 }

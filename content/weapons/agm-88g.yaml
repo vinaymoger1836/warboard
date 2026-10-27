@@ -1,0 +1,41 @@
+id: agm-88g
+kind: weapon
+name: AGM-88G AARGM-ER
+category: arm
+targets: [ground, surface]
+target_class: anti_radiation_missile
+profile:
+  kind: rocket
+  boost_s: 10
+  max_speed_mach: 2.9
+  coast_tau_s: { sea_level: 20, high_alt: 70 }
+  min_speed_mach: 0.8
+  max_range_km: 225
+  min_range_km: 5
+  max_g: 20
+guidance:
+  midcourse: [inertial, gps]
+  terminal: anti_radiation
+  terminal_secondary: [active_radar]
+  seeker_eccm: 0.8
+warhead_kg: 68
+warhead: blast_fragmentation
+pk_base: { radar_site: 0.8, launcher: 0.6, c2_node: 0.5 }
+mass_kg: 467
+station_category: [arm]
+provenance:
+  confidence: low
+  notes: >-
+    Source: 1030 lb, 68 kg warhead, passive radar homing with GPS/INS and millimetre-wave active radar, about 225 km (estimate). Speed is the AGM-88 figure.
+  estimates:
+    - profile.boost_s
+    - profile.max_speed_mach
+    - profile.coast_tau_s
+    - profile.min_speed_mach
+    - profile.max_range_km
+    - profile.min_range_km
+    - profile.max_g
+    - guidance.seeker_eccm
+    - pk_base
+  sources:
+    - { title: "AGM-88 HARM (AGM-88G AARGM-ER)", url: "https://en.wikipedia.org/wiki/AGM-88_HARM", accessed: 2026-10-27 }

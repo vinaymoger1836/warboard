@@ -1,0 +1,18 @@
+id: su-35s-air-superiority
+kind: loadout
+name: Air superiority
+platform: su-35s
+roles: [air_superiority]
+items:
+  - { station: wing_outer, weapon: r-77-1, count: 2 }
+  - { station: wing_mid, weapon: r-77-1, count: 2 }
+  - { station: fuselage, weapon: r-77-1, count: 4 }
+provenance:
+  confidence: medium
+  notes: >-
+    Short-range missiles on the wingtips are not in the P1 seed set.
+  estimates:
+    - items
+  sources:
+    - { title: "Sukhoi Su-35 (specifications Su-35S)", url: "https://en.wikipedia.org/wiki/Sukhoi_Su-35", accessed: 2026-10-27 }
+    - { title: "R-77", url: "https://en.wikipedia.org/wiki/R-77", accessed: 2026-10-27 }

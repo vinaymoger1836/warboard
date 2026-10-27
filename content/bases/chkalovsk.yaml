@@ -1,0 +1,16 @@
+id: chkalovsk
+kind: base
+name: Kaliningrad Chkalovsk air base
+base_type: air_base
+country: rus
+lat_deg: 54.7667
+lon_deg: 20.3967
+elevation_m: 50
+runway_length_m: 3100
+aircraft_capacity: 40
+provenance:
+  confidence: medium
+  estimates:
+    - aircraft_capacity
+  sources:
+    - { title: "Kaliningrad Chkalovsk", url: "https://en.wikipedia.org/wiki/Kaliningrad_Chkalovsk", accessed: 2026-10-27 }

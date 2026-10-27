@@ -1,0 +1,24 @@
+id: patriot-battery
+kind: system
+name: Patriot battery (PAC-3 MSE)
+deploy_as: site
+setup_min: 30
+components:
+  - { platform: an-mpq-65, count: 1, role: fire_control }
+  - { platform: an-msq-104, count: 1, role: c2 }
+  - platform: m903
+    count: 6
+    role: launcher
+    magazine: { pac-3-mse: 12 }      # per launcher
+emcon_default: blink
+iads_capable: true
+provenance:
+  confidence: medium
+  notes: >-
+    Source: a battery is the radar set, engagement control station and nominally six launchers (citation needed there). All-MSE magazines are an estimate; real batteries mix PAC-2 GEM-T and PAC-3.
+  estimates:
+    - setup_min
+    - components[2].count
+    - components[2].magazine
+  sources:
+    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }

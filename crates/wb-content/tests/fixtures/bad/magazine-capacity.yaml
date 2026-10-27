@@ -1,0 +1,11 @@
+# file: systems/bad-magazine.yaml
+# expect: content/systems/bad-magazine.yaml: components[0].magazine: needs 5 cells per `test-launcher` but it has 4
+id: bad-magazine
+kind: system
+name: Bad
+deploy_as: site
+setup_min: 5
+components:
+  - { platform: test-launcher, count: 1, role: launcher, magazine: { test-sam: 17 } }
+emcon_default: on
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

@@ -1,0 +1,11 @@
+# file: inventories/bad-basing.yaml
+# expect: content/inventories/bad-basing.yaml: basing: bases 30 × `test-fighter` but the inventory has 24
+id: bad-basing
+kind: inventory
+country: tst
+as_of: 2026-10-01
+platforms: { test-fighter: 24 }
+basing:
+  - { platform: test-fighter, base: test-base, count: 20 }
+  - { platform: test-fighter, base: test-base, count: 10 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

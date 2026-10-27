@@ -1,0 +1,25 @@
+id: s-400-battalion
+kind: system
+name: S-400 Triumf battalion
+deploy_as: site
+setup_min: 5
+components:
+  - { platform: 91n6e, count: 1, role: surveillance }
+  - { platform: 92n6e, count: 1, role: fire_control }
+  - { platform: 55k6e, count: 1, role: c2 }
+  - platform: 5p85te2
+    count: 8
+    role: launcher
+    magazine: { 48n6dm: 2, 9m96: 2 }   # per launcher
+emcon_default: blink
+iads_capable: true
+provenance:
+  confidence: medium
+  notes: >-
+    Source: 55K6E, 91N6E, 92N6E and 5P85TE2/5P85SE2 launchers (up to 12); 48N6DM and 9M96E2 authorised. Launcher count and magazine mix are estimates.
+  estimates:
+    - setup_min
+    - components[3].count
+    - components[3].magazine
+  sources:
+    - { title: "S-400 missile system (components, missile table)", url: "https://en.wikipedia.org/wiki/S-400_missile_system", accessed: 2026-10-27 }

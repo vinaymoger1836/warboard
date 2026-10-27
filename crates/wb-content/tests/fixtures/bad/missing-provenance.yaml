@@ -1,0 +1,8 @@
+# file: countermeasures/bad-provenance.yaml
+# expect: content/countermeasures/bad-provenance.yaml: provenance: is missing; every entry needs sources and a confidence
+id: bad-provenance
+kind: countermeasure
+name: Bad
+cm_type: flare
+effect: 0.3
+defeats: [ir]

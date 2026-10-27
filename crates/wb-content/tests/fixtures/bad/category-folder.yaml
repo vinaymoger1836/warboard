@@ -1,0 +1,11 @@
+# file: platforms/aircraft/bad-ship-folder.yaml
+# expect: content/platforms/aircraft/bad-ship-folder.yaml: category: is `ship/frigate`, so the file belongs in `platforms/ship/`
+id: bad-ship-folder
+kind: platform
+name: Bad
+category: ship/frigate
+target_class: surface_ship
+mobility: { max_speed_kt: 27 }
+signature: { rcs_m2: { front: 1000, side: 5000, rear: 1000, top: 5000 } }
+durability: { model: ship, damage_points: 1000 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

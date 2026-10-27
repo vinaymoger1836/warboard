@@ -1,0 +1,32 @@
+# AI profile for NATO members until P9 tunes per-country doctrine.
+id: nato-default
+kind: doctrine
+name: NATO default
+aggression: 0.4
+risk_tolerance: 0.4
+emcon_discipline: 0.5
+emcon_default: on
+missile_reserve_fraction: 0.2
+launch_doctrine: no_escape_zone
+shots_per_target: 2
+cap_aircraft: 2
+cap_rotation_min: 120
+reaction_time_s: 60
+iads_layers: [long_range_sam, medium_range_sam, fighter_cap]
+strike_package: [sead, escort, strike, jammer, tanker]
+provenance:
+  confidence: estimate
+  notes: >-
+    Game AI weights, not published doctrine. Layering and package shape follow the integrated air defence and SEAD descriptions in the sources.
+  estimates:
+    - aggression
+    - risk_tolerance
+    - emcon_discipline
+    - missile_reserve_fraction
+    - shots_per_target
+    - cap_aircraft
+    - cap_rotation_min
+    - reaction_time_s
+  sources:
+    - { title: "NATO Integrated Air Defense System", url: "https://en.wikipedia.org/wiki/NATO_Integrated_Air_Defense_System", accessed: 2026-10-27 }
+    - { title: "Boeing EA-18G Growler (specifications)", url: "https://en.wikipedia.org/wiki/Boeing_EA-18G_Growler", accessed: 2026-10-27 }

@@ -1,0 +1,7 @@
+id: test-radar
+kind: sensor
+name: Test radar
+sensor_type: radar
+role: [air_search, fire_control]
+radar: { band: X, r_ref_km: 100, sigma_ref_m2: 1, scan_period_s: 2, field_of_regard_deg: 120, clutter_rejection: 0.8, pulse_doppler: true, eccm_db: 10, erp_class_dbw: 70, fire_channels: 4 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

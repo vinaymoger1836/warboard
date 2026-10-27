@@ -1,0 +1,5 @@
+# file: weapons/bad-yaml.yaml
+# expect: content/weapons/bad-yaml.yaml: invalid YAML
+id: bad-yaml
+kind: weapon
+  name: [unclosed

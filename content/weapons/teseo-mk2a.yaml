@@ -1,0 +1,37 @@
+id: teseo-mk2a
+kind: weapon
+name: Teseo Mk2/A (Otomat Mk2 Block IV)
+category: ashm
+targets: [surface, ground]
+target_class: anti_ship_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.9         # 310 m/s
+  max_range_km: 180
+  min_range_km: 6
+  cruise_alt_m: 20
+  terminal_alt_m: 5
+guidance:
+  midcourse: [inertial, gps, datalink]
+  terminal: active_radar
+  seeker_range_km: 20
+  seeker_eccm: 0.5
+warhead_kg: 210
+warhead: blast
+pk_base: { surface_ship: 0.85 }
+countermeasure_resistance: { chaff: 0.5 }
+mass_kg: 780
+station_category: [teseo_launcher]
+provenance:
+  confidence: medium
+  estimates:
+    - profile.min_range_km
+    - profile.cruise_alt_m
+    - profile.terminal_alt_m
+    - guidance.seeker_range_km
+    - guidance.seeker_eccm
+    - pk_base
+    - countermeasure_resistance
+  sources:
+    - { title: "Otomat (Teseo Mk2/A)", url: "https://en.wikipedia.org/wiki/Otomat", accessed: 2026-10-27 }
+    - { title: "FREMM multipurpose frigate (Italian GP variant)", url: "https://en.wikipedia.org/wiki/FREMM_multipurpose_frigate", accessed: 2026-10-27 }

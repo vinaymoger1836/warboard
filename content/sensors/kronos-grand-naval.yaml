@@ -1,0 +1,32 @@
+id: kronos-grand-naval
+kind: sensor
+name: Kronos Grand Naval (MFRA)
+sensor_type: radar
+role: [air_search, surface_search, fire_control, missile_guidance]
+radar:
+  band: C
+  r_ref_km: 180
+  sigma_ref_m2: 1
+  max_range_km: 250
+  scan_period_s: 1
+  field_of_regard_deg: 360
+  clutter_rejection: 0.9
+  pulse_doppler: true
+  eccm_db: 20
+  erp_class_dbw: 85
+  fire_channels: 16
+provenance:
+  confidence: low
+  notes: >-
+    Source names the Kronos Grand Naval AESA on Italian FREMMs; performance figures are estimates.
+  estimates:
+    - radar.band
+    - radar.r_ref_km
+    - radar.max_range_km
+    - radar.scan_period_s
+    - radar.clutter_rejection
+    - radar.eccm_db
+    - radar.erp_class_dbw
+    - radar.fire_channels
+  sources:
+    - { title: "FREMM multipurpose frigate (Italian GP variant)", url: "https://en.wikipedia.org/wiki/FREMM_multipurpose_frigate", accessed: 2026-10-27 }

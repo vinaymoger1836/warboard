@@ -1,0 +1,9 @@
+# file: loadouts/bad-category.yaml
+# expect: content/loadouts/bad-category.yaml: items[0].weapon: `test-sam` (categories test_tube) does not fit station `bay` (accepts aam_medium, bomb_900kg)
+id: bad-category
+kind: loadout
+name: Bad
+platform: test-fighter
+items:
+  - { station: bay, weapon: test-sam, count: 1 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

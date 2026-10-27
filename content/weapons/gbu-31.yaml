@@ -1,0 +1,30 @@
+id: gbu-31
+kind: weapon
+name: GBU-31 JDAM (Mk 84)
+category: bomb
+targets: [ground, surface]
+profile:
+  kind: glide
+  max_speed_mach: 0.9
+  max_range_km: 28            # up to 15 nmi
+guidance:
+  midcourse: [inertial, gps]
+  terminal: gps_ins
+warhead_kg: 429
+warhead: blast
+cep_m: 11
+lethal_radius_m: 30
+mass_kg: 945
+station_category: [bomb_900kg]
+internal_carriage: true
+provenance:
+  confidence: medium
+  notes: >-
+    Mk 84 is 925 kg with 429 kg filling; the kit adds about 20 kg (estimate). CEP 11 m is the demonstration figure in the source.
+  estimates:
+    - profile.max_speed_mach
+    - lethal_radius_m
+    - mass_kg
+  sources:
+    - { title: "Joint Direct Attack Munition", url: "https://en.wikipedia.org/wiki/Joint_Direct_Attack_Munition", accessed: 2026-10-27 }
+    - { title: "Mark 84 bomb", url: "https://en.wikipedia.org/wiki/Mark_84_bomb", accessed: 2026-10-27 }

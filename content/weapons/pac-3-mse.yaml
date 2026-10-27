@@ -1,0 +1,47 @@
+id: pac-3-mse
+kind: weapon
+name: PAC-3 MSE
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 8
+  max_speed_mach: 5.0
+  coast_tau_s: { sea_level: 15, high_alt: 60 }
+  min_speed_mach: 1.2
+  max_range_km: 120
+  min_range_km: 3
+  max_g: 50
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 15
+  seeker_eccm: 0.7
+warhead_kg: 0
+warhead: hit_to_kill
+pk_base: { fighter: 0.8, ballistic_missile: 0.7, cruise_missile: 0.75, uav: 0.85 }
+countermeasure_resistance: { chaff: 0.7 }
+mass_kg: 370
+station_category: [patriot_mse_canister]
+envelope: { min_alt_m: 60, max_alt_m: 36000 }
+provenance:
+  confidence: low
+  notes: >-
+    Source: hit-to-kill, active radar seeker, 36 km altitude, aerial range 120 km and ballistic 60 km (both marked as estimates there); mass and speed are listed as unknown.
+  estimates:
+    - profile.boost_s
+    - profile.max_speed_mach
+    - profile.coast_tau_s
+    - profile.min_speed_mach
+    - profile.max_range_km
+    - profile.min_range_km
+    - profile.max_g
+    - guidance.seeker_range_km
+    - guidance.seeker_eccm
+    - pk_base
+    - countermeasure_resistance
+    - mass_kg
+    - envelope.min_alt_m
+  sources:
+    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }

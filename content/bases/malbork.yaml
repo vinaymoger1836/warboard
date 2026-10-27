@@ -1,0 +1,16 @@
+id: malbork
+kind: base
+name: Malbork (22nd Air Base)
+base_type: air_base
+country: pol
+icao: EPMB
+lat_deg: 54.0267
+lon_deg: 19.1364
+runway_length_m: 2490
+aircraft_capacity: 32
+provenance:
+  confidence: medium
+  estimates:
+    - aircraft_capacity
+  sources:
+    - { title: "22nd Air Base (Malbork, EPMB)", url: "https://en.wikipedia.org/wiki/22nd_Air_Base", accessed: 2026-10-27 }

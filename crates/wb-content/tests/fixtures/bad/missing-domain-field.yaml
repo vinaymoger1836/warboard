@@ -1,0 +1,12 @@
+# file: platforms/aircraft/bad-mobility.yaml
+# expect: content/platforms/aircraft/bad-mobility.yaml: mobility.ceiling_m: is required for air platforms
+id: bad-mobility
+kind: platform
+name: Bad
+category: aircraft/fighter
+target_class: fighter
+signature: { rcs_m2: { front: 1, side: 1, rear: 1, top: 1 } }
+fuel: { internal_kg: 1000, burn_kg_h: { cruise: 1000 } }
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+mobility: { cruise_speed_mach: 0.9, max_speed_mach: 1.6 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

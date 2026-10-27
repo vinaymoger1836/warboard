@@ -1,0 +1,10 @@
+# file: platforms/aircraft/bad-override.yaml
+# expect: content/platforms/aircraft/bad-override.yaml: overrides.mobility.max_speed_kmh: no such field to override
+id: bad-override
+kind: platform
+custom: true
+extends: test-fighter
+name: Bad
+overrides:
+  mobility.max_speed_kmh: 2000
+provenance: { confidence: estimate }

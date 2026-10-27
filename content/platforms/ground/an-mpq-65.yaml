@@ -1,0 +1,25 @@
+id: an-mpq-65
+kind: platform
+name: AN/MPQ-65 radar set (Patriot)
+category: ground/radar
+target_class: radar_site
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 30, side: 60, rear: 30, top: 90 }
+  visual_size_m: 12
+sensors:
+  - { sensor: an-mpq-65-radar, height_m: 4 }
+durability: { model: ground, damage_points: 100 }
+provenance:
+  confidence: low
+  notes: >-
+    Patriot fire unit radar.
+  estimates:
+    - sensors[0].height_m
+    - mobility
+    - signature
+    - durability
+  sources:
+    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }

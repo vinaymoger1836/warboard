@@ -1,0 +1,15 @@
+# expect: content/platforms/aircraft/bad-cycle-b.yaml: extends: cycle: bad-cycle-a → bad-cycle-b → bad-cycle-a
+# file: platforms/aircraft/bad-cycle-a.yaml
+id: bad-cycle-a
+kind: platform
+custom: true
+extends: bad-cycle-b
+name: Bad A
+provenance: { confidence: estimate }
+# file: platforms/aircraft/bad-cycle-b.yaml
+id: bad-cycle-b
+kind: platform
+custom: true
+extends: bad-cycle-a
+name: Bad B
+provenance: { confidence: estimate }

@@ -1,0 +1,13 @@
+id: fra
+kind: country
+name: France
+iso2: FR
+iso3: FRA
+flag: fr
+doctrine: nato-default
+datalinks: [link-16]
+provenance:
+  confidence: high
+  sources:
+    - { title: "ISO 3166-1 alpha-3", url: "https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3", accessed: 2026-10-27 }
+    - { title: "Link 16", url: "https://en.wikipedia.org/wiki/Link_16", accessed: 2026-10-27 }

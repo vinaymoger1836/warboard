@@ -1,0 +1,42 @@
+id: aim-120d
+kind: weapon
+name: AIM-120D AMRAAM
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 6
+  max_speed_mach: 4.0
+  coast_tau_s: { sea_level: 18, high_alt: 60 }
+  min_speed_mach: 1.1
+  max_range_km: 160        # 130-160 km published
+  min_range_km: 1.5
+  max_g: 40
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 18
+  seeker_eccm: 0.6
+warhead_kg: 20
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, helicopter: 0.8, cruise_missile: 0.5, uav: 0.85 }
+countermeasure_resistance: { chaff: 0.7, towed_decoy: 0.4 }
+mass_kg: 161.5
+station_category: [aam_medium]
+internal_carriage: true
+engage_on_remote: true
+provenance:
+  confidence: medium
+  estimates:
+    - profile.boost_s
+    - profile.coast_tau_s
+    - profile.min_speed_mach
+    - profile.min_range_km
+    - profile.max_g
+    - guidance.seeker_range_km
+    - guidance.seeker_eccm
+    - pk_base
+    - countermeasure_resistance
+  sources:
+    - { title: "AIM-120 AMRAAM", url: "https://en.wikipedia.org/wiki/AIM-120_AMRAAM", accessed: 2026-10-27 }

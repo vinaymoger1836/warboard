@@ -1,0 +1,17 @@
+id: ea-18g-sead
+kind: loadout
+name: SEAD
+platform: ea-18g
+roles: [sead, escort_jamming]
+items:
+  - { station: wing_mid, weapon: agm-88g, count: 2 }
+  - { station: fuselage, weapon: aim-120d, count: 2 }
+provenance:
+  confidence: medium
+  notes: >-
+    Typical: jamming pods plus two AGM-88 and two AIM-120 (source).
+  estimates:
+    - items
+  sources:
+    - { title: "Boeing EA-18G Growler (specifications)", url: "https://en.wikipedia.org/wiki/Boeing_EA-18G_Growler", accessed: 2026-10-27 }
+    - { title: "AGM-88 HARM (AGM-88G AARGM-ER)", url: "https://en.wikipedia.org/wiki/AGM-88_HARM", accessed: 2026-10-27 }

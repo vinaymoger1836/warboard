@@ -1,0 +1,44 @@
+id: 9m96
+kind: weapon
+name: 9M96 / 9M96E2
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 4
+  max_speed_mach: 3.0         # 1000 m/s
+  coast_tau_s: { sea_level: 12, high_alt: 40 }
+  min_speed_mach: 1.0
+  max_range_km: 120
+  min_range_km: 1.5
+  max_g: 20
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 12
+  seeker_eccm: 0.6
+warhead_kg: 24
+warhead: blast_fragmentation
+pk_base: { fighter: 0.9, uav: 0.8, cruise_missile: 0.7, anti_ship_missile: 0.65, helicopter: 0.85 }
+countermeasure_resistance: { chaff: 0.6 }
+mass_kg: 420
+station_category: [s400_tube, redut_cell]
+envelope: { min_alt_m: 5, max_alt_m: 30000 }
+provenance:
+  confidence: medium
+  notes: >-
+    Source table: 120 km, 30 km altitude, 1000 m/s, 420 kg, 24 kg warhead, more than 20 g at 30 km. pk_base copies the manufacturer's claimed single-shot values (aircraft 0.9, UAV 0.8, cruise missile 0.7), which are optimistic. Also the missile of the Redut cells on Steregushchiy-class corvettes.
+  estimates:
+    - profile.boost_s
+    - profile.coast_tau_s
+    - profile.min_speed_mach
+    - profile.min_range_km
+    - guidance.seeker_range_km
+    - guidance.seeker_eccm
+    - pk_base
+    - countermeasure_resistance
+    - envelope.min_alt_m
+  sources:
+    - { title: "S-400 missile system (components, missile table)", url: "https://en.wikipedia.org/wiki/S-400_missile_system", accessed: 2026-10-27 }
+    - { title: "Steregushchiy-class corvette", url: "https://en.wikipedia.org/wiki/Steregushchiy-class_corvette", accessed: 2026-10-27 }

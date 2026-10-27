@@ -1,0 +1,9 @@
+# file: loadouts/bad-internal.yaml
+# expect: content/loadouts/bad-internal.yaml: items[0].weapon: `test-bomb` cannot be carried internally, and station `bay` is an internal bay
+id: bad-internal
+kind: loadout
+name: Bad
+platform: test-fighter
+items:
+  - { station: bay, weapon: test-bomb, count: 1 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

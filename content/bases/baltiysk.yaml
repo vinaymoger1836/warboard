@@ -1,0 +1,16 @@
+id: baltiysk
+kind: base
+name: Baltiysk naval base
+base_type: port
+country: rus
+lat_deg: 54.65
+lon_deg: 19.9167
+ship_berths: 30
+provenance:
+  confidence: medium
+  notes: >-
+    Major base of the Baltic Fleet (source). Coordinates are the town's.
+  estimates:
+    - ship_berths
+  sources:
+    - { title: "Baltiysk", url: "https://en.wikipedia.org/wiki/Baltiysk", accessed: 2026-10-27 }

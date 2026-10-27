@@ -1,0 +1,23 @@
+id: 55k6e
+kind: platform
+name: 55K6E command post (S-400)
+category: ground/c2
+target_class: c2_node
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 20, side: 40, rear: 20, top: 60 }
+  visual_size_m: 12
+
+durability: { model: ground, damage_points: 100 }
+provenance:
+  confidence: low
+  notes: >-
+    Command and control centre on a Ural-532301 vehicle.
+  estimates:
+    - mobility
+    - signature
+    - durability
+  sources:
+    - { title: "S-400 missile system (components, missile table)", url: "https://en.wikipedia.org/wiki/S-400_missile_system", accessed: 2026-10-27 }

@@ -1,0 +1,9 @@
+# file: countermeasures/bad-url.yaml
+# expect: content/countermeasures/bad-url.yaml: provenance.sources[0].url: `wikipedia` must be an http(s) URL
+id: bad-url
+kind: countermeasure
+name: Bad
+cm_type: flare
+effect: 0.3
+defeats: [ir]
+provenance: { confidence: low, sources: [{ title: "Wiki", url: "wikipedia", accessed: 2026-10-27 }] }

@@ -1,0 +1,39 @@
+id: e-3a
+kind: platform
+name: E-3A Sentry
+category: aircraft/aew
+target_class: aew
+crew: 21
+mobility:
+  cruise_speed_mach: 0.55     # 360 mph optimum cruise
+  max_speed_mach: 0.75        # 461 kt
+  ceiling_m: 8840             # 29,000 ft minimum
+  sustained_g: 1.5
+  min_runway_m: 2500
+signature:
+  rcs_m2: { front: 50, side: 150, rear: 50, top: 300 }
+  ir: { cruise: 2.0 }
+  visual_size_m: 46.6
+fuel:
+  internal_kg: 70000
+  burn_kg_h: { cruise: 7000 }
+  aar: boom
+countermeasures: { chaff-generic: 60, flare-generic: 60 }
+datalinks: [link-16]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 120
+provenance:
+  confidence: medium
+  notes: >-
+    Source: crew 4 + 13-19 mission crew, 461 kt, 29,000 ft minimum ceiling, more than 8 h without refuelling. The AN/APY-1/2 radar is not in the P1 seed set.
+  estimates:
+    - mobility.sustained_g
+    - mobility.min_runway_m
+    - signature
+    - fuel.internal_kg
+    - fuel.burn_kg_h
+    - countermeasures
+    - durability
+    - turnaround_min
+  sources:
+    - { title: "Boeing E-3 Sentry (specifications)", url: "https://en.wikipedia.org/wiki/Boeing_E-3_Sentry", accessed: 2026-10-27 }

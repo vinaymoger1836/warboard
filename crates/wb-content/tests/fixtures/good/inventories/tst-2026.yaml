@@ -1,0 +1,9 @@
+id: tst-2026
+kind: inventory
+country: tst
+as_of: 2026-10-01
+platforms: { test-fighter: 24, test-battery: 2 }
+munitions: { test-aam: 100 }
+basing:
+  - { platform: test-fighter, base: test-base, count: 12 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

@@ -1,0 +1,36 @@
+id: nsm
+kind: weapon
+name: Naval Strike Missile
+category: ashm
+targets: [surface, ground]
+target_class: anti_ship_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.93
+  max_range_km: 200           # >200 km NSM, 250 km NSM 1A
+  min_range_km: 3
+  cruise_alt_m: 15
+  terminal_alt_m: 3
+guidance:
+  midcourse: [inertial, gps, terrain_matching]
+  terminal: imaging_ir
+  seeker_range_km: 15
+  seeker_eccm: 0.9
+warhead_kg: 120
+warhead: penetrator
+pk_base: { surface_ship: 0.85 }
+countermeasure_resistance: { chaff: 0.95, flare: 0.7 }
+mass_kg: 400
+station_category: [nsm_launcher]
+provenance:
+  confidence: medium
+  estimates:
+    - profile.min_range_km
+    - profile.cruise_alt_m
+    - profile.terminal_alt_m
+    - guidance.seeker_range_km
+    - guidance.seeker_eccm
+    - pk_base
+    - countermeasure_resistance
+  sources:
+    - { title: "Naval Strike Missile", url: "https://en.wikipedia.org/wiki/Naval_Strike_Missile", accessed: 2026-10-27 }

@@ -2,7 +2,7 @@
 
 Every tool and dependency is pinned exactly. Upgrade only between phases (doc 08, R10) and update this file in the same change. Licences are checked against the CLAUDE.md rule 7 allowlist; Rust crates (including transitive ones) are enforced by `cargo deny check` (`deny.toml`).
 
-Last updated: 27 Oct 2026 (P0).
+Last updated: 27 Oct 2026 (P1).
 
 ## Toolchains
 
@@ -21,14 +21,18 @@ Last updated: 27 Oct 2026 (P0).
 |---|---|---|---|---|
 | `libm` | 0.2.16 | wb-core | MIT / Apache-2.0 | Only source of transcendental maths |
 | `bevy_ecs` | 0.19.1 | wb-sim | MIT / Apache-2.0 | `default-features = false, features = ["std"]`: no multi-threaded executor, no reflection. 0.20.0 exists; the docs lock 0.19.x |
-| `blake3` | 1.8.7 | wb-sim | CC0-1.0 / Apache-2.0 | `default-features = false, features = ["std"]` (portable code path on wasm32) |
-| `serde` | 1.0.229 | wb-core, wb-sim | MIT / Apache-2.0 | `derive` |
-| `serde_yaml` | 0.9.34+deprecated | wb-sim | MIT / Apache-2.0 | Archived upstream. Its parser `unsafe-libyaml` has advisory RUSTSEC-2024-0449 (unmaintained), ignored in `deny.toml` by decision for P0; revisit in P1 |
-| `thiserror` | 2.0.21 | wb-sim | MIT / Apache-2.0 | |
+| `blake3` | 1.8.7 | wb-sim, wb-content | CC0-1.0 / Apache-2.0 | `default-features = false, features = ["std"]` (portable code path on wasm32) |
+| `serde` | 1.0.229 | wb-core, wb-sim, wb-content | MIT / Apache-2.0 | `derive` |
+| `serde_yaml` | 0.9.34+deprecated | wb-sim, wb-content | MIT / Apache-2.0 | Archived upstream. Its parser `unsafe-libyaml` has advisory RUSTSEC-2024-0449 (unmaintained), ignored in `deny.toml`. Kept by decision in P0 and again in P1 (content files are trusted input) |
+| `thiserror` | 2.0.21 | wb-sim, wb-content | MIT / Apache-2.0 | |
+| `serde_path_to_error` | 0.1.20 | wb-content | MIT / Apache-2.0 | Field paths in content errors. Added in P1 |
+| `postcard` | 1.1.3 | wb-content | MIT / Apache-2.0 | `default-features = false, features = ["use-std"]` (no heapless). Pack encoding. Added in P1 |
+| `schemars` | 1.2.3 | wb-content (optional feature `schema`) | MIT | Default features (`derive`, `std`). JSON Schema of the content format. Added in P1 |
+| `serde_json` | 1.0.154 | wb-cli, wb-content (feature `schema`) | MIT / Apache-2.0 | Writes `content.schema.json`. Added in P1 |
 | `anyhow` | 1.0.104 | wb-cli | MIT / Apache-2.0 | CLI only |
 | `clap` | 4.6.7 | wb-cli | MIT / Apache-2.0 | `derive` |
 | `wasm-bindgen` | 0.2.129 | wb-wasm | MIT / Apache-2.0 | |
-| `ts-rs` | 12.0.1 | wb-core, wb-sim (optional feature `ts`) | MIT | `default-features = false` (serde-compat off; we use `#[ts]` attributes only) |
+| `ts-rs` | 12.0.1 | wb-core, wb-sim, wb-content (optional feature `ts`) | MIT | Default features since P1: `serde-compat` reads the `#[serde]` attributes of the content types (P0 exports unchanged) |
 
 Transitive crates are recorded in `Cargo.lock`; `cargo deny check` passes (licences, bans, sources, advisories). Duplicate versions currently warned: `hashbrown`, `syn`.
 
@@ -72,3 +76,4 @@ Runner image: `ubuntu-24.04`.
 | Artifact | Size |
 |---|---|
 | `wb_wasm_bg.wasm` (release, no wasm-opt) | 968 KB (279 KB gzip) |
+| `build/content.wbpack` (P1 seed set, 67 entries) | 22,401 bytes |

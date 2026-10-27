@@ -1,0 +1,52 @@
+id: f-35a
+kind: platform
+name: F-35A Lightning II
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 1.6
+  ceiling_m: 15240            # 50,000 ft
+  sustained_g: 5.5
+  min_runway_m: 2400
+signature:
+  rcs_m2: { front: 0.005, side: 0.1, rear: 0.05, top: 0.05 }
+  external_stores_rcs_multiplier: 8
+  ir: { cruise: 1.0, afterburner: 3.0 }
+  visual_size_m: 15.7
+fuel:
+  internal_kg: 8278           # 18,250 lb
+  burn_kg_h: { cruise: 2600, military: 5200, afterburner: 14000 }
+  aar: boom
+stations:
+  - { id: bay_l_in,  kind: internal, categories: [aam_medium], max_kg: 200 }
+  - { id: bay_l_out, kind: internal, categories: [aam_medium, bomb_900kg, arm, standoff_bay], max_kg: 1100 }
+  - { id: bay_r_out, kind: internal, categories: [aam_medium, bomb_900kg, arm, standoff_bay], max_kg: 1100 }
+  - { id: bay_r_in,  kind: internal, categories: [aam_medium], max_kg: 200 }
+  - { id: wing_inner, kind: external, categories: [bomb_900kg, ashm, arm], max_kg: 4600, capacity: 2 }
+  - { id: wing_mid,   kind: external, categories: [bomb_900kg, aam_medium, ashm, arm], max_kg: 2200, capacity: 2 }
+  - { id: wingtip,    kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+sensors: [an-apg-81]
+countermeasures: { chaff-generic: 60, flare-generic: 60 }
+datalinks: [link-16]
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+turnaround_min: 60
+provenance:
+  confidence: medium
+  notes: >-
+    Front RCS 0.005 m2 is the assessment quoted in the Su-57 article; other aspects are estimates. Paired external stations are one station with capacity 2 (left + right).
+  estimates:
+    - mobility.cruise_speed_mach
+    - mobility.sustained_g
+    - mobility.min_runway_m
+    - signature
+    - fuel.burn_kg_h
+    - stations[0].max_kg
+    - stations[3].max_kg
+    - countermeasures
+    - durability
+    - turnaround_min
+  sources:
+    - { title: "Lockheed Martin F-35 Lightning II (specifications F-35A)", url: "https://en.wikipedia.org/wiki/Lockheed_Martin_F-35_Lightning_II", accessed: 2026-10-27 }
+    - { title: "Sukhoi Su-57 (specifications; RCS estimates incl. F-35)", url: "https://en.wikipedia.org/wiki/Sukhoi_Su-57", accessed: 2026-10-27 }

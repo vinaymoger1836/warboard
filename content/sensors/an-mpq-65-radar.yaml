@@ -1,0 +1,33 @@
+id: an-mpq-65-radar
+kind: sensor
+name: AN/MPQ-65 radar set
+sensor_type: radar
+role: [air_search, fire_control, missile_guidance]
+radar:
+  band: C
+  r_ref_km: 150
+  sigma_ref_m2: 1
+  max_range_km: 180
+  scan_period_s: 1
+  field_of_regard_deg: 120
+  clutter_rejection: 0.9
+  pulse_doppler: true
+  eccm_db: 25
+  erp_class_dbw: 85
+  fire_channels: 9
+provenance:
+  confidence: low
+  notes: >-
+    Source describes the -65 as the PAC-3 radar with a second TWT for better search and detection; no range is published there.
+  estimates:
+    - radar.band
+    - radar.r_ref_km
+    - radar.max_range_km
+    - radar.scan_period_s
+    - radar.field_of_regard_deg
+    - radar.clutter_rejection
+    - radar.eccm_db
+    - radar.erp_class_dbw
+    - radar.fire_channels
+  sources:
+    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }

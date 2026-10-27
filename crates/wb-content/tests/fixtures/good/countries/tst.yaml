@@ -1,0 +1,9 @@
+id: tst
+kind: country
+name: Testland
+iso2: TS
+iso3: TST
+flag: ts
+doctrine: test-doctrine
+datalinks: [test-link]
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
