@@ -1,0 +1,20 @@
+[package]
+name = "wb-core"
+description = "Geo maths, units, IDs, counter RNG and libm wrappers for the WarBoard engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[features]
+# Exports TypeScript types through ts-rs (`pnpm gen`).
+ts = ["dep:ts-rs"]
+
+[dependencies]
+libm.workspace = true
+serde.workspace = true
+ts-rs = { workspace = true, optional = true }
+
+[lints]
+workspace = true

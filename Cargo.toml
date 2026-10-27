@@ -1,0 +1,48 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/wb-core",
+    "crates/wb-content",
+    "crates/wb-geo",
+    "crates/wb-sim",
+    "crates/wb-ai",
+    "crates/wb-wasm",
+    "crates/wb-cli",
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# Exact versions; every change is recorded in docs/versions.md.
+[workspace.dependencies]
+wb-core = { path = "crates/wb-core" }
+wb-content = { path = "crates/wb-content" }
+wb-geo = { path = "crates/wb-geo" }
+wb-sim = { path = "crates/wb-sim" }
+wb-ai = { path = "crates/wb-ai" }
+
+libm = "=0.2.16"
+bevy_ecs = { version = "=0.19.1", default-features = false, features = ["std"] }
+blake3 = { version = "=1.8.7", default-features = false, features = ["std"] }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_yaml = "=0.9.34"
+thiserror = "=2.0.21"
+anyhow = "=1.0.104"
+clap = { version = "=4.6.7", features = ["derive"] }
+wasm-bindgen = "=0.2.129"
+ts-rs = { version = "=12.0.1", default-features = false }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+# Determinism guards, configured in clippy.toml.
+disallowed_methods = "deny"
+disallowed_types = "deny"
+
+[profile.release]
+debug = false

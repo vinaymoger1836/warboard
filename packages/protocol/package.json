@@ -1,0 +1,15 @@
+{
+  "name": "@warboard/protocol",
+  "version": "0.0.1",
+  "private": true,
+  "description": "TypeScript types generated from the Rust engine (ts-rs) and, later, the SideView decoder",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "gen": "cargo test -q -p wb-core -p wb-sim --features wb-core/ts,wb-sim/ts export_bindings",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src"
+  }
+}

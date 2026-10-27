@@ -1,0 +1,11 @@
+# P0 determinism probe: three bare units and the probe system, which draws
+# counter-RNG values and runs libm great-circle maths every tick. Not gameplay;
+# it makes the native-vs-WASM hash check cover more than an empty clock.
+name: Determinism probe
+seed: 20261027
+start_utc: 2026-10-27T06:00:00Z
+determinism_probe: true
+units:
+  - { id: 3, name: Probe C, lat_deg: 55.7, lon_deg: 21.1, alt_m: 9000, heading_deg: 270, speed_mps: 250 }
+  - { id: 1, name: Probe A, lat_deg: 54.4, lon_deg: 18.6, alt_m: 0, heading_deg: 45, speed_mps: 10 }
+  - { id: 2, name: Probe B, lat_deg: 59.9, lon_deg: 179.9, alt_m: 30, heading_deg: 90, speed_mps: 15 }

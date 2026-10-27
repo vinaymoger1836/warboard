@@ -1,0 +1,74 @@
+# Pinned versions
+
+Every tool and dependency is pinned exactly. Upgrade only between phases (doc 08, R10) and update this file in the same change. Licences are checked against the CLAUDE.md rule 7 allowlist; Rust crates (including transitive ones) are enforced by `cargo deny check` (`deny.toml`).
+
+Last updated: 27 Oct 2026 (P0).
+
+## Toolchains
+
+| Tool | Version | Pinned in | Licence |
+|---|---|---|---|
+| Rust | 1.99.1 (stable), components `rustfmt`, `clippy`, target `wasm32-unknown-unknown` | `rust-toolchain.toml` | MIT / Apache-2.0 |
+| Rust edition | 2024, resolver 3 | `Cargo.toml` | — |
+| Node.js | 24 (LTS line; local 24.15.0) | `.nvmrc`, `package.json` `engines` | MIT |
+| pnpm | 11.18.0 | `package.json` `packageManager` | MIT |
+| wasm-bindgen-cli | 0.2.129 (must equal the `wasm-bindgen` crate) | CI `WASM_BINDGEN_VERSION` | MIT / Apache-2.0 |
+| cargo-deny | 0.20.2 | CI `CARGO_DENY_VERSION` | MIT / Apache-2.0 |
+
+## Rust crates (direct)
+
+| Crate | Version | Used by | Licence | Notes |
+|---|---|---|---|---|
+| `libm` | 0.2.16 | wb-core | MIT / Apache-2.0 | Only source of transcendental maths |
+| `bevy_ecs` | 0.19.1 | wb-sim | MIT / Apache-2.0 | `default-features = false, features = ["std"]`: no multi-threaded executor, no reflection. 0.20.0 exists; the docs lock 0.19.x |
+| `blake3` | 1.8.7 | wb-sim | CC0-1.0 / Apache-2.0 | `default-features = false, features = ["std"]` (portable code path on wasm32) |
+| `serde` | 1.0.229 | wb-core, wb-sim | MIT / Apache-2.0 | `derive` |
+| `serde_yaml` | 0.9.34+deprecated | wb-sim | MIT / Apache-2.0 | Archived upstream. Its parser `unsafe-libyaml` has advisory RUSTSEC-2024-0449 (unmaintained), ignored in `deny.toml` by decision for P0; revisit in P1 |
+| `thiserror` | 2.0.21 | wb-sim | MIT / Apache-2.0 | |
+| `anyhow` | 1.0.104 | wb-cli | MIT / Apache-2.0 | CLI only |
+| `clap` | 4.6.7 | wb-cli | MIT / Apache-2.0 | `derive` |
+| `wasm-bindgen` | 0.2.129 | wb-wasm | MIT / Apache-2.0 | |
+| `ts-rs` | 12.0.1 | wb-core, wb-sim (optional feature `ts`) | MIT | `default-features = false` (serde-compat off; we use `#[ts]` attributes only) |
+
+Transitive crates are recorded in `Cargo.lock`; `cargo deny check` passes (licences, bans, sources, advisories). Duplicate versions currently warned: `hashbrown`, `syn`.
+
+## npm packages (direct, exact)
+
+| Package | Version | Where | Licence |
+|---|---|---|---|
+| `react`, `react-dom` | 19.3.1 | apps/game | MIT |
+| `vite` | 8.3.5 | apps/game | MIT |
+| `@vitejs/plugin-react` | 6.1.2 | apps/game | MIT |
+| `@types/react`, `@types/react-dom` | 19.3.0 | apps/game | MIT |
+| `typescript` | 6.0.3 | root | Apache-2.0 |
+| `eslint` | 10.13.0 | root | MIT |
+| `@eslint/js` | 10.0.1 | root | MIT |
+| `typescript-eslint` | 8.72.0 | root | MIT |
+| `eslint-plugin-react-hooks` | 7.1.1 | root | MIT |
+| `globals` | 17.13.0 | root | MIT |
+| `@types/node` | 24.19.2 | root | MIT |
+
+Notes:
+- TypeScript 7.0 (native) is out, but `typescript-eslint` 8.72 supports only `>=4.8.4 <6.1.0`, so TypeScript stays on 6.0.3.
+- `typescript-eslint` 8.72.1 was published the day before bootstrap; pnpm 11's minimum-release-age gate rejects it, so 8.72.0 is pinned instead of exempting it.
+- Transitive packages are pinned by `pnpm-lock.yaml`. There is no automated JS licence check yet (see P0 report).
+
+## GitHub Actions (pinned to commit SHA)
+
+| Action | Tag | SHA |
+|---|---|---|
+| `actions/checkout` | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` |
+| `actions/setup-node` | v7.1.0 | `949feb2413d6458794dcd2491c4babbbce0c15c1` |
+| `pnpm/action-setup` | v6.1.0 | `ea17c68df8912ef543352723c149a84f56e3d413` |
+| `actions/upload-artifact` | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` |
+| `actions/download-artifact` | v8.0.2 | `9000827ccba6bdab643e8b6fd33ac0654aef8333` |
+| `Swatinem/rust-cache` | v2.9.3 | `d1527c8f67ef9af357290475d4af4b0fab8f12e0` |
+| `taiki-e/install-action` | v2.87.32 | `5488ac5a951645ce95062214902ac4b6bc1a1037` |
+
+Runner image: `ubuntu-24.04`.
+
+## Measured sizes
+
+| Artifact | Size |
+|---|---|
+| `wb_wasm_bg.wasm` (release, no wasm-opt) | 968 KB (279 KB gzip) |

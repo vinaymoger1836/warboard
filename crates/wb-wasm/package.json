@@ -1,0 +1,19 @@
+{
+  "name": "@warboard/wb-wasm",
+  "version": "0.0.1",
+  "private": true,
+  "description": "WarBoard engine compiled to WebAssembly (wasm-bindgen --target web output in pkg/)",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./pkg/wb_wasm.d.ts",
+      "default": "./pkg/wb_wasm.js"
+    },
+    "./wb_wasm_bg.wasm": "./pkg/wb_wasm_bg.wasm"
+  },
+  "scripts": {
+    "build:wasm": "node scripts/build-wasm.mjs",
+    "hash": "node node/run-scenario.mjs",
+    "lint": "eslint scripts node"
+  }
+}

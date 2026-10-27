@@ -1,0 +1,39 @@
+# cargo-deny: licence allowlist (CLAUDE.md rule 7), banned sources, advisories.
+# Run: cargo deny check
+
+[graph]
+all-features = true
+
+[licenses]
+# A dual-licensed crate passes if any of its options is on this list.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "Unicode-3.0",
+    "Unicode-DFS-2016",
+    "CC0-1.0",
+]
+confidence-threshold = 0.9
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+
+[advisories]
+ignore = [
+    # unsafe-libyaml (the parser under serde_yaml) is archived/unmaintained.
+    # serde_yaml kept by decision for P0 (the stack is locked on it); revisit
+    # when content loading grows in P1. See docs/versions.md.
+    { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml via serde_yaml; accepted for P0, revisit in P1" },
+]

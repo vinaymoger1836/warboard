@@ -1,0 +1,13 @@
+[package]
+name = "wb-ai"
+description = "AI that reads only its side's picture (Phase 9)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+
+[lints]
+workspace = true
