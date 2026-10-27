@@ -41,6 +41,7 @@ All game state lives in a **deterministic simulation engine written in Rust**. I
 | 07 | [Architecture decisions](07-adrs.md) | 18 ADRs with alternatives and consequences |
 | 08 | [Roadmap, metrics & risks](08-roadmap-and-risks.md) | Phases 0–12 (+ Unity in Phase 13) with exit criteria, success metrics, golden scenarios, risk register |
 | 09 | [Claude Code hand-off](09-claude-code-handoff.md) | How to run the build with Claude Code, per-phase prompts, acceptance tests, review checklists |
+| 10 | [UI style guide](10-ui-style-guide.md) | Tokens, map style, unit symbols and labels, weapon visuals, unit card, chrome — derived from the reference screenshots in `ui-reference/` |
 | — | [CLAUDE.md](CLAUDE.md) | Drop-in project memory file for the repo root |
 
 ## Headline targets

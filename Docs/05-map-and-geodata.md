@@ -74,13 +74,13 @@ The multipliers live in the realism profile, not in code.
 
 ## 6. 2D map style
 
-Dark theme matching the reference screenshots:
+Dark theme matching the reference screenshots (exact colour tokens in [10-ui-style-guide.md](10-ui-style-guide.md) §2):
 
 | Layer | Style |
 |---|---|
 | Sea | Dark slate blue |
 | Land | Near-black |
-| Coalition territory | Translucent tint: own coalition purple, enemy blue (swappable; "friendly blue / enemy red" option) |
+| Coalition territory | Tint over land **and** 12 nm waters with an outline: own coalition purple, enemy blue (swappable; "friendly blue / enemy red" option) |
 | Borders | Thin light lines; territorial-sea limit dashed |
 | Labels | Countries, seas, major cities in muted italic |
 | Overlays | Terrain classes (toggle), graticule (toggle), scale bar |

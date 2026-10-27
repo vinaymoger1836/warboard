@@ -76,7 +76,7 @@ Full detail for the selected unit or contact (task, loadout, sensors, magazines,
 
 ## 6. Symbology
 
-Game-style by default (as in the reference screenshots), NATO APP-6 as a setting.
+Game-style by default (as in the reference screenshots), NATO APP-6 as a setting. Exact shapes, colours, label formats and the unit card layout are in [10-ui-style-guide.md](10-ui-style-guide.md).
 
 | Element | Meaning |
 |---|---|
