@@ -64,7 +64,7 @@ Transitive crates are recorded in `Cargo.lock`; `cargo deny check` passes (licen
 Notes:
 - TypeScript 7.0 (native) is out, but `typescript-eslint` 8.72 supports only `>=4.8.4 <6.1.0`, so TypeScript stays on 6.0.3.
 - `typescript-eslint` 8.72.1 was published the day before bootstrap; pnpm 11's minimum-release-age gate rejects it, so 8.72.0 is pinned instead of exempting it.
-- Transitive packages are pinned by `pnpm-lock.yaml`. There is no automated JS licence check yet (see P0 report). A manual check in P2 found every package added with the map stack MIT, ISC, Apache-2.0 or BSD, except `tslib` 2.8.1 (0BSD, via loaders.gl), which is not on the allowlist; see the P2 report.
+- Transitive packages are pinned by `pnpm-lock.yaml`. There is no automated JS licence check yet (see P0 report). A manual check in P2 found every package added with the map stack MIT, ISC, Apache-2.0 or BSD, and `tslib` 2.8.1 (0BSD, via loaders.gl); 0BSD was added to the allowlist after P2.
 
 ## Python packages (geodata image, build time only)
 

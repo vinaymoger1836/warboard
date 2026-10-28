@@ -73,7 +73,7 @@ The multipliers live in the realism profile, not in code.
 
 - Theatre DEM at 15″ (~450 m) is enough for radar masking and long-range line of sight; ground engagements inside a cell use the terrain class instead.
 - The engine samples elevation along the great circle between sensor and target, adds Earth curvature (4/3 radius for radio), and checks clearance.
-- **In the browser** the worker reads DEM tiles **synchronously** from OPFS (`FileSystemSyncAccessHandle`, available in dedicated workers) with an LRU cache. **Natively** (CLI, Unity) it reads the same file with positional I/O and the same cache (ADR-019, Proposed; no memory map, so no `unsafe`). Results are pure functions of position, so cache state never changes an outcome.
+- **In the browser** the worker reads DEM tiles **synchronously** from OPFS (`FileSystemSyncAccessHandle`, available in dedicated workers) with an LRU cache. **Natively** (CLI, Unity) it reads the same file with positional I/O and the same cache (ADR-019; no memory map, so no `unsafe`). Results are pure functions of position, so cache state never changes an outcome.
 - The 3D view feeds Cesium the same tiles through `CustomHeightmapTerrainProvider`; no separate terrain build or Cesium ion account is needed.
 
 ## 5. Territory
