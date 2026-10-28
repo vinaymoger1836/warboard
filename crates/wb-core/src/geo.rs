@@ -84,6 +84,23 @@ pub fn destination_point(start: LatLon, bearing: f64, distance_m: f64) -> LatLon
     LatLon::new(lat2, normalize_lon(lon2))
 }
 
+/// Point at fraction `f` (0 = `a`, 1 = `b`) along the great circle from `a` to `b`.
+/// Antipodal endpoints have no unique great circle; `a` is returned.
+pub fn intermediate_point(a: LatLon, b: LatLon, f: f64) -> LatLon {
+    let delta = distance_m(a, b) / EARTH_RADIUS_M;
+    let s_delta = sin(delta);
+    if s_delta.abs() < 1e-12 {
+        return a;
+    }
+    let ka = sin((1.0 - f) * delta) / s_delta;
+    let kb = sin(f * delta) / s_delta;
+    let (c_lat_a, c_lat_b) = (cos(a.lat), cos(b.lat));
+    let x = ka * c_lat_a * cos(a.lon) + kb * c_lat_b * cos(b.lon);
+    let y = ka * c_lat_a * sin(a.lon) + kb * c_lat_b * sin(b.lon);
+    let z = ka * sin(a.lat) + kb * sin(b.lat);
+    LatLon::new(atan2(z, hypot(x, y)), normalize_lon(atan2(y, x)))
+}
+
 /// Earth-centred, Earth-fixed coordinates on the sphere, metres.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ecef {
@@ -236,6 +253,28 @@ mod tests {
             let n = normalize_lon(x);
             assert!((-PI..PI).contains(&n), "{x} -> {n}");
         }
+    }
+
+    #[test]
+    fn intermediate_point_lies_on_the_great_circle() {
+        let a = LatLon::from_deg(54.7, 20.5);
+        let b = LatLon::from_deg(60.2, 24.9);
+        let total = distance_m(a, b);
+        for i in 0..=10 {
+            let f = f64::from(i) / 10.0;
+            let p = intermediate_point(a, b, f);
+            assert!(close(distance_m(a, p), f * total, 1e-6 * total), "{i}");
+            assert!(
+                close(distance_m(p, b), (1.0 - f) * total, 1e-6 * total),
+                "{i}"
+            );
+        }
+        let across = intermediate_point(
+            LatLon::from_deg(10.0, 179.0),
+            LatLon::from_deg(10.0, -179.0),
+            0.5,
+        );
+        assert!(close(across.lon.abs(), PI, 1e-9), "{}", across.lon_deg());
     }
 
     #[test]

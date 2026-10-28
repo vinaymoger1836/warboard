@@ -3,6 +3,9 @@
 use wasm_bindgen::prelude::*;
 use wb_sim::Sim;
 
+mod geo;
+pub use geo::{Blake3Hasher, GeoQuery};
+
 #[wasm_bindgen]
 pub struct Engine {
     sim: Sim,

@@ -11,8 +11,17 @@
     "lint": "eslint src vite.config.ts"
   },
   "dependencies": {
+    "@deck.gl/core": "9.4.0",
+    "@deck.gl/layers": "9.4.0",
+    "@deck.gl/mapbox": "9.4.0",
+    "@loaders.gl/core": "4.5.4",
+    "@luma.gl/core": "9.4.2",
+    "@luma.gl/engine": "9.4.2",
     "@warboard/protocol": "workspace:*",
+    "@warboard/symbols": "workspace:*",
     "@warboard/wb-wasm": "workspace:*",
+    "maplibre-gl": "6.16.0",
+    "pmtiles": "4.5.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

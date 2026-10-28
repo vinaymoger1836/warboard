@@ -7,7 +7,7 @@
 | `shell` | Routing (menu, setup, war board, AAR), settings, credits |
 | `packs` | Pack manager: download, verify (BLAKE3), store in OPFS, quota checks, updates |
 | `bridge` | Starts the engine worker, sends orders, receives views and events, measures achieved speed |
-| `map2d` | MapLibre GL JS v6 + deck.gl `MapLibreOverlay` layers |
+| `map2d` | MapLibre GL JS v6 + deck.gl overlay layers (`MapboxOverlay` from `@deck.gl/mapbox`, which also drives MapLibre) |
 | `map3d` | CesiumJS view, loaded with dynamic `import()` only when opened |
 | `panels` | React: top bar, OOB tree, unit card, approval queue, alerts, event log, operation planner, AAR |
 | `store` | Zustand slices: selection, camera, clock, alerts, panel state (not the simulation) |
@@ -124,7 +124,7 @@ Request `navigator.storage.persist()` at first pack install; show quota and usag
 
 ## 9. Offline app and hosting
 
-- Service worker (Workbox) precaches the app shell; packs are downloaded explicitly from the pack manager with progress and hash checks.
+- A small hand-written service worker (`apps/game/sw/sw.js`, filled in at build time with the list of built and public files) precaches the app shell; packs are downloaded explicitly from the pack manager with progress and hash checks. (Workbox was the original plan; dropped in P2 to avoid its dependency tree.)
 - Hosting: any free static host (e.g. GitHub Pages or Cloudflare Pages) for the app; packs as release assets. Personal use can also run from a local dev server.
 - Updates: new app versions install in the background; packs update only when their manifest version changes.
 

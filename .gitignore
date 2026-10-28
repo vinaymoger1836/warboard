@@ -17,6 +17,10 @@ dist/
 crates/wb-wasm/pkg/
 packages/protocol/src/generated/
 
+# Python bytecode (geodata pipeline)
+__pycache__/
+*.pyc
+
 # Logs and caches
 *.log
 .cache/

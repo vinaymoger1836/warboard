@@ -1,21 +1,58 @@
-/* Tokens from docs/10-ui-style-guide.md §2.3 (panels and chrome). Use only these. */
+/* Colours come only from the token variables injected by main.tsx (packages/symbols,
+   docs/10-ui-style-guide.md §2). Fonts are bundled (doc 10 §10, public/fonts/). */
+
+@font-face {
+  font-family: 'Noto Sans';
+  font-weight: 400;
+  font-style: normal;
+  src: url('/fonts/web/noto-sans-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans';
+  font-weight: 400;
+  font-style: normal;
+  src: url('/fonts/web/noto-sans-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20CF, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  font-weight: 400;
+  font-style: normal;
+  src: url('/fonts/web/noto-sans-cyrillic-400-normal.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  font-weight: 400;
+  font-style: italic;
+  src: url('/fonts/web/noto-sans-latin-400-italic.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans';
+  font-weight: 500;
+  font-style: normal;
+  src: url('/fonts/web/noto-sans-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans';
+  font-weight: 600;
+  font-style: normal;
+  src: url('/fonts/web/noto-sans-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 400;
+  src: url('/fonts/web/jetbrains-mono-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 600;
+  src: url('/fonts/web/jetbrains-mono-latin-600-normal.woff2') format('woff2');
+}
+
 :root {
-  --panel-bg: #0a101a;
-  --panel-header: #0e1e2c;
-  --panel-inset: #060c14;
-  --panel-border: #245470;
-  --text-primary: #ffffff;
-  --text-secondary: #8c9aaa;
-  --text-muted: #586675;
-  --state-bad: #e03c68;
-  --btn-border: #fcb020;
-  --btn-text: #fcb020;
-  --chrome-bg: #0c141c;
-
-  /* Fonts per doc 10 §10; bundling them is deferred (see docs/phase-reports/P0.md). */
-  --font-ui: 'Noto Sans', system-ui, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
-
+  --font-ui: 'Noto Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   color-scheme: dark;
 }
 
@@ -37,11 +74,17 @@ body {
   font-size: 14px;
 }
 
+button {
+  font: inherit;
+}
+
 .app {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
+
+/* ---- Top bar (doc 10 §8) ---- */
 
 .top-bar {
   display: flex;
@@ -52,6 +95,7 @@ body {
   border-bottom: 1px solid var(--panel-border);
   font-family: var(--font-mono);
   flex-wrap: wrap;
+  z-index: 2;
 }
 
 .brand {
@@ -104,11 +148,6 @@ body {
   color: var(--text-primary);
 }
 
-.speed:focus-visible {
-  outline: 1px solid var(--text-primary);
-  outline-offset: -3px;
-}
-
 .speed.active {
   border-color: var(--btn-border);
   color: var(--btn-text);
@@ -120,19 +159,278 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.content {
-  flex: 1;
-  padding: 24px 16px;
+.packs-button {
+  margin-left: auto;
 }
 
-.panel {
-  max-width: 640px;
+button:focus-visible {
+  outline: 1px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+/* ---- Board and map ---- */
+
+.board {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--map-sea);
+}
+
+.map-root,
+.map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* Own stacking context: MapLibre's and deck.gl's canvases stay under the map chrome. */
+.map-canvas {
+  z-index: 0;
+}
+
+.map-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+}
+
+/* ---- Map chrome (doc 10 §3, §9) ---- */
+
+.chrome-button {
+  background: var(--chrome-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--chrome-bg);
+  border-radius: 2px;
+  padding: 9px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.chrome-button:hover {
+  color: var(--text-primary);
+}
+
+.open-3d {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+}
+
+.layers-button {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--chrome-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--text-secondary);
+  cursor: pointer;
+  z-index: 1;
+}
+
+.layers-panel {
+  position: absolute;
+  right: 64px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 200px;
+  padding: 12px 14px;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
-  border-radius: 4px;
+  border-radius: 6px;
+  z-index: 1;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.toggle input {
+  accent-color: var(--btn-border);
+}
+
+.legend {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.map-corner-br {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  z-index: 1;
+}
+
+.scale-bar {
+  background: var(--scale-bg);
+  color: var(--scale-text);
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 2px;
+  white-space: nowrap;
+  text-align: left;
+  min-width: max-content;
+}
+
+.zoom-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zoom-button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: var(--chrome-bg);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 2px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.map-corner-bl {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  z-index: 1;
+  max-width: calc(100% - 140px);
+}
+
+.cursor-readout,
+.credits-button {
+  background: var(--chrome-bg);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  border: none;
+}
+
+.credits-button {
+  cursor: pointer;
+}
+
+.credits-panel {
+  position: absolute;
+  left: 16px;
+  bottom: 56px;
+  width: min(440px, calc(100% - 32px));
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  z-index: 2;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.credits-panel ul {
+  margin: 0;
+  padding: 10px 14px 12px 28px;
+  display: grid;
+  gap: 6px;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--panel-header);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.toasts {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+/* ---- Panels ---- */
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin: 0;
   padding: 10px 14px;
   background: var(--panel-header);
@@ -140,32 +438,114 @@ body {
   font-weight: 600;
 }
 
-.rows {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 8px 20px;
-  margin: 0;
-  padding: 14px;
+.pack-panel {
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  width: min(460px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  z-index: 2;
 }
 
-.rows dt {
+.pack-body {
+  padding: 12px 14px 14px;
+}
+
+.muted {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.warn {
+  color: var(--state-warn);
+  font-size: 12px;
+}
+
+.pack-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.pack-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--panel-inset);
+  border-radius: 6px;
+}
+
+.pack-info {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pack-name {
+  font-weight: 600;
+}
+
+.pack-meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
   color: var(--text-secondary);
 }
 
-.rows dd {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.rows dd.hash {
+.pack-status {
   font-size: 12px;
-  word-break: break-all;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
 }
 
-.error {
-  margin: 0;
-  padding: 14px;
+.pack-status.bad {
   color: var(--state-bad);
+}
+
+.progress {
+  height: 4px;
+  background: var(--panel-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress > div {
+  height: 100%;
+  background: var(--btn-border);
+}
+
+.pack-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cmd {
+  background: transparent;
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cmd:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.storage {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
 }

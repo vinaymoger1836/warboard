@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 use std::time::Instant;
 use wb_sim::Sim;
 
+mod geo;
+
 #[derive(Parser)]
 #[command(name = "wb", version, about = "WarBoard headless runner")]
 struct Cli {
@@ -30,6 +32,9 @@ enum Command {
     /// Validate and compile the content in `content/`.
     #[command(subcommand)]
     Content(ContentCommand),
+    /// Query installed region packs (territory, terrain, elevation, line of sight).
+    #[command(subcommand)]
+    Geo(geo::GeoCommand),
 }
 
 #[derive(Subcommand)]
@@ -89,6 +94,7 @@ fn main() -> anyhow::Result<()> {
             println!("{}", header.hash_hex());
             Ok(())
         }
+        Command::Geo(cmd) => geo::run(cmd),
         Command::Content(ContentCommand::Schema { out }) => {
             let json = serde_json::to_string_pretty(&wb_content::schema::content_schema())?;
             write_file(&out, format!("{json}\n").as_bytes())?;

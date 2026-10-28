@@ -1,0 +1,15 @@
+{
+  "name": "@warboard/symbols",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Colour tokens (docs/10-ui-style-guide.md §2), icons and the icon atlas",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens": "./src/tokens.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src"
+  }
+}

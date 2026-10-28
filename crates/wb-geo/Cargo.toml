@@ -1,6 +1,6 @@
 [package]
 name = "wb-geo"
-description = "Territory, H3 terrain, DEM and line of sight (Phase 2)"
+description = "Territory, H3 terrain, DEM and line of sight for the WarBoard engine"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,6 +8,14 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+wb-core.workspace = true
+thiserror.workspace = true
+h3o.workspace = true
+ruzstd.workspace = true
+
+[dev-dependencies]
+# The tests write small packs; the encoder is only needed there.
+ruzstd = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true

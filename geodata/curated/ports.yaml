@@ -1,0 +1,22 @@
+# Curated naval bases imported into content/bases/ by `geodata bases` (doc 05 §1).
+# Coordinates are copied from the cited Wikipedia page's coordinates (fetched through the
+# MediaWiki API on 2026-10-28); where the page is a town or city, they are the town's.
+# Berth counts are estimates. Only countries that exist in content/countries/ are listed.
+accessed: 2026-10-28
+ports:
+  - { id: kronstadt, name: Kronstadt naval base, country: rus, lat_deg: 59.9908, lon_deg: 29.7747, ship_berths: 20,
+      source: { title: "Kronstadt", url: "https://en.wikipedia.org/wiki/Kronstadt" }, coords: town }
+  - { id: severomorsk, name: Severomorsk naval base, country: rus, lat_deg: 69.0667, lon_deg: 33.4167, ship_berths: 30,
+      source: { title: "Severomorsk", url: "https://en.wikipedia.org/wiki/Severomorsk" }, coords: town }
+  - { id: gdynia, name: Gdynia naval port, country: pol, lat_deg: 54.5175, lon_deg: 18.54, ship_berths: 15,
+      source: { title: "Gdynia", url: "https://en.wikipedia.org/wiki/Gdynia" }, coords: town }
+  - { id: kiel, name: Kiel naval base, country: deu, lat_deg: 54.3233, lon_deg: 10.1394, ship_berths: 20,
+      source: { title: "Kiel", url: "https://en.wikipedia.org/wiki/Kiel" }, coords: town }
+  - { id: wilhelmshaven, name: Wilhelmshaven naval base, country: deu, lat_deg: 53.5286, lon_deg: 8.1056, ship_berths: 25,
+      source: { title: "Wilhelmshaven", url: "https://en.wikipedia.org/wiki/Wilhelmshaven" }, coords: town }
+  - { id: toulon, name: Toulon naval base, country: fra, lat_deg: 43.1258, lon_deg: 5.9306, ship_berths: 30,
+      source: { title: "Toulon", url: "https://en.wikipedia.org/wiki/Toulon" }, coords: town }
+  - { id: brest-arsenal, name: Brest Arsenal, country: fra, lat_deg: 48.3867, lon_deg: -4.4967, ship_berths: 20,
+      source: { title: "Brest Arsenal", url: "https://en.wikipedia.org/wiki/Brest_Arsenal" }, coords: page }
+  - { id: la-spezia, name: La Spezia naval base, country: ita, lat_deg: 44.1, lon_deg: 9.8167, ship_berths: 20,
+      source: { title: "La Spezia Naval Base", url: "https://en.wikipedia.org/wiki/La_Spezia_Naval_Base" }, coords: page }

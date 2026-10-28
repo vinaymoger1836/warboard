@@ -12,6 +12,9 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wb-sim.workspace = true
+wb-core.workspace = true
+wb-geo.workspace = true
+blake3.workspace = true
 wasm-bindgen.workspace = true
 
 [lints]

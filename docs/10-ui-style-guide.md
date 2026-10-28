@@ -17,7 +17,7 @@ The look of WarBoard is defined by the reference screenshots in `docs/ui-referen
 
 ## 2. Tokens
 
-Use these names everywhere (CSS variables in `apps/game`, RGBA arrays for deck.gl and Cesium in `packages/symbols/tokens.ts`).
+Use these names everywhere (CSS variables in `apps/game`, RGBA arrays for deck.gl and Cesium in `packages/symbols/tokens.ts`). Colours the tables give as a second value (the `SQN` text, the combat-radius text, satellite label and track, enemy weapon label, waypoint label, unit label `#D9D9D9`) are named in `tokens.ts` as `side.own.text`, `ring.radius.text`, `sat.label`, `sat.track`, `weapon.enemy.label`, `waypoint.label` and `label.unit`.
 
 ### 2.1 Map
 
@@ -35,6 +35,15 @@ Use these names everywhere (CSS variables in `apps/game`, RGBA arrays for deck.g
 | `terr.own.line` | `#544C7C` | Own territory outline |
 | `terr.enemy.fill` | `#284A62` | Enemy coalition land and 12 nm waters |
 | `terr.enemy.line` | `#4C98CC` | Enemy territory outline |
+| `map.label.halo` | `#0E0E0E` | 2 px halo behind every map label (§3) |
+| `terrain.open` | `#5A6A3A` | Terrain-class overlay, drawn at 45 % opacity; water is not drawn (added P2) |
+| `terrain.forest` | `#2E5A36` | 〃 |
+| `terrain.jungle` | `#1E6A44` | 〃 |
+| `terrain.urban` | `#9A8C7A` | 〃 |
+| `terrain.desert` | `#A08A50` | 〃 |
+| `terrain.mountain` | `#7A6658` | 〃 |
+| `terrain.marsh` | `#3A6A6A` | 〃 |
+| `terrain.arctic` | `#B8C4CC` | 〃 |
 
 ### 2.2 Units, weapons, overlays
 
@@ -75,6 +84,7 @@ Use these names everywhere (CSS variables in `apps/game`, RGBA arrays for deck.g
 | `btn.border` / `btn.text` | `#FCB020` | Command buttons (outlined) |
 | `chrome.bg` | `#0C141C` | "OPEN 3D TACTICAL VIEW", zoom buttons |
 | `toast.bg` / `toast.text` | `#080E16` / `#C4CED6` | Toasts ("Simulation paused") |
+| `scale.bg` / `scale.text` | `#FFFFFF` / `#0E0E0E` | Scale bar (white box, dark text, §9) |
 
 ## 3. Map
 

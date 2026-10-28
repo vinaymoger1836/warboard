@@ -13,6 +13,8 @@ path = "src/main.rs"
 
 [dependencies]
 wb-sim.workspace = true
+wb-core.workspace = true
+wb-geo.workspace = true
 wb-content = { workspace = true, features = ["schema"] }
 serde_json.workspace = true
 anyhow.workspace = true

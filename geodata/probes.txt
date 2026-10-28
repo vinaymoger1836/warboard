@@ -1,0 +1,35 @@
+# Geo probe points: `lat lon label`. scripts/determinism-check.sh runs them through
+# `wb geo query` (native) and crates/wb-wasm/node/geo-query.mjs (WebAssembly) and
+# requires identical output. The P2 acceptance points are in crates/wb-geo/tests/packs.rs.
+54.7104 20.4522 kaliningrad-city
+54.7667 20.4000 chkalovsk
+54.4200 19.5800 vistula-spit-pol
+54.4700 19.7200 vistula-spit-rus
+57.6348 18.2948 visby
+57.4500 18.5500 gotland-inland
+54.9140 17.3000 pol-10nm
+54.9810 17.3000 pol-14nm
+60.8643 28.3205 fin-rus-fin-side
+60.8544 28.3513 fin-rus-rus-side
+49.1640 20.1340 gerlach
+54.0267 19.1364 malbork
+59.3293 18.0686 stockholm
+55.7558 37.6173 moscow
+51.5074 -0.1278 london
+40.4168 -3.7038 madrid
+44.4268 26.1025 bucharest
+69.0667 33.4167 severomorsk
+64.1466 -21.9426 reykjavik
+36.0000 15.0000 central-med
+62.0000 -6.8000 faroes
+71.0000 25.0000 north-cape
+45.0000 34.0000 crimea
+55.0000 20.0000 sambia-12nm
+# World pack only (outside europe)
+38.9072 -77.0369 washington
+35.6762 139.6503 tokyo
+-33.8688 151.2093 sydney
+0.0000 -30.0000 mid-atlantic
+65.0000 -179.9000 chukotka-dateline
+-77.8500 166.6667 mcmurdo
+27.9881 86.9250 everest

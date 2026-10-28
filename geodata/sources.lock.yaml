@@ -1,0 +1,52 @@
+# Pinned source versions (doc 05 §1, §7). The manifest copies these; nothing reads the clock.
+# Change a version here, rebuild, and record the new pack sizes in docs/versions.md.
+
+basemap:
+  name: Protomaps basemap (daily build)
+  version: "20261027"
+  url: https://build.protomaps.com/20261027.pmtiles
+  licence: ODbL-1.0 (tiles)
+  attribution: "© OpenStreetMap contributors, Protomaps"
+  accessed: 2026-10-28
+  note: Daily builds are removed after a few weeks; the extracted packs are the durable copy.
+
+natural_earth:
+  name: Natural Earth admin-0 countries 1:10m
+  version: "5.1.1"
+  url: https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_0_countries.zip
+  licence: Public domain
+  attribution: "Made with Natural Earth"
+  accessed: 2026-10-28
+
+marine_regions:
+  name: Marine Regions Maritime Boundaries (12 nm territorial seas, internal and archipelagic waters)
+  version: Territorial Seas (12 NM) v4 (2023) and companion layers, via the VLIZ WFS
+  url: https://geo.vliz.be/geoserver/MarineRegions/wfs
+  layers: [MarineRegions:eez_12nm, MarineRegions:eez_internal_waters, MarineRegions:eez_archipelagic_waters]
+  licence: CC-BY-4.0
+  attribution: "Flanders Marine Institute, Maritime Boundaries Geodatabase (marineregions.org)"
+  accessed: 2026-10-28
+
+copernicus_dem:
+  name: Copernicus DEM GLO-90
+  version: AWS open-data COG release (tile list as served on 2026-10-28)
+  url: https://copernicus-dem-90m.s3.amazonaws.com/
+  licence: Copernicus DEM licence (free, with attribution)
+  attribution: "Produced using Copernicus WorldDEM-90 © DLR e.V."
+  accessed: 2026-10-28
+
+worldcover:
+  name: ESA WorldCover 10 m 2021 v200
+  version: v200 (2021)
+  url: https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/
+  licence: CC-BY-4.0
+  attribution: "© ESA WorldCover project / contains modified Copernicus Sentinel data"
+  accessed: 2026-10-28
+
+ourairports:
+  name: OurAirports
+  version: snapshot 2026-10-28
+  url: https://davidmegginson.github.io/ourairports-data/
+  licence: Public domain
+  attribution: "OurAirports (ourairports.com)"
+  accessed: 2026-10-28

@@ -1,0 +1,48 @@
+# Region packs (doc 05 §2). Extents are [west, south, east, north] in degrees.
+# Thresholds here are pipeline tuning, not engine rules; every one is an estimate
+# chosen in P2 and listed as such in docs/phase-reports/P2.md.
+
+packs:
+  world:
+    version: 1.0.0
+    name: World
+    extent: [-180, -90, 180, 90]
+    basemap: { minzoom: 0, maxzoom: 6 }
+    territory_tiles: { minzoom: 0, maxzoom: 6 }
+    dem:
+      res_arcsec: 120          # 2′ ≈ 3.7 km
+    terrain:
+      h3_res: 5                # ≈ 252 km² cells
+      worldcover_overview: 5   # GDAL overview level: 36000/64 px per 3° tile ≈ 600 m pixels
+      boundary_sample_deg: 0.02
+      mountain_slope_deg: 8.0  # mean slope over the cell (2′ DEM smooths slopes)
+      mountain_rough_m: 250.0  # std dev of elevation in the cell
+      urban_fraction: 0.30     # built-up share that makes a cell urban
+      water_fraction: 0.50     # water share that makes a cell water
+  europe:
+    version: 1.0.0
+    name: Europe
+    # Atlantic to the Urals, Barents to the Mediterranean, incl. Iceland and the GIUK gap.
+    extent: [-25, 34, 62, 75]
+    basemap: { minzoom: 7, maxzoom: 9 }
+    territory_tiles: { minzoom: 7, maxzoom: 9 }
+    dem:
+      res_arcsec: 15           # 15″ ≈ 460 m
+    terrain:
+      h3_res: 7                # ≈ 5.2 km² cells
+      worldcover_overview: 4   # GDAL overview level: 36000/32 px per 3° tile ≈ 300 m pixels
+      boundary_sample_deg: 0.003
+      mountain_slope_deg: 12.0
+      mountain_rough_m: 120.0
+      urban_fraction: 0.30
+      water_fraction: 0.50
+
+territory:
+  # Coastal countries with no territorial sea in Marine Regions v4: a 12 nm belt is
+  # derived from their Natural Earth coast and flagged as an estimate in the manifest.
+  # Reviewed in P2 from the "no Marine Regions sea" list the territory step prints
+  # (the rest of that list is landlocked, Antarctica, or tiny disputed reefs).
+  derived_territorial_sea: [esh, flk, iot, ukr]
+  # Derived belts that take precedence over another state's Marine Regions sea:
+  # Marine Regions v4 has no Taiwanese territorial sea and codes those waters as Chinese.
+  derived_territorial_sea_first: [twn]
