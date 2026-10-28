@@ -414,7 +414,7 @@ fn typed(kind: Kind, v: Value) -> Result<Entry, (String, String)> {
         Kind::Base => Entry::Base(from_value::<Base>(v)?),
         Kind::Inventory => Entry::Inventory(from_value::<Inventory>(v)?),
         Kind::Doctrine => Entry::Doctrine(from_value::<Doctrine>(v)?),
-        Kind::Realism => Entry::Realism(from_value::<Realism>(v)?),
+        Kind::Realism => Entry::Realism(Box::new(from_value::<Realism>(v)?)),
     })
 }
 

@@ -1,0 +1,37 @@
+# G7 (doc 08 §3): F-35A patrol with and without a tanker.
+# Two F-35As from Łask fly a waypoint loop over the southern Baltic until
+# bingo. Without a tanker they return and land with at least the reserve
+# recorded at bingo; with an A330 MRTT on a track between Łask and the patrol
+# they refuel and stay on station at least twice as long.
+name: G7 F-35A patrol and tanker
+seed: 7
+start_utc: 2026-10-27T06:00:00Z
+sides:
+  - { name: NATO, countries: [pol, deu, fra, ita, usa], player: true }
+  - { name: Russia, countries: [rus] }
+units:
+  - { id: 10, name: Husarz, platform: f-35a, country: pol, count: 2, base: lask-air-base-eplk, loadout: f-35a-air-superiority }
+  - { id: 30, name: Phenix, platform: a330-mrtt, country: fra, base: lask-air-base-eplk }
+orders:
+  - tick: 0
+    side: 0
+    type: AssignTask
+    units: [10]
+    task: { kind: patrol_route, waypoints: [[17.5, 55.0], [19.0, 55.6], [19.2, 54.95]], loop: true }
+  - tick: 0
+    side: 0
+    type: AssignTask
+    units: [30]
+    task: { kind: tanker_track, a: [18.9, 53.7], b: [19.1, 52.9] }
+golden:
+  id: G7
+  description: tanker doubles time on station; without, lands with ≥ reserve fuel
+  max_ticks: 86400            # 24 h at 1 s ticks
+  variants:
+    no_tanker: { drop_units: [30] }
+    tanker: {}
+  expect:
+    - { variant: no_tanker, metric: bingo_calls, group: 10, min: 1 }
+    - { variant: no_tanker, metric: landed_reserve_margin_kg, group: 10, min: 0 }
+    - { variant: tanker, metric: refuels, group: 10, min: 1 }
+    - { variant: tanker, metric: time_on_station_s, group: 10, ratio_to: no_tanker, min: 2.0 }

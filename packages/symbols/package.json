@@ -2,7 +2,7 @@
   "name": "@warboard/symbols",
   "version": "0.0.1",
   "private": true,
-  "description": "Colour tokens (docs/10-ui-style-guide.md §2), icons and the icon atlas",
+  "description": "Colour tokens (docs/10-ui-style-guide.md \u00a72), unit icons, the icon atlas and label grammar",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -11,5 +11,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "lint": "eslint src"
+  },
+  "dependencies": {
+    "@warboard/protocol": "workspace:*"
   }
 }

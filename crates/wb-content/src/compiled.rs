@@ -9,8 +9,9 @@
 
 use crate::source::platform::{PlatformCategory, RcsByAspect, StationKind};
 use crate::source::realism::{
-    AspectFactors, EarthRealism, EndgameRealism, EwRealism, GroundRealism, LogisticsRealism,
-    RadarRealism, TerrainClass, TimeRealism, WeaponRealism,
+    AspectFactors, BaseKind, CellClass, EarthRealism, EndgameRealism, EwRealism, FuelRealism,
+    GroundRealism, MovementRealism, RadarRealism, SiteRule, TerrainClass, TimeRealism,
+    WeaponRealism,
 };
 use crate::source::sensor::{SensorRole, SensorType};
 use crate::source::system::{ComponentRole, DeployAs};
@@ -141,6 +142,7 @@ pub struct Mobility {
     pub turn_radius_m: Option<f64>,
     pub road_speed_mps: Option<f64>,
     pub offroad_speed_mps: Option<f64>,
+    pub road_capable: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -461,7 +463,10 @@ pub struct Realism {
     pub endgame: EndgameRealism,
     pub tewa: TewaRealism,
     pub damage: DamageRealism,
+    pub movement: MovementRealism,
+    pub fuel: FuelRealism,
     pub logistics: LogisticsRealism,
+    pub bases: BTreeMap<BaseKind, BaseRule>,
     pub ground: GroundRealism,
     pub provenance: Provenance,
 }
@@ -508,4 +513,31 @@ pub struct DamageRealism {
     pub warhead_multiplier: BTreeMap<Warhead, f64>,
     pub runway_repair_min_s: f64,
     pub runway_repair_max_s: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct LogisticsRealism {
+    pub fuel_reserve_fraction: f64,
+    pub tanker_join_m: f64,
+    pub landing_radius_m: f64,
+    pub pattern_alt_m: f64,
+    pub berth_radius_m: f64,
+    pub turnaround_default_s: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BaseRule {
+    pub site: SiteRule,
+    pub match_radius_m: f64,
+    pub terrain: Vec<CellClass>,
+    pub own_territory: bool,
+    pub coast: bool,
+    /// Maximum mean cell slope, degrees (the terrain layer stores degrees).
+    pub max_slope_deg: Option<f64>,
+    pub setup_s: f64,
+    pub aircraft_capacity: u32,
+    pub ship_berths: u32,
+    pub road_capable_only: bool,
+    pub rotary_only: bool,
+    pub vls_reload: bool,
 }

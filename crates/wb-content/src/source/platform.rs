@@ -192,6 +192,9 @@ source_type! {
         pub road_speed_kmh: Option<f64>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub offroad_speed_kmh: Option<f64>,
+        /// Can operate from a road strip (doc 03 §3).
+        #[serde(default)]
+        pub road_capable: bool,
     }
 
     #[serde(deny_unknown_fields)]

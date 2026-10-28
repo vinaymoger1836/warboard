@@ -35,6 +35,8 @@ ECS (`bevy_ecs`, single-threaded executor). Entities are platforms, groups, base
 
 Resources: `SimClock`, `RealismProfile`, `ContentDb` (read-only), `TerrainDb`, `SidePictures`, `EventLog`, `OperationsBook`, `SpatialIndex`, `RngSeed`.
 
+**As built (P3).** Every aircraft and ship is an entity; a **group** entity (flight, ship, squadron) carries the task and its members keep rigid formation slots behind the lead (`Group`, `GroupMember`). Bases are entities too (`BaseSite`). Components refer to each other by `UnitId` only, never by ECS entity, and a `UnitIndex` resource maps ids to entities; this is what lets a loaded world hash the same as the saved one. P3 components: `Identity`, `Kinematics`, `Allegiance` (side, country), `PlatformRef`, `Fuel`, `Magazine`, `Group`, `GroupMember`, `BaseRef`, `Posture` (moving, or at a base with its turnaround), `TankerState`, `BaseSite`, and the per-tick `Steer` target (rebuilt every tick, never saved). The canonical snapshot (`wb-sim/src/snapshot.rs`) lists every component in `UnitId` order; the state hash is BLAKE3 over its postcard encoding, and saves store the same snapshot.
+
 ## 3. Time and scheduler
 
 **Fixed step with adaptive size.** The tick is 100 ms of sim time whenever any weapon is in flight or any hostile contact is inside an engagement envelope of any unit; otherwise 1 s. The rule depends only on state, so it is deterministic. This lets ×30 and ×60 transits run cheaply.
@@ -54,6 +56,8 @@ Resources: `SimClock`, `RealismProfile`, `ContentDb` (read-only), `TerrainDb`, `
 | Ground combat resolution | 60 s | Phase 11 |
 | AI tactical / operational / strategic | 1 s / 30 s / 5 min | |
 | State hash checkpoint | every 600 ticks | Desync and determinism tests |
+
+**Stages (P3).** One tick runs these exclusive systems in order on one thread: orders due, tick length, tasks and standing behaviours, lead kinematics, formation, fuel burn, air-to-air refuelling, arrivals (landing, berthing), logistics (every `logistics_period_s`), clock. Systems with their own rate check `SimClock::due(period)` (true on the tick that crosses a multiple of the period) or `due_staggered(period, unit)`. Bingo and winchester run every 1 s; the nearest-base search for bingo every 30 s per unit, staggered. A scenario flag `force_fine_tick` (benchmarks only) runs every tick at 100 ms so the §16 budget can be measured.
 
 **Real clock mapping.** A war starts at the real current UTC time (or a chosen time). `advance(real_dt_ms)` adds `real_dt × speed` to an accumulator and runs whole ticks. Speeds: pause, ×1, ×3, ×5, ×10, ×30, ×60. The engine **never skips ticks**: if the device cannot keep up, it reports the achieved speed (e.g. "×10 requested, ×7.6 actual").
 
@@ -85,8 +89,8 @@ Resources: `SimClock`, `RealismProfile`, `ContentDb` (read-only), `TerrainDb`, `
 
 ## 6. Fuel and logistics
 
-- **Burn model** per platform: kg/h at cruise, military and afterburner, scaled by altitude band.
-- **Bingo** = fuel to reach the nearest suitable friendly base (runway class, capacity) at cruise + reserve (content, default 10%). On bingo the unit returns automatically unless a tanker on the same side is reachable on its track; then it refuels (rate from content) and resumes.
+- **Burn model** per platform: kg/h at cruise, military and afterburner, scaled by altitude band (realism `fuel.burn_altitude_factor`). Climbing burns at military power, descending at `fuel.descent_burn_fraction` of cruise. Mach speeds become m/s through the ISA speed of sound at altitude (realism `movement.isa_*`). Ships burn a fraction of a full load per metre, `1/range × (v/v_cruise)^exponent`.
+- **Bingo** = fuel to reach the nearest suitable friendly base (runway class, capacity) at cruise, plus a half-turn, + reserve (content, default 10% of that fuel). On bingo the unit returns automatically unless a tanker on the same side is reachable on its track; then it refuels (rate from content) and resumes. A group heads for a reachable tanker as soon as its fuel falls to what it needs to reach the tanker and get home from it, both legs with the reserve (ADR-021, Proposed), so a patrol close to a base does not run out of reach first. A tanker serves one receiver at a time, groups in `UnitId` order and members in slot order. A group's bingo is called by its member lowest on fuel.
 - **Winchester** (weapons gone) → return to base, per task setting.
 - **Turnaround** at base: refuel + rearm time from content (e.g. fighter 45–90 min); munitions drawn from base stock.
 - **Fixed inventory:** no production; losses are permanent; base stocks come from country inventory at war start.

@@ -95,7 +95,7 @@ pub fn run(cmd: GeoCommand) -> anyhow::Result<()> {
     }
 }
 
-fn open(dirs: &[PathBuf]) -> anyhow::Result<Geo> {
+pub fn open(dirs: &[PathBuf]) -> anyhow::Result<Geo> {
     let mut geo = Geo::new();
     for dir in dirs {
         let pack =

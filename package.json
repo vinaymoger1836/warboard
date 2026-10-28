@@ -7,7 +7,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "gen": "pnpm --filter @warboard/protocol gen && pnpm --filter @warboard/wb-wasm build:wasm",
+    "gen": "pnpm --filter @warboard/protocol gen && pnpm --filter @warboard/wb-wasm build:wasm && cargo run -q -p wb-cli -- content build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "build": "pnpm -r build"

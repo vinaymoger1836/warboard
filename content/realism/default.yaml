@@ -103,8 +103,54 @@ damage:                              # doc 02 §13
   runway_repair_min_h: 4
   runway_repair_max_h: 12
 
+movement:                            # doc 02 §5
+  isa_sea_level_temp_k: 288.15       # ISA
+  isa_lapse_rate_k_per_m: 0.0065     # ISA troposphere
+  isa_tropopause_m: 11000            # ISA
+  isa_gamma_r: 401.874               # 1.4 × 287.053 J/(kg·K)
+  aircraft_climb_rate_mps: 60
+  aircraft_descent_rate_mps: 30
+  aircraft_accel_mps2: 4
+  aircraft_sustained_g: 2.5
+  aircraft_cruise_alt_m: 9000
+  cruise_alt_by_category_m:
+    aircraft/tanker: 8500
+    aircraft/aew: 9000
+    aircraft/uav: 7500
+    aircraft/maritime_patrol: 6000
+    helicopter/attack: 300
+    helicopter/utility: 300
+  ship_accel_mps2: 0.1
+  formation_spacing_m: 1500
+  waypoint_radius_m: 2000
+
+fuel:                                # doc 02 §6
+  burn_altitude_factor:
+    - { below_m: 1000, factor: 1.6 }
+    - { below_m: 4000, factor: 1.3 }
+    - { below_m: 8000, factor: 1.1 }
+    - { below_m: 20000, factor: 1.0 }
+  ship_burn_speed_exponent: 2
+  descent_burn_fraction: 0.5
+
 logistics:                           # doc 02 §6
   fuel_reserve_fraction: 0.1
+  tanker_join_km: 1.5
+  landing_radius_km: 4
+  pattern_alt_m: 500
+  berth_radius_km: 3
+  turnaround_default_min: 60
+
+bases:                               # doc 03 §3
+  air_base:     { site: real_airfield, match_radius_km: 3, setup_min: 60 }
+  road_strip:   { site: terrain, terrain: [open], own_territory: true, max_slope_deg: 3, setup_min: 360, aircraft_capacity: 6, road_capable_only: true }
+  heliport:     { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, arctic], max_slope_deg: 5.71, setup_min: 120, aircraft_capacity: 8, rotary_only: true }
+  naval_base:   { site: real_port, match_radius_km: 5, setup_min: 60, vls_reload: true }
+  anchorage:    { site: terrain, terrain: [water], own_territory: true, setup_min: 120, ship_berths: 4 }
+  army_base:    { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, arctic], own_territory: true, setup_min: 360 }
+  sam_site:     { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, marsh, arctic], setup_min: 5 }
+  missile_site: { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, marsh, arctic], setup_min: 30 }
+  hq:           { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, marsh, arctic], setup_min: 60 }
 
 ground:                              # doc 02 §14 (Phase 11 placeholders)
   lanchester_coefficient: 0.05
@@ -133,8 +179,33 @@ provenance:
     - damage.ship_sink_delay_min
     - damage.warhead_multiplier
     - ground
+    - movement.aircraft_climb_rate_mps
+    - movement.aircraft_descent_rate_mps
+    - movement.aircraft_accel_mps2
+    - movement.aircraft_sustained_g
+    - movement.aircraft_cruise_alt_m
+    - movement.cruise_alt_by_category_m
+    - movement.ship_accel_mps2
+    - movement.formation_spacing_m
+    - movement.waypoint_radius_m
+    - fuel.burn_altitude_factor
+    - fuel.ship_burn_speed_exponent
+    - fuel.descent_burn_fraction
+    - logistics.tanker_join_km
+    - logistics.landing_radius_km
+    - logistics.pattern_alt_m
+    - logistics.berth_radius_km
+    - logistics.turnaround_default_min
+    - bases.road_strip.max_slope_deg
+    - bases.heliport.aircraft_capacity
+    - bases.anchorage.ship_berths
+    - bases.air_base.match_radius_km
+    - bases.naval_base.match_radius_km
+    - bases.missile_site.setup_min
   sources:
     - { title: "Earth radius (IUGG mean radius R1)", url: "https://en.wikipedia.org/wiki/Earth_radius", accessed: 2026-10-27 }
     - { title: "Radio horizon (4/3 effective Earth radius)", url: "https://en.wikipedia.org/wiki/Radio_horizon", accessed: 2026-10-27 }
     - { title: "Proportional navigation", url: "https://en.wikipedia.org/wiki/Proportional_navigation", accessed: 2026-10-27 }
     - { title: "Circular error probable (Rayleigh distribution)", url: "https://en.wikipedia.org/wiki/Circular_error_probable", accessed: 2026-10-27 }
+    - { title: "International Standard Atmosphere", url: "https://en.wikipedia.org/wiki/International_Standard_Atmosphere", accessed: 2026-10-28 }
+    - { title: "Speed of sound (dependence on temperature, γR of air)", url: "https://en.wikipedia.org/wiki/Speed_of_sound", accessed: 2026-10-28 }

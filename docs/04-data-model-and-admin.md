@@ -228,6 +228,8 @@ flowchart LR
 | Event log | All events (compressed) |
 | Checkpoints | Snapshots every 10 sim minutes for replay seeking (optional, pruned) |
 
+As built in P3 (`wb-sim/src/save.rs`): `"WBSG"`, save version u16 LE, postcard header (war name, content hash, region pack `id@version` list, wall-clock creation time recorded by the client, tick, sim time, start time), then a zstd-compressed postcard body holding the snapshot (setup lives in it: sides, seed, clock), the command log and the event log. Checkpoints come with replays (P7). Loading with a different content hash is refused with a message naming both hashes.
+
 ### 7.2 Orders (commands)
 
 Orders are typed, validated by the engine, and logged with the tick they apply at.
@@ -240,6 +242,8 @@ Orders are typed, validated by the engine, and logged with the tick they apply a
 ```
 
 Rejections carry a reason the UI can show ("Loadout locked: unit is airborne").
+
+As built in P3 (`wb-sim/src/orders.rs`): points are `[lon, lat]` in degrees as above; commands are `AssignTask` (tasks `move`, `patrol_circle`, `patrol_route`, `rtb`, `land`, `tanker_track`, `transfer`), `SetBehaviour` (bingo, winchester, resume after turnaround), `PlaceBase` and `TestAutoSlow` (client plumbing until P4). `units` may name groups or members; members alone split off into a new group. Validation turns an order into a resolved command (ids expanded, bases resolved, radians); the queue and the command log store that form, and replays apply it without validating again, so a replay never depends on the region packs. The browser sends orders without a tick; the worker stamps the next tick. Events are externally tagged in JSON (`{"Landed": {...}}`) because saves store them with postcard.
 
 ### 7.3 Events
 

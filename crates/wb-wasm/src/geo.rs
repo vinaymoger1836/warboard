@@ -2,6 +2,7 @@
 //! read pack files synchronously (an OPFS `FileSystemSyncAccessHandle` in the browser,
 //! `fs.readSync` under Node); `wb-geo` reads them through the same code path as natively.
 
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use wb_core::geo::LatLon;
 use wb_geo::{Geo, GeoError, LosParams, Pack, PackSource};
@@ -88,7 +89,15 @@ fn err(e: GeoError) -> JsError {
 #[wasm_bindgen]
 #[derive(Default)]
 pub struct GeoQuery {
-    geo: Geo,
+    /// Shared with the engine (`Engine::set_geo`), which reads it to validate
+    /// orders.
+    geo: Rc<Geo>,
+}
+
+impl GeoQuery {
+    pub(crate) fn shared(&self) -> Rc<Geo> {
+        self.geo.clone()
+    }
 }
 
 #[wasm_bindgen]
@@ -110,7 +119,10 @@ impl GeoQuery {
             Ok(Box::new(JsSource::new(f)?))
         };
         let pack = Pack::new(id, src(dem)?, src(terrain)?, src(territory)?).map_err(err)?;
-        self.geo.add_pack(pack).map_err(err)
+        Rc::get_mut(&mut self.geo)
+            .ok_or_else(|| JsError::new("packs are in use by the engine; open a new GeoQuery"))?
+            .add_pack(pack)
+            .map_err(err)
     }
 
     pub fn pack_count(&self) -> usize {

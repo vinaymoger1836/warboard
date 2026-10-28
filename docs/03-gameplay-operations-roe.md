@@ -40,7 +40,7 @@ Countries without content yet can be selected, but have nothing to deploy.
 | Missile launch site | Land | Launchers (Iskander-M, HIMARS) | From content |
 | HQ / C2 node | Land | IADS and C2 node | 1 h |
 
-The placement validator checks terrain class (H3), territory, coast adjacency for naval bases, runway class against aircraft, and capacity. It explains rejections ("Naval base must be at a port"). Territory means the coalition's land plus 12 nm territorial waters; captured ground arrives with Phase 11.
+The placement validator checks terrain class (H3), territory, coast adjacency for naval bases, runway class against aircraft, and capacity. It explains rejections ("Naval base must be at a port"). The rules of the table above are data: one row per base kind in the realism profile (`bases`: site rule `real_airfield` / `real_port` / `terrain`, match radius, allowed terrain classes, own territory, coast, slope, setup time, capacity). Real airfields and ports are checked from content alone; terrain rules need the region packs and are refused without them (P3). Territory means the coalition's land plus 12 nm territorial waters; captured ground arrives with Phase 11.
 
 Every base has damageable components (runway, shelters, fuel, munitions store, radar, C2) and a **munitions stock** drawn from the country inventory.
 

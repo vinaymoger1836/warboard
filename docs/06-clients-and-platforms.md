@@ -33,7 +33,7 @@ sequenceDiagram
   UI->>W: details(unitRef | contactRef) → W-->>UI: JSON for the unit card
 ```
 
-- **Transferable `ArrayBuffer`s**, double-buffered: zero copy, and no need for cross-origin isolation headers.
+- **Transferable `ArrayBuffer`s**, double-buffered: zero copy, and no need for cross-origin isolation headers. As built (P3): the worker encodes the view inside WebAssembly memory, copies it once into one of two buffers and transfers it; the UI decodes it in place and transfers the previous buffer back (`viewReturn`).
 - The UI interpolates positions between the last two views using velocity, so motion is smooth at 60 fps even though views arrive at 10 Hz.
 - If the engine cannot keep up, it reports achieved speed; the top bar shows it.
 - Engine panics are caught, the last autosave is offered, and the error is logged with the tick and state hash.
@@ -48,6 +48,8 @@ sequenceDiagram
 | Weapons visible (K) | id u32, symbol u16, relation u8 (ours / theirs / interceptor), lon f64, lat f64, alt_m f32, heading f32, speed f32, salvo u32 |
 | Effects (E) | kind u8 (launch, intercept, impact, splash), lon, lat, alt, age_ms |
 | Strings delta | New or changed labels only (names, salvo labels) |
+
+As built (P3, `wb-sim/src/view.rs`): a 48-byte header (magic, version, side, tick, sim time, the five counts and the strings byte length), then each section column by column, every column padded to 8 bytes so the decoder can take typed-array views (`lon`, `lat` first as f64). `flags` bits: selectable, damaged, emitting, jamming, at base, group lead, base, bingo; bits 8–11 hold the status (idle, transit, patrol, on station, RTB, refuel, landed, turnaround). Bases are rows of the own-units section. Strings are `(id u32, kind u8, len u16, utf-8)`: kind 0 a name (unit, group or base), kind 1 a type (platform name or base kind). Symbol codes, flag bits and statuses are generated into `packages/protocol/src/generated/symbols.ts`. The contacts, weapons and effects sections exist with count 0 until P4/P5.
 
 Full detail for the selected unit or contact (task, loadout, sensors, magazines, ROE source) comes from `details()` on demand, keeping the view small (≈ 150 KB at 2,000 units).
 
@@ -87,7 +89,7 @@ Game-style by default (as in the reference screenshots), NATO APP-6 as a setting
 | Dashed outline + ellipse | Estimated position or type ("our estimate") |
 | Weapons | Offensive weapons amber with trails, interceptors cyan, impact and intercept flashes |
 
-Icons are SVG in `packages/symbols`, packed into a texture atlas at build time; `milsymbol` generates the NATO set into the same atlas format.
+Icons are SVG in `packages/symbols`, packed into a texture atlas when the app starts (ADR-020, Proposed: no rasteriser dependency at build time); `milsymbol` generates the NATO set into the same atlas format.
 
 ## 7. War board layout
 

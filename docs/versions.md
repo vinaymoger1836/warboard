@@ -2,7 +2,7 @@
 
 Every tool and dependency is pinned exactly. Upgrade only between phases (doc 08, R10) and update this file in the same change. Licences are checked against the CLAUDE.md rule 7 allowlist; Rust crates (including transitive ones) are enforced by `cargo deny check` (`deny.toml`).
 
-Last updated: 28 Oct 2026 (P2).
+Last updated: 28 Oct 2026 (P3).
 
 ## Toolchains
 
@@ -25,18 +25,20 @@ Last updated: 28 Oct 2026 (P2).
 | `bevy_ecs` | 0.19.1 | wb-sim | MIT / Apache-2.0 | `default-features = false, features = ["std"]`: no multi-threaded executor, no reflection. 0.20.0 exists; the docs lock 0.19.x |
 | `blake3` | 1.8.7 | wb-sim, wb-content | CC0-1.0 / Apache-2.0 | `default-features = false, features = ["std"]` (portable code path on wasm32) |
 | `serde` | 1.0.229 | wb-core, wb-sim, wb-content | MIT / Apache-2.0 | `derive` |
-| `serde_yaml` | 0.9.34+deprecated | wb-sim, wb-content | MIT / Apache-2.0 | Archived upstream. Its parser `unsafe-libyaml` has advisory RUSTSEC-2024-0449 (unmaintained), ignored in `deny.toml`. Kept by decision in P0 and again in P1 (content files are trusted input) |
+| `serde_yaml` | 0.9.34+deprecated | wb-sim, wb-content, wb-cli (P3: golden blocks) | MIT / Apache-2.0 | Archived upstream. Its parser `unsafe-libyaml` has advisory RUSTSEC-2024-0449 (unmaintained), ignored in `deny.toml`. Kept by decision in P0 and again in P1 (content files are trusted input) |
 | `thiserror` | 2.0.21 | wb-sim, wb-content | MIT / Apache-2.0 | |
 | `serde_path_to_error` | 0.1.20 | wb-content | MIT / Apache-2.0 | Field paths in content errors. Added in P1 |
-| `postcard` | 1.1.3 | wb-content | MIT / Apache-2.0 | `default-features = false, features = ["use-std"]` (no heapless). Pack encoding. Added in P1 |
+| `postcard` | 1.1.3 | wb-content, wb-sim | MIT / Apache-2.0 | `default-features = false, features = ["use-std"]` (no heapless). Pack encoding (P1); snapshot, state hash and `.wbsave` body (P3) |
 | `schemars` | 1.2.3 | wb-content (optional feature `schema`) | MIT | Default features (`derive`, `std`). JSON Schema of the content format. Added in P1 |
-| `serde_json` | 1.0.154 | wb-cli, wb-content (feature `schema`) | MIT / Apache-2.0 | Writes `content.schema.json`. Added in P1 |
+| `serde_json` | 1.0.154 | wb-cli, wb-wasm, wb-content (feature `schema`) | MIT / Apache-2.0 | Writes `content.schema.json` (P1); orders, details and events as JSON for the browser, `wb run --events` (P3) |
 | `anyhow` | 1.0.104 | wb-cli | MIT / Apache-2.0 | CLI only |
 | `clap` | 4.6.7 | wb-cli | MIT / Apache-2.0 | `derive` |
 | `wasm-bindgen` | 0.2.129 | wb-wasm | MIT / Apache-2.0 | |
 | `ts-rs` | 12.0.1 | wb-core, wb-sim, wb-content (optional feature `ts`) | MIT | Default features since P1: `serde-compat` reads the `#[serde]` attributes of the content types (P0 exports unchanged) |
 | `h3o` | 0.11.0 | wb-geo | BSD-3-Clause | `default-features = false`: no `std`, so all trig goes through `libm` (deterministic). Nothing in the workspace may enable its `std` feature. Added in P2 |
-| `ruzstd` | 0.9.1 | wb-geo (decoder), wb-geo dev (encoder in tests) | MIT | `default-features = false, features = ["std"]` (no `twox-hash`). Pure Rust, builds for wasm32. Added in P2 |
+| `ruzstd` | 0.9.1 | wb-geo (decoder), wb-sim (encoder and decoder for `.wbsave`), wb-geo dev (encoder in tests) | MIT | `default-features = false, features = ["std"]` (no `twox-hash`). Pure Rust, builds for wasm32. Added in P2; wb-sim since P3 |
+
+Workspace crates used across crates since P3: `wb-sim` depends on `wb-content` (rules from the pack) and `wb-geo` (order validation); `wb-wasm` on `wb-content`. No new third-party Rust crate in P3.
 
 Transitive crates are recorded in `Cargo.lock`; `cargo deny check` passes (licences, bans, sources, advisories). Duplicate versions currently warned: `hashbrown`, `syn`.
 
@@ -60,6 +62,7 @@ Transitive crates are recorded in `Cargo.lock`; `cargo deny check` passes (licen
 | `@deck.gl/core`, `@deck.gl/layers`, `@deck.gl/mapbox` | 9.4.0 | apps/game | MIT |
 | `@luma.gl/core`, `@luma.gl/engine` | 9.4.2 | apps/game (deck.gl peers) | MIT |
 | `@loaders.gl/core` | 4.5.4 | apps/game (deck.gl peer) | MIT |
+| `@deck.gl/extensions` | 9.4.0 | apps/game (P3, approved: `PathStyleExtension` for dashed rings and patrol circles; no new transitive packages) | MIT |
 
 Notes:
 - TypeScript 7.0 (native) is out, but `typescript-eslint` 8.72 supports only `>=4.8.4 <6.1.0`, so TypeScript stays on 6.0.3.
@@ -108,9 +111,21 @@ Runner image: `ubuntu-24.04`.
 
 | Artifact | Size |
 |---|---|
-| `wb_wasm_bg.wasm` (release, no wasm-opt) | P1: 968 KB (279 KB gzip). P2 with `wb-geo`, `h3o`, `ruzstd`, BLAKE3 hasher: 1,211,216 bytes (354,344 gzip) |
-| `build/content.wbpack` | P1 seed set, 67 entries: 22,401 bytes. P2 with 312 imported bases, 379 entries: 85,086 bytes |
-| App shell (`apps/game/dist`, P2) | main chunk 1.97 MB (557 KB gzip), MapLibre worker 519 KB, fonts 2.3 MB (glyph PBFs 2.1 MB) |
+| `wb_wasm_bg.wasm` (release, no wasm-opt) | P1: 968 KB (279 KB gzip). P2 with `wb-geo`, `h3o`, `ruzstd`, BLAKE3 hasher: 1,211,216 bytes (354,344 gzip). P3 with the engine (bevy_ecs world, content, saves): 2,066,441 bytes (575,295 gzip) |
+| `build/content.wbpack` | P1 seed set, 67 entries: 22,401 bytes. P2 with 312 imported bases, 379 entries: 85,086 bytes. P3, schema 2 (realism `movement`, `fuel`, `bases`): 86,607 bytes |
+| App shell (`apps/game/dist`) | P2: main chunk 1.97 MB (557 KB gzip), MapLibre worker 519 KB, fonts 2.3 MB (glyph PBFs 2.1 MB). P3: main chunk 2.16 MB, plus the content pack (87 KB) and the WASM engine (2.07 MB) as assets |
+| Side view (`SideView` v1) | P3 benchmark, 2,000 platforms + 500 groups + 316 bases: 93,880 bytes per view |
+| `.wbsave` | P3 `scenarios/save-load.yaml` at tick 900 (≈ 150 entities with all bases, events): 17,109 bytes |
+
+## Formats
+
+| Format | Version | Defined in |
+|---|---|---|
+| Content pack schema | 2 (P3: realism `movement`, `fuel`, `bases`, extended `logistics`; platform `road_capable`) | `crates/wb-content/src/pack.rs` |
+| State hash | 2 (P3: BLAKE3 of the postcard snapshot) | `crates/wb-sim/src/snapshot.rs` |
+| `SideView` | 1 | `crates/wb-sim/src/view.rs`, doc 06 §3 |
+| `.wbsave` | 1 | `crates/wb-sim/src/save.rs`, doc 04 §7.1 |
+| IndexedDB `warboard` | 2 (P3: `saves` store) | `apps/game/src/db.ts` |
 
 ### Region packs (P2, built 28 Oct 2026 from the sources in `geodata/sources.lock.yaml`)
 

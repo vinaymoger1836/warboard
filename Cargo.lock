@@ -1285,7 +1285,9 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "clap",
+ "serde",
  "serde_json",
+ "serde_yaml",
  "wb-content",
  "wb-core",
  "wb-geo",
@@ -1333,11 +1335,15 @@ version = "0.0.1"
 dependencies = [
  "bevy_ecs",
  "blake3",
+ "postcard",
+ "ruzstd",
  "serde",
  "serde_yaml",
  "thiserror",
  "ts-rs",
+ "wb-content",
  "wb-core",
+ "wb-geo",
 ]
 
 [[package]]
@@ -1345,7 +1351,10 @@ name = "wb-wasm"
 version = "0.0.1"
 dependencies = [
  "blake3",
+ "serde",
+ "serde_json",
  "wasm-bindgen",
+ "wb-content",
  "wb-core",
  "wb-geo",
  "wb-sim",

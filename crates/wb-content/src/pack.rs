@@ -11,7 +11,7 @@ pub const MAGIC: [u8; 4] = *b"WBPK";
 pub const FORMAT_VERSION: u16 = 1;
 /// Version of the compiled types. A breaking change bumps it and needs a
 /// migration once packs are consumed (doc 04 §6).
-pub const SCHEMA_VERSION: u32 = 1;
+pub const SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PackHeader {

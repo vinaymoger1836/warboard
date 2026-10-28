@@ -98,3 +98,17 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Decision.** `wb-geo` reads every pack file through one trait, `PackSource { len, read_exact_at }`. Natively it is a `std::fs::File` with positional reads (`FileExt::read_exact_at` on Unix, `seek_read` on Windows); in WebAssembly `wb-wasm` implements it over a JS object that wraps the sync access handle (`fs.readSync` under Node). Decoded DEM tiles and H3 blocks sit in small LRU caches (ordered maps only). Results are pure functions of the bytes, so the cache never changes an outcome.
 **Alternatives.** (a) `memmap2` with a narrow `unsafe` exception in `wb-geo`: one more code path than the browser, and the forbid lint becomes a deny with an allow. (b) Read whole files into memory: the europe DEM alone is ~90 MB.
 **Consequences.** + One code path for native, browser and Node; no `unsafe`; the determinism check compares them directly. − A system call per cache miss natively (tiles are 30–120 KB, so misses are rare in practice); `Geo` is single-threaded (`RefCell` caches), so the engine holds it as a non-`Send` resource.
+
+## ADR-020 Icon atlas rasterised at app start
+**Status — Proposed, 28 Oct 2026 (P3).** Refines doc 06 §6 ("packed into a texture atlas at build time").
+**Context.** The icons are SVG strings in `packages/symbols`. Rasterising them at build time needs an SVG renderer in Node (resvg, sharp, a headless browser): a new dependency with native or WASM binaries.
+**Decision.** The app draws every icon (symbol × side colour × estimate variant) into one canvas at start-up, in a fixed order, and hands deck.gl the canvas as a PNG data URL with its mapping (`buildAtlas`). Panels use the same SVGs directly. The 3D view (P10) and Unity (P13) take the same SVG sources.
+**Alternatives.** (a) Build-time rasterisation with a new dependency. (b) Hand-drawn PNG sprites in git.
+**Consequences.** + No dependency, one source of truth, icons in any colour token. − Some start-up work; the atlas depends on the browser's SVG renderer (tiny anti-aliasing differences between browsers, never simulation-relevant).
+
+## ADR-021 Head for the tanker before bingo
+**Status — Proposed, 28 Oct 2026 (P3).** Refines doc 02 §6 ("On bingo … unless a tanker … is reachable").
+**Context.** Bingo is measured to the nearest suitable friendly base. A patrol near any airfield (the Baltic patrol of G7 is about 30 km from Gdańsk) reaches bingo with only the fuel for those 30 km, when a tanker 150 km away is no longer reachable, so the rule as written never uses the tanker there.
+**Decision.** Every second, a group on task looks for a tanker on its track that its member lowest on fuel can reach and get home from. It heads for the nearest such tanker when that member's fuel falls to `(fuel to the tanker + fuel from the tanker to its nearest base) × (1 + reserve)`, or at bingo if one is in reach. Otherwise bingo sends it home as before.
+**Alternatives.** (a) Bingo measured to the home base instead of the nearest base. (b) A separate content "joker fuel" per platform.
+**Consequences.** + Tankers extend patrols wherever they fly (G7: 3.9× time on station). + No new constant. − The landing reserve stays 10 % of the fuel to the nearest base, which is small near a base (open question in the P3 report).

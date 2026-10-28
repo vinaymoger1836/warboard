@@ -177,6 +177,7 @@ impl Compiler<'_> {
                 turn_radius_m: m.turn_radius_m,
                 road_speed_mps: m.road_speed_kmh.map(kmh_to_mps),
                 offroad_speed_mps: m.offroad_speed_kmh.map(kmh_to_mps),
+                road_capable: m.road_capable,
             },
             signature: c::Signature {
                 rcs_m2: x.signature.rcs_m2.clone(),
@@ -524,6 +525,7 @@ impl Compiler<'_> {
         let p = &x.passive;
         let f = &x.fusion;
         let d = &x.damage;
+        let l = &x.logistics;
         c::Realism {
             id: self.st.id(&x.id),
             name: self.st.id(&x.name),
@@ -579,7 +581,39 @@ impl Compiler<'_> {
                 runway_repair_min_s: h_to_s(d.runway_repair_min_h),
                 runway_repair_max_s: h_to_s(d.runway_repair_max_h),
             },
-            logistics: x.logistics.clone(),
+            movement: x.movement.clone(),
+            fuel: x.fuel.clone(),
+            logistics: c::LogisticsRealism {
+                fuel_reserve_fraction: l.fuel_reserve_fraction,
+                tanker_join_m: km_to_m(l.tanker_join_km),
+                landing_radius_m: km_to_m(l.landing_radius_km),
+                pattern_alt_m: l.pattern_alt_m,
+                berth_radius_m: km_to_m(l.berth_radius_km),
+                turnaround_default_s: min_to_s(l.turnaround_default_min),
+            },
+            bases: x
+                .bases
+                .iter()
+                .map(|(k, b)| {
+                    (
+                        *k,
+                        c::BaseRule {
+                            site: b.site,
+                            match_radius_m: km_to_m(b.match_radius_km),
+                            terrain: b.terrain.clone(),
+                            own_territory: b.own_territory,
+                            coast: b.coast,
+                            max_slope_deg: b.max_slope_deg,
+                            setup_s: min_to_s(b.setup_min),
+                            aircraft_capacity: b.aircraft_capacity,
+                            ship_berths: b.ship_berths,
+                            road_capable_only: b.road_capable_only,
+                            rotary_only: b.rotary_only,
+                            vls_reload: b.vls_reload,
+                        },
+                    )
+                })
+                .collect(),
             ground: x.ground.clone(),
             provenance: self.provenance(&x.provenance, custom),
         }

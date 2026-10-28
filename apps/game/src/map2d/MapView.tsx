@@ -2,23 +2,33 @@
 // with a deck.gl overlay for game layers. No default MapLibre controls (doc 10 §12);
 // the chrome is ours.
 import { MapboxOverlay } from '@deck.gl/mapbox';
+import { buildAtlas, type IconAtlas } from '@warboard/symbols';
 import { addProtocol, Map as MapLibreMap, setWorkerUrl } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { FileSource, PMTiles, Protocol } from 'pmtiles';
 import { useEffect, useRef, useState } from 'react';
 import type { EngineBridge } from '../bridge';
+import { patrolRadiusKm, sendTask } from '../orders';
 import { packFile } from '../packs/opfs';
 import { fileFor, type InstalledPack } from '../packs/types';
-import { DEMO_COALITION } from './coalitions';
+import { ContextMenu } from '../panels/ContextMenu';
+import { type Tool, ui } from '../store';
+import type { Coalition } from './coalitions';
+import { LayerHub } from './layerHub';
 import { MapChrome } from './MapChrome';
 import { buildStyle, type MapPack } from './style';
 import { useTerrainOverlay } from './terrainOverlay';
+import { type ContextRequest, UnitLayers } from './units/UnitLayers';
 
 setWorkerUrl(workerUrl);
 
 const protocol = new Protocol();
 addProtocol('pmtiles', protocol.tile);
+
+/** One atlas per page, built on first use (ADR-020). */
+let atlasPromise: Promise<IconAtlas> | null = null;
+const atlas = () => (atlasPromise ??= buildAtlas());
 
 async function toMapPacks(packs: InstalledPack[]): Promise<MapPack[]> {
   const out: MapPack[] = [];
@@ -47,18 +57,21 @@ async function toMapPacks(packs: InstalledPack[]): Promise<MapPack[]> {
 
 export interface MapViewProps {
   packs: InstalledPack[];
-  bridge: EngineBridge | null;
+  bridge: EngineBridge;
+  coalition: Coalition;
   geoReady: boolean;
   terrainOverlay: boolean;
   onTerrainOverlay: (on: boolean) => void;
   onToast: (text: string) => void;
 }
 
-export function MapView({ packs, bridge, geoReady, terrainOverlay, onTerrainOverlay, onToast }: MapViewProps) {
+export function MapView({ packs, bridge, coalition, geoReady, terrainOverlay, onTerrainOverlay, onToast }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
-  const [overlay, setOverlay] = useState<MapboxOverlay | null>(null);
+  const [hub, setHub] = useState<LayerHub | null>(null);
+  const [menu, setMenu] = useState<ContextRequest | null>(null);
   const packKey = packs.map((p) => `${p.id}@${p.version}`).join();
+  const coalitionKey = `${coalition.own.join()}|${coalition.enemy.join()}`;
 
   useEffect(() => {
     const el = container.current;
@@ -71,9 +84,9 @@ export function MapView({ packs, bridge, geoReady, terrainOverlay, onTerrainOver
         const glyphs = new URL('fonts/glyphs/', document.baseURI).href;
         created = new MapLibreMap({
           container: el,
-          style: buildStyle(mapPacks, DEMO_COALITION, glyphs),
-          center: [15, 50],
-          zoom: 3,
+          style: buildStyle(mapPacks, coalition, glyphs),
+          center: [18.5, 54.0],
+          zoom: 6,
           minZoom: 1,
           maxZoom: 12,
           attributionControl: false,
@@ -87,22 +100,65 @@ export function MapView({ packs, bridge, geoReady, terrainOverlay, onTerrainOver
         // render arguments that MapLibre 6 no longer passes. Game layers sit above the map.
         const deck = new MapboxOverlay({ interleaved: false, layers: [] });
         created.addControl(deck);
-        setOverlay(deck);
+        setHub(new LayerHub(deck));
         setMap(created);
         (window as unknown as { __wbMap?: MapLibreMap }).__wbMap = created;
       })
       .catch((err: unknown) => onToast(err instanceof Error ? err.message : String(err)));
     return () => {
       cancelled = true;
-      setOverlay(null);
+      setHub(null);
       setMap(null);
       created?.remove();
     };
-    // packKey stands for packs; onToast is stable.
+    // packKey and coalitionKey stand for packs and coalition; onToast is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packKey]);
+  }, [packKey, coalitionKey]);
 
-  useTerrainOverlay(map, overlay, bridge, geoReady && terrainOverlay, onToast);
+  useTerrainOverlay(map, hub, bridge, geoReady && terrainOverlay, onToast);
+
+  // Units, rings, routes and tools.
+  useEffect(() => {
+    if (!map || !hub) return;
+    let layers: UnitLayers | null = null;
+    let cancelled = false;
+    const done = (tool: Tool) => {
+      const s = ui.get();
+      ui.set({ tool: null });
+      const d = s.details;
+      if (d?.kind !== 'group') return;
+      if (tool.kind === 'route') {
+        if (tool.patrol && tool.points.length < 2) {
+          onToast('A patrol route needs at least two waypoints');
+          return;
+        }
+        void sendTask(
+          bridge,
+          [d.id],
+          tool.patrol ? { kind: 'patrol_route', waypoints: tool.points, loop: true } : { kind: 'move', waypoints: tool.points },
+          onToast,
+        );
+      } else if (tool.centre) {
+        void sendTask(
+          bridge,
+          [d.id],
+          { kind: 'patrol_circle', centre: tool.centre, radius_km: Math.round(tool.radiusKm) || patrolRadiusKm(d.domain) },
+          onToast,
+        );
+      }
+    };
+    // The label font atlas is built once; build it with the bundled fonts, not a fallback.
+    const fonts = ['italic 400 32px "Noto Sans"', '400 32px "Noto Sans"', '600 32px "Noto Sans"', '600 32px "JetBrains Mono"'];
+    Promise.all([atlas(), ...fonts.map((f) => document.fonts.load(f))])
+      .then(([a]) => {
+        if (!cancelled) layers = new UnitLayers(map, hub, bridge, a, setMenu, done);
+      })
+      .catch((err: unknown) => onToast(`Icons failed to load: ${String(err)}`));
+    return () => {
+      cancelled = true;
+      layers?.dispose();
+    };
+  }, [map, hub, bridge, onToast]);
 
   return (
     <div className="map-root">
@@ -118,6 +174,7 @@ export function MapView({ packs, bridge, geoReady, terrainOverlay, onTerrainOver
           onToast={onToast}
         />
       )}
+      {menu && <ContextMenu req={menu} bridge={bridge} toast={onToast} onClose={() => setMenu(null)} />}
     </div>
   );
 }

@@ -825,6 +825,84 @@ impl<'a> Cx<'a, '_> {
             r.logistics.fuel_reserve_fraction,
         );
         self.probability("ground.random_variation", r.ground.random_variation);
+
+        let m = &r.movement;
+        for (path, v) in [
+            ("movement.isa_sea_level_temp_k", m.isa_sea_level_temp_k),
+            ("movement.isa_gamma_r", m.isa_gamma_r),
+            (
+                "movement.aircraft_climb_rate_mps",
+                m.aircraft_climb_rate_mps,
+            ),
+            (
+                "movement.aircraft_descent_rate_mps",
+                m.aircraft_descent_rate_mps,
+            ),
+            ("movement.aircraft_accel_mps2", m.aircraft_accel_mps2),
+            ("movement.aircraft_cruise_alt_m", m.aircraft_cruise_alt_m),
+            ("movement.ship_accel_mps2", m.ship_accel_mps2),
+            ("movement.formation_spacing_m", m.formation_spacing_m),
+            ("movement.waypoint_radius_m", m.waypoint_radius_m),
+        ] {
+            self.positive(path, v);
+        }
+        if m.aircraft_sustained_g <= 1.0 {
+            self.err(
+                "movement.aircraft_sustained_g",
+                format!("must be above 1 to turn, got {}", m.aircraft_sustained_g),
+            );
+        }
+        let bands = &r.fuel.burn_altitude_factor;
+        if bands.is_empty() {
+            self.err(
+                "fuel.burn_altitude_factor",
+                "needs at least one band".into(),
+            );
+        }
+        for (i, b) in bands.iter().enumerate() {
+            self.positive(&format!("fuel.burn_altitude_factor[{i}].factor"), b.factor);
+            if i > 0 && b.below_m <= bands[i - 1].below_m {
+                self.err(
+                    &format!("fuel.burn_altitude_factor[{i}].below_m"),
+                    "bands must be in increasing altitude order".into(),
+                );
+            }
+        }
+        self.probability("fuel.descent_burn_fraction", r.fuel.descent_burn_fraction);
+        let l = &r.logistics;
+        for (path, v) in [
+            ("logistics.tanker_join_km", l.tanker_join_km),
+            ("logistics.landing_radius_km", l.landing_radius_km),
+            ("logistics.pattern_alt_m", l.pattern_alt_m),
+            ("logistics.berth_radius_km", l.berth_radius_km),
+            ("logistics.turnaround_default_min", l.turnaround_default_min),
+        ] {
+            self.positive(path, v);
+        }
+        use crate::source::realism::{BaseKind, SiteRule};
+        for kind in [
+            BaseKind::AirBase,
+            BaseKind::RoadStrip,
+            BaseKind::Heliport,
+            BaseKind::NavalBase,
+            BaseKind::Anchorage,
+            BaseKind::ArmyBase,
+            BaseKind::SamSite,
+            BaseKind::MissileSite,
+            BaseKind::Hq,
+        ] {
+            match r.bases.get(&kind) {
+                None => self.err(
+                    &format!("bases.{}", key(&kind)),
+                    "is missing; every base kind needs a placement rule".into(),
+                ),
+                Some(b) if b.site != SiteRule::Terrain && b.match_radius_km <= 0.0 => self.err(
+                    &format!("bases.{}.match_radius_km", key(&kind)),
+                    "must be positive for real_airfield and real_port sites".into(),
+                ),
+                Some(_) => {}
+            }
+        }
     }
 }
 

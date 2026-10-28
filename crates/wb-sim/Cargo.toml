@@ -9,12 +9,17 @@ publish.workspace = true
 
 [features]
 # Exports TypeScript types through ts-rs (`pnpm gen`).
-ts = ["dep:ts-rs", "wb-core/ts"]
+ts = ["dep:ts-rs", "wb-core/ts", "wb-content/ts"]
 
 [dependencies]
 wb-core.workspace = true
+wb-content.workspace = true
+wb-geo.workspace = true
 bevy_ecs.workspace = true
 blake3.workspace = true
+postcard.workspace = true
+# Encoder for `.wbsave` bodies (the decoder is what wb-geo uses).
+ruzstd.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true
 thiserror.workspace = true

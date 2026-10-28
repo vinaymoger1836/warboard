@@ -1,11 +1,11 @@
 // Terrain-class overlay (doc 05 §6): H3 cells of the visible area from the engine worker,
 // drawn as a deck.gl polygon layer in the terrain tokens. Water is not drawn.
 import { SolidPolygonLayer } from '@deck.gl/layers';
-import type { MapboxOverlay } from '@deck.gl/mapbox';
 import { alpha, rgba, type TokenName } from '@warboard/symbols';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { useEffect } from 'react';
 import type { EngineBridge } from '../bridge';
+import type { LayerHub } from './layerHub';
 
 /** Class codes in the order of doc 05 §3 (and wb_geo::TerrainClass). */
 export const TERRAIN_CLASSES = ['water', 'open', 'forest', 'jungle', 'urban', 'desert', 'mountain', 'marsh', 'arctic'] as const;
@@ -44,7 +44,7 @@ function unpack(packed: Float64Array): Cell[] {
 
 export function useTerrainOverlay(
   map: MapLibreMap | null,
-  overlay: MapboxOverlay | null,
+  overlay: LayerHub | null,
   bridge: EngineBridge | null,
   enabled: boolean,
   onToast: (text: string) => void,
@@ -52,7 +52,7 @@ export function useTerrainOverlay(
   useEffect(() => {
     if (!map || !overlay || !bridge) return;
     if (!enabled) {
-      overlay.setProps({ layers: [] });
+      overlay.set('terrain', []);
       return;
     }
     let seq = 0;
@@ -60,7 +60,7 @@ export function useTerrainOverlay(
     const refresh = () => {
       const mine = ++seq;
       if (map.getZoom() < MIN_ZOOM) {
-        overlay.setProps({ layers: [] });
+        overlay.set('terrain', []);
         if (!warned) onToast('Zoom in to see terrain classes');
         warned = true;
         return;
@@ -77,14 +77,13 @@ export function useTerrainOverlay(
         .then((packed) => {
           if (mine !== seq) return;
           if (!packed) {
-            overlay.setProps({ layers: [] });
+            overlay.set('terrain', []);
             if (!warned) onToast('Zoom in to see terrain classes');
             warned = true;
             return;
           }
           warned = false;
-          overlay.setProps({
-            layers: [
+          overlay.set('terrain', [
               new SolidPolygonLayer<Cell>({
                 id: 'terrain-classes',
                 data: unpack(packed),
@@ -92,8 +91,7 @@ export function useTerrainOverlay(
                 getFillColor: (d) => [...(colours[d.cls] ?? [0, 0, 0, 0])] as [number, number, number, number],
                 pickable: false,
               }),
-            ],
-          });
+          ]);
         })
         .catch((err: unknown) => onToast(err instanceof Error ? err.message : String(err)));
     };
@@ -102,7 +100,7 @@ export function useTerrainOverlay(
     return () => {
       seq++;
       map.off('moveend', refresh);
-      overlay.setProps({ layers: [] });
+      overlay.set('terrain', []);
     };
   }, [map, overlay, bridge, enabled, onToast]);
 }

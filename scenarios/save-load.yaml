@@ -1,0 +1,24 @@
+# P3 acceptance: save mid-flight, reload, run to 1 sim hour; the state hash
+# must equal an uninterrupted run (scripts/determinism-check.sh saves at tick
+# 900 and also continues a native save in WebAssembly).
+name: Save and load mid-flight
+seed: 3
+start_utc: 2026-10-27T06:00:00Z
+sides:
+  - { name: NATO, countries: [pol, deu, fra, ita, usa], player: true }
+  - { name: Russia, countries: [rus] }
+units:
+  # Airborne at start, on a circle CAP over the Gulf of Gdańsk.
+  - { id: 10, name: Husarz, platform: f-35a, country: pol, count: 2, lat_deg: 53.9, lon_deg: 18.6, heading_deg: 0, loadout: f-35a-air-superiority }
+  # Takes off from Powidz for a waypoint loop.
+  - { id: 20, name: Rafale, platform: rafale-c, country: fra, count: 3, base: powidz-military-air-base-eppw }
+  - { id: 30, name: Phenix, platform: a330-mrtt, country: fra, base: lask-air-base-eplk }
+  # Sails out of Gdynia.
+  - { id: 40, name: Bergamini, platform: fremm-bergamini, country: ita, base: gdynia }
+orders:
+  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: patrol_circle, centre: [18.9, 54.7], radius_km: 40 } }
+  - { tick: 0, side: 0, type: AssignTask, units: [20], task: { kind: patrol_route, waypoints: [[16.5, 54.8], [18.0, 55.4], [19.0, 54.9]], loop: true, alt_m: 7000 } }
+  - { tick: 0, side: 0, type: AssignTask, units: [30], task: { kind: tanker_track, a: [17.8, 53.9], b: [18.6, 53.4] } }
+  - { tick: 0, side: 0, type: AssignTask, units: [40], task: { kind: move, waypoints: [[18.75, 54.6], [19.2, 55.0], [18.0, 55.4]] } }
+  # Retask mid-flight: one F-35A splits off and goes home.
+  - { tick: 1500, side: 0, type: AssignTask, units: [12], task: { kind: rtb } }

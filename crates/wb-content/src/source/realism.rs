@@ -5,6 +5,7 @@
 //! pack unchanged; the others are converted by the compiler.
 
 use super::common::{Domain, Provenance, Seeker, source_enum, source_type};
+use super::platform::PlatformCategory;
 use super::weapon::Warhead;
 use std::collections::BTreeMap;
 
@@ -22,6 +23,45 @@ source_enum! {
         Forest,
         Urban,
         Mountain,
+    }
+
+    /// Base kinds a player can set up (doc 03 §3).
+    #[serde(rename_all = "snake_case")]
+    pub enum BaseKind {
+        AirBase,
+        RoadStrip,
+        Heliport,
+        NavalBase,
+        Anchorage,
+        ArmyBase,
+        SamSite,
+        MissileSite,
+        Hq,
+    }
+
+    /// Classes of the H3 terrain layer (doc 05 §3), for base placement.
+    #[serde(rename_all = "snake_case")]
+    pub enum CellClass {
+        Water,
+        Open,
+        Forest,
+        Jungle,
+        Urban,
+        Desert,
+        Mountain,
+        Marsh,
+        Arctic,
+    }
+
+    /// What a base must be placed on.
+    #[serde(rename_all = "snake_case")]
+    pub enum SiteRule {
+        /// A real airfield (content `base` with an air base) nearby.
+        RealAirfield,
+        /// A real port (content `base` with a port) nearby.
+        RealPort,
+        /// Any cell that meets the terrain, territory and slope rules.
+        Terrain,
     }
 }
 
@@ -41,7 +81,11 @@ source_type! {
         pub endgame: EndgameRealism,
         pub tewa: TewaRealism,
         pub damage: DamageRealism,
+        pub movement: MovementRealism,
+        pub fuel: FuelRealism,
         pub logistics: LogisticsRealism,
+        /// Placement rules per base kind (doc 03 §3). Every kind must be listed.
+        pub bases: BTreeMap<BaseKind, BaseRule>,
         pub ground: GroundRealism,
         pub provenance: Provenance,
     }
@@ -217,11 +261,104 @@ source_type! {
         pub runway_repair_max_h: f64,
     }
 
+    /// Aircraft and ship movement (doc 02 §5). The aircraft and ship values
+    /// are defaults for platforms that give none.
+    #[serde(deny_unknown_fields)]
+    pub struct MovementRealism {
+        /// ISA troposphere, for the speed of sound at altitude (Mach → m/s).
+        pub isa_sea_level_temp_k: f64,
+        pub isa_lapse_rate_k_per_m: f64,
+        /// Above this the temperature stays at the tropopause value.
+        pub isa_tropopause_m: f64,
+        /// Ratio of specific heats × specific gas constant of dry air, J/(kg·K).
+        pub isa_gamma_r: f64,
+        pub aircraft_climb_rate_mps: f64,
+        pub aircraft_descent_rate_mps: f64,
+        /// Speed change rate.
+        pub aircraft_accel_mps2: f64,
+        pub aircraft_sustained_g: f64,
+        /// Cruise altitude for tasks that give none ...
+        pub aircraft_cruise_alt_m: f64,
+        /// ... unless the category has its own.
+        #[serde(default)]
+        pub cruise_alt_by_category_m: BTreeMap<PlatformCategory, f64>,
+        pub ship_accel_mps2: f64,
+        /// Distance between aircraft in a flight.
+        pub formation_spacing_m: f64,
+        /// A waypoint counts as reached within this distance.
+        pub waypoint_radius_m: f64,
+    }
+
+    /// Burn model (doc 02 §6).
+    #[serde(deny_unknown_fields)]
+    pub struct FuelRealism {
+        /// Burn multiplier by altitude: the first band whose `below_m` is above
+        /// the altitude applies; above the last band its factor applies.
+        pub burn_altitude_factor: Vec<AltitudeFactor>,
+        /// Ship fuel per metre scales with `(v / v_cruise)^exponent`.
+        pub ship_burn_speed_exponent: f64,
+        /// Burn in a descent as a fraction of the cruise burn (throttle back).
+        pub descent_burn_fraction: f64,
+    }
+
+    #[serde(deny_unknown_fields)]
+    pub struct AltitudeFactor {
+        pub below_m: f64,
+        pub factor: f64,
+    }
+
     /// Fuel and logistics (doc 02 §6).
     #[serde(deny_unknown_fields)]
     pub struct LogisticsRealism {
         /// Bingo reserve as a fraction of the fuel to reach base.
         pub fuel_reserve_fraction: f64,
+        /// A receiver joins its tanker within this distance.
+        pub tanker_join_km: f64,
+        /// An aircraft lands within this distance of its base ...
+        pub landing_radius_km: f64,
+        /// ... once down to this height above the base.
+        pub pattern_alt_m: f64,
+        /// A ship berths within this distance of its port.
+        pub berth_radius_km: f64,
+        /// Turnaround for platforms that give none.
+        pub turnaround_default_min: f64,
+    }
+
+    /// Placement rule of one base kind (doc 03 §3).
+    #[serde(deny_unknown_fields)]
+    pub struct BaseRule {
+        pub site: SiteRule,
+        /// For `real_airfield` and `real_port`: the real base must lie within
+        /// this distance.
+        #[serde(default)]
+        pub match_radius_km: f64,
+        /// Allowed terrain classes; empty means any.
+        #[serde(default)]
+        pub terrain: Vec<CellClass>,
+        /// Must be in own coalition territory (land or 12 nm waters).
+        #[serde(default)]
+        pub own_territory: bool,
+        /// Must be a coastal cell.
+        #[serde(default)]
+        pub coast: bool,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub max_slope_deg: Option<f64>,
+        /// Activation time after placement.
+        pub setup_min: f64,
+        /// Capacity of a placed base (real bases use their own figures).
+        #[serde(default)]
+        pub aircraft_capacity: u32,
+        #[serde(default)]
+        pub ship_berths: u32,
+        /// Only aircraft flagged `road_capable`.
+        #[serde(default)]
+        pub road_capable_only: bool,
+        /// Only helicopters and drones.
+        #[serde(default)]
+        pub rotary_only: bool,
+        /// VLS cells can be reloaded here.
+        #[serde(default)]
+        pub vls_reload: bool,
     }
 
     /// Ground combat (doc 02 §14, Phase 11). Placeholders until then.

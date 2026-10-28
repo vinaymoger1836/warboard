@@ -154,7 +154,8 @@ pub enum Entry {
     Base(Base),
     Inventory(Inventory),
     Doctrine(Doctrine),
-    Realism(Realism),
+    // Boxed: by far the largest entry, and there is one per pack.
+    Realism(Box<Realism>),
 }
 
 impl Entry {

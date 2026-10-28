@@ -1,0 +1,17 @@
+# G15 benchmark (doc 02 §16, doc 08 §3): 2,000 units on patrol, every tick
+# forced to 100 ms, so `wb bench` measures the per-tick budget (≤ 6 ms at ×10).
+# Not gameplay: force_fine_tick and generated_units exist for benchmarks only.
+name: Benchmark 2000 patrolling units
+seed: 15
+start_utc: 2026-10-27T06:00:00Z
+force_fine_tick: true
+sides:
+  - { name: NATO, countries: [pol, deu, fra, ita, usa], player: true }
+  - { name: Russia, countries: [rus] }
+generated_units:
+  count: 2000
+  group_size: 4
+  platforms: [f-35a, eurofighter-typhoon, rafale-c, mq-9a, a330-mrtt, fremm-bergamini]
+  country: pol
+  area: [50.0, 12.0, 58.0, 26.0]
+  patrol_radius_km: [20, 80]

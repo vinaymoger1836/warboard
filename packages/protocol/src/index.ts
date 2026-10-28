@@ -3,6 +3,29 @@ export type { ContactId } from './generated/ContactId';
 export type { TickReport } from './generated/TickReport';
 export type { UnitId } from './generated/UnitId';
 
+// Engine API (P3): orders, events, card details, saves, side view.
+export type { BaseBrief } from './generated/BaseBrief';
+export type { BaseDetails } from './generated/BaseDetails';
+export type { BaseKind } from './generated/BaseKind';
+export type { BaseTarget } from './generated/BaseTarget';
+export type { Command } from './generated/Command';
+export type { Details } from './generated/Details';
+export type { Event } from './generated/Event';
+export type { EventKind } from './generated/EventKind';
+export type { GroupDetails } from './generated/GroupDetails';
+export type { MemberView } from './generated/MemberView';
+export type { Order } from './generated/Order';
+export type { OrderAck } from './generated/OrderAck';
+export type { Ranges } from './generated/Ranges';
+export type { SaveHeader } from './generated/SaveHeader';
+export type { SideInfo } from './generated/SideInfo';
+export type { Speed } from './generated/Speed';
+export type { StationedView } from './generated/StationedView';
+export type { TaskOrder } from './generated/TaskOrder';
+export type { TaskView } from './generated/TaskView';
+export { FLAG, STATUS, SYMBOLS, type SymbolName } from './generated/symbols';
+export { decodeSideView, statusOf, StringTable, type SideView, type StatusName, type UnitColumns } from './sideview';
+
 // Content source format (wb-content). The JSON Schema of the same format is
 // generated to ./generated/content.schema.json.
 export type { Base } from './generated/Base';

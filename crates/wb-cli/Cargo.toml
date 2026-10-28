@@ -16,7 +16,9 @@ wb-sim.workspace = true
 wb-core.workspace = true
 wb-geo.workspace = true
 wb-content = { workspace = true, features = ["schema"] }
+serde.workspace = true
 serde_json.workspace = true
+serde_yaml.workspace = true
 anyhow.workspace = true
 clap.workspace = true
 
