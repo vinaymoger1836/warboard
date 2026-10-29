@@ -86,7 +86,11 @@ fn field(line: &str, cols: core::ops::Range<usize>, name: &'static str) -> Resul
 }
 
 /// `±NNNNN±E` with an implied leading decimal point (B* and n̈).
-fn implied_exp(line: &str, cols: core::ops::Range<usize>, name: &'static str) -> Result<f64, TleError> {
+fn implied_exp(
+    line: &str,
+    cols: core::ops::Range<usize>,
+    name: &'static str,
+) -> Result<f64, TleError> {
     let s = line.get(cols).ok_or(TleError::Field(name))?.trim();
     if s.is_empty() {
         return Ok(0.0);
@@ -94,7 +98,9 @@ fn implied_exp(line: &str, cols: core::ops::Range<usize>, name: &'static str) ->
     let (mant, exp) = s.split_at(s.len().saturating_sub(2));
     let sign = if mant.starts_with('-') { -1.0 } else { 1.0 };
     let digits = mant.trim_start_matches(['-', '+', ' ']);
-    let m: f64 = format!("0.{digits}").parse().map_err(|_| TleError::Field(name))?;
+    let m: f64 = format!("0.{digits}")
+        .parse()
+        .map_err(|_| TleError::Field(name))?;
     let e: i32 = exp.parse().map_err(|_| TleError::Field(name))?;
     Ok(sign * m * pow(10.0, f64::from(e)))
 }
@@ -103,10 +109,14 @@ impl Tle {
     pub fn parse(line1: &str, line2: &str) -> Result<Self, TleError> {
         let (l1, l2) = (line1.trim_end(), line2.trim_end());
         if l1.len() < 69 || !l1.starts_with("1 ") {
-            return Err(TleError::Format("line 1 must start with `1 ` and have 69 columns"));
+            return Err(TleError::Format(
+                "line 1 must start with `1 ` and have 69 columns",
+            ));
         }
         if l2.len() < 69 || !l2.starts_with("2 ") {
-            return Err(TleError::Format("line 2 must start with `2 ` and have 69 columns"));
+            return Err(TleError::Format(
+                "line 2 must start with `2 ` and have 69 columns",
+            ));
         }
         for (n, l) in [(1u8, l1), (2, l2)] {
             let want = l.as_bytes()[68].wrapping_sub(b'0');
@@ -117,11 +127,17 @@ impl Tle {
         let yy = field(l1, 18..20, "epoch year")?;
         let doy = field(l1, 20..32, "epoch day")?;
         let year = if yy < 57.0 { 2000.0 + yy } else { 1900.0 + yy } as i64;
-        let epoch_unix_ms = days_from_civil(year, 1, 1) as f64 * MS_PER_DAY + (doy - 1.0) * MS_PER_DAY;
+        let epoch_unix_ms =
+            days_from_civil(year, 1, 1) as f64 * MS_PER_DAY + (doy - 1.0) * MS_PER_DAY;
         let deg = PI / 180.0;
-        let ecc: f64 = format!("0.{}", l2.get(26..33).ok_or(TleError::Field("eccentricity"))?.trim())
-            .parse()
-            .map_err(|_| TleError::Field("eccentricity"))?;
+        let ecc: f64 = format!(
+            "0.{}",
+            l2.get(26..33)
+                .ok_or(TleError::Field("eccentricity"))?
+                .trim()
+        )
+        .parse()
+        .map_err(|_| TleError::Field("eccentricity"))?;
         let tle = Tle {
             epoch_unix_ms,
             bstar: implied_exp(l1, 53..61, "bstar")?,
@@ -296,8 +312,8 @@ impl Sgp4 {
             + 0.0625 * temp2 * (7.0 - 114.0 * cosio2 + 395.0 * cosio4)
             + temp3 * (3.0 - 36.0 * cosio2 + 49.0 * cosio4);
         let xhdot1 = -temp1 * cosio;
-        let nodedot =
-            xhdot1 + (0.5 * temp2 * (4.0 - 19.0 * cosio2) + 2.0 * temp3 * (3.0 - 7.0 * cosio2)) * cosio;
+        let nodedot = xhdot1
+            + (0.5 * temp2 * (4.0 - 19.0 * cosio2) + 2.0 * temp3 * (3.0 - 7.0 * cosio2)) * cosio;
         let omgcof = bstar * cc3 * cos(argpo);
         let xmcof = if ecco > 1.0e-4 {
             -X2O3 * coef * bstar / eeta
@@ -318,7 +334,8 @@ impl Sgp4 {
         let sinmao = sin(mo);
         let x7thm1 = 7.0 * cosio2 - 1.0;
 
-        let (mut d2, mut d3, mut d4, mut t3cof, mut t4cof, mut t5cof) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+        let (mut d2, mut d3, mut d4, mut t3cof, mut t4cof, mut t5cof) =
+            (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         if !isimp {
             let cc1sq = cc1 * cc1;
             d2 = 4.0 * ao * tsi * cc1sq;
@@ -327,7 +344,8 @@ impl Sgp4 {
             d4 = 0.5 * temp * ao * tsi * (221.0 * ao + 31.0 * sfour) * cc1;
             t3cof = d2 + 2.0 * cc1sq;
             t4cof = 0.25 * (3.0 * d3 + cc1 * (12.0 * d2 + 10.0 * cc1sq));
-            t5cof = 0.2 * (3.0 * d4 + 12.0 * cc1 * d3 + 6.0 * d2 * d2 + 15.0 * cc1sq * (2.0 * d2 + cc1sq));
+            t5cof = 0.2
+                * (3.0 * d4 + 12.0 * cc1 * d3 + 6.0 * d2 * d2 + 15.0 * cc1sq * (2.0 * d2 + cc1sq));
         }
         Sgp4 {
             tle,
@@ -537,7 +555,11 @@ mod tests {
         close(p0.r_km, [7022.46529266, -1400.08296755, 0.03995155], 1e-4);
         close(p0.v_kms, [1.893841015, 6.405893759, 4.534807250], 1e-7);
         let p360 = s.propagate(360.0).unwrap();
-        close(p360.r_km, [-7154.03120202, -3783.17682504, -3536.19412294], 1e-4);
+        close(
+            p360.r_km,
+            [-7154.03120202, -3783.17682504, -3536.19412294],
+            1e-4,
+        );
         close(p360.v_kms, [4.741887409, -4.151817765, -2.093935425], 1e-7);
     }
 
@@ -585,7 +607,11 @@ mod tests {
         .unwrap();
         // 2000-06-27 18:50:19.73 UTC.
         let want = 962_131_819_733.568;
-        assert!((tle.epoch_unix_ms - want).abs() < 1.0, "{}", tle.epoch_unix_ms);
+        assert!(
+            (tle.epoch_unix_ms - want).abs() < 1.0,
+            "{}",
+            tle.epoch_unix_ms
+        );
         // GMST at J2000.0 (2000-01-01 12:00 UT1) is 280.46061837°.
         let g = gmst(946_728_000_000.0) * 180.0 / PI;
         assert!((g - 280.460_618_37).abs() < 1e-6, "{g}");

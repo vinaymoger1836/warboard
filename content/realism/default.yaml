@@ -34,6 +34,9 @@ radar:                               # doc 02 §7.1
   doppler_notch_radial_mps: 25
   doppler_notch_pd_factor: 0.2
   los_sample_divisor: 64
+  range_sigma_m: 150                 # radar range error, 1 sigma
+  bearing_sigma_default_deg: 0.5     # radar bearing error, 1 sigma
+  group_resolve_fraction: 0.3        # a group's count is resolved inside 30% of R50
 
 passive:                             # doc 02 §7.2
   esm_bearing_sigma_default_deg: 2   # doc 02 gives 1–3°
@@ -43,10 +46,18 @@ passive:                             # doc 02 §7.2
   eo_gsd_class_m: 3
   visual_range_km: { open: 4, forest: 0.5, urban: 0.3, mountain: 2 }
   visual_night_factor: 0.3
+  visual_ref_size_m: 10              # visual_range_km applies to a 10 m target
+  visual_max_size_factor: 3
+  irst_range_sigma_fraction: 0.15    # IRST gives angles only
+  eo_detect_pixels: 3                # target spans 3 ground samples to be seen
+  eo_min_sun_elevation_deg: 0        # daylight EO cameras
+  sonar_noise_db_per_doubling: 6
 
 satellites:                          # doc 02 §7.3
   eo_min_sun_elevation_deg: 10
   downlink_delay_default_min: 15
+  tasking_horizon_h: 48
+  pass_search_step_s: 20
 
 fusion:                              # doc 02 §8
   age_out_min: { air: 2, surface: 30, subsurface: 30, ground: 120 }
@@ -54,6 +65,13 @@ fusion:                              # doc 02 §8
   ellipse_growth_kt: { air: 1200, surface: 35, subsurface: 30, ground: 40 }
   datalink_latency_default_s: 2
   c2_report_delay_s: 60
+  contact_sigma_floor_m: 25          # ADR-026: an estimate never equals the truth
+  class_after_looks: 10
+  identify_at: class
+  report_after_s: 30
+  esm_bearing_window_s: 300
+  esm_fix_min_angle_deg: 5
+  group_count_spread: 2
 
 ew:                                  # doc 02 §9
   sidelobe_gain_db: -30
@@ -62,6 +80,8 @@ ew:                                  # doc 02 §9
   comms_jam_latency_factor: 3
   seeker_jam_effect: 0.5
   arm_memory_pk_factor: 0.5
+  emcon_blink_on_s: 10
+  emcon_blink_period_s: 60
 
 weapons:                             # doc 02 §10
   pn_gain_min: 3
@@ -141,6 +161,13 @@ logistics:                           # doc 02 §6
   berth_radius_km: 3
   turnaround_default_min: 60
 
+spatial:                             # doc 02 §16, ADR-023
+  bucket_res: 3
+  los_memo_res: 8
+  los_memo_alt_step_m: 25
+  los_memo_alt_ratio: 1.1
+  los_memo_capacity: 200000
+
 bases:                               # doc 03 §3
   air_base:     { site: real_airfield, match_radius_km: 3, setup_min: 60 }
   road_strip:   { site: terrain, terrain: [open], own_territory: true, max_slope_deg: 3, setup_min: 360, aircraft_capacity: 6, road_capable_only: true }
@@ -198,6 +225,26 @@ provenance:
     - logistics.turnaround_default_min
     - bases.road_strip.max_slope_deg
     - bases.heliport.aircraft_capacity
+    - radar.range_sigma_m
+    - radar.bearing_sigma_default_deg
+    - radar.group_resolve_fraction
+    - passive.visual_ref_size_m
+    - passive.visual_max_size_factor
+    - passive.irst_range_sigma_fraction
+    - passive.eo_detect_pixels
+    - passive.sonar_noise_db_per_doubling
+    - satellites.tasking_horizon_h
+    - satellites.pass_search_step_s
+    - fusion.contact_sigma_floor_m
+    - fusion.class_after_looks
+    - fusion.identify_at
+    - fusion.report_after_s
+    - fusion.esm_bearing_window_s
+    - fusion.esm_fix_min_angle_deg
+    - fusion.group_count_spread
+    - ew.emcon_blink_on_s
+    - ew.emcon_blink_period_s
+    - spatial
     - bases.anchorage.ship_berths
     - bases.air_base.match_radius_km
     - bases.naval_base.match_radius_km

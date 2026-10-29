@@ -367,6 +367,18 @@ impl<'a> Cx<'a, '_> {
             Domain::Ground => require(self, "road_speed_kmh", m.road_speed_kmh, "ground"),
             Domain::Space => {}
         }
+        match (&p.orbit, domain) {
+            (None, Domain::Space) => self.err("orbit", "is required for satellites".into()),
+            (Some(_), d) if d != Domain::Space => {
+                self.err("orbit", "is only allowed for satellites".into())
+            }
+            (Some(o), _) => {
+                if let Err(e) = wb_core::orbit::Tle::parse(&o.tle_line1, &o.tle_line2) {
+                    self.err("orbit", format!("is not a usable two-line element set: {e}"));
+                }
+            }
+            (None, _) => {}
+        }
         let rcs = &p.signature.rcs_m2;
         for (aspect, v) in [
             ("front", rcs.front),
@@ -464,6 +476,8 @@ impl<'a> Cx<'a, '_> {
             (SensorType::Irst, "irst", s.irst.is_some()),
             (SensorType::EoIr, "eo_ir", s.eo_ir.is_some()),
             (SensorType::Sonar, "sonar", s.sonar.is_some()),
+            (SensorType::Visual, "visual", s.visual.is_some()),
+            (SensorType::SatellitePayload, "payload", s.payload.is_some()),
         ];
         let type_name = blocks
             .iter()
@@ -506,6 +520,25 @@ impl<'a> Cx<'a, '_> {
         }
         if let Some(so) = &s.sonar {
             self.positive("sonar.passive_r_ref_km", so.passive_r_ref_km);
+        }
+        if let Some(p) = &s.payload {
+            use crate::source::PayloadKind;
+            self.positive("payload.swath_km", p.swath_km);
+            match p.kind {
+                PayloadKind::Optical | PayloadKind::Sar => match p.gsd_m {
+                    Some(g) => self.positive("payload.gsd_m", g),
+                    None => self.err("payload.gsd_m", "is required for imaging payloads".into()),
+                },
+                PayloadKind::Sigint => {
+                    self.non_empty("payload.bands", p.bands.len());
+                    if p.location_sigma_km.is_none() {
+                        self.err(
+                            "payload.location_sigma_km",
+                            "is required for SIGINT payloads".into(),
+                        );
+                    }
+                }
+            }
         }
     }
 
