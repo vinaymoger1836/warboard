@@ -11,13 +11,13 @@ use crate::components::{
     Allegiance, BaseRef, BaseSite, EmconState, Fuel, Group, GroupMember, Identity, Kinematics,
     Magazine, PlatformRef, Posture, SatelliteState, ScriptedTarget, Steer, TankerState,
 };
-use crate::picture::SidePictures;
-use crate::scenario::TestTerrain;
-use crate::sensors::LosMemo;
 use crate::events::EventLog;
 use crate::orders::{OrderLog, OrderQueue};
+use crate::picture::SidePictures;
 use crate::probe::ProbeState;
 use crate::rules::Rules;
+use crate::scenario::TestTerrain;
+use crate::sensors::LosMemo;
 use crate::world::{ForceFineTick, Sides, UnitIdAlloc, UnitIndex};
 
 const MAGIC: &[u8; 8] = b"WB-STATE";

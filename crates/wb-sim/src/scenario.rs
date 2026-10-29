@@ -15,9 +15,9 @@ use bevy_ecs::prelude::Resource;
 use bevy_ecs::world::World;
 use core::f64::consts::TAU;
 use serde::{Deserialize, Serialize};
-use wb_content::source::Emcon;
 use std::collections::BTreeSet;
 use wb_content::compiled::{CountryIx, LoadoutIx, PlatformIx};
+use wb_content::source::Emcon;
 use wb_core::geo::{LatLon, destination_point, normalize_bearing};
 use wb_core::units::deg_to_rad;
 use wb_core::{RngPurpose, UnitId, rng};
@@ -29,8 +29,8 @@ use crate::components::{
     Magazine, Mode, PlatformRef, Posture, SatelliteState, ScriptedTarget, Speed, Steer,
     TankerState, Task,
 };
-use crate::picture::SidePictures;
 use crate::orders::{Order, OrderQueue};
+use crate::picture::SidePictures;
 use crate::probe::ProbeState;
 use crate::rules::Rules;
 use crate::snapshot::base_resources;
@@ -372,7 +372,12 @@ impl Scenario {
             self.spawn(&mut world, &rules, u)?;
         }
         for (i, gen_spec) in self.generated_units.iter().enumerate() {
-            generate(&mut world, &rules, self.seed.wrapping_add(i as u64), gen_spec)?;
+            generate(
+                &mut world,
+                &rules,
+                self.seed.wrapping_add(i as u64),
+                gen_spec,
+            )?;
         }
         for t in &self.scripted_targets {
             spawn_scripted(&mut world, &rules, t)?;
@@ -495,7 +500,9 @@ impl Scenario {
         let emcon = u.emcon;
         if rules.platform(pix).orbit.is_some() {
             if u.base.is_some() || u.lat_deg.is_some() {
-                return Err(bad("a satellite takes no base or position; its orbit places it".into()));
+                return Err(bad(
+                    "a satellite takes no base or position; its orbit places it".into(),
+                ));
             }
             spawn_unit(
                 world,
@@ -564,7 +571,11 @@ impl Scenario {
 
 /// Starting emission control: the system's default, else the country
 /// doctrine's (doc 03 §11).
-fn default_emcon(rules: &Rules, country: CountryIx, system: Option<wb_content::compiled::SystemIx>) -> Emcon {
+fn default_emcon(
+    rules: &Rules,
+    country: CountryIx,
+    system: Option<wb_content::compiled::SystemIx>,
+) -> Emcon {
     if let Some(s) = system {
         return rules.db.systems[s.0 as usize].emcon_default;
     }
@@ -574,7 +585,12 @@ fn default_emcon(rules: &Rules, country: CountryIx, system: Option<wb_content::c
 
 /// A composite system: every component platform (count each) as one
 /// stationary group at the unit's position.
-fn spawn_system(world: &mut World, rules: &Rules, u: &ScenarioUnit, sid: &str) -> Result<(), ScenarioError> {
+fn spawn_system(
+    world: &mut World,
+    rules: &Rules,
+    u: &ScenarioUnit,
+    sid: &str,
+) -> Result<(), ScenarioError> {
     let bad = |reason: String| ScenarioError::InvalidUnit {
         id: u.id,
         name: u.name.clone(),
@@ -587,14 +603,21 @@ fn spawn_system(world: &mut World, rules: &Rules, u: &ScenarioUnit, sid: &str) -
         .position(|s| rules.db.str(s.id) == sid)
         .map(|i| wb_content::compiled::SystemIx(i as u32))
         .ok_or_else(|| bad(format!("unknown system `{sid}`")))?;
-    let cid = u.country.as_deref().ok_or_else(|| bad("needs a country".into()))?;
+    let cid = u
+        .country
+        .as_deref()
+        .ok_or_else(|| bad("needs a country".into()))?;
     let cix = country(rules, cid).ok_or_else(|| bad(format!("unknown country `{cid}`")))?;
     let side = world
         .resource::<Sides>()
         .side_of(cix)
         .ok_or_else(|| bad(format!("country `{cid}` is on no side")))?;
     let sys = &rules.db.systems[six.0 as usize];
-    let comps: Vec<(PlatformIx, u32)> = sys.components.iter().map(|c| (c.platform, c.count)).collect();
+    let comps: Vec<(PlatformIx, u32)> = sys
+        .components
+        .iter()
+        .map(|c| (c.platform, c.count))
+        .collect();
     let total: u32 = comps.iter().map(|c| c.1).sum();
     if total == 0 || total > 64 {
         return Err(bad("a system needs 1–64 components".into()));
@@ -632,7 +655,10 @@ fn spawn_system(world: &mut World, rules: &Rules, u: &ScenarioUnit, sid: &str) -
                         climb_mps: 0.0,
                     },
                     Steer::default(),
-                    GroupMember { group: UnitId(u.id), slot },
+                    GroupMember {
+                        group: UnitId(u.id),
+                        slot,
+                    },
                     BaseRef { home: None },
                     Posture::Moving,
                     Magazine {
@@ -665,7 +691,11 @@ fn spawn_system(world: &mut World, rules: &Rules, u: &ScenarioUnit, sid: &str) -
     Ok(())
 }
 
-fn spawn_scripted(world: &mut World, rules: &Rules, t: &ScriptedTargetSpec) -> Result<(), ScenarioError> {
+fn spawn_scripted(
+    world: &mut World,
+    rules: &Rules,
+    t: &ScriptedTargetSpec,
+) -> Result<(), ScenarioError> {
     let bad = |reason: String| ScenarioError::InvalidUnit {
         id: t.id,
         name: t.name.clone(),
@@ -684,7 +714,8 @@ fn spawn_scripted(world: &mut World, rules: &Rules, t: &ScriptedTargetSpec) -> R
     if rules.db.weapons[wix.0 as usize].signature.is_none() {
         return Err(bad(format!("weapon `{}` has no signature", t.weapon)));
     }
-    let cix = country(rules, &t.country).ok_or_else(|| bad(format!("unknown country `{}`", t.country)))?;
+    let cix = country(rules, &t.country)
+        .ok_or_else(|| bad(format!("unknown country `{}`", t.country)))?;
     let side = world
         .resource::<Sides>()
         .side_of(cix)
@@ -817,7 +848,14 @@ fn spawn_group(
                     lon: at.lon,
                     alt_m: alt,
                     heading: normalize_bearing(heading),
-                    speed_mps: speed_mps.unwrap_or(rules.cruise_mps(p, alt)),
+                    // Ground units start stopped; aircraft and ships under way.
+                    speed_mps: speed_mps.unwrap_or(
+                        if p.domain == wb_content::source::Domain::Ground {
+                            0.0
+                        } else {
+                            rules.cruise_mps(p, alt)
+                        },
+                    ),
                     climb_mps: 0.0,
                 },
                 Mode::Task,

@@ -493,7 +493,8 @@ pub fn contact_details(world: &World, side: u8, id: u32) -> Result<ContactDetail
         .ok_or_else(unknown)?;
     let db = &rules.db;
     let class_name = (c.level >= ContactLevel::Class).then(|| c.type_ref.class_name(rules));
-    let type_name = (c.level >= ContactLevel::Type).then(|| c.type_ref.short_name(rules).to_owned());
+    let type_name =
+        (c.level >= ContactLevel::Type).then(|| c.type_ref.short_name(rules).to_owned());
     let ell = c.ellipse(rules, now);
     let sources = c
         .sources
@@ -503,14 +504,21 @@ pub fn contact_details(world: &World, side: u8, id: u32) -> Result<ContactDetail
             unit: entity(world, s.observer)
                 .and_then(|e| world.get::<Identity>(e))
                 .map_or_else(String::new, |i| i.name.clone()),
-            sensor: s.sensor.map(|x| db.str(db.sensors[x.0 as usize].name).to_owned()),
-            network: s.network.map(|n| db.str(db.datalinks[n.0 as usize].name).to_owned()),
+            sensor: s
+                .sensor
+                .map(|x| db.str(db.sensors[x.0 as usize].name).to_owned()),
+            network: s
+                .network
+                .map(|n| db.str(db.datalinks[n.0 as usize].name).to_owned()),
             age_s: now.saturating_sub(s.last_ms) as f64 / 1_000.0,
         })
         .collect();
     Ok(ContactDetails {
         contact_id: id,
-        label: type_name.clone().or_else(|| class_name.clone()).unwrap_or_default(),
+        label: type_name
+            .clone()
+            .or_else(|| class_name.clone())
+            .unwrap_or_default(),
         estimated: c.estimated(rules, now),
         level: snake(c.level),
         identity: snake(c.identity),

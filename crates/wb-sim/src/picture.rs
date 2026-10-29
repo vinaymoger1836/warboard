@@ -338,8 +338,16 @@ fn fuse(pics: &mut SidePictures, rules: &Rules, seed: u64, det: Detection, out: 
         None => {
             pic.next_id += 1;
             let id = ContactId(pic.next_id);
-            let spread = u32::from(fusion.group_count_spread);
-            let draw = |n: u32| (rng(seed, RngPurpose::CountEstimate, u64::from(id.0) | (u64::from(det.side) << 40), 0, n) * f64::from(spread + 1)) as u32;
+            let spread = fusion.group_count_spread;
+            let draw = |n: u32| {
+                (rng(
+                    seed,
+                    RngPurpose::CountEstimate,
+                    u64::from(id.0) | (u64::from(det.side) << 40),
+                    0,
+                    n,
+                ) * f64::from(spread + 1)) as u32
+            };
             let n = u32::from(det.group_size.max(1));
             let lo = n.saturating_sub(draw(0)).max(1);
             let hi = n + draw(1);
@@ -404,7 +412,8 @@ fn fuse(pics: &mut SidePictures, rules: &Rules, seed: u64, det: Detection, out: 
         c.bearings.clear();
     } else if let Some(b) = det.bearing {
         let window = (fusion.esm_bearing_window_s * 1_000.0) as u64;
-        c.bearings.retain(|x| det.at_ms.saturating_sub(x.at_ms) <= window);
+        c.bearings
+            .retain(|x| det.at_ms.saturating_sub(x.at_ms) <= window);
         c.bearings.push(b);
         if c.bearings.len() > 16 {
             c.bearings.remove(0);
@@ -543,7 +552,11 @@ fn age(pics: &mut SidePictures, rules: &Rules, now: u64, out: &mut Pending) {
                 c.quality = Quality::Report;
             }
             let keep = c.fixed && fusion.fixed_sites_kept;
-            let limit = fusion.age_out_s.get(&c.domain).copied().unwrap_or(f64::INFINITY);
+            let limit = fusion
+                .age_out_s
+                .get(&c.domain)
+                .copied()
+                .unwrap_or(f64::INFINITY);
             if !keep && !c.lost && age_s > limit {
                 c.lost = true;
                 out.push((side as u8, EventKind::ContactLost { contact: c.id }));
@@ -579,7 +592,10 @@ impl TypeRef {
     pub fn lead_platform(&self, rules: &Rules) -> Option<PlatformIx> {
         match *self {
             TypeRef::Platform(p) => Some(p),
-            TypeRef::System(s) => rules.db.systems[s.0 as usize].components.first().map(|c| c.platform),
+            TypeRef::System(s) => rules.db.systems[s.0 as usize]
+                .components
+                .first()
+                .map(|c| c.platform),
             TypeRef::Weapon(_) => None,
         }
     }
@@ -641,7 +657,7 @@ impl TypeRef {
             let w = &db.weapons[w.0 as usize];
             (w.category == WeaponCategory::Sam).then_some(w.profile.max_range_m)
         };
-        let best = match *self {
+        match *self {
             TypeRef::System(s) => db.systems[s.0 as usize]
                 .components
                 .iter()
@@ -656,7 +672,6 @@ impl TypeRef {
                 .filter_map(|it| sam(&it.weapon))
                 .fold(None, |a: Option<f64>, r| Some(a.map_or(r, |a| a.max(r)))),
             TypeRef::Weapon(_) => None,
-        };
-        best
+        }
     }
 }

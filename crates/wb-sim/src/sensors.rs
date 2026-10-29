@@ -83,7 +83,7 @@ pub(crate) struct Body {
     pub(crate) terrain: TerrainClass,
 }
 
-fn signature<'a>(rules: &'a Rules, t: TypeRef) -> Option<&'a Signature> {
+fn signature(rules: &Rules, t: TypeRef) -> Option<&Signature> {
     match t {
         TypeRef::Platform(p) => Some(&rules.platform(p).signature),
         TypeRef::Weapon(w) => rules.db.weapons[w.0 as usize].signature.as_ref(),
@@ -159,7 +159,8 @@ fn emitting(rules: &Rules, emcon: Emcon, uid: UnitId, now_ms: u64) -> bool {
             let ew = &rules.realism().ew;
             let period = (ew.emcon_blink_period_s * 1_000.0).max(1_000.0) as u64;
             let on = (ew.emcon_blink_on_s * 1_000.0) as u64;
-            let off = (u64::from(uid.0).wrapping_mul(0x9E37_79B9) % (period / 1_000).max(1)) * 1_000;
+            let off =
+                (u64::from(uid.0).wrapping_mul(0x9E37_79B9) % (period / 1_000).max(1)) * 1_000;
             (now_ms + off) % period < on
         }
     }
@@ -191,14 +192,19 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
         if world.get::<SatelliteState>(e).is_some() {
             continue;
         }
-        let (type_ref, platform, domain, observer) =
-            if let Some(s) = world.get::<ScriptedTarget>(e) {
-                (TypeRef::Weapon(s.weapon), None, Domain::Air, false)
-            } else if let Some(p) = world.get::<PlatformRef>(e) {
-                (TypeRef::Platform(p.0), Some(p.0), rules.platform(p.0).domain, true)
-            } else {
-                continue;
-            };
+        let (type_ref, platform, domain, observer) = if let Some(s) = world.get::<ScriptedTarget>(e)
+        {
+            (TypeRef::Weapon(s.weapon), None, Domain::Air, false)
+        } else if let Some(p) = world.get::<PlatformRef>(e) {
+            (
+                TypeRef::Platform(p.0),
+                Some(p.0),
+                rules.platform(p.0).domain,
+                true,
+            )
+        } else {
+            continue;
+        };
         let at_base = matches!(world.get::<Posture>(e), Some(Posture::AtBase { .. }));
         let (key, group_size, sys) = match world.get::<GroupMember>(e) {
             Some(m) => {
@@ -214,13 +220,11 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
         let type_ref = sys.map_or(type_ref, TypeRef::System);
         let (ground_m, over_land, terrain) = match geo {
             Some(g) => {
-                let class = g.terrain_class(k.pos()).unwrap_or(wb_geo::TerrainClass::Water);
+                let class = g
+                    .terrain_class(k.pos())
+                    .unwrap_or(wb_geo::TerrainClass::Water);
                 let land = class != wb_geo::TerrainClass::Water;
-                let z = if domain == Domain::Ground {
-                    g.elevation_m(k.pos()).unwrap_or(0.0)
-                } else {
-                    0.0
-                };
+                let z = g.elevation_m(k.pos()).unwrap_or(0.0).max(0.0);
                 (z, land, wb_terrain(class))
             }
             None => (0.0, domain == Domain::Ground, TerrainClass::Open),
@@ -252,7 +256,8 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
             stores_mult: p.map_or(1.0, |p| stores_mult(rules, p, world.get::<Magazine>(e))),
             emcon: world.get::<EmconState>(e).map_or(Emcon::On, |x| x.0),
             fixed: sys.is_some_and(|s| {
-                rules.db.systems[s.0 as usize].deploy_as == wb_content::source::system::DeployAs::Site
+                rules.db.systems[s.0 as usize].deploy_as
+                    == wb_content::source::system::DeployAs::Site
             }) || (domain == Domain::Ground && k.speed_mps < 0.5),
             observer: observer && !at_base,
             visible: !at_base,
@@ -310,7 +315,11 @@ impl Index {
             self.sides
                 .iter()
                 .filter(|s| **s != own)
-                .flat_map(|s| cells.iter().filter_map(move |c| self.buckets.get(&(*s, *c))))
+                .flat_map(|s| {
+                    cells
+                        .iter()
+                        .filter_map(move |c| self.buckets.get(&(*s, *c)))
+                })
                 .flatten()
                 .copied()
                 .collect()
@@ -321,17 +330,18 @@ impl Index {
     }
 }
 
-/// Altitude band of a sensor for the LOS memo (ADR-023): lower edge of
-/// `step`-wide bands up to 1 km, then bands growing by `ratio`.
-fn alt_band(h: f64, step: f64, ratio: f64) -> (u16, f64) {
-    let h = h.max(0.0);
-    if h < 1_000.0 {
-        let i = (h / step).floor();
-        return (i as u16, i * step);
+/// Height-above-ground band of a sensor for the LOS memo (ADR-023): band 0
+/// is below `first`, then each band is `ratio` times the last. Returns the
+/// band and its lower edge, so the memo never sees from higher than the
+/// sensor is.
+fn alt_band(agl: f64, first: f64, ratio: f64) -> (u16, f64) {
+    if agl < first {
+        return (0, 0.0);
     }
-    let base = (1_000.0 / step).ceil();
-    let i = (wb_core::math::ln(h / 1_000.0) / wb_core::math::ln(ratio)).floor().max(0.0);
-    ((base + i) as u16, 1_000.0 * pow(ratio, i))
+    let i = (wb_core::math::ln(agl / first) / wb_core::math::ln(ratio))
+        .floor()
+        .max(0.0);
+    ((i as u16).saturating_add(1), first * pow(ratio, i))
 }
 
 struct Los<'a> {
@@ -341,11 +351,16 @@ struct Los<'a> {
 }
 
 impl Los<'_> {
-    /// Terrain line of sight from a sensor at `h_s` to a target at `h_t`.
-    fn clear(&mut self, s: LatLon, h_s: f64, t: LatLon, h_t: f64) -> bool {
+    /// Terrain line of sight from a sensor at `h_s` (above sea level, with
+    /// the ground `ground_s` below it) to a target at `h_t`.
+    fn clear(&mut self, s: LatLon, h_s: f64, ground_s: f64, t: LatLon, h_t: f64) -> bool {
         let Some(geo) = self.geo else { return true };
         let sp = &self.rules.realism().spatial;
-        let (band, h_rep) = alt_band(h_s, sp.los_memo_alt_step_m, sp.los_memo_alt_ratio);
+        let (band, agl_rep) = alt_band(
+            h_s - ground_s,
+            sp.los_memo_alt_step_m,
+            sp.los_memo_alt_ratio,
+        );
         let (cs, ct) = (
             wb_geo::h3::cell(s, sp.los_memo_res),
             wb_geo::h3::cell(t, sp.los_memo_res),
@@ -361,6 +376,7 @@ impl Los<'_> {
                     return true;
                 };
                 let d = distance_m(a, b);
+                let h_rep = geo.elevation_m(a).unwrap_or(0.0) + agl_rep;
                 let earth = &self.rules.realism().earth;
                 let radar = &self.rules.realism().radar;
                 let params = LosParams {
@@ -414,7 +430,11 @@ fn mounted(rules: &Rules, p: &Platform) -> Vec<Mounted> {
         v.push(Mounted {
             slot: LOOKOUT_SLOT,
             sensor: None,
-            height_m: if p.domain == Domain::Surface { 15.0 } else { 2.0 },
+            height_m: if p.domain == Domain::Surface {
+                15.0
+            } else {
+                2.0
+            },
         });
     }
     let _ = rules;
@@ -503,14 +523,7 @@ fn roles(rules: &Rules, s: SensorIx) -> &[SensorRole] {
 
 /// The sensor models: what one sensor makes of one target, before the draw.
 #[allow(clippy::too_many_arguments)]
-fn evaluate(
-    sc: &Scan,
-    los: &mut Los,
-    obs: &Body,
-    m: &Mounted,
-    tgt: &Body,
-    d: f64,
-) -> Option<Seen> {
+fn evaluate(sc: &Scan, los: &mut Los, obs: &Body, m: &Mounted, tgt: &Body, d: f64) -> Option<Seen> {
     let rules = sc.rules;
     let real = rules.realism();
     let h_s = obs.sensor_base_m + m.height_m;
@@ -523,25 +536,38 @@ fn evaluate(
                 .signature
                 .as_ref()
                 .and_then(|s| s.visual_size_m),
-            TypeRef::System(_) => tgt.platform.and_then(|p| rules.platform(p).signature.visual_size_m),
+            TypeRef::System(_) => tgt
+                .platform
+                .and_then(|p| rules.platform(p).signature.visual_size_m),
         }
         .unwrap_or(10.0)
     };
     let Some(six) = m.sensor else {
         // Crew lookout.
         let p = &real.passive;
-        let base = p.visual_range_m.get(&tgt.terrain).copied().unwrap_or(4_000.0);
-        let mut r = base
-            * sqrt(size() / p.visual_ref_size_m.max(0.1)).min(p.visual_max_size_factor);
+        let base = p
+            .visual_range_m
+            .get(&tgt.terrain)
+            .copied()
+            .unwrap_or(4_000.0);
+        let mut r =
+            base * sqrt(size() / p.visual_ref_size_m.max(0.1)).min(p.visual_max_size_factor);
         if night() {
             r *= p.visual_night_factor;
         }
-        if d > r || d > horizon_m(rules, h_s, tgt.h_m) || !los.clear(obs.pos, h_s, tgt.pos, tgt.h_m) {
+        if d > r
+            || d > horizon_m(rules, h_s, tgt.h_m)
+            || !los.clear(obs.pos, h_s, obs.ground_m, tgt.pos, tgt.h_m)
+        {
             return None;
         }
         return Some(Seen {
             pd: 1.0,
-            level: if d < r * 0.5 { ContactLevel::Type } else { ContactLevel::Class },
+            level: if d < r * 0.5 {
+                ContactLevel::Type
+            } else {
+                ContactLevel::Class
+            },
             quality: Quality::Track,
             count_resolved: true,
             sigma_r: d * 0.05,
@@ -565,9 +591,12 @@ fn evaluate(
                             | SensorRole::MissileGuidance
                     )
                 }),
-                Domain::Surface => role
-                    .iter()
-                    .any(|x| matches!(x, SensorRole::SurfaceSearch | SensorRole::GroundMapping | SensorRole::Aew)),
+                Domain::Surface => role.iter().any(|x| {
+                    matches!(
+                        x,
+                        SensorRole::SurfaceSearch | SensorRole::GroundMapping | SensorRole::Aew
+                    )
+                }),
                 Domain::Ground => role.iter().any(|x| matches!(x, SensorRole::GroundMapping)),
                 _ => false,
             };
@@ -589,11 +618,15 @@ fn evaluate(
             let mut r50 = r.r_ref_m * pow((sigma / r.sigma_ref_m2).max(1e-12), 0.25);
             let rr = &real.radar;
             let low = tgt.h_m - tgt.ground_m
-                < if tgt.over_land { rr.clutter_alt_land_m } else { rr.clutter_alt_sea_m };
+                < if tgt.over_land {
+                    rr.clutter_alt_land_m
+                } else {
+                    rr.clutter_alt_sea_m
+                };
             if low {
                 r50 *= r.clutter_rejection;
             }
-            if !los.clear(obs.pos, h_s, tgt.pos, tgt.h_m) {
+            if !los.clear(obs.pos, h_s, obs.ground_m, tgt.pos, tgt.h_m) {
                 return None;
             }
             let mut p = pd(d, r50, rr.pd_steepness_k);
@@ -613,8 +646,16 @@ fn evaluate(
                 .unwrap_or(wb_core::units::deg_to_rad(rr.bearing_sigma_default_deg));
             Some(Seen {
                 pd: p,
-                level: if fc { ContactLevel::Class } else { ContactLevel::Domain },
-                quality: if fc { Quality::FireControl } else { Quality::Track },
+                level: if fc {
+                    ContactLevel::Class
+                } else {
+                    ContactLevel::Domain
+                },
+                quality: if fc {
+                    Quality::FireControl
+                } else {
+                    Quality::Track
+                },
                 count_resolved: d < rr.group_resolve_fraction * r50,
                 sigma_r: rr.range_sigma_m,
                 sigma_c: d * bs,
@@ -627,10 +668,8 @@ fn evaluate(
                 return None;
             }
             let p = &real.passive;
-            let (cruise, ab) = match signature(rules, tgt.type_ref).and_then(|s| s.ir.as_ref()) {
-                Some(ir) => (ir.cruise, ir.afterburner),
-                None => return None,
-            };
+            let ir = signature(rules, tgt.type_ref).and_then(|s| s.ir.as_ref())?;
+            let (cruise, ab) = (ir.cruise, ir.afterburner);
             let back = initial_bearing(tgt.pos, obs.pos);
             let az = angle_diff(tgt.heading, back).abs();
             let f = &p.irst_aspect_factor;
@@ -651,7 +690,9 @@ fn evaluate(
                 cruise
             } * aspect;
             let r50 = r.r_ref_m * sqrt((i / r.i_ref).max(0.0));
-            if d > horizon_m(rules, h_s, tgt.h_m) || !los.clear(obs.pos, h_s, tgt.pos, tgt.h_m) {
+            if d > horizon_m(rules, h_s, tgt.h_m)
+                || !los.clear(obs.pos, h_s, obs.ground_m, tgt.pos, tgt.h_m)
+            {
                 return None;
             }
             Some(Seen {
@@ -677,7 +718,9 @@ fn evaluate(
             if size() / gsd < p.eo_detect_pixels {
                 return None;
             }
-            if d > horizon_m(rules, h_s, tgt.h_m) || !los.clear(obs.pos, h_s, tgt.pos, tgt.h_m) {
+            if d > horizon_m(rules, h_s, tgt.h_m)
+                || !los.clear(obs.pos, h_s, obs.ground_m, tgt.pos, tgt.h_m)
+            {
                 return None;
             }
             let level = if gsd < p.eo_gsd_type_m {
@@ -700,12 +743,17 @@ fn evaluate(
         SensorType::Visual => {
             let v = s.visual.as_ref()?;
             let p = &real.passive;
-            let base = p.visual_range_m.get(&tgt.terrain).copied().unwrap_or(4_000.0);
-            let mut r = base * sqrt(size() / p.visual_ref_size_m.max(0.1)).min(p.visual_max_size_factor);
+            let base = p
+                .visual_range_m
+                .get(&tgt.terrain)
+                .copied()
+                .unwrap_or(4_000.0);
+            let mut r =
+                base * sqrt(size() / p.visual_ref_size_m.max(0.1)).min(p.visual_max_size_factor);
             if !v.night_vision && night() {
                 r *= p.visual_night_factor;
             }
-            if d > r || !los.clear(obs.pos, h_s, tgt.pos, tgt.h_m) {
+            if d > r || !los.clear(obs.pos, h_s, obs.ground_m, tgt.pos, tgt.h_m) {
                 return None;
             }
             Some(Seen {
@@ -765,13 +813,16 @@ fn evaluate(
                     e.bands.contains(&r.band).then_some((mt, r))
                 })
                 .map(|(mt, r)| {
-                    let range = e.r_ref_m * sqrt(pow(10.0, (r.erp_class_dbw - e.erp_ref_dbw) / 10.0));
+                    let range =
+                        e.r_ref_m * sqrt(pow(10.0, (r.erp_class_dbw - e.erp_ref_dbw) / 10.0));
                     (range, mt.height_m, mt.sensor)
                 })
                 .max_by(|a, b| a.0.total_cmp(&b.0).then(b.2.cmp(&a.2)))?;
             let (range, mast, _) = best;
             let h_t = tgt.sensor_base_m + mast;
-            if d > horizon_m(rules, h_s, h_t) || !los.clear(obs.pos, h_s, tgt.pos, h_t) {
+            if d > horizon_m(rules, h_s, h_t)
+                || !los.clear(obs.pos, h_s, obs.ground_m, tgt.pos, h_t)
+            {
                 return None;
             }
             let sigma = if e.bearing_sigma_rad > 0.0 {
@@ -807,7 +858,10 @@ fn prune_range(rules: &Rules, m: &Mounted, h_s: f64) -> f64 {
             let cap = r.r_ref_m * pow(PRUNE_SIGMA_M2 / r.sigma_ref_m2, 0.25) * PD_PRUNE_FACTOR;
             r.max_range_m.map_or(cap, |m| m.min(cap))
         }),
-        SensorType::Irst => s.irst.as_ref().map_or(0.0, |r| r.r_ref_m * 3.0 * PD_PRUNE_FACTOR),
+        SensorType::Irst => s
+            .irst
+            .as_ref()
+            .map_or(0.0, |r| r.r_ref_m * 3.0 * PD_PRUNE_FACTOR),
         SensorType::EoIr => s.eo_ir.as_ref().map_or(0.0, |e| e.max_range_m),
         SensorType::Visual => {
             let p = &rules.realism().passive;
@@ -816,7 +870,10 @@ fn prune_range(rules: &Rules, m: &Mounted, h_s: f64) -> f64 {
         SensorType::Sonar => s.sonar.as_ref().map_or(0.0, |so| {
             (so.passive_r_ref_m * 10.0).max(so.active_range_m.unwrap_or(0.0)) * PD_PRUNE_FACTOR
         }),
-        SensorType::Esm => s.esm.as_ref().map_or(0.0, |e| e.r_ref_m * 10.0 * PD_PRUNE_FACTOR),
+        SensorType::Esm => s
+            .esm
+            .as_ref()
+            .map_or(0.0, |e| e.r_ref_m * 10.0 * PD_PRUNE_FACTOR),
         SensorType::SatellitePayload => 0.0,
     };
     r.min(hz)
@@ -864,7 +921,11 @@ pub(crate) fn emitter_type(rules: &Rules, tgt: &Body) -> (TypeRef, ContactLevel)
         .systems
         .iter()
         .enumerate()
-        .filter(|(_, s)| s.components.iter().any(|c| c.platform.0 as usize == mounts[0]))
+        .filter(|(_, s)| {
+            s.components
+                .iter()
+                .any(|c| c.platform.0 as usize == mounts[0])
+        })
         .map(|(i, _)| i)
         .collect();
     match (systems.len(), tgt.type_ref) {
@@ -875,7 +936,12 @@ pub(crate) fn emitter_type(rules: &Rules, tgt: &Body) -> (TypeRef, ContactLevel)
 }
 
 /// Whether a body has a radar in one of `bands` that emits now (SIGINT).
-pub(crate) fn emits_in(rules: &Rules, b: &Body, bands: &[wb_content::source::Band], now_ms: u64) -> bool {
+pub(crate) fn emits_in(
+    rules: &Rules,
+    b: &Body,
+    bands: &[wb_content::source::Band],
+    now_ms: u64,
+) -> bool {
     let Some(p) = b.platform else { return false };
     emitting(rules, b.emcon, b.uid, now_ms)
         && rules.platform(p).sensors.iter().any(|m| {
@@ -903,9 +969,7 @@ pub fn scan(world: &mut World) {
     let rules = world.resource::<Rules>().clone();
     let clock = world.resource::<SimClock>().clone();
     let seed = world.resource::<RngSeed>().0;
-    let geo = world
-        .get_non_send::<GeoRes>()
-        .and_then(|g| g.0.clone());
+    let geo = world.get_non_send::<GeoRes>().and_then(|g| g.0.clone());
 
     // Which observers have a due sensor this tick?
     let mut any_due = false;
@@ -913,10 +977,9 @@ pub fn scan(world: &mut World) {
         let mut q = world.query::<(&PlatformRef, &crate::components::Identity)>();
         for (p, ident) in q.iter(world) {
             let pl = rules.platform(p.0);
-            if mounted(&rules, pl)
-                .iter()
-                .any(|m| clock.due_staggered(period_ms(&rules, m), ident.unit.0 ^ u32::from(m.slot)))
-            {
+            if mounted(&rules, pl).iter().any(|m| {
+                clock.due_staggered(period_ms(&rules, m), ident.unit.0 ^ u32::from(m.slot))
+            }) {
                 any_due = true;
                 break;
             }
@@ -972,7 +1035,13 @@ pub fn scan(world: &mut World) {
                     };
                     let ent = (u64::from(obs.uid.0) << 32) | u64::from(tgt.uid.0);
                     if seen.pd < 1.0
-                        && rng(seed, RngPurpose::Detection, ent, clock.tick, u32::from(m.slot)) >= seen.pd
+                        && rng(
+                            seed,
+                            RngPurpose::Detection,
+                            ent,
+                            clock.tick,
+                            u32::from(m.slot),
+                        ) >= seen.pd
                     {
                         continue;
                     }
@@ -996,7 +1065,13 @@ pub fn scan(world: &mut World) {
                     let (position, bearing) = match seen.bearing {
                         Some(b) => {
                             let ent = (u64::from(obs.uid.0) << 32) | u64::from(tgt.uid.0);
-                            let z = rng_normal(seed, RngPurpose::EsmBearing, ent, clock.tick, u32::from(m.slot));
+                            let z = rng_normal(
+                                seed,
+                                RngPurpose::EsmBearing,
+                                ent,
+                                clock.tick,
+                                u32::from(m.slot),
+                            );
                             (
                                 None,
                                 Some(Bearing {
@@ -1008,7 +1083,15 @@ pub fn scan(world: &mut World) {
                             )
                         }
                         None => (
-                            Some(measure(&sc, obs, tgt, seen.sigma_r, seen.sigma_c, m.slot, kind)),
+                            Some(measure(
+                                &sc,
+                                obs,
+                                tgt,
+                                seen.sigma_r,
+                                seen.sigma_c,
+                                m.slot,
+                                kind,
+                            )),
                             None,
                         ),
                     };

@@ -261,7 +261,11 @@ pub mod h3 {
         let Ok(c) = h3o::CellIndex::try_from(cell) else {
             return Vec::new();
         };
-        let mut v: Vec<u64> = c.grid_disk::<Vec<_>>(k).into_iter().map(u64::from).collect();
+        let mut v: Vec<u64> = c
+            .grid_disk::<Vec<_>>(k)
+            .into_iter()
+            .map(u64::from)
+            .collect();
         v.sort_unstable();
         v
     }

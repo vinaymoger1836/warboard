@@ -175,8 +175,7 @@ impl Sim {
             Some(t) => t.geo().ok().map(Rc::new),
             None => geo,
         };
-        self.world
-            .insert_non_send(sensors::GeoRes(geo.clone()));
+        self.world.insert_non_send(sensors::GeoRes(geo.clone()));
         self.geo = geo;
     }
 

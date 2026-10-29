@@ -1,5 +1,5 @@
 # G3 (doc 08 §3): an aircraft at 100 m flies north behind a 600 m ridge,
-# 20 km from a ground radar, and comes out past the ridge's north end. It must
+# 15 km from a ground radar, and comes out past the ridge's north end. It must
 # stay undetected while terrain blocks the line of sight and be seen soon
 # after it clears. The ridge is synthetic terrain (test_terrain), so the
 # golden runs without region packs.
@@ -12,15 +12,15 @@ test_terrain:
   south: 54
   base_m: 10
   ridges:
-    - { from: [20.5, 54.30], to: [20.5, 54.60], height_m: 600, half_width_m: 1500 }
+    - { from: [20.5, 54.30], to: [20.5, 54.50], height_m: 600, half_width_m: 1500 }
 sides:
   - { name: NATO, countries: [usa] }
   - { name: Russia, countries: [rus] }
 units:
-  - { id: 10, name: Radar, platform: an-mpq-65, country: usa, lat_deg: 54.45, lon_deg: 20.30, heading_deg: 60 }
-  - { id: 20, name: Intruder, platform: su-35s, country: rus, lat_deg: 54.35, lon_deg: 20.70, alt_m: 100, heading_deg: 0 }
+  - { id: 10, name: Radar, platform: an-mpq-65, country: usa, lat_deg: 54.40, lon_deg: 20.40, heading_deg: 30 }
+  - { id: 20, name: Intruder, platform: su-35s, country: rus, lat_deg: 54.30, lon_deg: 20.62, alt_m: 100, heading_deg: 0 }
 orders:
-  - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[20.70, 54.99]], alt_m: 100 } }
+  - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[20.62, 54.99]], alt_m: 100 } }
 golden:
   id: G3
   description: aircraft at 100 m behind a ridge vs ground radar, undetected until line of sight clears

@@ -385,8 +385,8 @@ source_type! {
         pub bucket_res: u8,
         /// H3 resolution of the line-of-sight memo cells.
         pub los_memo_res: u8,
-        /// Sensor altitude bands of the memo: `step` wide up to 1 km, then
-        /// each `ratio` times the last.
+        /// Sensor height-above-ground bands of the memo: the first ends at
+        /// `step`, then each is `ratio` times the last.
         pub los_memo_alt_step_m: f64,
         pub los_memo_alt_ratio: f64,
         /// Entries kept before the memo is cleared.

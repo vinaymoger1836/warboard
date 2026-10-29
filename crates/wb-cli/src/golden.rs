@@ -61,6 +61,19 @@ struct Variant {
     /// Scripted targets left out.
     #[serde(default)]
     drop_targets: Vec<u32>,
+    /// Units whose platform (and country) is swapped, so one target id
+    /// stands for different types across variants (G2).
+    #[serde(default)]
+    replace: Vec<Replace>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Replace {
+    unit: u32,
+    platform: String,
+    #[serde(default)]
+    country: Option<String>,
 }
 
 /// One measured quantity of a run.
@@ -148,7 +161,10 @@ impl Metric {
     fn is_flight(self) -> bool {
         matches!(
             self,
-            Metric::TimeOnStationS | Metric::LandedReserveMarginKg | Metric::BingoCalls | Metric::Refuels
+            Metric::TimeOnStationS
+                | Metric::LandedReserveMarginKg
+                | Metric::BingoCalls
+                | Metric::Refuels
         )
     }
 }
@@ -241,7 +257,12 @@ fn run_file(path: &Path, content: &Content) -> anyhow::Result<usize> {
 
     let mut failed = 0;
     for e in &spec.expect {
-        let get = |v: &str, m: &Measure| results.get(&(v.to_owned(), key(m))).cloned().unwrap_or_default();
+        let get = |v: &str, m: &Measure| {
+            results
+                .get(&(v.to_owned(), key(m)))
+                .cloned()
+                .unwrap_or_default()
+        };
         let mut vals = get(&e.variant, &e.what);
         let combine = |a: Vec<Option<f64>>, b: Vec<Option<f64>>| -> Vec<Option<f64>> {
             a.iter()
@@ -336,7 +357,16 @@ fn aggregate(vals: &[Option<f64>], how: Aggregate) -> Option<f64> {
 
 fn apply_variant(s: &mut Scenario, v: &Variant) {
     s.units.retain(|u| !v.drop_units.contains(&u.id));
-    s.scripted_targets.retain(|t| !v.drop_targets.contains(&t.id));
+    s.scripted_targets
+        .retain(|t| !v.drop_targets.contains(&t.id));
+    for r in &v.replace {
+        for u in s.units.iter_mut().filter(|u| u.id == r.unit) {
+            u.platform = Some(r.platform.clone());
+            if let Some(c) = &r.country {
+                u.country = Some(c.clone());
+            }
+        }
+    }
     s.orders.retain(|o| match &o.command {
         Command::AssignTask { units, .. }
         | Command::SetBehaviour { units, .. }
@@ -447,7 +477,7 @@ fn measure_run(sim: &mut Sim, measures: &[Measure], max_ticks: u64) -> Vec<Optio
     let reports_only = measures.iter().all(|m| m.metric == Metric::ReportCount);
     // Line of sight per (observer, target): clearance each tick and the tick it cleared.
     let mut cleared: BTreeMap<(u32, u32), Option<u64>> = BTreeMap::new();
-    let mut at_detect: BTreeMap<(u32, u32), f64> = BTreeMap::new();
+    let mut history: BTreeMap<(u32, u32), BTreeMap<u64, f64>> = BTreeMap::new();
     let mut checked = 0;
     let mut flight_done = groups.is_empty();
     while sim.clock().tick < max_ticks {
@@ -463,13 +493,11 @@ fn measure_run(sim: &mut Sim, measures: &[Measure], max_ticks: u64) -> Vec<Optio
             if entry.is_none() && c.is_some_and(|c| c >= 0.0) {
                 *entry = Some(tick);
             }
-            if !at_detect.contains_key(&(o, t))
-                && let Some((ft, _)) = first_seen(sim, side, t)
-                && ft + 1 >= tick
-                && let Some(c) = c
-            {
-                at_detect.insert((o, t), c);
+            if let Some(c) = c {
+                // Positions after tick `tick - 1` ran: what its sensors saw.
+                history.entry((o, t)).or_default().insert(tick - 1, c);
             }
+            let _ = side;
         }
         if reports_only {
             continue;
@@ -487,6 +515,15 @@ fn measure_run(sim: &mut Sim, measures: &[Measure], max_ticks: u64) -> Vec<Optio
             break;
         }
     }
+    let at_detect: BTreeMap<(u32, u32), f64> = los
+        .iter()
+        .filter_map(|m| {
+            let (o, t) = (m.observer?, m.target?);
+            let (ft, _) = first_seen(sim, m.side?, t)?;
+            let c = history.get(&(o, t))?.range(..=ft).next_back()?.1;
+            Some(((o, t), *c))
+        })
+        .collect();
     measures
         .iter()
         .map(|m| value(sim, m, &groups, &cleared, &at_detect))
@@ -517,8 +554,10 @@ fn value(
             Some(
                 events
                     .iter()
-                    .filter(|e| matches!(&e.kind, EventKind::IntelReport { satellite, imaged, .. }
-                        if *satellite == sat && m.imaged.is_none_or(|i| i == *imaged)))
+                    .filter(|e| {
+                        matches!(&e.kind, EventKind::IntelReport { satellite, imaged, .. }
+                        if *satellite == sat && m.imaged.is_none_or(|i| i == *imaged))
+                    })
                     .count() as f64,
             )
         }
@@ -526,7 +565,12 @@ fn value(
     }
 }
 
-fn flight_value(events: &[Event], group: UnitId, members: &[UnitId], metric: Metric) -> Option<f64> {
+fn flight_value(
+    events: &[Event],
+    group: UnitId,
+    members: &[UnitId],
+    metric: Metric,
+) -> Option<f64> {
     let end = first_landing(events, members);
     let window = &events[..end.map_or(events.len(), |i| i + 1)];
     match metric {

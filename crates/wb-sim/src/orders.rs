@@ -21,11 +21,11 @@ use crate::components::{
     Allegiance, BaseSite, Behaviour, EmconState, Group, GroupMember, Identity, Kinematics, Mode,
     PlatformRef, Posture, ReturnWhy, SatelliteState, Speed, Task, Tasking,
 };
-use wb_content::source::{Emcon, PayloadKind};
 use crate::events::{EventKind, emit};
 use crate::placement;
 use crate::rules::Rules;
 use crate::world::{Sides, UnitIdAlloc, entity, spawn_unit};
+use wb_content::source::{Emcon, PayloadKind};
 
 /// `[lon, lat]` in degrees (doc 04 §7.2).
 pub type LonLat = [f64; 2];
@@ -355,7 +355,9 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
             }
             let rules = world.resource::<Rules>().clone();
             let pix = world.get::<PlatformRef>(e).ok_or_else(unknown)?.0;
-            let name = world.get::<Identity>(e).map_or(String::new(), |i| i.name.clone());
+            let name = world
+                .get::<Identity>(e)
+                .map_or(String::new(), |i| i.name.clone());
             let (_, pl) = crate::satellites::payload(&rules, pix).ok_or_else(unknown)?;
             if pl.kind == PayloadKind::Sigint {
                 return Err(format!(
@@ -363,7 +365,8 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
                 ));
             }
             let at = point(*centre)?;
-            if !radius_km.is_finite() || *radius_km <= 0.0 || km_to_m(*radius_km) > pl.swath_m / 2.0 {
+            if !radius_km.is_finite() || *radius_km <= 0.0 || km_to_m(*radius_km) > pl.swath_m / 2.0
+            {
                 return Err(format!(
                     "Area radius must be between 0 and {:.0} km (half of {name}'s strip)",
                     pl.swath_m / 2_000.0
@@ -374,8 +377,11 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
                 + order.tick.saturating_sub(clock.tick) * u64::from(clock.tick_len.ms());
             let from_utc = clock.start_utc_ms as f64 + from_ms as f64;
             let horizon_h = rules.realism().satellites.tasking_horizon_s / 3_600.0;
-            let pass_utc = crate::satellites::next_pass(&rules, pix, at, km_to_m(*radius_km), from_utc)
-                .ok_or_else(|| format!("{name} has no pass over that area in the next {horizon_h:.0} h"))?;
+            let pass_utc =
+                crate::satellites::next_pass(&rules, pix, at, km_to_m(*radius_km), from_utc)
+                    .ok_or_else(|| {
+                        format!("{name} has no pass over that area in the next {horizon_h:.0} h")
+                    })?;
             let pass_ms = (pass_utc - clock.start_utc_ms as f64).max(0.0) as u64;
             let report_ms = pass_ms + (crate::satellites::downlink_s(&rules, pl) * 1_000.0) as u64;
             Ok(Resolved::TaskSatellite {

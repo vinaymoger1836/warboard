@@ -166,7 +166,7 @@ logistics:                           # doc 02 §6
 spatial:                             # doc 02 §16, ADR-023
   bucket_res: 3
   los_memo_res: 8
-  los_memo_alt_step_m: 25
+  los_memo_alt_step_m: 2
   los_memo_alt_ratio: 1.1
   los_memo_capacity: 200000
 

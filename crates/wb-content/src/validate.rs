@@ -374,7 +374,10 @@ impl<'a> Cx<'a, '_> {
             }
             (Some(o), _) => {
                 if let Err(e) = wb_core::orbit::Tle::parse(&o.tle_line1, &o.tle_line2) {
-                    self.err("orbit", format!("is not a usable two-line element set: {e}"));
+                    self.err(
+                        "orbit",
+                        format!("is not a usable two-line element set: {e}"),
+                    );
                 }
             }
             (None, _) => {}

@@ -24,7 +24,9 @@ const R_M: f64 = wb_core::geo::EARTH_RADIUS_M;
 
 pub fn sgp4(rules: &Rules, p: PlatformIx) -> Option<Sgp4> {
     let (l1, l2) = rules.platform(p).orbit?;
-    Tle::parse(rules.db.str(l1), rules.db.str(l2)).ok().map(Sgp4::new)
+    Tle::parse(rules.db.str(l1), rules.db.str(l2))
+        .ok()
+        .map(Sgp4::new)
 }
 
 /// Sub-satellite point and height above the engine's sphere.
@@ -151,7 +153,9 @@ pub fn update(world: &mut World) {
         if sigint_due && pl.kind == PayloadKind::Sigint {
             let mut dets = Vec::new();
             for b in bodies.iter().filter(|b| b.visible && b.side != *side) {
-                if distance_m(sub, b.pos) > pl.swath_m / 2.0 || !sensors::emits_in(&rules, b, &pl.bands, clock.sim_time_ms) {
+                if distance_m(sub, b.pos) > pl.swath_m / 2.0
+                    || !sensors::emits_in(&rules, b, &pl.bands, clock.sim_time_ms)
+                {
                     continue;
                 }
                 let seen = pics.sigint_seen.get(&(*uid, b.key)).copied();
@@ -161,7 +165,19 @@ pub fn update(world: &mut World) {
                 pics.sigint_seen.insert((*uid, b.key), clock.sim_time_ms);
                 let sigma = pl.location_sigma_m.unwrap_or(5_000.0);
                 let (type_ref, level) = sensors::emitter_type(&rules, b);
-                dets.push(detection(seed, &clock, *side, *uid, sensor, SourceKind::Sigint, b, type_ref, level, sigma, false));
+                dets.push(detection(
+                    seed,
+                    &clock,
+                    *side,
+                    *uid,
+                    sensor,
+                    SourceKind::Sigint,
+                    b,
+                    type_ref,
+                    level,
+                    sigma,
+                    false,
+                ));
             }
             if !dets.is_empty() {
                 let n = dets.len();
@@ -218,10 +234,26 @@ pub fn update(world: &mut World) {
                     continue;
                 }
                 let sigma = (5.0 * gsd).max(rules.realism().fusion.contact_sigma_floor_m);
-                dets.push(detection(seed, &clock, *side, *uid, sensor, SourceKind::Imagery, b, b.type_ref, level, sigma, gsd < pass.eo_gsd_type_m));
+                dets.push(detection(
+                    seed,
+                    &clock,
+                    *side,
+                    *uid,
+                    sensor,
+                    SourceKind::Imagery,
+                    b,
+                    b.type_ref,
+                    level,
+                    sigma,
+                    gsd < pass.eo_gsd_type_m,
+                ));
             }
             let n = dets.len();
-            let kind = if pl.kind == PayloadKind::Sar { "radar" } else { "optical" };
+            let kind = if pl.kind == PayloadKind::Sar {
+                "radar"
+            } else {
+                "optical"
+            };
             pics.reports.push(PendingReport {
                 at_ms: report_at,
                 side: *side,
