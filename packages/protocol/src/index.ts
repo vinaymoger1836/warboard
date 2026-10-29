@@ -23,8 +23,25 @@ export type { Speed } from './generated/Speed';
 export type { StationedView } from './generated/StationedView';
 export type { TaskOrder } from './generated/TaskOrder';
 export type { TaskView } from './generated/TaskView';
-export { FLAG, STATUS, SYMBOLS, type SymbolName } from './generated/symbols';
-export { decodeSideView, statusOf, StringTable, type SideView, type StatusName, type UnitColumns } from './sideview';
+export { CFLAG, FLAG, STATUS, STRING_KIND, SYMBOLS, type SymbolName } from './generated/symbols';
+export {
+  contactDomain,
+  decodeSideView,
+  statusOf,
+  StringTable,
+  type ContactColumns,
+  type DomainName,
+  type SideView,
+  type StatusName,
+  type UnitColumns,
+} from './sideview';
+
+// Fog of war (P4): contact and satellite cards.
+export type { ContactDetails } from './generated/ContactDetails';
+export type { ContactSourceView } from './generated/ContactSourceView';
+export type { SatelliteDetails } from './generated/SatelliteDetails';
+export type { TaskingView } from './generated/TaskingView';
+export type { Emcon } from './generated/Emcon';
 
 // Content source format (wb-content). The JSON Schema of the same format is
 // generated to ./generated/content.schema.json.

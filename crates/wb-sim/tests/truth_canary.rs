@@ -120,7 +120,10 @@ fn hidden_enemy_never_leaks() {
         for id in ids {
             match details::details(sim.world(), 0, id) {
                 Ok(d) => {
-                    assert!(!CANARIES.contains(&id) && ![701, 702].contains(&id), "details of canary {id}");
+                    assert!(
+                        !CANARIES.contains(&id) && ![701, 702].contains(&id),
+                        "details of canary {id}"
+                    );
                     texts.push(format!("{d:?}"));
                 }
                 Err(e) => assert_eq!(e, format!("Unknown unit {id}"), "rejection reveals nothing"),
@@ -176,5 +179,8 @@ fn hidden_enemy_never_leaks() {
         );
     }
     assert!(scans > 0);
-    assert!(detected_ship, "the approaching canary should be detected during the run");
+    assert!(
+        detected_ship,
+        "the approaching canary should be detected during the run"
+    );
 }

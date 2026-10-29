@@ -59,7 +59,8 @@ impl Engine {
         }
     }
 
-    /// Region packs used to check orders (ship routes, base placement).
+    /// Region packs: line of sight every tick (ADR-022) and order checks
+    /// (ship routes, base placement).
     pub fn set_geo(&mut self, geo: &GeoQuery) {
         self.sim.set_geo(Some(geo.shared()));
     }
@@ -132,6 +133,33 @@ impl Engine {
         wb_sim::details::details(self.sim.world(), self.side, id)
             .map(|d| json(&d))
             .map_err(|e| JsError::new(&e))
+    }
+
+    /// Contact card JSON for a contact of this side's picture: estimates only.
+    pub fn contact_details(&self, id: u32) -> Result<String, JsError> {
+        wb_sim::details::contact_details(self.sim.world(), self.side, id)
+            .map(|d| json(&d))
+            .map_err(|e| JsError::new(&e))
+    }
+
+    /// Ground track of an own satellite, `[[lon, lat], …]` every `step_s`.
+    pub fn ground_track(
+        &self,
+        id: u32,
+        before_min: f64,
+        after_min: f64,
+        step_s: f64,
+    ) -> Result<String, JsError> {
+        wb_sim::satellites::ground_track(
+            self.sim.world(),
+            self.side,
+            id,
+            before_min,
+            after_min,
+            step_s,
+        )
+        .map(|t| json(&t))
+        .map_err(|e| JsError::new(&e))
     }
 
     /// Submits an order (JSON, doc 04 §7.2) for this client's side. Returns

@@ -50,6 +50,26 @@ mod tests {
         }
         lines.push("} as const;".to_owned());
         lines.push(String::new());
+        lines.push("/** SideView contact `flags` bits. */".to_owned());
+        lines.push("export const CFLAG = {".to_owned());
+        for (name, v) in crate::view::CONTACT_FLAG_NAMES {
+            lines.push(format!("  {name}: {v},"));
+        }
+        lines.push("} as const;".to_owned());
+        lines.push(String::new());
+        lines.push("/** String kinds of the strings section. */".to_owned());
+        lines.push("export const STRING_KIND = {".to_owned());
+        for (name, v) in [
+            ("NAME", crate::view::string_kind::NAME),
+            ("TYPE", crate::view::string_kind::TYPE),
+            ("CONTACT_TYPE", crate::view::string_kind::CONTACT_TYPE),
+            ("OWNER", crate::view::string_kind::OWNER),
+            ("PAYLOAD", crate::view::string_kind::PAYLOAD),
+        ] {
+            lines.push(format!("  {name}: {v},"));
+        }
+        lines.push("} as const;".to_owned());
+        lines.push(String::new());
         lines.push("/** Status names by value (bits 8–11 of `flags`). */".to_owned());
         let names: Vec<String> = crate::view::STATUS_NAMES
             .iter()

@@ -198,6 +198,10 @@ pub struct GroupDetails {
     pub weapons: Vec<WeaponCount>,
     /// Provenance confidence of the platform's data.
     pub confidence: String,
+    /// Emission control of the lead: `on`, `off` or `blink` (none without radars).
+    pub emcon: Option<String>,
+    /// Sensor names of the platform.
+    pub sensors: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -430,6 +434,20 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
             .map(|l| db.str(db.loadouts[l.0 as usize].name).to_owned()),
         weapons,
         confidence: format!("{:?}", p.provenance.confidence).to_lowercase(),
+        emcon: world
+            .get::<crate::components::EmconState>(lead)
+            .filter(|_| {
+                p.sensors.iter().any(|m| {
+                    db.sensors[m.sensor.0 as usize].radar.is_some()
+                        || db.sensors[m.sensor.0 as usize].sonar.is_some()
+                })
+            })
+            .map(|e| snake(e.0)),
+        sensors: p
+            .sensors
+            .iter()
+            .map(|m| db.str(db.sensors[m.sensor.0 as usize].name).to_owned())
+            .collect(),
     })
 }
 

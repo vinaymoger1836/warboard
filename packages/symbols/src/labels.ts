@@ -23,3 +23,30 @@ export function unitLabel(u: LabelInput): string {
 export function markAbove(symbol: number): string {
   return isAircraft(symbol) ? 'SQN' : '';
 }
+
+export interface ContactLabelInput {
+  symbol: number;
+  /** Type short name at type level, class name at class level, empty below. */
+  typeName: string;
+  domain: string;
+  countMin: number;
+  countMax: number;
+  countKnown: boolean;
+}
+
+/** First line of a contact label (doc 10 §4.1): `SITE S-400`, `SHIP Steregushchiy`,
+ *  `2–4 × Su-35S`, `UNKNOWN AIR` while only the domain is known. The second line
+ *  `(our estimate)` is added by the map for estimated contacts. */
+export function contactLabel(c: ContactLabelInput): string {
+  if (!c.typeName) return `UNKNOWN ${c.domain.toUpperCase()}`;
+  if (isBase(c.symbol)) return `SITE ${c.typeName}`;
+  if (isShip(c.symbol)) return `SHIP ${c.typeName}`;
+  if (isAircraft(c.symbol) || c.domain === 'air') {
+    const n = c.countKnown || c.countMin === c.countMax ? `${c.countMax}` : `${c.countMin}–${c.countMax}`;
+    return n === '1' ? `SQN ${c.typeName}` : `${n} × ${c.typeName}`;
+  }
+  return c.typeName;
+}
+
+/** Second line under an estimated contact. */
+export const ESTIMATE_LINE = '(our estimate)';

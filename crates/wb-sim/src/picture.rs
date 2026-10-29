@@ -261,14 +261,17 @@ impl SidePictures {
         }
     }
 
-    /// Queues a detection for delivery to its side's picture.
+    /// Queues a detection for delivery to its side's picture. Call
+    /// [`Self::sort_pending`] once the stage has queued everything.
     pub fn deliver(&mut self, at_ms: u64, det: Detection) {
         let seq = self.next_seq;
         self.next_seq += 1;
-        let i = self
-            .pending
-            .partition_point(|d| (d.at_ms, d.seq) <= (at_ms, seq));
-        self.pending.insert(i, Delivery { at_ms, seq, det });
+        self.pending.push(Delivery { at_ms, seq, det });
+    }
+
+    /// Restores (delivery time, sequence) order after `deliver` calls.
+    pub fn sort_pending(&mut self) {
+        self.pending.sort_by_key(|d| (d.at_ms, d.seq));
     }
 }
 

@@ -1,4 +1,4 @@
-import type { Details, Event, Order, OrderAck, SaveHeader, SideInfo, TickReport } from '@warboard/protocol';
+import type { ContactDetails, Details, Event, Order, OrderAck, SaveHeader, SideInfo, TickReport } from '@warboard/protocol';
 
 /** The three engine files of an installed pack, by OPFS file name. */
 export interface PackFiles {
@@ -16,6 +16,9 @@ export type WorkerRequest =
   | { type: 'terrainCells'; bbox: [number, number, number, number]; max: number }
   | { type: 'point'; lat: number; lon: number }
   | { type: 'details'; id: number }
+  | { type: 'contactDetails'; id: number }
+  /** Ground track of an own satellite, minutes before and after now. */
+  | { type: 'groundTrack'; id: number; beforeMin: number; afterMin: number }
   | { type: 'order'; order: Order }
   | { type: 'save'; slot: string }
   | { type: 'load'; slot: string }
@@ -42,6 +45,9 @@ export interface ReplyData {
   /** [elevation_m, class, owner char codes…]; empty outside every pack. */
   point: number[];
   details: Details;
+  contactDetails: ContactDetails;
+  /** `[lon, lat]` points every minute. */
+  groundTrack: [number, number][];
   order: OrderReply;
   save: SaveHeader;
   load: null;

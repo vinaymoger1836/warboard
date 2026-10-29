@@ -1,5 +1,7 @@
-# The war the browser app opens in P3 (war setup arrives in P9): NATO against
-# Russia around the Baltic, garrisoned on real bases. Not a golden scenario.
+# The war the browser app opens until war setup arrives in P9: NATO against
+# Russia around the Baltic, garrisoned on real bases. P4 adds Russian forces
+# around Kaliningrad, a Growler for ESM and satellites on both sides, so the
+# fog of war has something to show. Not a golden scenario.
 name: Baltic demo
 seed: 2026
 start_utc: 2026-10-27T06:00:00Z
@@ -13,9 +15,23 @@ units:
   - { id: 40, name: Reaper, platform: mq-9a, country: usa, base: miroslawiec-military-air-base-epmi }
   - { id: 50, name: Bergamini, platform: fremm-bergamini, country: ita, base: kiel }
   - { id: 60, name: Typhoon, platform: eurofighter-typhoon, country: deu, count: 4, base: hohn-air-base-etnh }
+  - { id: 70, name: Growler, platform: ea-18g, country: usa, count: 2, lat_deg: 54.6, lon_deg: 17.2, alt_m: 9000, heading_deg: 90 }
+  - { id: 80, name: CSG-1, platform: csg-1, country: ita }
+  - { id: 82, name: WorldView-3, platform: worldview-3, country: usa }
+  - { id: 84, name: SAR-Lupe 2, platform: sar-lupe-2, country: deu }
+  # Russia
+  - { id: 200, name: Triumf, system: s-400-battalion, country: rus, lat_deg: 54.62, lon_deg: 20.25, heading_deg: 270 }
+  - { id: 230, name: Soobrazitelny, platform: steregushchiy, country: rus, lat_deg: 54.85, lon_deg: 19.55, heading_deg: 300 }
+  - { id: 240, name: Flanker, platform: su-35s, country: rus, count: 2, base: chernyakhovsk-naval-air-base-ru-0060 }
+  - { id: 250, name: Kondor-FKA 1, platform: kondor-fka-1, country: rus }
+  - { id: 252, name: Resurs-P 4, platform: resurs-p-4, country: rus }
+  - { id: 254, name: Cosmos 2549, platform: cosmos-2549, country: rus }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: patrol_route, waypoints: [[17.5, 55.0], [19.0, 55.6], [19.2, 54.95]], loop: true } }
   - { tick: 0, side: 0, type: AssignTask, units: [20], task: { kind: patrol_circle, centre: [21.5, 54.0], radius_km: 35, alt_m: 8000 } }
   - { tick: 0, side: 0, type: AssignTask, units: [30], task: { kind: tanker_track, a: [18.9, 53.7], b: [19.1, 52.9] } }
   - { tick: 0, side: 0, type: AssignTask, units: [40], task: { kind: patrol_circle, centre: [22.6, 54.2], radius_km: 25 } }
   - { tick: 0, side: 0, type: AssignTask, units: [50], task: { kind: move, waypoints: [[10.3, 54.5], [11.0, 54.55], [12.2, 54.55], [14.2, 54.9], [16.5, 55.2]] } }
+  - { tick: 0, side: 0, type: AssignTask, units: [70], task: { kind: patrol_route, waypoints: [[17.2, 54.6], [18.4, 55.2]], loop: true } }
+  - { tick: 0, side: 1, type: AssignTask, units: [230], task: { kind: patrol_circle, centre: [19.3, 55.0], radius_km: 20 } }
+  - { tick: 0, side: 1, type: AssignTask, units: [240], task: { kind: patrol_circle, centre: [19.8, 55.3], radius_km: 30 } }

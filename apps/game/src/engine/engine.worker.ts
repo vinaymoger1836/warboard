@@ -138,6 +138,14 @@ async function handle(req: WorkerRequest): Promise<{ data: ReplyData[WorkerReque
     case 'details':
       if (!engine) throw new Error('No war is running');
       return { data: JSON.parse(engine.details(req.id)) as ReplyData['details'] };
+    case 'contactDetails':
+      if (!engine) throw new Error('No war is running');
+      return { data: JSON.parse(engine.contact_details(req.id)) as ReplyData['contactDetails'] };
+    case 'groundTrack':
+      if (!engine) throw new Error('No war is running');
+      return {
+        data: JSON.parse(engine.ground_track(req.id, req.beforeMin, req.afterMin, 60)) as ReplyData['groundTrack'],
+      };
     case 'order':
       if (!engine) throw new Error('No war is running');
       // UI orders apply at the next tick the engine runs (doc 04 §7.2).

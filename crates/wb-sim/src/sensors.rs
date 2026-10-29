@@ -40,6 +40,10 @@ const PRUNE_TARGET_ALT_M: f64 = 20_000.0;
 /// Pd below this at the prune range: a radar never looks further than
 /// `PD_PRUNE_FACTOR × R50` against the largest signature.
 const PD_PRUNE_FACTOR: f64 = 2.5;
+/// A radar skips a target beyond this many times the R50 of the target's
+/// largest aspect: Pd there is below 1/(1 + 3⁸) ≈ 1.5·10⁻⁴ per scan
+/// (ADR-023, a deterministic approximation).
+const PD_GATE_FACTOR: f64 = 3.0;
 /// Largest RCS assumed when pruning a radar's search (a large ship), m².
 const PRUNE_SIGMA_M2: f64 = 20_000.0;
 
@@ -268,65 +272,97 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
     out
 }
 
-/// Spatial index: per side, H3 res-3 cell → indices into the body list.
+/// One occupied H3 res-3 bucket of one side, with the bounding box of its
+/// members (radians).
+struct Bucket {
+    side: u8,
+    lat: (f64, f64),
+    lon: (f64, f64),
+    members: Vec<usize>,
+}
+
+/// Spatial index (doc 02 §16): bodies in H3 res-3 buckets per side. A query
+/// keeps the buckets whose member box overlaps the query's box, then the
+/// members inside it, then those within the exact distance: pruning only,
+/// so bucket edges never change a result.
 struct Index {
-    res: u8,
-    buckets: BTreeMap<(u8, u64), Vec<usize>>,
-    sides: BTreeSet<u8>,
-    edge_m: f64,
+    buckets: Vec<Bucket>,
+}
+
+/// Angular radius → (Δlat, Δlon) bounds around latitude `lat` (radians);
+/// `None` for Δlon when the circle reaches a pole.
+fn box_around(lat: f64, angle: f64) -> (f64, Option<f64>) {
+    let margin = 1e-9;
+    if lat.abs() + angle >= FRAC_PI_2 - 1e-6 || angle >= FRAC_PI_2 {
+        return (angle + margin, None);
+    }
+    let dlon = wb_core::math::asin((wb_core::math::sin(angle) / cos(lat)).min(1.0));
+    (angle + margin, Some(dlon + margin))
+}
+
+fn lon_overlap(a: (f64, f64), b: (f64, f64)) -> bool {
+    [-TAU, 0.0, TAU]
+        .iter()
+        .any(|s| a.0 + s <= b.1 && b.0 <= a.1 + s)
 }
 
 impl Index {
     fn new(bodies: &[Body], res: u8) -> Self {
-        let mut buckets: BTreeMap<(u8, u64), Vec<usize>> = BTreeMap::new();
-        let mut sides = BTreeSet::new();
+        let mut map: BTreeMap<(u8, u64), Vec<usize>> = BTreeMap::new();
         for (i, b) in bodies.iter().enumerate() {
             if b.visible {
-                sides.insert(b.side);
-                buckets
-                    .entry((b.side, wb_geo::h3::cell(b.pos, res)))
+                map.entry((b.side, wb_geo::h3::cell(b.pos, res)))
                     .or_default()
                     .push(i);
             }
         }
-        Self {
-            res,
-            buckets,
-            sides,
-            edge_m: wb_geo::h3::edge_m(res),
-        }
+        let buckets = map
+            .into_iter()
+            .map(|((side, _), members)| {
+                let mut lat = (f64::INFINITY, f64::NEG_INFINITY);
+                let mut lon = (f64::INFINITY, f64::NEG_INFINITY);
+                for &i in &members {
+                    let p = bodies[i].pos;
+                    lat = (lat.0.min(p.lat), lat.1.max(p.lat));
+                    lon = (lon.0.min(p.lon), lon.1.max(p.lon));
+                }
+                Bucket {
+                    side,
+                    lat,
+                    lon,
+                    members,
+                }
+            })
+            .collect();
+        Self { buckets }
     }
 
-    /// Bodies of other sides than `own` within `radius_m` of `p`, in body
-    /// (`UnitId`) order.
-    fn query(&self, p: LatLon, radius_m: f64, own: u8, bodies: &[Body]) -> Vec<usize> {
-        if self.sides.iter().all(|s| *s == own) {
-            return Vec::new();
-        }
-        // Neighbouring centres are √3 edges apart; allow for cell size
-        // variation (pentagons, distortion) with generous factors.
-        let k = ((radius_m + 2.6 * self.edge_m) / (1.2 * self.edge_m)).ceil() as u32 + 1;
-        let mut out: Vec<usize> = if k > 60 {
-            (0..bodies.len())
-                .filter(|i| bodies[*i].visible && bodies[*i].side != own)
-                .collect()
-        } else {
-            let cells = wb_geo::h3::disk(wb_geo::h3::cell(p, self.res), k);
-            self.sides
-                .iter()
-                .filter(|s| **s != own)
-                .flat_map(|s| {
-                    cells
-                        .iter()
-                        .filter_map(move |c| self.buckets.get(&(*s, *c)))
-                })
-                .flatten()
-                .copied()
-                .collect()
+    /// Bodies of other sides than `own` within `radius_m` of `p`, with their
+    /// distance, in body (`UnitId`) order.
+    fn query(&self, p: LatLon, radius_m: f64, own: u8, bodies: &[Body]) -> Vec<(usize, f64)> {
+        let (dlat, dlon) = box_around(p.lat, radius_m / wb_core::geo::EARTH_RADIUS_M);
+        let qlat = (p.lat - dlat, p.lat + dlat);
+        let qlon = dlon.map(|d| (p.lon - d, p.lon + d));
+        let inside = |lat: (f64, f64), lon: (f64, f64)| {
+            lat.0 <= qlat.1 && qlat.0 <= lat.1 && qlon.is_none_or(|q| lon_overlap(q, lon))
         };
-        out.retain(|i| distance_m(p, bodies[*i].pos) <= radius_m);
+        let mut out: Vec<usize> = Vec::new();
+        for b in &self.buckets {
+            if b.side == own || !inside(b.lat, b.lon) {
+                continue;
+            }
+            for &i in &b.members {
+                let q = bodies[i].pos;
+                if inside((q.lat, q.lat), (q.lon, q.lon)) {
+                    out.push(i);
+                }
+            }
+        }
         out.sort_unstable();
-        out
+        out.into_iter()
+            .map(|i| (i, distance_m(p, bodies[i].pos)))
+            .filter(|(_, d)| *d <= radius_m)
+            .collect()
     }
 }
 
@@ -527,7 +563,7 @@ fn evaluate(sc: &Scan, los: &mut Los, obs: &Body, m: &Mounted, tgt: &Body, d: f6
     let rules = sc.rules;
     let real = rules.realism();
     let h_s = obs.sensor_base_m + m.height_m;
-    let brg = initial_bearing(obs.pos, tgt.pos);
+    let brg = || initial_bearing(obs.pos, tgt.pos);
     let night = || sun_elevation(tgt.pos, sc.utc_ms) < real.passive.eo_min_sun_elevation_rad;
     let size = || {
         match tgt.type_ref {
@@ -606,11 +642,23 @@ fn evaluate(sc: &Scan, los: &mut Los, obs: &Body, m: &Mounted, tgt: &Body, d: f6
             if r.max_range_m.is_some_and(|mx| d > mx) || d > horizon_m(rules, h_s, tgt.h_m) {
                 return None;
             }
-            if !in_field(obs.heading, r.field_of_regard_rad, brg) {
-                return None;
-            }
             let sig = signature(rules, tgt.type_ref)
                 .or_else(|| tgt.platform.map(|p| &rules.platform(p).signature))?;
+            // Cheap bound first: the largest aspect, top weighted by the
+            // elevation (sin el ≤ Δh / d).
+            {
+                let x = &sig.rcs_m2;
+                let dh = h_s - tgt.h_m;
+                let sin2 = (dh * dh / (d * d).max(1.0)).min(1.0);
+                let bound = (x.front.max(x.side).max(x.rear) + x.top * sin2) * tgt.stores_mult;
+                let r50_bound = r.r_ref_m * sqrt(sqrt((bound / r.sigma_ref_m2).max(0.0)));
+                if d > PD_GATE_FACTOR * r50_bound {
+                    return None;
+                }
+            }
+            if !in_field(obs.heading, r.field_of_regard_rad, brg()) {
+                return None;
+            }
             let back = initial_bearing(tgt.pos, obs.pos);
             let az = angle_diff(tgt.heading, back);
             let el = atan2(h_s - tgt.h_m, d.max(1.0));
@@ -631,8 +679,9 @@ fn evaluate(sc: &Scan, los: &mut Los, obs: &Body, m: &Mounted, tgt: &Body, d: f6
             }
             let mut p = pd(d, r50, rr.pd_steepness_k);
             if r.pulse_doppler && tgt.h_m < h_s {
-                let radial = tgt.speed * cos(angle_diff(tgt.heading, brg))
-                    - obs.speed * cos(angle_diff(obs.heading, brg));
+                let b = brg();
+                let radial = tgt.speed * cos(angle_diff(tgt.heading, b))
+                    - obs.speed * cos(angle_diff(obs.heading, b));
                 if radial.abs() < rr.doppler_notch_radial_mps {
                     p *= rr.doppler_notch_pd_factor;
                 }
@@ -664,7 +713,7 @@ fn evaluate(sc: &Scan, los: &mut Los, obs: &Body, m: &Mounted, tgt: &Body, d: f6
         }
         SensorType::Irst => {
             let r = s.irst.as_ref()?;
-            if tgt.domain != Domain::Air || !in_field(obs.heading, r.field_of_regard_rad, brg) {
+            if tgt.domain != Domain::Air || !in_field(obs.heading, r.field_of_regard_rad, brg()) {
                 return None;
             }
             let p = &real.passive;
@@ -707,7 +756,7 @@ fn evaluate(sc: &Scan, los: &mut Los, obs: &Body, m: &Mounted, tgt: &Body, d: f6
         }
         SensorType::EoIr => {
             let e = s.eo_ir.as_ref()?;
-            if d > e.max_range_m || !in_field(obs.heading, e.field_of_regard_rad, brg) {
+            if d > e.max_range_m || !in_field(obs.heading, e.field_of_regard_rad, brg()) {
                 return None;
             }
             if !e.night_capable && night() {
@@ -797,7 +846,7 @@ fn evaluate(sc: &Scan, los: &mut Los, obs: &Body, m: &Mounted, tgt: &Body, d: f6
         }
         SensorType::Esm => {
             let e = s.esm.as_ref()?;
-            if !in_field(obs.heading, e.field_of_regard_rad, brg) {
+            if !in_field(obs.heading, e.field_of_regard_rad, brg()) {
                 return None;
             }
             if !emitting(rules, tgt.emcon, tgt.uid, sc.now_ms) {
@@ -837,7 +886,7 @@ fn evaluate(sc: &Scan, los: &mut Los, obs: &Body, m: &Mounted, tgt: &Body, d: f6
                 count_resolved: false,
                 sigma_r: 0.0,
                 sigma_c: sigma,
-                bearing: Some(brg),
+                bearing: Some(brg()),
             })
         }
         SensorType::SatellitePayload => None,
@@ -1024,12 +1073,13 @@ pub fn scan(world: &mut World) {
                 let h_s = obs.sensor_base_m + m.height_m;
                 let range = prune_range(&rules, &m, h_s);
                 let mut hits: BTreeSet<UnitId> = BTreeSet::new();
-                for i in index.query(obs.pos, range, obs.side, &bodies) {
+                // One detection per group per scan: the first member seen.
+                let mut sent: BTreeSet<UnitId> = BTreeSet::new();
+                for (i, d) in index.query(obs.pos, range, obs.side, &bodies) {
                     let tgt = &bodies[i];
                     if tgt.side == obs.side || tgt.uid == obs.uid {
                         continue;
                     }
-                    let d = distance_m(obs.pos, tgt.pos);
                     let Some(seen) = evaluate(&sc, &mut los, obs, &m, tgt, d) else {
                         continue;
                     };
@@ -1056,6 +1106,9 @@ pub fn scan(world: &mut World) {
                         if !t.confirmed {
                             continue;
                         }
+                    }
+                    if !sent.insert(tgt.key) {
+                        continue;
                     }
                     let (type_ref, level) = if kind == SourceKind::Esm {
                         emitter_type(&rules, tgt)
@@ -1139,6 +1192,7 @@ pub fn scan(world: &mut World) {
             }
         }
     }
+    pics.sort_pending();
     world.insert_resource(memo);
     world.insert_resource(pics);
 }
