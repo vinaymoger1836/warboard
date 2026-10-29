@@ -2,7 +2,7 @@
 //! enemy units with unique names and coordinates must never appear in any
 //! view, details response or event payload of the other side unless
 //! detected, and then only as contact estimates: never by name, unit id or
-//! exact position.
+//! exact position (full precision, or to about 0.1 m).
 //!
 //! The test calls exactly what a client can call (wb-wasm wraps the same
 //! functions): `ViewEncoder::encode`, `details`, `contact_details`,
@@ -63,13 +63,11 @@ fn exact_positions(sim: &Sim) -> Vec<(LatLon, Vec<Vec<u8>>, Vec<String>)> {
         .filter_map(|e| w.get::<Kinematics>(e))
         .map(|k| {
             let (lat, lon) = (k.pos().lat_deg(), k.pos().lon_deg());
-            let bytes = vec![
-                lat.to_le_bytes().to_vec(),
-                lon.to_le_bytes().to_vec(),
-                (lat as f32).to_le_bytes().to_vec(),
-                (lon as f32).to_le_bytes().to_vec(),
-            ];
-            let strings = (4..=6)
+            // "Exact" is the full f64, or six decimals (about 0.1 m): an
+            // estimate may by chance fall within metres of the truth, but
+            // never on it (ADR-026).
+            let bytes = vec![lat.to_le_bytes().to_vec(), lon.to_le_bytes().to_vec()];
+            let strings = (6..=8)
                 .flat_map(|d| [format!("{lat:.d$}"), format!("{lon:.d$}")])
                 .collect();
             (k.pos(), bytes, strings)

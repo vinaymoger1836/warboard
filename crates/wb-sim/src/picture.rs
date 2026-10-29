@@ -423,10 +423,8 @@ fn fuse(pics: &mut SidePictures, rules: &Rules, seed: u64, det: Detection, out: 
             c.est = Some(fix);
         }
     }
+    // The best quality wins; ageing drops it to `Report` (fn age).
     c.quality = c.quality.min(det.quality);
-    if det.at_ms >= c.last_ms {
-        c.quality = det.quality;
-    }
     c.looks += 1;
     let mut level = c.level.max(det.level);
     if level < ContactLevel::Class && c.looks >= fusion.class_after_looks {
