@@ -20,9 +20,9 @@ pub use common::{
     TargetClass,
 };
 pub use ew::{Countermeasure, Datalink, EwSuite, EwType};
-pub use platform::{Platform, PlatformCategory, SensorMount, Station, StationKind};
+pub use platform::{Orbit, Platform, PlatformCategory, SensorMount, Station, StationKind};
 pub use realism::Realism;
-pub use sensor::{Sensor, SensorRole, SensorType};
+pub use sensor::{PayloadKind, Sensor, SensorRole, SensorType};
 pub use system::{Loadout, System};
 pub use weapon::{Weapon, WeaponCategory};
 pub use world::{Base, Country, Doctrine, Inventory};

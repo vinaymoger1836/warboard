@@ -29,6 +29,9 @@ source_type! {
     pub struct System {
         pub id: String,
         pub name: String,
+        /// Short form for map labels (`S-400`); the name when absent.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub short_name: Option<String>,
         pub deploy_as: DeployAs,
         /// Time from arrival to ready to fire.
         pub setup_min: f64,

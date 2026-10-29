@@ -133,6 +133,9 @@ source_type! {
     pub struct Platform {
         pub id: String,
         pub name: String,
+        /// Short form for map labels (`Su-35S`, `KH-11`); the name when absent.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub short_name: Option<String>,
         pub category: PlatformCategory,
         /// Class used when this platform is a target (weapon `pk_base` key).
         pub target_class: TargetClass,
@@ -162,7 +165,18 @@ source_type! {
         /// Refuel and rearm time at base.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub turnaround_min: Option<f64>,
+        /// Orbit of a satellite; required for `satellite/*`.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub orbit: Option<Orbit>,
         pub provenance: Provenance,
+    }
+
+    /// A two-line element set (NORAD format, e.g. from CelesTrak), propagated
+    /// with SGP4.
+    #[serde(deny_unknown_fields)]
+    pub struct Orbit {
+        pub tle_line1: String,
+        pub tle_line2: String,
     }
 
     /// Speed and envelope. Which fields are required depends on the domain:

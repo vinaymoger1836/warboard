@@ -10,6 +10,20 @@ source_enum! {
         Irst,
         EoIr,
         Sonar,
+        Visual,
+        /// A satellite payload (doc 02 §7.3).
+        SatellitePayload,
+    }
+
+    /// What a satellite payload collects.
+    #[serde(rename_all = "snake_case")]
+    pub enum PayloadKind {
+        /// Electro-optical imaging: needs daylight at the target.
+        Optical,
+        /// Synthetic aperture radar: day and night.
+        Sar,
+        /// Signals intelligence: locates emitting radars.
+        Sigint,
     }
 
     #[serde(rename_all = "snake_case")]
@@ -26,6 +40,8 @@ source_enum! {
         Irst,
         Targeting,
         Sonar,
+        Lookout,
+        Imaging,
     }
 }
 
@@ -47,6 +63,10 @@ source_type! {
         pub eo_ir: Option<EoIr>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub sonar: Option<Sonar>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub visual: Option<Visual>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub payload: Option<Payload>,
         pub provenance: Provenance,
     }
 
@@ -72,6 +92,9 @@ source_type! {
         /// Simultaneous guided engagements (0 = search only).
         #[serde(default)]
         pub fire_channels: u32,
+        /// 1-sigma bearing error; the realism default when absent.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub bearing_sigma_deg: Option<f64>,
     }
 
     /// Passive emitter detection (doc 02 §7.2).
@@ -112,5 +135,32 @@ source_type! {
         pub noise_ref_db: f64,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub active_range_km: Option<f64>,
+    }
+
+    /// Eyes and optics of a recon team or lookout (doc 02 §7.2).
+    #[serde(deny_unknown_fields)]
+    pub struct Visual {
+        /// Night vision: no night range penalty.
+        pub night_vision: bool,
+    }
+
+    /// A satellite payload (doc 02 §7.3).
+    #[serde(deny_unknown_fields)]
+    pub struct Payload {
+        pub kind: PayloadKind,
+        /// Width of the strip seen along the ground track.
+        pub swath_km: f64,
+        /// Ground sample distance (optical and SAR).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub gsd_m: Option<f64>,
+        /// Bands it can hear (SIGINT).
+        #[serde(default)]
+        pub bands: Vec<Band>,
+        /// 1-sigma position error of a SIGINT fix.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub location_sigma_km: Option<f64>,
+        /// Time from collection to report; the realism default when absent.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub downlink_delay_min: Option<f64>,
     }
 }

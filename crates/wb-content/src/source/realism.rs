@@ -53,6 +53,16 @@ source_enum! {
         Arctic,
     }
 
+    /// How far a contact is classified (doc 02 §8).
+    #[serde(rename_all = "snake_case")]
+    pub enum ContactLevel {
+        Unknown,
+        Domain,
+        Class,
+        Type,
+        Precise,
+    }
+
     /// What a base must be placed on.
     #[serde(rename_all = "snake_case")]
     pub enum SiteRule {
@@ -84,6 +94,8 @@ source_type! {
         pub movement: MovementRealism,
         pub fuel: FuelRealism,
         pub logistics: LogisticsRealism,
+        /// Spatial index and line-of-sight memo (doc 02 §16).
+        pub spatial: SpatialRealism,
         /// Placement rules per base kind (doc 03 §3). Every kind must be listed.
         pub bases: BTreeMap<BaseKind, BaseRule>,
         pub ground: GroundRealism,
@@ -140,6 +152,12 @@ source_type! {
         pub doppler_notch_pd_factor: f64,
         /// Line of sight is sampled every `max(DEM cell, d / divisor)`.
         pub los_sample_divisor: f64,
+        /// 1-sigma range error of a radar measurement.
+        pub range_sigma_m: f64,
+        /// 1-sigma bearing error when a radar gives none.
+        pub bearing_sigma_default_deg: f64,
+        /// A group's count is resolved inside this fraction of R50.
+        pub group_resolve_fraction: f64,
     }
 
     /// Passive sensors (doc 02 §7.2).
@@ -159,6 +177,17 @@ source_type! {
         pub visual_range_km: BTreeMap<TerrainClass, f64>,
         /// Visual range factor at night without night vision.
         pub visual_night_factor: f64,
+        /// Visual range scales with `√(size / ref)`, capped at `visual_max_size_factor`.
+        pub visual_ref_size_m: f64,
+        pub visual_max_size_factor: f64,
+        /// IRST gives angles only: 1-sigma range error as a fraction of range.
+        pub irst_range_sigma_fraction: f64,
+        /// An EO/IR camera detects a target spanning this many ground samples.
+        pub eo_detect_pixels: f64,
+        /// EO (daylight) channels need the sun above this elevation at the target.
+        pub eo_min_sun_elevation_deg: f64,
+        /// Radiated noise rises by this much per doubling of speed above cruise.
+        pub sonar_noise_db_per_doubling: f64,
     }
 
     /// Satellites (doc 02 §7.3).
@@ -168,6 +197,10 @@ source_type! {
         pub eo_min_sun_elevation_deg: f64,
         /// Report delay when a payload gives none.
         pub downlink_delay_default_min: f64,
+        /// A tasking looks this far ahead for the next pass.
+        pub tasking_horizon_h: f64,
+        /// Time step of the pass search (refined to the second at the pass).
+        pub pass_search_step_s: f64,
     }
 
     /// Contacts, ageing and sharing (doc 02 §8).
@@ -183,6 +216,21 @@ source_type! {
         pub datalink_latency_default_s: f64,
         /// Delay for units not on the network (C2 reports).
         pub c2_report_delay_s: f64,
+        /// Smallest 1-sigma position error of any contact: an estimate never
+        /// equals the truth (ADR-026).
+        pub contact_sigma_floor_m: f64,
+        /// Detections by search radars that raise a contact to *class*.
+        pub class_after_looks: u32,
+        /// Identity (hostile, neutral) is known from this level up.
+        pub identify_at: ContactLevel,
+        /// A contact not refreshed for this long drops to *report* quality.
+        pub report_after_s: f64,
+        /// Bearings older than this are not used for an ESM fix.
+        pub esm_bearing_window_s: f64,
+        /// Two bearings must differ by at least this to give a fix.
+        pub esm_fix_min_angle_deg: f64,
+        /// An unresolved group's count range spreads up to this many either side.
+        pub group_count_spread: u32,
     }
 
     /// Electronic warfare (doc 02 §9).
@@ -200,6 +248,9 @@ source_type! {
         pub seeker_jam_effect: f64,
         /// Pk multiplier for anti-radiation weapons in memory mode.
         pub arm_memory_pk_factor: f64,
+        /// EMCON *blink*: emitters on for `on` seconds every `period` seconds.
+        pub emcon_blink_on_s: f64,
+        pub emcon_blink_period_s: f64,
     }
 
     /// Weapons in flight (doc 02 §10).
@@ -322,6 +373,21 @@ source_type! {
         pub berth_radius_km: f64,
         /// Turnaround for platforms that give none.
         pub turnaround_default_min: f64,
+    }
+
+    /// Spatial index and line-of-sight memo (doc 02 §16, ADR-023).
+    #[serde(deny_unknown_fields)]
+    pub struct SpatialRealism {
+        /// H3 resolution of the spatial index buckets.
+        pub bucket_res: u8,
+        /// H3 resolution of the line-of-sight memo cells.
+        pub los_memo_res: u8,
+        /// Sensor altitude bands of the memo: `step` wide up to 1 km, then
+        /// each `ratio` times the last.
+        pub los_memo_alt_step_m: f64,
+        pub los_memo_alt_ratio: f64,
+        /// Entries kept before the memo is cleared.
+        pub los_memo_capacity: u32,
     }
 
     /// Placement rule of one base kind (doc 03 §3).

@@ -3,6 +3,7 @@
 use super::common::{
     CountermeasureType, Domain, Provenance, Seeker, TargetClass, one, source_enum, source_type,
 };
+use super::platform::Signature;
 use std::collections::BTreeMap;
 
 source_enum! {
@@ -101,6 +102,9 @@ source_type! {
         /// Target altitude limits (surface-to-air and air-to-air).
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub envelope: Option<AltitudeEnvelope>,
+        /// How sensors see the weapon in flight (RCS, IR, size).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub signature: Option<Signature>,
         pub provenance: Provenance,
     }
 
