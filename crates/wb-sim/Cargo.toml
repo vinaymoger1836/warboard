@@ -25,5 +25,9 @@ serde_yaml.workspace = true
 thiserror.workspace = true
 ts-rs = { workspace = true, optional = true }
 
+[dev-dependencies]
+# The truth-canary test scans the JSON a client would receive.
+serde_json.workspace = true
+
 [lints]
 workspace = true
