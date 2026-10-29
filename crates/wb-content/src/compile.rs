@@ -161,6 +161,7 @@ impl Compiler<'_> {
         c::Platform {
             id: self.st.id(&x.id),
             name: self.st.id(&x.name),
+            short_name: self.st.id(x.short_name.as_deref().unwrap_or(&x.name)),
             category: x.category,
             domain: x.category.domain(),
             target_class: x.target_class,
@@ -179,19 +180,7 @@ impl Compiler<'_> {
                 offroad_speed_mps: m.offroad_speed_kmh.map(kmh_to_mps),
                 road_capable: m.road_capable,
             },
-            signature: c::Signature {
-                rcs_m2: x.signature.rcs_m2.clone(),
-                external_stores_rcs_multiplier: x
-                    .signature
-                    .external_stores_rcs_multiplier
-                    .unwrap_or(1.0),
-                ir: x.signature.ir.as_ref().map(|i| c::IrSignature {
-                    cruise: i.cruise,
-                    afterburner: i.afterburner,
-                }),
-                acoustic_db: x.signature.acoustic_db,
-                visual_size_m: x.signature.visual_size_m,
-            },
+            signature: Self::signature(&x.signature),
             fuel: x.fuel.as_ref().map(|f| c::Fuel {
                 internal_kg: f.internal_kg,
                 burn_kg_s: f.burn_kg_h.as_ref().map(|b| c::FuelBurn {
@@ -253,7 +242,24 @@ impl Compiler<'_> {
                 },
             },
             turnaround_s: x.turnaround_min.map(min_to_s),
+            orbit: x
+                .orbit
+                .as_ref()
+                .map(|o| (self.st.id(&o.tle_line1), self.st.id(&o.tle_line2))),
             provenance: self.provenance(&x.provenance, custom),
+        }
+    }
+
+    fn signature(x: &s::platform::Signature) -> c::Signature {
+        c::Signature {
+            rcs_m2: x.rcs_m2.clone(),
+            external_stores_rcs_multiplier: x.external_stores_rcs_multiplier.unwrap_or(1.0),
+            ir: x.ir.as_ref().map(|i| c::IrSignature {
+                cruise: i.cruise,
+                afterburner: i.afterburner,
+            }),
+            acoustic_db: x.acoustic_db,
+            visual_size_m: x.visual_size_m,
         }
     }
 
@@ -261,6 +267,7 @@ impl Compiler<'_> {
         c::System {
             id: self.st.id(&x.id),
             name: self.st.id(&x.name),
+            short_name: self.st.id(x.short_name.as_deref().unwrap_or(&x.name)),
             deploy_as: x.deploy_as,
             setup_s: min_to_s(x.setup_min),
             teardown_s: x.teardown_min.map(min_to_s),
@@ -302,6 +309,7 @@ impl Compiler<'_> {
                 eccm_db: r.eccm_db,
                 erp_class_dbw: r.erp_class_dbw,
                 fire_channels: r.fire_channels,
+                bearing_sigma_rad: r.bearing_sigma_deg.map(deg_to_rad),
             }),
             esm: x.esm.as_ref().map(|e| c::Esm {
                 bands: e.bands.clone(),
@@ -326,6 +334,17 @@ impl Compiler<'_> {
                 passive_r_ref_m: km_to_m(so.passive_r_ref_km),
                 noise_ref_db: so.noise_ref_db,
                 active_range_m: so.active_range_km.map(km_to_m),
+            }),
+            visual: x.visual.as_ref().map(|v| c::Visual {
+                night_vision: v.night_vision,
+            }),
+            payload: x.payload.as_ref().map(|p| c::Payload {
+                kind: p.kind,
+                swath_m: km_to_m(p.swath_km),
+                gsd_m: p.gsd_m,
+                bands: p.bands.clone(),
+                location_sigma_m: p.location_sigma_km.map(km_to_m),
+                downlink_delay_s: p.downlink_delay_min.map(min_to_s),
             }),
             provenance: self.provenance(&x.provenance, custom),
         }
@@ -371,6 +390,7 @@ impl Compiler<'_> {
             rounds_per_cell: x.rounds_per_cell,
             engage_on_remote: x.engage_on_remote,
             envelope: x.envelope.clone(),
+            signature: x.signature.as_ref().map(Self::signature),
             provenance: self.provenance(&x.provenance, custom),
         }
     }
@@ -544,10 +564,18 @@ impl Compiler<'_> {
                     .map(|(k, v)| (*k, km_to_m(*v)))
                     .collect(),
                 visual_night_factor: p.visual_night_factor,
+                visual_ref_size_m: p.visual_ref_size_m,
+                visual_max_size_factor: p.visual_max_size_factor,
+                irst_range_sigma_fraction: p.irst_range_sigma_fraction,
+                eo_detect_pixels: p.eo_detect_pixels,
+                eo_min_sun_elevation_rad: deg_to_rad(p.eo_min_sun_elevation_deg),
+                sonar_noise_db_per_doubling: p.sonar_noise_db_per_doubling,
             },
             satellites: c::SatelliteRealism {
                 eo_min_sun_elevation_rad: deg_to_rad(x.satellites.eo_min_sun_elevation_deg),
                 downlink_delay_default_s: min_to_s(x.satellites.downlink_delay_default_min),
+                tasking_horizon_s: h_to_s(x.satellites.tasking_horizon_h),
+                pass_search_step_s: x.satellites.pass_search_step_s,
             },
             fusion: c::FusionRealism {
                 age_out_s: f
@@ -563,6 +591,13 @@ impl Compiler<'_> {
                     .collect(),
                 datalink_latency_default_s: f.datalink_latency_default_s,
                 c2_report_delay_s: f.c2_report_delay_s,
+                contact_sigma_floor_m: f.contact_sigma_floor_m,
+                class_after_looks: f.class_after_looks,
+                identify_at: f.identify_at,
+                report_after_s: f.report_after_s,
+                esm_bearing_window_s: f.esm_bearing_window_s,
+                esm_fix_min_angle_rad: deg_to_rad(f.esm_fix_min_angle_deg),
+                group_count_spread: f.group_count_spread,
             },
             ew: x.ew.clone(),
             weapons: x.weapons.clone(),
@@ -591,6 +626,7 @@ impl Compiler<'_> {
                 berth_radius_m: km_to_m(l.berth_radius_km),
                 turnaround_default_s: min_to_s(l.turnaround_default_min),
             },
+            spatial: x.spatial.clone(),
             bases: x
                 .bases
                 .iter()

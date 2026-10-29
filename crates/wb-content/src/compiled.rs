@@ -9,11 +9,11 @@
 
 use crate::source::platform::{PlatformCategory, RcsByAspect, StationKind};
 use crate::source::realism::{
-    AspectFactors, BaseKind, CellClass, EarthRealism, EndgameRealism, EwRealism, FuelRealism,
-    GroundRealism, MovementRealism, RadarRealism, SiteRule, TerrainClass, TimeRealism,
-    WeaponRealism,
+    AspectFactors, BaseKind, CellClass, ContactLevel, EarthRealism, EndgameRealism, EwRealism,
+    FuelRealism, GroundRealism, MovementRealism, RadarRealism, SiteRule, SpatialRealism,
+    TerrainClass, TimeRealism, WeaponRealism,
 };
-use crate::source::sensor::{SensorRole, SensorType};
+use crate::source::sensor::{PayloadKind, SensorRole, SensorType};
 use crate::source::system::{ComponentRole, DeployAs};
 use crate::source::weapon::{
     AltitudeEnvelope, CoastTau, Midcourse, ProfileKind, Warhead, WeaponCategory,
@@ -110,6 +110,8 @@ pub struct Country {
 pub struct Platform {
     pub id: StrId,
     pub name: StrId,
+    /// Label form; the name when the source gives none.
+    pub short_name: StrId,
     pub category: PlatformCategory,
     pub domain: Domain,
     pub target_class: TargetClass,
@@ -125,6 +127,8 @@ pub struct Platform {
     pub datalinks: Vec<DatalinkIx>,
     pub durability: Durability,
     pub turnaround_s: Option<f64>,
+    /// Two-line elements (satellites), parsed by `wb_core::orbit`.
+    pub orbit: Option<(StrId, StrId)>,
     pub provenance: Provenance,
 }
 
@@ -208,6 +212,7 @@ pub struct SensorMount {
 pub struct System {
     pub id: StrId,
     pub name: StrId,
+    pub short_name: StrId,
     pub deploy_as: DeployAs,
     pub setup_s: f64,
     pub teardown_s: Option<f64>,
@@ -236,6 +241,8 @@ pub struct Sensor {
     pub irst: Option<Irst>,
     pub eo_ir: Option<EoIr>,
     pub sonar: Option<Sonar>,
+    pub visual: Option<Visual>,
+    pub payload: Option<Payload>,
     pub provenance: Provenance,
 }
 
@@ -252,6 +259,7 @@ pub struct Radar {
     pub eccm_db: f64,
     pub erp_class_dbw: f64,
     pub fire_channels: u32,
+    pub bearing_sigma_rad: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -287,6 +295,21 @@ pub struct Sonar {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Visual {
+    pub night_vision: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Payload {
+    pub kind: PayloadKind,
+    pub swath_m: f64,
+    pub gsd_m: Option<f64>,
+    pub bands: Vec<Band>,
+    pub location_sigma_m: Option<f64>,
+    pub downlink_delay_s: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Weapon {
     pub id: StrId,
     pub name: StrId,
@@ -307,6 +330,7 @@ pub struct Weapon {
     pub rounds_per_cell: u32,
     pub engage_on_remote: bool,
     pub envelope: Option<AltitudeEnvelope>,
+    pub signature: Option<Signature>,
     pub provenance: Provenance,
 }
 
@@ -466,6 +490,7 @@ pub struct Realism {
     pub movement: MovementRealism,
     pub fuel: FuelRealism,
     pub logistics: LogisticsRealism,
+    pub spatial: SpatialRealism,
     pub bases: BTreeMap<BaseKind, BaseRule>,
     pub ground: GroundRealism,
     pub provenance: Provenance,
@@ -480,12 +505,20 @@ pub struct PassiveRealism {
     pub eo_gsd_class_m: f64,
     pub visual_range_m: BTreeMap<TerrainClass, f64>,
     pub visual_night_factor: f64,
+    pub visual_ref_size_m: f64,
+    pub visual_max_size_factor: f64,
+    pub irst_range_sigma_fraction: f64,
+    pub eo_detect_pixels: f64,
+    pub eo_min_sun_elevation_rad: f64,
+    pub sonar_noise_db_per_doubling: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SatelliteRealism {
     pub eo_min_sun_elevation_rad: f64,
     pub downlink_delay_default_s: f64,
+    pub tasking_horizon_s: f64,
+    pub pass_search_step_s: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -495,6 +528,13 @@ pub struct FusionRealism {
     pub ellipse_growth_mps: BTreeMap<Domain, f64>,
     pub datalink_latency_default_s: f64,
     pub c2_report_delay_s: f64,
+    pub contact_sigma_floor_m: f64,
+    pub class_after_looks: u32,
+    pub identify_at: ContactLevel,
+    pub report_after_s: f64,
+    pub esm_bearing_window_s: f64,
+    pub esm_fix_min_angle_rad: f64,
+    pub group_count_spread: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
