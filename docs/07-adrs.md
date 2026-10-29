@@ -112,3 +112,34 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Decision.** Every second, a group on task looks for a tanker on its track that its member lowest on fuel can reach and get home from. It heads for the nearest such tanker when that member's fuel falls to `(fuel to the tanker + fuel from the tanker to its nearest base) × (1 + reserve)`, or at bingo if one is in reach. Otherwise bingo sends it home as before.
 **Alternatives.** (a) Bingo measured to the home base instead of the nearest base. (b) A separate content "joker fuel" per platform.
 **Consequences.** + Tankers extend patrols wherever they fly (G7: 3.9× time on station). + No new constant. − The landing reserve stays 10 % of the fuel to the nearest base, which is small near a base (open question in the P3 report).
+
+## ADR-022 Terrain in the tick
+**Status — Proposed, 29 Oct 2026 (P4).** Refines ADR-019 and the P3 note that geo is read only to validate orders.
+**Context.** Radar, ESM, IRST, EO/IR and visual detection need terrain line of sight every scan (doc 02 §7). CI has no region packs, and G3 must still run there.
+**Decision.** The engine holds the installed packs as a non-`Send` world resource (`sensors::GeoRes`); line of sight and the land/sea test for clutter read them every tick. Without packs, line of sight is smooth Earth (the horizon only) and the surface under a target counts as sea. A scenario may give `test_terrain` (flat ground with straight ridges, built in memory by `wb_geo::synthetic`); it replaces the packs, is saved with the war and rebuilt on load. The packs are therefore a simulation input: two runs agree only with the same packs, which saves already record.
+**Alternatives.** (a) Line of sight only when packs are installed, G3 ignored in CI. (b) Ship a small binary test pack in git.
+**Consequences.** + Terrain masking in every war with packs; goldens run anywhere. − Results depend on which packs are installed; P9 war setup should require the theatre's packs before a war starts.
+
+## ADR-023 Line-of-sight memo as mask altitude, and the radar gate
+**Status — Proposed, 29 Oct 2026 (P4).** Refines doc 02 §16 ("LOS memoised by sensor cell, target cell, altitude bands").
+**Decision.** The memo key is (sensor H3 res-8 cell, sensor height-above-ground band, target H3 res-8 cell). Bands are geometric: below 2 m, then each 1.1 × the last (realism `spatial`); the band's lower edge stands for the sensor. The value is the lowest target altitude that clears terrain plus 4/3-Earth bulge between the two cell centres, from one DEM pass: `h_min = max_t [h_s + (terrain(t) − h_s) / t]`. A target is in sight when its altitude ≥ `h_min`. Values are pure functions of the key, so the memo is never saved and clearing it (at `los_memo_capacity`) never changes a result. Before any of this, a radar skips a target beyond 3 × the R50 of the target's largest aspect (Pd < 1.5·10⁻⁴ per scan).
+**Alternatives.** Exact line of sight per pair (G3 needs ~300 DEM samples per pair per scan); per-pair memo of the true positions (not a function of the key, so a save/load would change results).
+**Consequences.** + One DEM pass answers every target altitude in a cell; deterministic. − Positions are approximated to ~460 m cells; G3's band allows for it (first detection at +4 m clearance, 8 s after the exact line clears).
+
+## ADR-024 SGP4 in the engine
+**Status — Proposed, 29 Oct 2026 (P4).**
+**Context.** Satellite positions must be identical natively and in WebAssembly. Rust SGP4 crates use std floating-point functions, whose last bits differ between platforms.
+**Decision.** `wb-core::orbit`: two-line element parsing and the near-Earth SGP4 of Vallado et al. (2006), WGS-72, on `wb_core::math` (libm), with unit tests against the published test vectors 00005 and 06251. Deep-space orbits (period ≥ 225 min) are refused: imaging and SIGINT satellites fly low. TEME → Earth-fixed through GMST (IAU-82), polar motion ignored; the sub-satellite point goes onto the engine's sphere.
+**Alternatives.** The `sgp4` crate (MIT): less code, a new dependency, a determinism risk.
+**Consequences.** + No dependency; native == WASM. − About 400 lines to maintain; no geostationary or Molniya orbits until SDP4 is added.
+
+## ADR-025 Satellite collection: tasked imaging, routine SIGINT
+**Status — Proposed, 29 Oct 2026 (P4).** Refines doc 02 §7.3.
+**Decision.** Optical and SAR satellites image only tasked areas, on the first geometric pass found when the order is accepted (the acknowledgement names the pass and report times). Every pass gives a report, including an explained failure ("No image: sun −35° at the target"). SIGINT satellites report emitters in their footprint routinely. `swath_km` in content is the strip a satellite can image along its track (its field of regard), not the instantaneous swath at nadir.
+**Alternatives.** Every pass images everything under the swath (near-global coverage for free, a flooded intel log).
+**Consequences.** + Tasking is the player's decision, as in reality; G5 is explainable. − No routine imagery; P9's AI must task its satellites.
+
+## ADR-026 Contact estimates never equal the truth
+**Status — Proposed, 29 Oct 2026 (P4).** Refines ADR-003.
+**Decision.** Every position a sensor reports is the truth plus normal errors (`rng(seed, ContactError | EsmBearing | Satellite, …)`), with a floor of `contact_sigma_floor_m` (25 m), so no estimate equals the truth. `ContactId`s are a per-side sequence in their own namespace: views carry them in the contacts section and string kind 2, the API answers them through `contact_details`, and events carry only contact data and own unit ids. Labels come from type and class names, never from unit names. A truth-canary test (`crates/wb-sim/tests/truth_canary.rs`) scans every view, details response and visible event for the hidden units' names, unit ids and exact coordinates.
+**Consequences.** + No path from a client to the truth; "precise" contacts are still estimates. − Precise contacts jitter by metres between reports.

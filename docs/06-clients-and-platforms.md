@@ -38,7 +38,7 @@ sequenceDiagram
 - If the engine cannot keep up, it reports achieved speed; the top bar shows it.
 - Engine panics are caught, the last autosave is offered, and the error is logged with the tick and state hash.
 
-## 3. Side view format (`SideView v1`, little-endian)
+## 3. Side view format (`SideView v2`, little-endian)
 
 | Section | Fields (structure of arrays) |
 |---|---|
@@ -50,6 +50,8 @@ sequenceDiagram
 | Strings delta | New or changed labels only (names, salvo labels) |
 
 As built (P3, `wb-sim/src/view.rs`): a 48-byte header (magic, version, side, tick, sim time, the five counts and the strings byte length), then each section column by column, every column padded to 8 bytes so the decoder can take typed-array views (`lon`, `lat` first as f64). `flags` bits: selectable, damaged, emitting, jamming, at base, group lead, base, bingo; bits 8–11 hold the status (idle, transit, patrol, on station, RTB, refuel, landed, turnaround). Bases are rows of the own-units section. Strings are `(id u32, kind u8, len u16, utf-8)`: kind 0 a name (unit, group or base), kind 1 a type (platform name or base kind). Symbol codes, flag bits and statuses are generated into `packages/protocol/src/generated/symbols.ts`. The contacts, weapons and effects sections exist with count 0 until P4/P5.
+
+As built (P4, version 2): own units gain `sensor_km u16` (longest sensor range, for the all-units ring layer); own satellites are unit rows (symbols 60–62). The contacts section carries, per contact of the side's picture, in `ContactId` order: `lon`, `lat` (the estimate), `contact_id`, `flags`, `alt_m`, `heading_deg`, `speed_mps`, `ellipse_a_m`, `ellipse_b_m` (1 sigma, grown with age), `ellipse_rot_deg`, `age_s`, `threat_m` (estimated SAM range of a type-identified contact), `symbol`, `count_min`, `count_max`, `identity` (unknown, hostile, neutral, friendly), `level` (unknown … precise). Contact `flags` (`CFLAG`): estimated, stale (last-known), bearing-only (an ESM line: position = origin, heading = bearing, `ellipse_a_m` = strobe length), count known, fixed site; bits 8–10 the domain. New string kinds: 2 the contact label (type short name from *type*, class name at *class*, empty below), 3 a satellite's owner (`USA`), 4 its payload label (`[OPTICAL 1000km]`). Unit ids and contact ids are separate namespaces, told apart by the string kind and by the API (`details` vs `contact_details`). Nothing in a contact row comes from the truth except through the estimate (ADR-026).
 
 Full detail for the selected unit or contact (task, loadout, sensors, magazines, ROE source) comes from `details()` on demand, keeping the view small (≈ 150 KB at 2,000 units).
 

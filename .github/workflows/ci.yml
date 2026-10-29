@@ -46,6 +46,8 @@ jobs:
         run: cargo run -q --release -p wb-cli -- golden scenarios/golden/*.yaml
       - name: Benchmark G15, 2,000 units at 100 ms ticks (fails above 6 ms; per-stage timings in the log)
         run: cargo run -q --release -p wb-cli -- bench --scenario scenarios/bench/patrol-2000.yaml --ticks 6000
+      - name: Sensor benchmark, 2,000 units on two sides (P4; fails above 6 ms)
+        run: cargo run -q --release -p wb-cli -- bench --scenario scenarios/bench/sensors-2000.yaml --ticks 6000
 
   deny:
     name: Licences and advisories (cargo-deny)

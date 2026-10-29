@@ -31,7 +31,7 @@ orders:
   - { tick: 0, side: 0, type: AssignTask, units: [20], task: { kind: patrol_circle, centre: [21.5, 54.0], radius_km: 35, alt_m: 8000 } }
   - { tick: 0, side: 0, type: AssignTask, units: [30], task: { kind: tanker_track, a: [18.9, 53.7], b: [19.1, 52.9] } }
   - { tick: 0, side: 0, type: AssignTask, units: [40], task: { kind: patrol_circle, centre: [22.6, 54.2], radius_km: 25 } }
-  - { tick: 0, side: 0, type: AssignTask, units: [50], task: { kind: move, waypoints: [[10.3, 54.5], [11.0, 54.55], [12.2, 54.55], [14.2, 54.9], [16.5, 55.2]] } }
+  - { tick: 0, side: 0, type: AssignTask, units: [50], task: { kind: move, waypoints: [[10.3, 54.5], [11.0, 54.55], [12.2, 54.55], [13.4, 54.85], [14.6, 54.85], [15.5, 54.7], [16.5, 55.2]] } }
   - { tick: 0, side: 0, type: AssignTask, units: [70], task: { kind: patrol_route, waypoints: [[17.2, 54.6], [18.4, 55.2]], loop: true } }
   - { tick: 0, side: 1, type: AssignTask, units: [230], task: { kind: patrol_circle, centre: [19.3, 55.0], radius_km: 20 } }
   - { tick: 0, side: 1, type: AssignTask, units: [240], task: { kind: patrol_circle, centre: [19.8, 55.3], radius_km: 30 } }

@@ -111,19 +111,19 @@ Runner image: `ubuntu-24.04`.
 
 | Artifact | Size |
 |---|---|
-| `wb_wasm_bg.wasm` (release, no wasm-opt) | P1: 968 KB (279 KB gzip). P2 with `wb-geo`, `h3o`, `ruzstd`, BLAKE3 hasher: 1,211,216 bytes (354,344 gzip). P3 with the engine (bevy_ecs world, content, saves): 2,066,441 bytes (575,295 gzip) |
-| `build/content.wbpack` | P1 seed set, 67 entries: 22,401 bytes. P2 with 312 imported bases, 379 entries: 85,086 bytes. P3, schema 2 (realism `movement`, `fuel`, `bases`): 86,607 bytes |
-| App shell (`apps/game/dist`) | P2: main chunk 1.97 MB (557 KB gzip), MapLibre worker 519 KB, fonts 2.3 MB (glyph PBFs 2.1 MB). P3: main chunk 2.16 MB, plus the content pack (87 KB) and the WASM engine (2.07 MB) as assets |
+| `wb_wasm_bg.wasm` (release, no wasm-opt) | P1: 968 KB (279 KB gzip). P2 with `wb-geo`, `h3o`, `ruzstd`, BLAKE3 hasher: 1,211,216 bytes (354,344 gzip). P3 with the engine (bevy_ecs world, content, saves): 2,066,441 bytes (575,295 gzip). P4 with sensors, pictures and SGP4: 2,657,338 bytes |
+| `build/content.wbpack` | P1 seed set, 67 entries: 22,401 bytes. P2 with 312 imported bases, 379 entries: 85,086 bytes. P3, schema 2 (realism `movement`, `fuel`, `bases`): 86,607 bytes. P4, schema 3, 395 entries (10 sensors and 6 satellites added): 94,258 bytes |
+| App shell (`apps/game/dist`) | P2: main chunk 1.97 MB (557 KB gzip), MapLibre worker 519 KB, fonts 2.3 MB (glyph PBFs 2.1 MB). P3: main chunk 2.16 MB, plus the content pack (87 KB) and the WASM engine (2.07 MB) as assets. P4: main chunk 2.17 MB, content pack 94 KB, engine 2.66 MB |
 | Side view (`SideView` v1) | P3 benchmark, 2,000 platforms + 500 groups + 316 bases: 93,880 bytes per view |
-| `.wbsave` | P3 `scenarios/save-load.yaml` at tick 900 (≈ 150 entities with all bases, events): 17,109 bytes |
+| `.wbsave` | P3 `scenarios/save-load.yaml` at tick 900 (≈ 150 entities with all bases, events): 17,109 bytes. P4 `scenarios/demo-baltic.yaml` at tick 1800, with contacts on both sides: 26,395 bytes |
 
 ## Formats
 
 | Format | Version | Defined in |
 |---|---|---|
-| Content pack schema | 2 (P3: realism `movement`, `fuel`, `bases`, extended `logistics`; platform `road_capable`) | `crates/wb-content/src/pack.rs` |
-| State hash | 2 (P3: BLAKE3 of the postcard snapshot) | `crates/wb-sim/src/snapshot.rs` |
-| `SideView` | 1 | `crates/wb-sim/src/view.rs`, doc 06 §3 |
+| Content pack schema | 3 (P4: realism `spatial` and sensor, fusion, EMCON, satellite constants; sensor types `visual`, `satellite_payload`; platform `orbit`, `short_name`; weapon `signature`) | `crates/wb-content/src/pack.rs` |
+| State hash | 3 (P4: snapshot adds side pictures, EMCON, satellites, scripted targets, test terrain) | `crates/wb-sim/src/snapshot.rs` |
+| `SideView` | 2 (P4: contacts section, `sensor_km`, string kinds 2–4) | `crates/wb-sim/src/view.rs`, doc 06 §3 |
 | `.wbsave` | 1 | `crates/wb-sim/src/save.rs`, doc 04 §7.1 |
 | IndexedDB `warboard` | 2 (P3: `saves` store) | `apps/game/src/db.ts` |
 
