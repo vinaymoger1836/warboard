@@ -1,9 +1,11 @@
-//! `SideView` v1 encoder (doc 06 §3, ADR-002): what one side may see, as a
+//! `SideView` v2 encoder (doc 06 §3, ADR-002): what one side may see, as a
 //! little-endian structure of arrays the UI decodes without copying.
 //!
-//! Only the side's own platforms and bases are listed; contacts, weapons and
-//! effects arrive with P4/P5 (their sections are present, with count 0).
-//! Nothing about other sides' units is written (CLAUDE.md rule 1).
+//! The side's own platforms, satellites and bases, and the contacts of its
+//! picture (P4). Weapons and effects arrive with P5 (count 0). Nothing about
+//! other sides' units is written except contact estimates: contact rows carry
+//! a [`ContactId`](wb_core::ContactId), estimated position and type names only
+//! (CLAUDE.md rule 1, ADR-026).
 //!
 //! ```text
 //! header (48 bytes)
@@ -13,11 +15,14 @@
 //!  40  strings u32        44  string bytes u32
 //! sections, each column padded to 8 bytes:
 //!   units:    lon f64, lat f64, id u32, flags u32, group u32, alt_m f32,
-//!             heading_deg f32, speed_mps f32, symbol u16, fuel_pct u8
-//!   contacts: lon f64, lat f64, contact_id u32, alt_m f32, heading_deg f32,
-//!             speed_mps f32, ellipse_a_m f32, ellipse_b_m f32, ellipse_rot f32,
-//!             age_s f32, symbol u16, count_min u16, count_max u16,
-//!             identity u8, level u8
+//!             heading_deg f32, speed_mps f32, symbol u16, sensor_km u16,
+//!             fuel_pct u8
+//!   contacts: lon f64, lat f64, contact_id u32, flags u32, alt_m f32,
+//!             heading_deg f32, speed_mps f32, ellipse_a_m f32, ellipse_b_m f32,
+//!             ellipse_rot_deg f32, age_s f32, threat_m f32, symbol u16,
+//!             count_min u16, count_max u16, identity u8, level u8
+//!             (a bearing-only contact: lon/lat is the bearing's origin,
+//!             heading the bearing, ellipse_a the strobe length)
 //!   weapons:  lon f64, lat f64, id u32, salvo u32, alt_m f32, heading_deg f32,
 //!             speed_mps f32, symbol u16, relation u8
 //!   effects:  lon f64, lat f64, alt_m f32, age_ms u32, kind u8
@@ -27,7 +32,7 @@
 use bevy_ecs::prelude::*;
 use std::collections::BTreeMap;
 use wb_content::source::PlatformCategory;
-use wb_content::source::realism::BaseKind;
+use wb_content::source::realism::{BaseKind, ContactLevel};
 use wb_core::units::rad_to_deg;
 
 use crate::clock::SimClock;
@@ -35,11 +40,14 @@ use crate::components::{
     Allegiance, BaseSite, Fuel, Group, GroupMember, Identity, Kinematics, Mode, PlatformRef,
     Posture, ReturnWhy, Task,
 };
+use crate::picture::{ContactIdentity, SidePictures};
 use crate::rules::Rules;
 use crate::world::{UnitIndex, entity};
 
 pub const MAGIC: [u8; 4] = *b"WBSV";
-pub const VERSION: u16 = 1;
+pub const VERSION: u16 = 2;
+/// Drawn length of a bearing-only strobe, metres (display only).
+const STROBE_M: f32 = 300_000.0;
 pub const HEADER_BYTES: usize = 48;
 
 /// `flags` bits.
@@ -57,6 +65,33 @@ pub mod flag {
     pub const STATUS_SHIFT: u32 = 8;
     pub const STATUS_MASK: u32 = 0xF << STATUS_SHIFT;
 }
+
+/// Contact `flags` bits.
+pub mod cflag {
+    /// Below `Precise` or not refreshed lately: dashed, "(our estimate)".
+    pub const ESTIMATED: u32 = 1 << 0;
+    /// Last-known marker (aged out).
+    pub const STALE: u32 = 1 << 1;
+    /// A bearing line without a position fix (ESM).
+    pub const BEARING_ONLY: u32 = 1 << 2;
+    /// The count is resolved.
+    pub const COUNT_KNOWN: u32 = 1 << 3;
+    pub const FIXED: u32 = 1 << 4;
+    /// Bits 8–10 hold the domain: 0 air, 1 surface, 2 subsurface, 3 ground, 4 space.
+    pub const DOMAIN_SHIFT: u32 = 8;
+    pub const DOMAIN_MASK: u32 = 0x7 << DOMAIN_SHIFT;
+}
+
+/// Contact flag bits by name, for the generated TS.
+pub const CONTACT_FLAG_NAMES: &[(&str, u32)] = &[
+    ("ESTIMATED", cflag::ESTIMATED),
+    ("STALE", cflag::STALE),
+    ("BEARING_ONLY", cflag::BEARING_ONLY),
+    ("COUNT_KNOWN", cflag::COUNT_KNOWN),
+    ("FIXED", cflag::FIXED),
+    ("DOMAIN_SHIFT", cflag::DOMAIN_SHIFT),
+    ("DOMAIN_MASK", cflag::DOMAIN_MASK),
+];
 
 /// Unit status shown on the card and in labels (doc 10 §7).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -224,12 +259,66 @@ pub fn status(g: &Group, posture: Option<&Posture>) -> Status {
     }
 }
 
-/// String kinds in the strings section.
+/// String kinds in the strings section. Unit ids and contact ids are
+/// different namespaces, told apart by the kind.
 pub mod string_kind {
     /// Unit, group or base name.
     pub const NAME: u8 = 0;
     /// Platform type name, or base kind.
     pub const TYPE: u8 = 1;
+    /// Contact label: type short name from `Type`, class name at `Class`,
+    /// empty below (the UI writes `UNKNOWN AIR`).
+    pub const CONTACT_TYPE: u8 = 2;
+    /// Satellite owner (country code, `USA`).
+    pub const OWNER: u8 = 3;
+    /// Satellite payload label, `[OPTICAL 600km]`.
+    pub const PAYLOAD: u8 = 4;
+}
+
+/// Longest sensor range of a platform for the all-units ring layer, km.
+pub fn sensor_km(rules: &Rules, p: &wb_content::compiled::Platform) -> u16 {
+    let db = &rules.db;
+    let m = p
+        .sensors
+        .iter()
+        .filter_map(|m| {
+            let s = &db.sensors[m.sensor.0 as usize];
+            match s.sensor_type {
+                wb_content::source::SensorType::Radar => {
+                    s.radar.as_ref().map(|r| r.max_range_m.unwrap_or(r.r_ref_m))
+                }
+                wb_content::source::SensorType::EoIr => s.eo_ir.as_ref().map(|e| e.max_range_m),
+                wb_content::source::SensorType::Irst => s.irst.as_ref().map(|i| i.r_ref_m),
+                wb_content::source::SensorType::SatellitePayload => {
+                    s.payload.as_ref().map(|pl| pl.swath_m / 2.0)
+                }
+                _ => None,
+            }
+        })
+        .fold(0.0, f64::max);
+    (m / 1_000.0).round().clamp(0.0, 65_535.0) as u16
+}
+
+/// `[OPTICAL 600km]`.
+pub fn payload_label(rules: &Rules, p: wb_content::compiled::PlatformIx) -> Option<String> {
+    let (_, pl) = crate::satellites::payload(rules, p)?;
+    let kind = match pl.kind {
+        wb_content::source::PayloadKind::Optical => "OPTICAL",
+        wb_content::source::PayloadKind::Sar => "SAR",
+        wb_content::source::PayloadKind::Sigint => "SIGINT",
+    };
+    Some(format!("[{kind} {:.0}km]", pl.swath_m / 1_000.0))
+}
+
+fn domain_code(d: wb_content::source::Domain) -> u32 {
+    use wb_content::source::Domain as D;
+    match d {
+        D::Air => 0,
+        D::Surface => 1,
+        D::Subsurface => 2,
+        D::Ground => 3,
+        D::Space => 4,
+    }
 }
 
 /// One row of the units section.
@@ -243,7 +332,29 @@ struct Row {
     heading: f32,
     speed: f32,
     symbol: u16,
+    sensor_km: u16,
     fuel: u8,
+}
+
+/// One row of the contacts section.
+struct CRow {
+    id: u32,
+    flags: u32,
+    lon: f64,
+    lat: f64,
+    alt: f32,
+    heading: f32,
+    speed: f32,
+    a: f32,
+    b: f32,
+    rot: f32,
+    age: f32,
+    threat: f32,
+    symbol: u16,
+    cmin: u16,
+    cmax: u16,
+    identity: u8,
+    level: u8,
 }
 
 /// Builds side views; remembers which strings each client already has.
@@ -305,6 +416,7 @@ impl ViewEncoder {
                     heading: 0.0,
                     speed: 0.0,
                     symbol: base_symbol(b),
+                    sensor_km: 0,
                     fuel: 255,
                 });
                 continue;
@@ -325,6 +437,18 @@ impl ViewEncoder {
                 string_kind::TYPE,
                 rules.db.str(platform.name),
             );
+            if let Some(label) = payload_label(rules, p.0) {
+                want(&mut self.sent, uid.0, string_kind::PAYLOAD, &label);
+                if let Some(a) = world.get::<Allegiance>(e) {
+                    let c = &rules.db.countries[a.country.0 as usize];
+                    want(
+                        &mut self.sent,
+                        uid.0,
+                        string_kind::OWNER,
+                        &rules.db.str(c.iso3).to_uppercase(),
+                    );
+                }
+            }
             let member = world.get::<GroupMember>(e);
             let posture = world.get::<Posture>(e);
             let group = member
@@ -361,12 +485,108 @@ impl ViewEncoder {
                 heading: rad_to_deg(k.heading) as f32,
                 speed: k.speed_mps as f32,
                 symbol: platform_symbol(platform.category),
+                sensor_km: sensor_km(rules, platform),
                 fuel: fuel.map_or(255, |f| {
                     ((f.kg / f.max_kg.max(1e-9)) * 100.0)
                         .round()
                         .clamp(0.0, 100.0) as u8
                 }),
             });
+        }
+
+        // Contacts of the side's picture, in ContactId order.
+        let now = clock.sim_time_ms;
+        let mut crows: Vec<CRow> = Vec::new();
+        if let Some(pic) = world
+            .get_resource::<SidePictures>()
+            .and_then(|p| p.sides.get(usize::from(side)))
+        {
+            for c in pic.contacts.values() {
+                let label = if c.level >= ContactLevel::Type {
+                    c.type_ref.short_name(rules).to_owned()
+                } else if c.level >= ContactLevel::Class {
+                    c.type_ref.class_name(rules)
+                } else {
+                    String::new()
+                };
+                want(&mut self.sent, c.id.0, string_kind::CONTACT_TYPE, &label);
+                let mut flags = domain_code(c.domain) << cflag::DOMAIN_SHIFT;
+                if c.estimated(rules, now) {
+                    flags |= cflag::ESTIMATED;
+                }
+                if c.lost {
+                    flags |= cflag::STALE;
+                }
+                if c.count_resolved {
+                    flags |= cflag::COUNT_KNOWN;
+                }
+                if c.fixed {
+                    flags |= cflag::FIXED;
+                }
+                let age = now.saturating_sub(c.last_ms) as f32 / 1_000.0;
+                let threat = if c.level >= ContactLevel::Type {
+                    c.type_ref.threat_m(rules).unwrap_or(0.0) as f32
+                } else {
+                    0.0
+                };
+                let symbol = if c.level >= ContactLevel::Class {
+                    c.type_ref.symbol(rules)
+                } else {
+                    0
+                };
+                let identity = match c.identity {
+                    ContactIdentity::Unknown => 0,
+                    ContactIdentity::Hostile => 1,
+                    ContactIdentity::Neutral => 2,
+                    ContactIdentity::Friendly => 3,
+                };
+                let (lon, lat, alt, heading, speed, a, b, rot) =
+                    match (c.est, c.ellipse(rules, now), c.bearings.last()) {
+                        (Some(e), Some((a, b, rot)), _) => (
+                            rad_to_deg(e.at.lon),
+                            rad_to_deg(e.at.lat),
+                            e.alt_m as f32,
+                            rad_to_deg(e.heading) as f32,
+                            e.speed_mps as f32,
+                            a as f32,
+                            b as f32,
+                            rad_to_deg(rot) as f32,
+                        ),
+                        (None, _, Some(br)) => {
+                            flags |= cflag::BEARING_ONLY;
+                            (
+                                rad_to_deg(br.origin.lon),
+                                rad_to_deg(br.origin.lat),
+                                0.0,
+                                rad_to_deg(br.bearing) as f32,
+                                0.0,
+                                STROBE_M,
+                                (br.sigma * f64::from(STROBE_M)) as f32,
+                                rad_to_deg(br.bearing) as f32,
+                            )
+                        }
+                        _ => continue,
+                    };
+                crows.push(CRow {
+                    id: c.id.0,
+                    flags,
+                    lon,
+                    lat,
+                    alt,
+                    heading,
+                    speed,
+                    a,
+                    b,
+                    rot,
+                    age,
+                    threat,
+                    symbol,
+                    cmin: c.count.0,
+                    cmax: c.count.1,
+                    identity,
+                    level: c.level as u8,
+                });
+            }
         }
 
         let n = rows.len();
@@ -379,7 +599,7 @@ impl ViewEncoder {
         b.extend_from_slice(&clock.tick.to_le_bytes());
         b.extend_from_slice(&(clock.sim_time_ms as i64).to_le_bytes());
         b.extend_from_slice(&(n as u32).to_le_bytes());
-        b.extend_from_slice(&0u32.to_le_bytes()); // contacts (P4)
+        b.extend_from_slice(&(crows.len() as u32).to_le_bytes());
         b.extend_from_slice(&0u32.to_le_bytes()); // weapons (P5)
         b.extend_from_slice(&0u32.to_le_bytes()); // effects (P5)
         b.extend_from_slice(&(strings.len() as u32).to_le_bytes());
@@ -427,10 +647,39 @@ impl ViewEncoder {
         }
         pad(b);
         for r in &rows {
+            b.extend_from_slice(&r.sensor_km.to_le_bytes());
+        }
+        pad(b);
+        for r in &rows {
             b.push(r.fuel);
         }
         pad(b);
-        // Contacts, weapons, effects: empty in P3.
+        macro_rules! col {
+            ($field:ident) => {
+                for r in &crows {
+                    b.extend_from_slice(&r.$field.to_le_bytes());
+                }
+                pad(b);
+            };
+        }
+        col!(lon);
+        col!(lat);
+        col!(id);
+        col!(flags);
+        col!(alt);
+        col!(heading);
+        col!(speed);
+        col!(a);
+        col!(b);
+        col!(rot);
+        col!(age);
+        col!(threat);
+        col!(symbol);
+        col!(cmin);
+        col!(cmax);
+        col!(identity);
+        col!(level);
+        // Weapons, effects: empty until P5.
         for (id, kind, s) in &strings {
             b.extend_from_slice(&id.to_le_bytes());
             b.push(*kind);

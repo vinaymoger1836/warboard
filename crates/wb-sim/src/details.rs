@@ -25,6 +25,91 @@ use crate::world::entity;
 pub enum Details {
     Group(Box<GroupDetails>),
     Base(BaseDetails),
+    Satellite(SatelliteDetails),
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct TaskingView {
+    pub centre: [f64; 2],
+    pub radius_m: f64,
+    /// Seconds until the pass.
+    pub pass_in_s: f64,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct SatelliteDetails {
+    pub id: u32,
+    pub name: String,
+    pub type_name: String,
+    /// Country code, `USA`.
+    pub owner: String,
+    /// `optical`, `sar` or `sigint`.
+    pub payload: String,
+    /// `[OPTICAL 600km]`.
+    pub payload_label: String,
+    pub swath_km: f64,
+    pub lat_deg: f64,
+    pub lon_deg: f64,
+    pub alt_m: f64,
+    pub taskings: Vec<TaskingView>,
+    pub confidence: String,
+}
+
+/// One source of a contact, as the contact card lists it (doc 10 §7).
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct ContactSourceView {
+    /// `Radar`, `ESM`, `Satellite imagery` …
+    pub kind: String,
+    /// Own unit (or satellite) whose sensor reported.
+    pub unit: String,
+    pub sensor: Option<String>,
+    /// Data link the report came over; none means a C2 report.
+    pub network: Option<String>,
+    pub age_s: f64,
+}
+
+/// What the side believes about one contact: estimates only (ADR-003,
+/// ADR-026). Nothing here comes from the truth except through the contact.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct ContactDetails {
+    pub contact_id: u32,
+    /// `S-400`, `Su-35S`, `corvette`; empty below class.
+    pub label: String,
+    /// Below `Precise` or stale: "(our estimate)".
+    pub estimated: bool,
+    /// `unknown`, `domain`, `class`, `type`, `precise`.
+    pub level: String,
+    /// `unknown`, `hostile`, `neutral`, `friendly`.
+    pub identity: String,
+    /// `air`, `surface`, `subsurface`, `ground`.
+    pub domain: String,
+    pub class_name: Option<String>,
+    pub type_name: Option<String>,
+    /// `fire_control`, `track`, `report`.
+    pub quality: String,
+    pub lat_deg: Option<f64>,
+    pub lon_deg: Option<f64>,
+    pub alt_m: Option<f64>,
+    pub speed_mps: Option<f64>,
+    pub heading_deg: Option<f64>,
+    /// Semi-axes of the uncertainty ellipse now, metres.
+    pub uncertainty_a_m: Option<f64>,
+    pub uncertainty_b_m: Option<f64>,
+    pub age_s: f64,
+    pub first_seen_s_ago: f64,
+    pub count_min: u16,
+    pub count_max: u16,
+    pub count_known: bool,
+    pub bearing_only: bool,
+    pub lost: bool,
+    pub fixed: bool,
+    /// Estimated threat range of the identified type (SAM), metres.
+    pub threat_m: Option<f64>,
+    pub sources: Vec<ContactSourceView>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -172,6 +257,11 @@ pub fn details(world: &World, side: u8, id: u32) -> Result<Details, String> {
     }
     if world.get::<BaseSite>(e).is_some() {
         return Ok(Details::Base(base(world, UnitId(id), e)));
+    }
+    if world.get::<crate::components::SatelliteState>(e).is_some() {
+        return satellite(world, UnitId(id), e)
+            .map(Details::Satellite)
+            .ok_or_else(unknown);
     }
     let gid = match world.get::<GroupMember>(e) {
         Some(m) => m.group,
@@ -340,6 +430,113 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
             .map(|l| db.str(db.loadouts[l.0 as usize].name).to_owned()),
         weapons,
         confidence: format!("{:?}", p.provenance.confidence).to_lowercase(),
+    })
+}
+
+fn satellite(world: &World, id: UnitId, e: Entity) -> Option<SatelliteDetails> {
+    let rules = world.resource::<Rules>();
+    let now = world.resource::<SimClock>().sim_time_ms;
+    let pix = world.get::<PlatformRef>(e)?.0;
+    let p = rules.platform(pix);
+    let k = world.get::<Kinematics>(e)?;
+    let (_, pl) = crate::satellites::payload(rules, pix)?;
+    let st = world.get::<crate::components::SatelliteState>(e)?;
+    let country = &rules.db.countries[world.get::<Allegiance>(e)?.country.0 as usize];
+    Some(SatelliteDetails {
+        id: id.0,
+        name: world.get::<Identity>(e)?.name.clone(),
+        type_name: rules.db.str(p.name).to_owned(),
+        owner: rules.db.str(country.iso3).to_uppercase(),
+        payload: format!("{:?}", pl.kind).to_lowercase(),
+        payload_label: crate::view::payload_label(rules, pix).unwrap_or_default(),
+        swath_km: pl.swath_m / 1_000.0,
+        lat_deg: rad_to_deg(k.lat),
+        lon_deg: rad_to_deg(k.lon),
+        alt_m: k.alt_m,
+        taskings: st
+            .taskings
+            .iter()
+            .map(|t| TaskingView {
+                centre: lonlat(t.centre),
+                radius_m: t.radius_m,
+                pass_in_s: t.pass_ms.saturating_sub(now) as f64 / 1_000.0,
+            })
+            .collect(),
+        confidence: format!("{:?}", p.provenance.confidence).to_lowercase(),
+    })
+}
+
+fn snake<T: std::fmt::Debug>(v: T) -> String {
+    let s = format!("{v:?}");
+    let mut out = String::new();
+    for (i, c) in s.chars().enumerate() {
+        if c.is_ascii_uppercase() && i > 0 {
+            out.push('_');
+        }
+        out.push(c.to_ascii_lowercase());
+    }
+    out
+}
+
+/// Details of one contact in `side`'s picture. Unknown ids answer the same
+/// for every side.
+pub fn contact_details(world: &World, side: u8, id: u32) -> Result<ContactDetails, String> {
+    use crate::picture::SidePictures;
+    use wb_content::source::realism::ContactLevel;
+    let unknown = || format!("Unknown contact {id}");
+    let rules = world.resource::<Rules>();
+    let now = world.resource::<SimClock>().sim_time_ms;
+    let c = world
+        .get_resource::<SidePictures>()
+        .and_then(|p| p.sides.get(usize::from(side)))
+        .and_then(|p| p.get(wb_core::ContactId(id)))
+        .ok_or_else(unknown)?;
+    let db = &rules.db;
+    let class_name = (c.level >= ContactLevel::Class).then(|| c.type_ref.class_name(rules));
+    let type_name = (c.level >= ContactLevel::Type).then(|| c.type_ref.short_name(rules).to_owned());
+    let ell = c.ellipse(rules, now);
+    let sources = c
+        .sources
+        .iter()
+        .map(|s| ContactSourceView {
+            kind: s.kind.as_str().to_owned(),
+            unit: entity(world, s.observer)
+                .and_then(|e| world.get::<Identity>(e))
+                .map_or_else(String::new, |i| i.name.clone()),
+            sensor: s.sensor.map(|x| db.str(db.sensors[x.0 as usize].name).to_owned()),
+            network: s.network.map(|n| db.str(db.datalinks[n.0 as usize].name).to_owned()),
+            age_s: now.saturating_sub(s.last_ms) as f64 / 1_000.0,
+        })
+        .collect();
+    Ok(ContactDetails {
+        contact_id: id,
+        label: type_name.clone().or_else(|| class_name.clone()).unwrap_or_default(),
+        estimated: c.estimated(rules, now),
+        level: snake(c.level),
+        identity: snake(c.identity),
+        domain: snake(c.domain),
+        class_name,
+        type_name,
+        quality: snake(c.quality),
+        lat_deg: c.est.map(|e| rad_to_deg(e.at.lat)),
+        lon_deg: c.est.map(|e| rad_to_deg(e.at.lon)),
+        alt_m: c.est.map(|e| e.alt_m),
+        speed_mps: c.est.map(|e| e.speed_mps),
+        heading_deg: c.est.map(|e| rad_to_deg(e.heading)),
+        uncertainty_a_m: ell.map(|e| e.0),
+        uncertainty_b_m: ell.map(|e| e.1),
+        age_s: now.saturating_sub(c.last_ms) as f64 / 1_000.0,
+        first_seen_s_ago: now.saturating_sub(c.first_ms) as f64 / 1_000.0,
+        count_min: c.count.0,
+        count_max: c.count.1,
+        count_known: c.count_resolved,
+        bearing_only: c.est.is_none(),
+        lost: c.lost,
+        fixed: c.fixed,
+        threat_m: (c.level >= ContactLevel::Type)
+            .then(|| c.type_ref.threat_m(rules))
+            .flatten(),
+        sources,
     })
 }
 

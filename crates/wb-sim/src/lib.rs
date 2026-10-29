@@ -264,6 +264,11 @@ impl Sim {
         snapshot::to_hex(&self.state_hash())
     }
 
+    /// The packs (or test terrain) the war runs on.
+    pub fn geo(&self) -> Option<&Geo> {
+        self.geo.as_deref()
+    }
+
     pub fn world(&self) -> &World {
         &self.world
     }

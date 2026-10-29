@@ -1,29 +1,35 @@
 //! `wb golden`: golden scenarios (doc 08 §3). A golden file is a scenario
-//! with a `golden:` block of variants and expected bands; every metric comes
-//! from the event log.
+//! with a `golden:` block of variants and expected bands. Flight metrics come
+//! from the event log; sensor metrics from the side pictures, which the CLI
+//! may read (it is a test harness, not a client).
 //!
 //! ```yaml
 //! golden:
 //!   id: G7
 //!   max_ticks: 86400
+//!   seeds: 1                       # runs per variant, seeds seed, seed+1, …
 //!   variants:
 //!     no_tanker: { drop_units: [30] }
 //!     tanker: {}
 //!   expect:
 //!     - { variant: no_tanker, metric: landed_reserve_margin_kg, group: 10, min: 0 }
 //!     - { variant: tanker, metric: time_on_station_s, group: 10, ratio_to: no_tanker, min: 2.0 }
+//!     - { metric: first_detection_range_km, side: 0, target: 900, aggregate: min, min: 28 }
 //! ```
 //!
-//! A run stops when every group named in `expect` has landed once (after
-//! taking off) or at `max_ticks`. Metrics count up to that first landing.
+//! A run stops when every group named by a flight metric has landed once
+//! (after taking off), when every sensor metric has its value, or at
+//! `max_ticks`. Flight metrics count up to that first landing.
 
 use anyhow::{Context, bail};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::path::Path;
 use wb_core::UnitId;
-use wb_sim::components::Group;
+use wb_core::math::pow;
+use wb_sim::components::{Group, GroupMember, Kinematics, PlatformRef};
 use wb_sim::orders::Command;
+use wb_sim::picture::SidePictures;
 use wb_sim::{Event, EventKind, Scenario, Sim};
 
 use crate::sim::Content;
@@ -35,9 +41,15 @@ struct Spec {
     #[serde(default)]
     description: Option<String>,
     max_ticks: u64,
+    #[serde(default = "one")]
+    seeds: u64,
     #[serde(default)]
     variants: BTreeMap<String, Variant>,
     expect: Vec<Expect>,
+}
+
+fn one() -> u64 {
+    1
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -46,22 +58,64 @@ struct Variant {
     /// Scenario units (and the orders that name only them) left out.
     #[serde(default)]
     drop_units: Vec<u32>,
+    /// Scripted targets left out.
+    #[serde(default)]
+    drop_targets: Vec<u32>,
+}
+
+/// One measured quantity of a run.
+// No `deny_unknown_fields` here or on `Expect`: serde cannot combine it with `flatten`.
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+struct Measure {
+    metric: Metric,
+    #[serde(default)]
+    group: Option<u32>,
+    /// Side whose picture is read.
+    #[serde(default)]
+    side: Option<u8>,
+    /// Unit or scripted target (its group is the contact).
+    #[serde(default)]
+    target: Option<u32>,
+    /// Own sensor unit, for line-of-sight metrics.
+    #[serde(default)]
+    observer: Option<u32>,
+    #[serde(default)]
+    satellite: Option<u32>,
+    #[serde(default)]
+    imaged: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
 struct Expect {
     #[serde(default = "base_variant")]
     variant: String,
-    metric: Metric,
-    group: u32,
+    #[serde(flatten)]
+    what: Measure,
     /// Divide by the same metric of this variant before comparing.
     #[serde(default)]
     ratio_to: Option<String>,
+    /// Divide by another metric of the same variant.
+    #[serde(default)]
+    over: Option<Measure>,
+    /// Divide by `(σ_a / σ_b)^¼` from the content front RCS of two platforms (G2).
+    #[serde(default)]
+    rcs_quarter_root: Option<[String; 2]>,
+    /// How runs over seeds combine (default: median).
+    #[serde(default)]
+    aggregate: Aggregate,
     #[serde(default)]
     min: Option<f64>,
     #[serde(default)]
     max: Option<f64>,
+}
+
+#[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+enum Aggregate {
+    #[default]
+    Median,
+    Min,
+    Max,
 }
 
 fn base_variant() -> String {
@@ -79,6 +133,24 @@ enum Metric {
     BingoCalls,
     /// Refuellings completed by members before the first landing.
     Refuels,
+    /// True range at the side's first detection of the target, km.
+    FirstDetectionRangeKm,
+    /// Terrain clearance of the exact line of sight observer → target at the
+    /// side's first detection, metres (negative: blocked).
+    ClearanceAtFirstDetectionM,
+    /// Seconds from the exact line of sight clearing to first detection.
+    FirstDetectionAfterLosClearS,
+    /// Intel reports from a satellite (optionally only `imaged` ones).
+    ReportCount,
+}
+
+impl Metric {
+    fn is_flight(self) -> bool {
+        matches!(
+            self,
+            Metric::TimeOnStationS | Metric::LandedReserveMarginKg | Metric::BingoCalls | Metric::Refuels
+        )
+    }
 }
 
 pub fn run(files: &[std::path::PathBuf], content: &Content) -> anyhow::Result<()> {
@@ -90,6 +162,10 @@ pub fn run(files: &[std::path::PathBuf], content: &Content) -> anyhow::Result<()
         bail!("{failed} golden expectation(s) out of band");
     }
     Ok(())
+}
+
+fn key(m: &Measure) -> String {
+    format!("{m:?}")
 }
 
 fn run_file(path: &Path, content: &Content) -> anyhow::Result<usize> {
@@ -115,72 +191,117 @@ fn run_file(path: &Path, content: &Content) -> anyhow::Result<usize> {
     if variants.is_empty() {
         variants.push(base_variant());
     }
-    let groups: Vec<u32> = {
-        let mut g: Vec<u32> = spec.expect.iter().map(|e| e.group).collect();
-        g.sort();
-        g.dedup();
-        g
-    };
-    let mut results: BTreeMap<(String, Metric, u32), Option<f64>> = BTreeMap::new();
-    for v in &variants {
-        let mut s = scenario.clone();
-        if let Some(var) = spec.variants.get(v) {
-            apply_variant(&mut s, var);
+    // Every measure each variant needs.
+    let mut needs: BTreeMap<String, Vec<Measure>> = BTreeMap::new();
+    for e in &spec.expect {
+        let mut add = |v: &str, m: &Measure| {
+            let list = needs.entry(v.to_owned()).or_default();
+            if !list.contains(m) {
+                list.push(m.clone());
+            }
+        };
+        add(&e.variant, &e.what);
+        if let Some(r) = &e.ratio_to {
+            add(r, &e.what);
         }
-        let mut sim = crate::sim::build(&s, content, None)?;
-        let members = members_of(&sim, &groups);
-        run_until_landed(&mut sim, &members, spec.max_ticks);
-        let ev = sim.events();
-        for e in &spec.expect {
-            for (var, metric) in [
-                Some((&e.variant, e.metric)),
-                e.ratio_to.as_ref().map(|r| (r, e.metric)),
-            ]
-            .into_iter()
-            .flatten()
-            {
-                if var == v {
-                    let m = &members[&e.group];
-                    results.insert(
-                        (v.clone(), metric, e.group),
-                        metric_value(ev, UnitId(e.group), m, metric),
-                    );
-                }
+        if let Some(o) = &e.over {
+            add(&e.variant, o);
+        }
+    }
+    // (variant, measure) → value per seed.
+    let mut results: BTreeMap<(String, String), Vec<Option<f64>>> = BTreeMap::new();
+    for v in &variants {
+        let measures = needs.get(v).cloned().unwrap_or_default();
+        for n in 0..spec.seeds.max(1) {
+            let mut s = scenario.clone();
+            s.seed = scenario.seed.wrapping_add(n);
+            if let Some(var) = spec.variants.get(v) {
+                apply_variant(&mut s, var);
+            }
+            let mut sim = crate::sim::build(&s, content, None)?;
+            let values = measure_run(&mut sim, &measures, spec.max_ticks);
+            for (m, val) in measures.iter().zip(values) {
+                results.entry((v.clone(), key(m))).or_default().push(val);
+            }
+            if n == 0 {
+                println!(
+                    "  run {v}: {} ticks, {:.1} h sim time, hash {}{}",
+                    sim.clock().tick,
+                    sim.clock().sim_time_ms as f64 / 3.6e6,
+                    &sim.state_hash_hex()[..16],
+                    if spec.seeds > 1 {
+                        format!(" (seed 1 of {})", spec.seeds)
+                    } else {
+                        String::new()
+                    }
+                );
             }
         }
-        println!(
-            "  run {v}: {} ticks, {:.1} h sim time, hash {}",
-            sim.clock().tick,
-            sim.clock().sim_time_ms as f64 / 3.6e6,
-            &sim.state_hash_hex()[..16]
-        );
     }
 
     let mut failed = 0;
     for e in &spec.expect {
-        let value = results
-            .get(&(e.variant.clone(), e.metric, e.group))
-            .copied()
-            .flatten();
-        let value = match (&e.ratio_to, value) {
-            (Some(r), Some(v)) => results
-                .get(&(r.clone(), e.metric, e.group))
-                .copied()
-                .flatten()
-                .filter(|d| *d > 0.0)
-                .map(|d| v / d),
-            (_, v) => v,
+        let get = |v: &str, m: &Measure| results.get(&(v.to_owned(), key(m))).cloned().unwrap_or_default();
+        let mut vals = get(&e.variant, &e.what);
+        let combine = |a: Vec<Option<f64>>, b: Vec<Option<f64>>| -> Vec<Option<f64>> {
+            a.iter()
+                .zip(b.iter().chain(std::iter::repeat(&None)))
+                .map(|(x, y)| match (x, y) {
+                    (Some(x), Some(y)) if *y != 0.0 => Some(x / y),
+                    _ => None,
+                })
+                .collect()
         };
+        if let Some(o) = &e.over {
+            vals = combine(vals, get(&e.variant, o));
+        }
+        let mut value = aggregate(&vals, e.aggregate);
+        if let Some(r) = &e.ratio_to {
+            let other = aggregate(&get(r, &e.what), e.aggregate);
+            value = match (value, other) {
+                (Some(v), Some(d)) if d > 0.0 => Some(v / d),
+                _ => None,
+            };
+        }
+        if let Some([a, b]) = &e.rcs_quarter_root {
+            let front = |id: &str| {
+                content
+                    .db
+                    .platforms
+                    .iter()
+                    .find(|p| content.db.str(p.id) == id)
+                    .map(|p| p.signature.rcs_m2.front)
+            };
+            let q = match (front(a), front(b)) {
+                (Some(x), Some(y)) if y > 0.0 => pow(x / y, 0.25),
+                _ => bail!("{}: unknown platform in rcs_quarter_root", spec.id),
+            };
+            value = value.map(|v| v / q);
+        }
         let ok =
             value.is_some_and(|v| e.min.is_none_or(|m| v >= m) && e.max.is_none_or(|m| v <= m));
-        let what = match &e.ratio_to {
-            Some(r) => format!("{:?}({}) / {:?}({r})", e.metric, e.variant, e.metric),
-            None => format!("{:?}({})", e.metric, e.variant),
+        let mut what = format!("{:?}({})", e.what.metric, e.variant);
+        if let Some(o) = &e.over {
+            what += &format!(" / {:?}", o.metric);
+        }
+        if let Some(r) = &e.ratio_to {
+            what += &format!(" / {:?}({r})", e.what.metric);
+        }
+        if e.rcs_quarter_root.is_some() {
+            what += " / (σ₁/σ₂)^¼";
+        }
+        if spec.seeds > 1 {
+            what += &format!(" [{:?} of {}]", e.aggregate, spec.seeds);
+        }
+        let subject = match (e.what.group, e.what.target, e.what.satellite) {
+            (Some(g), _, _) => format!("group {g}"),
+            (_, Some(t), _) => format!("target {t}"),
+            (_, _, Some(s)) => format!("satellite {s}"),
+            _ => String::new(),
         };
         println!(
-            "  {} group {} {what} = {} (band {}..{})",
+            "  {} {subject} {what} = {} (band {}..{})",
             if ok { "pass" } else { "FAIL" },
-            e.group,
             value.map_or("missing".into(), |v| format!("{v:.2}")),
             e.min.map_or("".into(), |v| v.to_string()),
             e.max.map_or("".into(), |v| v.to_string()),
@@ -192,32 +313,99 @@ fn run_file(path: &Path, content: &Content) -> anyhow::Result<usize> {
     Ok(failed)
 }
 
+/// Combines per-seed values; a missing value makes the result missing.
+fn aggregate(vals: &[Option<f64>], how: Aggregate) -> Option<f64> {
+    let mut v: Vec<f64> = vals.iter().copied().collect::<Option<Vec<_>>>()?;
+    if v.is_empty() {
+        return None;
+    }
+    v.sort_by(|a, b| a.total_cmp(b));
+    Some(match how {
+        Aggregate::Min => v[0],
+        Aggregate::Max => v[v.len() - 1],
+        Aggregate::Median => {
+            let n = v.len();
+            if n % 2 == 1 {
+                v[n / 2]
+            } else {
+                (v[n / 2 - 1] + v[n / 2]) / 2.0
+            }
+        }
+    })
+}
+
 fn apply_variant(s: &mut Scenario, v: &Variant) {
     s.units.retain(|u| !v.drop_units.contains(&u.id));
+    s.scripted_targets.retain(|t| !v.drop_targets.contains(&t.id));
     s.orders.retain(|o| match &o.command {
-        Command::AssignTask { units, .. } | Command::SetBehaviour { units, .. } => {
-            !units.iter().all(|u| v.drop_units.contains(u))
-        }
+        Command::AssignTask { units, .. }
+        | Command::SetBehaviour { units, .. }
+        | Command::SetEmcon { units, .. } => !units.iter().all(|u| v.drop_units.contains(u)),
+        Command::TaskSatellite { satellite, .. } => !v.drop_units.contains(satellite),
         _ => true,
     });
 }
 
-fn members_of(sim: &Sim, groups: &[u32]) -> BTreeMap<u32, Vec<UnitId>> {
+fn members_of(sim: &Sim, group: u32) -> Vec<UnitId> {
     let world = sim.world();
-    groups
-        .iter()
-        .map(|g| {
-            let m = wb_sim::world::entity(world, UnitId(*g))
-                .and_then(|e| world.get::<Group>(e))
-                .map(|g| g.members.clone())
-                .unwrap_or_default();
-            (*g, m)
-        })
-        .collect()
+    wb_sim::world::entity(world, UnitId(group))
+        .and_then(|e| world.get::<Group>(e))
+        .map(|g| g.members.clone())
+        .unwrap_or_default()
 }
 
-/// Index of the event that ends the measured sortie: the event by which every
-/// member has landed once after taking off.
+/// Association key of a target: its group, or itself.
+fn truth_key(sim: &Sim, target: u32) -> UnitId {
+    let world = sim.world();
+    wb_sim::world::entity(world, UnitId(target))
+        .and_then(|e| world.get::<GroupMember>(e))
+        .map_or(UnitId(target), |m| m.group)
+}
+
+/// The side's contact of a target: (first detection tick, true range).
+fn first_seen(sim: &Sim, side: u8, target: u32) -> Option<(u64, f64)> {
+    let key = truth_key(sim, target);
+    let pics = sim.world().get_resource::<SidePictures>()?;
+    let pic = pics.sides.get(usize::from(side))?;
+    let c = pic.get(*pic.by_truth.get(&key)?)?;
+    Some((c.first_seen.tick, c.first_seen.range_m))
+}
+
+/// Position and line-of-sight height of a unit: a lead or a member of
+/// `id` (groups use their lead).
+fn place(sim: &Sim, id: u32) -> Option<(wb_core::geo::LatLon, f64, Option<f64>)> {
+    let world = sim.world();
+    let mut e = wb_sim::world::entity(world, UnitId(id))?;
+    if let Some(g) = world.get::<Group>(e) {
+        e = wb_sim::world::entity(world, *g.members.first()?)?;
+    }
+    let k = world.get::<Kinematics>(e)?;
+    let rules = world.resource::<wb_sim::Rules>();
+    let mount = world
+        .get::<PlatformRef>(e)
+        .and_then(|p| rules.platform(p.0).sensors.first().map(|m| m.height_m));
+    Some((k.pos(), k.alt_m, mount))
+}
+
+/// Exact clearance of the line of sight from `observer` (ground + its first
+/// sensor's mount) to `target`, metres.
+fn clearance(sim: &Sim, observer: u32, target: u32) -> Option<f64> {
+    let geo = sim.geo()?;
+    let (a, alt_a, mount) = place(sim, observer)?;
+    let (b, alt_b, _) = place(sim, target)?;
+    let ground = geo.elevation_m(a).ok()?;
+    let h_a = alt_a.max(ground) + mount.unwrap_or(0.0);
+    let real = sim.world().resource::<wb_sim::Rules>().realism().clone();
+    let d = wb_core::geo::distance_m(a, b);
+    let p = wb_geo::LosParams {
+        k_factor: real.earth.radio_k_factor,
+        step_m: (d / real.radar.los_sample_divisor).max(30.0),
+    };
+    geo.line_of_sight(a, h_a, b, alt_b, &p)
+        .ok()
+        .map(|l| l.min_clearance_m)
+}
+
 fn first_landing(events: &[Event], members: &[UnitId]) -> Option<usize> {
     members
         .iter()
@@ -235,26 +423,111 @@ fn first_landing(events: &[Event], members: &[UnitId]) -> Option<usize> {
         .try_fold(0, |acc, i| i.map(|i| acc.max(i)))
 }
 
-fn run_until_landed(sim: &mut Sim, members: &BTreeMap<u32, Vec<UnitId>>, max_ticks: u64) {
+/// Runs one scenario and returns each measure.
+fn measure_run(sim: &mut Sim, measures: &[Measure], max_ticks: u64) -> Vec<Option<f64>> {
+    let groups: BTreeMap<u32, Vec<UnitId>> = measures
+        .iter()
+        .filter(|m| m.metric.is_flight())
+        .filter_map(|m| m.group)
+        .map(|g| (g, members_of(sim, g)))
+        .collect();
+    let los: Vec<&Measure> = measures
+        .iter()
+        .filter(|m| {
+            matches!(
+                m.metric,
+                Metric::ClearanceAtFirstDetectionM | Metric::FirstDetectionAfterLosClearS
+            )
+        })
+        .collect();
+    let sensing: Vec<&Measure> = measures
+        .iter()
+        .filter(|m| !m.metric.is_flight() && m.metric != Metric::ReportCount)
+        .collect();
+    let reports_only = measures.iter().all(|m| m.metric == Metric::ReportCount);
+    // Line of sight per (observer, target): clearance each tick and the tick it cleared.
+    let mut cleared: BTreeMap<(u32, u32), Option<u64>> = BTreeMap::new();
+    let mut at_detect: BTreeMap<(u32, u32), f64> = BTreeMap::new();
     let mut checked = 0;
     while sim.clock().tick < max_ticks {
-        sim.run_ticks(60);
-        let events = sim.events();
-        if events.len() != checked {
-            checked = events.len();
-            if members.values().all(|m| first_landing(events, m).is_some()) {
-                return;
+        let step = if los.is_empty() { 10 } else { 1 };
+        sim.run_ticks(step);
+        let tick = sim.clock().tick;
+        for m in &los {
+            let (Some(o), Some(t), Some(side)) = (m.observer, m.target, m.side) else {
+                continue;
+            };
+            let c = clearance(sim, o, t);
+            let entry = cleared.entry((o, t)).or_insert(None);
+            if entry.is_none() && c.is_some_and(|c| c >= 0.0) {
+                *entry = Some(tick);
+            }
+            if !at_detect.contains_key(&(o, t))
+                && let Some((ft, _)) = first_seen(sim, side, t)
+                && ft + 1 >= tick
+                && let Some(c) = c
+            {
+                at_detect.insert((o, t), c);
             }
         }
+        if reports_only {
+            continue;
+        }
+        let flight_done = {
+            let events = sim.events();
+            events.len() == checked || {
+                checked = events.len();
+                groups.values().all(|m| first_landing(events, m).is_some())
+            }
+        };
+        let sensing_done = sensing.iter().all(|m| match (m.side, m.target) {
+            (Some(s), Some(t)) => first_seen(sim, s, t).is_some(),
+            _ => true,
+        });
+        if flight_done && sensing_done {
+            break;
+        }
+    }
+    measures
+        .iter()
+        .map(|m| value(sim, m, &groups, &cleared, &at_detect))
+        .collect()
+}
+
+fn value(
+    sim: &Sim,
+    m: &Measure,
+    groups: &BTreeMap<u32, Vec<UnitId>>,
+    cleared: &BTreeMap<(u32, u32), Option<u64>>,
+    at_detect: &BTreeMap<(u32, u32), f64>,
+) -> Option<f64> {
+    let events = sim.events();
+    match m.metric {
+        Metric::FirstDetectionRangeKm => {
+            first_seen(sim, m.side?, m.target?).map(|(_, r)| r / 1_000.0)
+        }
+        Metric::ClearanceAtFirstDetectionM => at_detect.get(&(m.observer?, m.target?)).copied(),
+        Metric::FirstDetectionAfterLosClearS => {
+            let (t, _) = first_seen(sim, m.side?, m.target?)?;
+            let c = (*cleared.get(&(m.observer?, m.target?))?)?;
+            // Coarse ticks are 1 s.
+            Some(t as f64 - c as f64)
+        }
+        Metric::ReportCount => {
+            let sat = UnitId(m.satellite?);
+            Some(
+                events
+                    .iter()
+                    .filter(|e| matches!(&e.kind, EventKind::IntelReport { satellite, imaged, .. }
+                        if *satellite == sat && m.imaged.is_none_or(|i| i == *imaged)))
+                    .count() as f64,
+            )
+        }
+        _ => flight_value(events, UnitId(m.group?), groups.get(&m.group?)?, m.metric),
     }
 }
 
-fn metric_value(
-    events: &[Event],
-    group: UnitId,
-    members: &[UnitId],
-    metric: Metric,
-) -> Option<f64> {
+fn flight_value(events: &[Event], group: UnitId, members: &[UnitId], metric: Metric) -> Option<f64> {
     let end = first_landing(events, members);
     let window = &events[..end.map_or(events.len(), |i| i + 1)];
     match metric {
@@ -311,5 +584,6 @@ fn metric_value(
                 .filter(|e| matches!(e.kind, EventKind::Refuelled { unit, .. } if members.contains(&unit)))
                 .count() as f64,
         ),
+        _ => None,
     }
 }

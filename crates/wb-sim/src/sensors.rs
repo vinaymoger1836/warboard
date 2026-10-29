@@ -62,6 +62,9 @@ pub(crate) struct Body {
     pub(crate) h_m: f64,
     /// Height of the ground or sea below, metres.
     pub(crate) ground_m: f64,
+    /// Reference height its sensor mountings are measured from: the
+    /// aircraft's altitude, the deck (sea level) or the ground.
+    pub(crate) sensor_base_m: f64,
     pub(crate) heading: f64,
     pub(crate) speed: f64,
     pub(crate) domain: Domain,
@@ -235,6 +238,10 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
             pos: k.pos(),
             h_m,
             ground_m,
+            sensor_base_m: match domain {
+                Domain::Air | Domain::Space => k.alt_m.max(0.0),
+                _ => ground_m,
+            },
             heading: k.heading,
             speed: k.speed_mps,
             domain,
@@ -506,7 +513,7 @@ fn evaluate(
 ) -> Option<Seen> {
     let rules = sc.rules;
     let real = rules.realism();
-    let h_s = obs.h_m.max(obs.ground_m) + m.height_m;
+    let h_s = obs.sensor_base_m + m.height_m;
     let brg = initial_bearing(obs.pos, tgt.pos);
     let night = || sun_elevation(tgt.pos, sc.utc_ms) < real.passive.eo_min_sun_elevation_rad;
     let size = || {
@@ -763,7 +770,7 @@ fn evaluate(
                 })
                 .max_by(|a, b| a.0.total_cmp(&b.0).then(b.2.cmp(&a.2)))?;
             let (range, mast, _) = best;
-            let h_t = tgt.h_m.max(tgt.ground_m) + mast;
+            let h_t = tgt.sensor_base_m + mast;
             if d > horizon_m(rules, h_s, h_t) || !los.clear(obs.pos, h_s, tgt.pos, h_t) {
                 return None;
             }
@@ -951,7 +958,7 @@ pub fn scan(world: &mut World) {
                     continue;
                 }
                 let kind = kind_of(&rules, &m);
-                let h_s = obs.h_m.max(obs.ground_m) + m.height_m;
+                let h_s = obs.sensor_base_m + m.height_m;
                 let range = prune_range(&rules, &m, h_s);
                 let mut hits: BTreeSet<UnitId> = BTreeSet::new();
                 for i in index.query(obs.pos, range, obs.side, &bodies) {

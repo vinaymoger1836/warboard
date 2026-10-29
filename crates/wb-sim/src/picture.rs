@@ -594,8 +594,17 @@ impl TypeRef {
                 "SAM site".to_owned()
             }
             TypeRef::Weapon(w) => {
-                let c = rules.db.weapons[w.0 as usize].category;
-                format!("{c:?}").to_lowercase() + " missile"
+                use wb_content::source::WeaponCategory as W;
+                match rules.db.weapons[w.0 as usize].category {
+                    W::Ashm => "anti-ship missile",
+                    W::Sam => "SAM",
+                    W::Aam => "air-to-air missile",
+                    W::Lacm => "cruise missile",
+                    W::Arm => "anti-radiation missile",
+                    W::Ballistic => "ballistic missile",
+                    _ => "missile",
+                }
+                .to_owned()
             }
             _ => self
                 .lead_platform(rules)

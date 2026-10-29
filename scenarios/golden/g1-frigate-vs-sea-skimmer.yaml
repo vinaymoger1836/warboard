@@ -1,0 +1,15 @@
+# G1 (doc 08 §3): a frigate radar at 30 m against a sea-skimmer at 5 m. The
+# radio horizon (doc 02 §7.1) limits first detection to about 32 km whatever
+# the radar's nominal range. Expected first detection 28–36 km.
+name: G1 frigate radar vs sea-skimmer
+seed: 1
+start_utc: 2026-10-27T10:00:00Z
+start_mode: deploy
+sides:
+  - { name: NATO, countries: [ita] }
+  - { name: Russia, countries: [rus] }
+units:
+  - { id: 10, name: Bergamini, platform: fremm-bergamini, country: ita, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 90 }
+scripted_targets:
+  # Kh-35U at 5 m and 272 m/s (Mach 0.8), inbound from 60 km east.
+  - { id: 900, name: Skimmer, weapon: kh-35u, country: rus, lat_deg: 55.5, lon_deg: 17.95, alt_m: 5, heading_deg: 270, speed_mps: 272 }
