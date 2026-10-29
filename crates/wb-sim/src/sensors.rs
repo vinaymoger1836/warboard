@@ -256,20 +256,23 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
     out
 }
 
-/// Spatial index: H3 res-3 cell → indices into the body list.
+/// Spatial index: per side, H3 res-3 cell → indices into the body list.
 struct Index {
     res: u8,
-    buckets: BTreeMap<u64, Vec<usize>>,
+    buckets: BTreeMap<(u8, u64), Vec<usize>>,
+    sides: BTreeSet<u8>,
     edge_m: f64,
 }
 
 impl Index {
     fn new(bodies: &[Body], res: u8) -> Self {
-        let mut buckets: BTreeMap<u64, Vec<usize>> = BTreeMap::new();
+        let mut buckets: BTreeMap<(u8, u64), Vec<usize>> = BTreeMap::new();
+        let mut sides = BTreeSet::new();
         for (i, b) in bodies.iter().enumerate() {
             if b.visible {
+                sides.insert(b.side);
                 buckets
-                    .entry(wb_geo::h3::cell(b.pos, res))
+                    .entry((b.side, wb_geo::h3::cell(b.pos, res)))
                     .or_default()
                     .push(i);
             }
@@ -277,21 +280,30 @@ impl Index {
         Self {
             res,
             buckets,
+            sides,
             edge_m: wb_geo::h3::edge_m(res),
         }
     }
 
-    /// Bodies within `radius_m` of `p`, in body (`UnitId`) order.
-    fn query(&self, p: LatLon, radius_m: f64, bodies: &[Body]) -> Vec<usize> {
+    /// Bodies of other sides than `own` within `radius_m` of `p`, in body
+    /// (`UnitId`) order.
+    fn query(&self, p: LatLon, radius_m: f64, own: u8, bodies: &[Body]) -> Vec<usize> {
+        if self.sides.iter().all(|s| *s == own) {
+            return Vec::new();
+        }
         // Neighbouring centres are √3 edges apart; allow for cell size
         // variation (pentagons, distortion) with generous factors.
         let k = ((radius_m + 2.6 * self.edge_m) / (1.2 * self.edge_m)).ceil() as u32 + 1;
         let mut out: Vec<usize> = if k > 60 {
-            (0..bodies.len()).filter(|i| bodies[*i].visible).collect()
+            (0..bodies.len())
+                .filter(|i| bodies[*i].visible && bodies[*i].side != own)
+                .collect()
         } else {
-            wb_geo::h3::disk(wb_geo::h3::cell(p, self.res), k)
+            let cells = wb_geo::h3::disk(wb_geo::h3::cell(p, self.res), k);
+            self.sides
                 .iter()
-                .filter_map(|c| self.buckets.get(c))
+                .filter(|s| **s != own)
+                .flat_map(|s| cells.iter().filter_map(move |c| self.buckets.get(&(*s, *c))))
                 .flatten()
                 .copied()
                 .collect()
@@ -942,7 +954,7 @@ pub fn scan(world: &mut World) {
                 let h_s = obs.h_m.max(obs.ground_m) + m.height_m;
                 let range = prune_range(&rules, &m, h_s);
                 let mut hits: BTreeSet<UnitId> = BTreeSet::new();
-                for i in index.query(obs.pos, range, &bodies) {
+                for i in index.query(obs.pos, range, obs.side, &bodies) {
                     let tgt = &bodies[i];
                     if tgt.side == obs.side || tgt.uid == obs.uid {
                         continue;

@@ -563,3 +563,91 @@ fn age(pics: &mut SidePictures, rules: &Rules, now: u64, out: &mut Pending) {
 pub fn bearing_to(c: &Contact, p: LatLon) -> Option<f64> {
     c.est.map(|e| initial_bearing(e.at, p))
 }
+
+impl TypeRef {
+    /// Label form of the type (`S-400`, `Su-35S`).
+    pub fn short_name<'a>(&self, rules: &'a Rules) -> &'a str {
+        let db = &rules.db;
+        match *self {
+            TypeRef::Platform(p) => db.str(rules.platform(p).short_name),
+            TypeRef::System(s) => db.str(db.systems[s.0 as usize].short_name),
+            TypeRef::Weapon(w) => db.str(db.weapons[w.0 as usize].name),
+        }
+    }
+
+    /// The platform that stands for the type (a system's first component).
+    pub fn lead_platform(&self, rules: &Rules) -> Option<PlatformIx> {
+        match *self {
+            TypeRef::Platform(p) => Some(p),
+            TypeRef::System(s) => rules.db.systems[s.0 as usize].components.first().map(|c| c.platform),
+            TypeRef::Weapon(_) => None,
+        }
+    }
+
+    /// What `Class` reveals: `fighter`, `corvette`, `SAM site`, `anti-ship missile`.
+    pub fn class_name(&self, rules: &Rules) -> String {
+        match *self {
+            TypeRef::System(s)
+                if rules.db.systems[s.0 as usize].deploy_as
+                    == wb_content::source::system::DeployAs::Site =>
+            {
+                "SAM site".to_owned()
+            }
+            TypeRef::Weapon(w) => {
+                let c = rules.db.weapons[w.0 as usize].category;
+                format!("{c:?}").to_lowercase() + " missile"
+            }
+            _ => self
+                .lead_platform(rules)
+                .map(|p| {
+                    let cat = rules.platform(p).category.as_str();
+                    cat.split('/').nth(1).unwrap_or(cat).replace('_', " ")
+                })
+                .unwrap_or_default(),
+        }
+    }
+
+    /// Icon code (view `SYMBOLS`).
+    pub fn symbol(&self, rules: &Rules) -> u16 {
+        match *self {
+            TypeRef::System(s)
+                if rules.db.systems[s.0 as usize].deploy_as
+                    == wb_content::source::system::DeployAs::Site =>
+            {
+                107
+            }
+            _ => self
+                .lead_platform(rules)
+                .map(|p| crate::view::platform_symbol(rules.platform(p).category))
+                .unwrap_or(0),
+        }
+    }
+
+    /// Longest surface-to-air range known for the type: system magazines,
+    /// or the platform's loadouts (doc 03 §10 threat rings).
+    pub fn threat_m(&self, rules: &Rules) -> Option<f64> {
+        use wb_content::source::WeaponCategory;
+        let db = &rules.db;
+        let sam = |w: &wb_content::compiled::WeaponIx| {
+            let w = &db.weapons[w.0 as usize];
+            (w.category == WeaponCategory::Sam).then_some(w.profile.max_range_m)
+        };
+        let best = match *self {
+            TypeRef::System(s) => db.systems[s.0 as usize]
+                .components
+                .iter()
+                .flat_map(|c| c.magazine.iter())
+                .filter_map(|(w, _)| sam(w))
+                .fold(None, |a: Option<f64>, r| Some(a.map_or(r, |a| a.max(r)))),
+            TypeRef::Platform(p) => db
+                .loadouts
+                .iter()
+                .filter(|l| l.platform == p)
+                .flat_map(|l| l.items.iter())
+                .filter_map(|it| sam(&it.weapon))
+                .fold(None, |a: Option<f64>, r| Some(a.map_or(r, |a| a.max(r)))),
+            TypeRef::Weapon(_) => None,
+        };
+        best
+    }
+}
