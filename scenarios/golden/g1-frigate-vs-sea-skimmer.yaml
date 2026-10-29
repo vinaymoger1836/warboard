@@ -13,3 +13,11 @@ units:
 scripted_targets:
   # Kh-35U at 5 m and 272 m/s (Mach 0.8), inbound from 60 km east.
   - { id: 900, name: Skimmer, weapon: kh-35u, country: rus, lat_deg: 55.5, lon_deg: 17.95, alt_m: 5, heading_deg: 270, speed_mps: 272 }
+golden:
+  id: G1
+  description: frigate radar at 30 m vs sea-skimmer at 5 m, first detection 28–36 km
+  max_ticks: 300
+  seeds: 50
+  expect:
+    - { metric: first_detection_range_km, side: 0, target: 900, aggregate: min, min: 28, max: 36 }
+    - { metric: first_detection_range_km, side: 0, target: 900, aggregate: max, min: 28, max: 36 }

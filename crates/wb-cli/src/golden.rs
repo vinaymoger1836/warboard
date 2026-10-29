@@ -449,6 +449,7 @@ fn measure_run(sim: &mut Sim, measures: &[Measure], max_ticks: u64) -> Vec<Optio
     let mut cleared: BTreeMap<(u32, u32), Option<u64>> = BTreeMap::new();
     let mut at_detect: BTreeMap<(u32, u32), f64> = BTreeMap::new();
     let mut checked = 0;
+    let mut flight_done = groups.is_empty();
     while sim.clock().tick < max_ticks {
         let step = if los.is_empty() { 10 } else { 1 };
         sim.run_ticks(step);
@@ -473,13 +474,11 @@ fn measure_run(sim: &mut Sim, measures: &[Measure], max_ticks: u64) -> Vec<Optio
         if reports_only {
             continue;
         }
-        let flight_done = {
-            let events = sim.events();
-            events.len() == checked || {
-                checked = events.len();
-                groups.values().all(|m| first_landing(events, m).is_some())
-            }
-        };
+        let events = sim.events();
+        if events.len() != checked {
+            checked = events.len();
+            flight_done = groups.values().all(|m| first_landing(events, m).is_some());
+        }
         let sensing_done = sensing.iter().all(|m| match (m.side, m.target) {
             (Some(s), Some(t)) => first_seen(sim, s, t).is_some(),
             _ => true,
