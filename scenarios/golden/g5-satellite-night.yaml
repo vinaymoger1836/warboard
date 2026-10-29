@@ -1,0 +1,26 @@
+# G5 (doc 08 §3): an optical and a SAR satellite are tasked on a corvette at
+# night. The optical pass returns an explained "no image" report; the SAR
+# pass images the area. Passes (from the CelesTrak elements in content):
+# CSG-1 about 17:36Z, WorldView-3 about 20:12Z, both after sunset.
+name: G5 satellite pass at night
+seed: 5
+start_utc: 2026-10-27T16:00:00Z
+start_mode: deploy
+sides:
+  - { name: NATO, countries: [ita, usa] }
+  - { name: Russia, countries: [rus] }
+units:
+  - { id: 10, name: CSG-1, platform: csg-1, country: ita }
+  - { id: 12, name: WorldView-3, platform: worldview-3, country: usa }
+  - { id: 20, name: Soobrazitelny, platform: steregushchiy, country: rus, lat_deg: 54.9, lon_deg: 19.6 }
+orders:
+  - { tick: 0, side: 0, type: TaskSatellite, satellite: 10, centre: [19.6, 54.9], radius_km: 20 }
+  - { tick: 0, side: 0, type: TaskSatellite, satellite: 12, centre: [19.6, 54.9], radius_km: 20 }
+golden:
+  id: G5
+  description: satellite pass at night, optical no report, SAR report
+  max_ticks: 18000
+  expect:
+    - { metric: report_count, satellite: 12, imaged: true, max: 0 }
+    - { metric: report_count, satellite: 12, imaged: false, min: 1 }
+    - { metric: report_count, satellite: 10, imaged: true, min: 1 }

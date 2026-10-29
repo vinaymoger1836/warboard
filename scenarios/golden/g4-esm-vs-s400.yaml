@@ -1,0 +1,27 @@
+# G4 (doc 08 §3): an EA-18G with ESM (AN/ALQ-218) flies toward an emitting
+# S-400 battalion. One-way ESM detection must reach further than the S-400's
+# two-way radar detection of the aircraft.
+name: G4 ESM vs emitting S-400
+seed: 4
+start_utc: 2026-10-27T10:00:00Z
+start_mode: deploy
+sides:
+  - { name: NATO, countries: [usa] }
+  - { name: Russia, countries: [rus] }
+units:
+  - { id: 10, name: Growler, platform: ea-18g, country: usa, lat_deg: 54.7, lon_deg: 11.0, alt_m: 9000, heading_deg: 90 }
+  - { id: 30, name: Triumf, system: s-400-battalion, country: rus, lat_deg: 54.7, lon_deg: 20.5, heading_deg: 270, emcon: on }
+orders:
+  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: move, waypoints: [[20.5, 54.7]], alt_m: 9000 } }
+golden:
+  id: G4
+  description: ESM aircraft vs emitting S-400 radar, ESM detects first
+  max_ticks: 3600
+  seeds: 50
+  expect:
+    - metric: first_detection_range_km
+      side: 0
+      target: 31
+      over: { metric: first_detection_range_km, side: 1, target: 11 }
+      aggregate: min
+      min: 1.0

@@ -5,7 +5,7 @@ sensor_type: satellite_payload
 role: [imaging]
 payload:
   kind: optical
-  swath_km: 600
+  swath_km: 1000
   gsd_m: 0.31
   downlink_delay_min: 30
 provenance:

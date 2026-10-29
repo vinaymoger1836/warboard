@@ -5,7 +5,7 @@ sensor_type: satellite_payload
 role: [imaging]
 payload:
   kind: sar
-  swath_km: 400
+  swath_km: 900
   gsd_m: 0.8
   downlink_delay_min: 20
 provenance:

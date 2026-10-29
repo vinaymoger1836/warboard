@@ -1,0 +1,30 @@
+# G2 (doc 08 §3): the same fighter radar (AN/APG-81 on an F-35A) head-on
+# against a Su-35S and against an F-35A. Radar range scales with RCS^¼
+# (doc 02 §7.1), so the ratio of first-detection ranges must be within 20%
+# of (σ₁/σ₂)^¼ of the two front RCS values in content.
+name: G2 RCS ratio head-on
+seed: 2
+start_utc: 2026-10-27T10:00:00Z
+start_mode: deploy
+sides:
+  - { name: NATO, countries: [ita] }
+  - { name: Other, countries: [rus, usa] }
+units:
+  - { id: 10, name: Seeker, platform: f-35a, country: ita, lat_deg: 55.0, lon_deg: 10.0, alt_m: 9000, heading_deg: 90 }
+  - { id: 20, name: Flanker, platform: su-35s, country: rus, lat_deg: 55.0, lon_deg: 14.7, alt_m: 9000, heading_deg: 270 }
+  - { id: 30, name: Stealth, platform: f-35a, country: usa, lat_deg: 55.0, lon_deg: 14.7, alt_m: 9000, heading_deg: 270 }
+orders:
+  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: move, waypoints: [[16.0, 55.0]], alt_m: 9000 } }
+  - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[9.0, 55.0]], alt_m: 9000 } }
+  - { tick: 0, side: 1, type: AssignTask, units: [30], task: { kind: move, waypoints: [[9.0, 55.0]], alt_m: 9000 } }
+golden:
+  id: G2
+  description: same fighter radar vs Su-35S and F-35A head-on, range ratio within 20% of (σ₁/σ₂)^¼
+  max_ticks: 900
+  seeds: 50
+  variants:
+    su35: { drop_units: [30] }
+    f35: { drop_units: [20] }
+  expect:
+    - { variant: su35, metric: first_detection_range_km, side: 0, target: 21, ratio_to: f35, rcs_quarter_root: [su-35s, f-35a], min: 0.8, max: 1.2 }
+    - { variant: f35, metric: first_detection_range_km, side: 0, target: 31, min: 1 }
