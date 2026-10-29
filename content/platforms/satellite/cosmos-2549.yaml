@@ -1,0 +1,25 @@
+id: cosmos-2549
+kind: platform
+name: Cosmos 2549 (Lotos-S1)
+short_name: Lotos-S1
+category: satellite/sigint
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [lotos-s1-sigint]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 47546U 21008A   26301.61448087 -.00000049  00000+0  18702-4 0  9992"
+  tle_line2: "2 47546  67.1526  20.5621 0007153 261.5242  98.5032 13.97133832292470"
+provenance:
+  confidence: medium
+  notes: >-
+    Elements from CelesTrak (NORAD 47546, epoch 2026 day 301). Satellites are not targetable
+    in v1 (doc 02 13), so signature and durability are placeholders.
+  estimates:
+    - signature
+    - durability
+  sources:
+    - { title: "CelesTrak GP elements, NORAD 47546", url: "https://celestrak.org/NORAD/elements/gp.php?CATNR=47546&FORMAT=TLE", accessed: 2026-10-29 }
+    - { title: "Lotos-S", url: "https://en.wikipedia.org/wiki/Lotos-S", accessed: 2026-10-29 }

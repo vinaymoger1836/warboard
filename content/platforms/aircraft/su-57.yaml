@@ -1,6 +1,7 @@
 id: su-57
 kind: platform
 name: Su-57
+short_name: Su-57
 category: aircraft/fighter
 target_class: fighter
 crew: 1

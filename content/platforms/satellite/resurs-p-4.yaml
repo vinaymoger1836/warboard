@@ -1,0 +1,25 @@
+id: resurs-p-4
+kind: platform
+name: Resurs-P No. 4
+short_name: Resurs-P 4
+category: satellite/eo
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [resurs-p-optical]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 59371U 24061A   26301.66566050 -.00000024  00000+0  16250-5 0  9999"
+  tle_line2: "2 59371  97.2910 247.3948 0003060  71.1564 289.0009 15.31727906144205"
+provenance:
+  confidence: medium
+  notes: >-
+    Elements from CelesTrak (NORAD 59371, epoch 2026 day 301). Satellites are not targetable
+    in v1 (doc 02 13), so signature and durability are placeholders.
+  estimates:
+    - signature
+    - durability
+  sources:
+    - { title: "CelesTrak GP elements, NORAD 59371", url: "https://celestrak.org/NORAD/elements/gp.php?CATNR=59371&FORMAT=TLE", accessed: 2026-10-29 }
+    - { title: "Resurs-P", url: "https://en.wikipedia.org/wiki/Resurs-P", accessed: 2026-10-29 }

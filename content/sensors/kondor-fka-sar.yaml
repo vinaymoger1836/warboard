@@ -1,0 +1,20 @@
+id: kondor-fka-sar
+kind: sensor
+name: Kondor-FKA SAR
+sensor_type: satellite_payload
+role: [imaging]
+payload:
+  kind: sar
+  swath_km: 500
+  gsd_m: 1
+  downlink_delay_min: 30
+provenance:
+  confidence: low
+  notes: >-
+    S-band SAR with about 1 m resolution in spotlight mode. Field of regard width and delay are estimates.
+  estimates:
+    - payload.swath_km
+    - payload.downlink_delay_min
+    - payload.gsd_m
+  sources:
+    - { title: "Kondor (satellite)", url: "https://en.wikipedia.org/wiki/Kondor_(satellite)", accessed: 2026-10-29 }

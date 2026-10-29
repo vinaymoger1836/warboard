@@ -1,0 +1,33 @@
+id: irbis-e
+kind: sensor
+name: N035 Irbis-E PESA
+sensor_type: radar
+role: [air_search, fire_control, ground_mapping]
+radar:
+  band: X
+  r_ref_km: 250
+  sigma_ref_m2: 1
+  max_range_km: 400
+  scan_period_s: 2
+  field_of_regard_deg: 240
+  clutter_rejection: 0.8
+  pulse_doppler: true
+  eccm_db: 18
+  erp_class_dbw: 80
+  fire_channels: 8
+provenance:
+  confidence: low
+  notes: >-
+    Source: passive electronically scanned array on a hydraulic drive that adds mechanical
+    steering (wide field of regard), detection of 3 m2 targets head-on at up to 350-400 km in a
+    narrow search sector. The 50% range against 1 m2 is an estimate below that maximum.
+  estimates:
+    - radar.r_ref_km
+    - radar.scan_period_s
+    - radar.field_of_regard_deg
+    - radar.clutter_rejection
+    - radar.eccm_db
+    - radar.erp_class_dbw
+    - radar.fire_channels
+  sources:
+    - { title: "Irbis-E", url: "https://en.wikipedia.org/wiki/Irbis-E", accessed: 2026-10-29 }

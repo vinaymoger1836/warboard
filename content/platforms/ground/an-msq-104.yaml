@@ -1,6 +1,7 @@
 id: an-msq-104
 kind: platform
 name: AN/MSQ-104 engagement control station (Patriot)
+short_name: AN/MSQ-104
 category: ground/c2
 target_class: c2_node
 mobility:

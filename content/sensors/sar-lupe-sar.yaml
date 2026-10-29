@@ -1,0 +1,20 @@
+id: sar-lupe-sar
+kind: sensor
+name: SAR-Lupe radar
+sensor_type: satellite_payload
+role: [imaging]
+payload:
+  kind: sar
+  swath_km: 400
+  gsd_m: 0.5
+  downlink_delay_min: 30
+provenance:
+  confidence: low
+  notes: >-
+    X-band SAR, better than 0.5 m in spotlight mode; the satellite rotates to point the fixed antenna. Field of regard width is an estimate.
+  estimates:
+    - payload.swath_km
+    - payload.downlink_delay_min
+    - payload.gsd_m
+  sources:
+    - { title: "SAR-Lupe", url: "https://en.wikipedia.org/wiki/SAR-Lupe", accessed: 2026-10-29 }

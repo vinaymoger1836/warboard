@@ -1,0 +1,25 @@
+id: sar-lupe-2
+kind: platform
+name: SAR-Lupe 2
+short_name: SAR-Lupe 2
+category: satellite/sar
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [sar-lupe-sar]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 31797U 07030A   26301.59852674  .00050437  00000+0  49500-3 0  9994"
+  tle_line2: "2 31797  98.1137  64.6267 0001424  67.3613 292.7795 15.65921900 77728"
+provenance:
+  confidence: medium
+  notes: >-
+    Elements from CelesTrak (NORAD 31797, epoch 2026 day 301). Satellites are not targetable
+    in v1 (doc 02 13), so signature and durability are placeholders.
+  estimates:
+    - signature
+    - durability
+  sources:
+    - { title: "CelesTrak GP elements, NORAD 31797", url: "https://celestrak.org/NORAD/elements/gp.php?CATNR=31797&FORMAT=TLE", accessed: 2026-10-29 }
+    - { title: "SAR-Lupe", url: "https://en.wikipedia.org/wiki/SAR-Lupe", accessed: 2026-10-29 }

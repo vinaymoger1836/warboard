@@ -1,0 +1,20 @@
+id: resurs-p-optical
+kind: sensor
+name: Resurs-P Geoton imager
+sensor_type: satellite_payload
+role: [imaging]
+payload:
+  kind: optical
+  swath_km: 450
+  gsd_m: 0.7
+  downlink_delay_min: 45
+provenance:
+  confidence: low
+  notes: >-
+    Geoton-L1 optical camera, about 1 m panchromatic resolution, 38 km swath at nadir. Field of regard width is an estimate.
+  estimates:
+    - payload.swath_km
+    - payload.downlink_delay_min
+    - payload.gsd_m
+  sources:
+    - { title: "Resurs-P", url: "https://en.wikipedia.org/wiki/Resurs-P", accessed: 2026-10-29 }

@@ -1,0 +1,20 @@
+id: worldview-3-optical
+kind: sensor
+name: WorldView-3 optical imager
+sensor_type: satellite_payload
+role: [imaging]
+payload:
+  kind: optical
+  swath_km: 600
+  gsd_m: 0.31
+  downlink_delay_min: 30
+provenance:
+  confidence: low
+  notes: >-
+    0.31 m panchromatic resolution at nadir, 13.1 km swath at nadir; agile pointing widens the strip it can reach. That width is an estimate.
+  estimates:
+    - payload.swath_km
+    - payload.downlink_delay_min
+    - payload.gsd_m
+  sources:
+    - { title: "WorldView-3", url: "https://en.wikipedia.org/wiki/WorldView-3", accessed: 2026-10-29 }

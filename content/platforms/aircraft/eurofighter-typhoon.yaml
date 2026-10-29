@@ -1,6 +1,7 @@
 id: eurofighter-typhoon
 kind: platform
 name: Eurofighter Typhoon
+short_name: Typhoon
 category: aircraft/fighter
 target_class: fighter
 crew: 1

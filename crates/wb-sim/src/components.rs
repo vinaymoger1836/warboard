@@ -1,5 +1,5 @@
-//! ECS components (doc 02 §2): the P3 subset for movement, fuel, groups,
-//! tasks and bases.
+//! ECS components (doc 02 §2): movement, fuel, groups, tasks and bases (P3),
+//! emission control, satellites and scripted targets (P4).
 //!
 //! Components refer to each other by [`UnitId`] only, never by bevy `Entity`,
 //! so a loaded world is identical to the saved one whatever the archetype
@@ -7,7 +7,8 @@
 
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
-use wb_content::compiled::{BaseIx, CountryIx, LoadoutIx, PlatformIx, WeaponIx};
+use wb_content::compiled::{BaseIx, CountryIx, LoadoutIx, PlatformIx, SystemIx, WeaponIx};
+use wb_content::source::Emcon;
 use wb_content::source::realism::BaseKind;
 use wb_core::UnitId;
 use wb_core::geo::LatLon;
@@ -264,6 +265,8 @@ pub struct Group {
     /// Take off as soon as every member is ready (a new task while at base).
     pub launch: bool,
     pub behaviour: Behaviour,
+    /// The composite system (S-400 battalion) the group was deployed as.
+    pub system: Option<SystemIx>,
 }
 
 impl Group {
@@ -290,4 +293,33 @@ pub struct BaseSite {
     pub active: bool,
     /// Platforms stationed here, sorted.
     pub stationed: Vec<UnitId>,
+}
+
+/// Emission control of a platform's radars (doc 02 §9, doc 03 §5 sites).
+/// `On` emits, `Off` is silent (invisible to ESM, blind on radar), `Blink`
+/// emits `emcon_blink_on_s` of every `emcon_blink_period_s`.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EmconState(pub Emcon);
+
+/// An imaging request on a satellite (doc 02 §7.3): the pass is found when
+/// the order is accepted.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Tasking {
+    pub centre: LatLon,
+    pub radius_m: f64,
+    /// Sim time of the pass (closest approach), ms.
+    pub pass_ms: u64,
+}
+
+/// A satellite: position from SGP4 every tick; taskings in pass order.
+#[derive(Component, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct SatelliteState {
+    pub taskings: Vec<Tasking>,
+}
+
+/// Test-only straight-and-level mover that carries a weapon's signature
+/// (scenario `scripted_targets`; P5 replaces it with real launches).
+#[derive(Component, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ScriptedTarget {
+    pub weapon: WeaponIx,
 }

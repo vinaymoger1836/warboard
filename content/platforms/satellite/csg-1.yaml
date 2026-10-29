@@ -1,0 +1,25 @@
+id: csg-1
+kind: platform
+name: CSG-1 (COSMO-SkyMed Second Generation FM1)
+short_name: CSG-1
+category: satellite/sar
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [csg-sar]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 44873U 19092A   26301.65481918  .00000127  00000+0  22573-4 0  9993"
+  tle_line2: "2 44873  97.8901 123.3715 0001344  87.3359 272.8008 14.82149834371249"
+provenance:
+  confidence: medium
+  notes: >-
+    Elements from CelesTrak (NORAD 44873, epoch 2026 day 301). Satellites are not targetable
+    in v1 (doc 02 13), so signature and durability are placeholders.
+  estimates:
+    - signature
+    - durability
+  sources:
+    - { title: "CelesTrak GP elements, NORAD 44873", url: "https://celestrak.org/NORAD/elements/gp.php?CATNR=44873&FORMAT=TLE", accessed: 2026-10-29 }
+    - { title: "COSMO-SkyMed", url: "https://en.wikipedia.org/wiki/COSMO-SkyMed", accessed: 2026-10-29 }

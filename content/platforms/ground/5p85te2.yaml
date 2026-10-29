@@ -1,6 +1,7 @@
 id: 5p85te2
 kind: platform
 name: 5P85TE2 launcher (S-400)
+short_name: 5P85TE2
 category: ground/launcher
 target_class: launcher
 mobility:

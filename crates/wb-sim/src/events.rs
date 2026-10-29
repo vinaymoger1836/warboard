@@ -3,10 +3,13 @@
 
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
-use wb_core::UnitId;
+use wb_content::source::realism::ContactLevel;
+use wb_content::source::{Domain, Emcon};
+use wb_core::{ContactId, UnitId};
 
 use crate::clock::SimClock;
 use crate::components::ReturnWhy;
+use crate::picture::SourceKind;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
@@ -66,6 +69,53 @@ pub enum EventKind {
     /// The client should drop to ×1 or pause (doc 02 §3).
     AutoSlow {
         reason: String,
+    },
+    /// A new contact in the side's picture; `observer` is the own unit whose
+    /// sensor saw it. Carries contact data only (CLAUDE.md rule 1).
+    ContactNew {
+        contact: ContactId,
+        domain: Domain,
+        source: SourceKind,
+        observer: UnitId,
+    },
+    /// Classification rose (doc 02 §8).
+    ContactClassified {
+        contact: ContactId,
+        level: ContactLevel,
+        source: SourceKind,
+    },
+    /// A group contact's count was resolved.
+    ContactCount {
+        contact: ContactId,
+        min: u16,
+        max: u16,
+    },
+    /// Not refreshed for the age-out time: now a last-known marker.
+    ContactLost {
+        contact: ContactId,
+    },
+    /// A satellite report arrived after its downlink delay (doc 02 §7.3).
+    IntelReport {
+        report: u32,
+        satellite: UnitId,
+        #[cfg_attr(feature = "ts", ts(type = "number"))]
+        pass_ms: u64,
+        imaged: bool,
+        outcome: String,
+        contacts: Vec<ContactId>,
+    },
+    /// A group's emission control changed.
+    EmconChanged {
+        group: UnitId,
+        emcon: Emcon,
+    },
+    /// A satellite was tasked; `pass_ms` is the sim time of the pass.
+    SatelliteTasked {
+        satellite: UnitId,
+        #[cfg_attr(feature = "ts", ts(type = "number"))]
+        pass_ms: u64,
+        #[cfg_attr(feature = "ts", ts(type = "number"))]
+        report_ms: u64,
     },
 }
 

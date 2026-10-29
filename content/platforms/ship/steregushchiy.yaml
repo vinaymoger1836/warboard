@@ -1,6 +1,7 @@
 id: steregushchiy
 kind: platform
 name: Steregushchiy class (Project 20380)
+short_name: Steregushchiy
 category: ship/corvette
 target_class: surface_ship
 crew: 90
@@ -18,14 +19,17 @@ fuel:
 stations:
   - { id: redut, kind: vls, categories: [redut_cell], capacity: 12 }
   - { id: uran,  kind: launcher, categories: [uran_launcher], capacity: 8 }
+sensors:
+  - { sensor: furke-2, height_m: 25 }
 durability: { model: ship, damage_points: 2200 }
 provenance:
   confidence: medium
   notes: >-
-    Source: 2,200 t full load, 104.5 m, 27 kn, 3,800 nmi at 14 kn, 90 crew, 12 Redut cells, 2 x 4 Kh-35. Furke-2 and Zaslon radars are not in the P1 seed set.
+    Source: 2,200 t full load, 104.5 m, 27 kn, 3,800 nmi at 14 kn, 90 crew, 12 Redut cells, 2 x 4 Kh-35. Furke-2 search radar (height on the mast is an estimate); the Zaslon radar is not in the seed set.
   estimates:
     - mobility.turn_radius_m
     - signature
     - durability
+    - sensors[0].height_m
   sources:
     - { title: "Steregushchiy-class corvette", url: "https://en.wikipedia.org/wiki/Steregushchiy-class_corvette", accessed: 2026-10-27 }

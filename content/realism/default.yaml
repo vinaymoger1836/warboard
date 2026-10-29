@@ -23,6 +23,8 @@ earth:                               # doc 02 §5, §7.1
   radius_m: 6371008.8                # IUGG mean radius
   radio_k_factor: 1.3333333333333333 # 4/3 effective Earth
   horizon_coefficient: 4.12          # km per √m, 4/3 Earth
+  surface_target_height_m: 10        # superstructure a radar sees
+  ground_target_height_m: 3
 
 radar:                               # doc 02 §7.1
   pd_steepness_k: 8
@@ -245,6 +247,8 @@ provenance:
     - ew.emcon_blink_on_s
     - ew.emcon_blink_period_s
     - spatial
+    - earth.surface_target_height_m
+    - earth.ground_target_height_m
     - bases.anchorage.ship_berths
     - bases.air_base.match_radius_km
     - bases.naval_base.match_radius_km

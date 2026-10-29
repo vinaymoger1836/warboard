@@ -10,6 +10,7 @@ mod cells;
 mod codec;
 mod dem;
 pub mod source;
+pub mod synthetic;
 
 pub use cells::{CellInfo, TerrainFile, TerritoryFile};
 pub use dem::Dem;
@@ -232,6 +233,45 @@ impl Pack {
     }
 }
 
+/// H3 helpers for the engine's spatial index and line-of-sight memo (doc 02 §16). `h3o`
+/// runs on `libm`, so cell ids are the same natively and in WebAssembly.
+pub mod h3 {
+    use wb_core::geo::LatLon;
+
+    fn res(r: u8) -> h3o::Resolution {
+        h3o::Resolution::try_from(r.min(15)).unwrap_or(h3o::Resolution::Three)
+    }
+
+    /// Cell containing `p` at resolution `r` (0 for an invalid position).
+    pub fn cell(p: LatLon, r: u8) -> u64 {
+        h3o::LatLng::from_radians(p.lat, p.lon)
+            .map(|ll| u64::from(ll.to_cell(res(r))))
+            .unwrap_or(0)
+    }
+
+    /// Centre of a cell.
+    pub fn centre(cell: u64) -> Option<LatLon> {
+        let c = h3o::CellIndex::try_from(cell).ok()?;
+        let ll = h3o::LatLng::from(c);
+        Some(LatLon::new(ll.lat_radians(), ll.lng_radians()))
+    }
+
+    /// Cells within `k` steps, sorted.
+    pub fn disk(cell: u64, k: u32) -> Vec<u64> {
+        let Ok(c) = h3o::CellIndex::try_from(cell) else {
+            return Vec::new();
+        };
+        let mut v: Vec<u64> = c.grid_disk::<Vec<_>>(k).into_iter().map(u64::from).collect();
+        v.sort_unstable();
+        v
+    }
+
+    /// Mean edge length at resolution `r`, metres.
+    pub fn edge_m(r: u8) -> f64 {
+        res(r).edge_length_m()
+    }
+}
+
 /// Line-of-sight settings; the values come from the realism profile (`earth`, `radar`).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct LosParams {
@@ -426,6 +466,32 @@ impl Geo {
             obstruction,
             samples: n.saturating_sub(1),
         })
+    }
+
+    /// Lowest altitude above sea level at `b` from which `a` (at `alt_a_m`) is in line of
+    /// sight, metres: terrain plus bulge must stay below the ray at every sample, so
+    /// `h_min = max_t [alt_a + (terrain(t) − alt_a) / t]` (ADR-023). One DEM pass answers
+    /// the question for every target altitude at `b`.
+    pub fn los_mask_altitude(
+        &self,
+        a: LatLon,
+        alt_a_m: f64,
+        b: LatLon,
+        params: &LosParams,
+    ) -> Result<f64, GeoError> {
+        let d = distance_m(a, b);
+        let step = params.step_m.max(1.0);
+        let n = ((d / step).ceil() as u32).clamp(1, LOS_MAX_SAMPLES);
+        let reff = params.k_factor * EARTH_RADIUS_M;
+        let mut h_min = f64::NEG_INFINITY;
+        for i in 1..n {
+            let t = f64::from(i) / f64::from(n);
+            let at = intermediate_point(a, b, t);
+            let (d1, d2) = (t * d, (1.0 - t) * d);
+            let terrain = self.elevation_m(at)? + d1 * d2 / (2.0 * reff);
+            h_min = h_min.max(alt_a_m + (terrain - alt_a_m) / t);
+        }
+        Ok(h_min)
     }
 
     /// Cells of the finest pack covering the box centre, for the terrain overlay

@@ -1,0 +1,25 @@
+id: worldview-3
+kind: platform
+name: WorldView-3
+short_name: WorldView-3
+category: satellite/eo
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [worldview-3-optical]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 40115U 14048A   26301.57241503  .00000394  00000+0  52144-4 0  9992"
+  tle_line2: "2 40115  97.8448  14.4848 0000911 164.8894 195.2348 14.85193943661702"
+provenance:
+  confidence: medium
+  notes: >-
+    Elements from CelesTrak (NORAD 40115, epoch 2026 day 301). Satellites are not targetable
+    in v1 (doc 02 13), so signature and durability are placeholders.
+  estimates:
+    - signature
+    - durability
+  sources:
+    - { title: "CelesTrak GP elements, NORAD 40115", url: "https://celestrak.org/NORAD/elements/gp.php?CATNR=40115&FORMAT=TLE", accessed: 2026-10-29 }
+    - { title: "WorldView-3", url: "https://en.wikipedia.org/wiki/WorldView-3", accessed: 2026-10-29 }

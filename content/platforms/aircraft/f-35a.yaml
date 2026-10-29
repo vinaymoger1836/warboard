@@ -1,6 +1,7 @@
 id: f-35a
 kind: platform
 name: F-35A Lightning II
+short_name: F-35A
 category: aircraft/fighter
 target_class: fighter
 crew: 1

@@ -1,0 +1,30 @@
+id: an-apy-2
+kind: sensor
+name: AN/APY-2 surveillance radar
+sensor_type: radar
+role: [air_search, surface_search, aew]
+radar:
+  band: S
+  r_ref_km: 320
+  sigma_ref_m2: 1
+  max_range_km: 650
+  scan_period_s: 10
+  field_of_regard_deg: 360
+  clutter_rejection: 0.9
+  pulse_doppler: true
+  eccm_db: 20
+  erp_class_dbw: 90
+  fire_channels: 0
+provenance:
+  confidence: low
+  notes: >-
+    Source: rotodome turning once every 10 s, low-flying targets seen at more than 250 mi
+    (400 km), higher ones further. The 50% range against 1 m2 is an estimate.
+  estimates:
+    - radar.r_ref_km
+    - radar.max_range_km
+    - radar.clutter_rejection
+    - radar.eccm_db
+    - radar.erp_class_dbw
+  sources:
+    - { title: "Boeing E-3 Sentry (radar)", url: "https://en.wikipedia.org/wiki/Boeing_E-3_Sentry", accessed: 2026-10-29 }

@@ -1,6 +1,7 @@
 id: mq-9a
 kind: platform
 name: MQ-9A Reaper
+short_name: MQ-9A Reaper
 category: aircraft/uav
 target_class: uav
 crew: 0
@@ -21,12 +22,13 @@ stations:
   - { id: inner, kind: external, categories: [agm, bomb_250kg], max_kg: 1360, capacity: 2 }
   - { id: mid,   kind: external, categories: [agm, bomb_250kg, aam_short], max_kg: 544, capacity: 2 }
   - { id: outer, kind: external, categories: [agm, aam_short], max_kg: 182, capacity: 2 }
+sensors: [an-das-1-mts-b]
 durability: { model: aircraft, p_kill_on_hit: 0.9 }
 turnaround_min: 120
 provenance:
   confidence: medium
   notes: >-
-    Source: 4,000 lb fuel, 27 h endurance (burn derived from both), 6 pylons rated 1,500 / 600 / 200 lb each. Lynx SAR and MTS-B are not in the P1 seed set.
+    Source: 4,000 lb fuel, 27 h endurance (burn derived from both), 6 pylons rated 1,500 / 600 / 200 lb each. Lynx SAR is not in the seed set.
   estimates:
     - mobility.sustained_g
     - mobility.min_runway_m

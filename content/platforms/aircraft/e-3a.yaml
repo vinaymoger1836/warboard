@@ -1,6 +1,7 @@
 id: e-3a
 kind: platform
 name: E-3A Sentry
+short_name: E-3A
 category: aircraft/aew
 target_class: aew
 crew: 21
@@ -19,13 +20,14 @@ fuel:
   burn_kg_h: { cruise: 7000 }
   aar: boom
 countermeasures: { chaff-generic: 60, flare-generic: 60 }
+sensors: [an-apy-2]
 datalinks: [link-16]
 durability: { model: aircraft, p_kill_on_hit: 0.9 }
 turnaround_min: 120
 provenance:
   confidence: medium
   notes: >-
-    Source: crew 4 + 13-19 mission crew, 461 kt, 29,000 ft minimum ceiling, more than 8 h without refuelling. The AN/APY-1/2 radar is not in the P1 seed set.
+    Source: crew 4 + 13-19 mission crew, 461 kt, 29,000 ft minimum ceiling, more than 8 h without refuelling. AN/APY-2 radar in the rotodome.
   estimates:
     - mobility.sustained_g
     - mobility.min_runway_m

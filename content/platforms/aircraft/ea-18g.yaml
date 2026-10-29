@@ -1,6 +1,7 @@
 id: ea-18g
 kind: platform
 name: EA-18G Growler
+short_name: EA-18G
 category: aircraft/ew
 target_class: ew_aircraft
 crew: 2

@@ -1,6 +1,7 @@
 id: a330-mrtt
 kind: platform
 name: A330 MRTT
+short_name: A330 MRTT
 category: aircraft/tanker
 target_class: tanker
 crew: 3

@@ -130,6 +130,9 @@ source_type! {
         pub radio_k_factor: f64,
         /// `horizon_km = c × (√h_radar_m + √h_target_m)`.
         pub horizon_coefficient: f64,
+        /// Height a ship or ground vehicle is seen at by sensors (mast, turret).
+        pub surface_target_height_m: f64,
+        pub ground_target_height_m: f64,
     }
 
     /// Radar detection and tracking (doc 02 §7.1).

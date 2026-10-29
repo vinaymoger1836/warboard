@@ -18,9 +18,10 @@ use wb_geo::{Geo, TerrainClass};
 use crate::bases::{self, BaseInfo};
 use crate::clock::SimClock;
 use crate::components::{
-    Allegiance, BaseSite, Behaviour, Group, GroupMember, Identity, Kinematics, Mode, PlatformRef,
-    Posture, ReturnWhy, Speed, Task,
+    Allegiance, BaseSite, Behaviour, EmconState, Group, GroupMember, Identity, Kinematics, Mode,
+    PlatformRef, Posture, ReturnWhy, SatelliteState, Speed, Task, Tasking,
 };
+use wb_content::source::{Emcon, PayloadKind};
 use crate::events::{EventKind, emit};
 use crate::placement;
 use crate::rules::Rules;
@@ -128,9 +129,16 @@ pub enum Command {
         #[cfg_attr(feature = "ts", ts(optional))]
         name: Option<String>,
     },
-    /// Raises an `AutoSlow` event; exercises the client plumbing until P4
-    /// brings real triggers.
+    /// Raises an `AutoSlow` event; exercises the client plumbing (tests).
     TestAutoSlow { reason: String },
+    /// Emission control for units or groups (doc 03 §5, doc 02 §9).
+    SetEmcon { units: Vec<u32>, emcon: Emcon },
+    /// Image an area on the satellite's next pass (doc 03 §5 space tasks).
+    TaskSatellite {
+        satellite: u32,
+        centre: LonLat,
+        radius_km: f64,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -163,6 +171,15 @@ pub enum Resolved {
     },
     AutoSlow {
         reason: String,
+    },
+    Emcon {
+        groups: Vec<GroupPick>,
+        emcon: Emcon,
+    },
+    TaskSatellite {
+        satellite: UnitId,
+        tasking: Tasking,
+        report_ms: u64,
     },
 }
 
@@ -201,11 +218,28 @@ pub struct OrderAck {
     pub seq: u64,
     #[cfg_attr(feature = "ts", ts(type = "number"))]
     pub tick: u64,
+    /// A plain-English note for the player, e.g. the next satellite pass.
+    #[cfg_attr(feature = "ts", ts(optional))]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
 }
 
 /// Validates and queues an order.
 pub fn submit(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<OrderAck, String> {
     let cmd = validate(world, geo, order)?;
+    let note = match &cmd {
+        Resolved::TaskSatellite {
+            tasking, report_ms, ..
+        } => {
+            let start = world.resource::<SimClock>().start_utc_ms;
+            Some(format!(
+                "Next pass {}, report by {}",
+                fmt_utc(start + tasking.pass_ms as i64),
+                fmt_utc(start + *report_ms as i64)
+            ))
+        }
+        _ => None,
+    };
     let mut q = world.resource_mut::<OrderQueue>();
     let seq = q.next_seq;
     q.next_seq += 1;
@@ -221,7 +255,24 @@ pub fn submit(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Ord
     Ok(OrderAck {
         seq,
         tick: order.tick,
+        note,
     })
+}
+
+/// `DD HH:MMZ` (day of month and UTC time): passes are at most two days ahead.
+fn fmt_utc(ms: i64) -> String {
+    let s = ms.div_euclid(1_000);
+    let day = s.div_euclid(86_400);
+    let (h, m) = (s.rem_euclid(86_400) / 3_600, s.rem_euclid(3_600) / 60);
+    // Day of month from the civil date.
+    let z = day + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    format!("{d:02} {h:02}:{m:02}Z")
 }
 
 fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resolved, String> {
@@ -286,6 +337,57 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
         Command::TestAutoSlow { reason } => Ok(Resolved::AutoSlow {
             reason: reason.clone(),
         }),
+        Command::SetEmcon { units, emcon } => Ok(Resolved::Emcon {
+            groups: pick_groups(world, side, units)?,
+            emcon: *emcon,
+        }),
+        Command::TaskSatellite {
+            satellite,
+            centre,
+            radius_km,
+        } => {
+            let unknown = || format!("Unknown satellite {satellite}");
+            let e = entity(world, UnitId(*satellite)).ok_or_else(unknown)?;
+            if world.get::<Allegiance>(e).map(|a| a.side) != Some(side)
+                || world.get::<SatelliteState>(e).is_none()
+            {
+                return Err(unknown());
+            }
+            let rules = world.resource::<Rules>().clone();
+            let pix = world.get::<PlatformRef>(e).ok_or_else(unknown)?.0;
+            let name = world.get::<Identity>(e).map_or(String::new(), |i| i.name.clone());
+            let (_, pl) = crate::satellites::payload(&rules, pix).ok_or_else(unknown)?;
+            if pl.kind == PayloadKind::Sigint {
+                return Err(format!(
+                    "{name} is a SIGINT satellite: it reports emitters on every pass and takes no imaging tasks"
+                ));
+            }
+            let at = point(*centre)?;
+            if !radius_km.is_finite() || *radius_km <= 0.0 || km_to_m(*radius_km) > pl.swath_m / 2.0 {
+                return Err(format!(
+                    "Area radius must be between 0 and {:.0} km (half of {name}'s strip)",
+                    pl.swath_m / 2_000.0
+                ));
+            }
+            let clock = world.resource::<SimClock>();
+            let from_ms = clock.sim_time_ms
+                + order.tick.saturating_sub(clock.tick) * u64::from(clock.tick_len.ms());
+            let from_utc = clock.start_utc_ms as f64 + from_ms as f64;
+            let horizon_h = rules.realism().satellites.tasking_horizon_s / 3_600.0;
+            let pass_utc = crate::satellites::next_pass(&rules, pix, at, km_to_m(*radius_km), from_utc)
+                .ok_or_else(|| format!("{name} has no pass over that area in the next {horizon_h:.0} h"))?;
+            let pass_ms = (pass_utc - clock.start_utc_ms as f64).max(0.0) as u64;
+            let report_ms = pass_ms + (crate::satellites::downlink_s(&rules, pl) * 1_000.0) as u64;
+            Ok(Resolved::TaskSatellite {
+                satellite: UnitId(*satellite),
+                tasking: Tasking {
+                    centre: at,
+                    radius_m: km_to_m(*radius_km),
+                    pass_ms,
+                },
+                report_ms,
+            })
+        }
     }
 }
 
@@ -649,6 +751,45 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
             }
         }
         Resolved::AutoSlow { reason } => emit(world, side, EventKind::AutoSlow { reason }),
+        Resolved::Emcon { groups, emcon } => {
+            for pick in groups {
+                for m in &pick.members {
+                    if let Some(e) = entity(world, *m) {
+                        world.entity_mut(e).insert(EmconState(emcon));
+                    }
+                }
+                emit(
+                    world,
+                    side,
+                    EventKind::EmconChanged {
+                        group: pick.group,
+                        emcon,
+                    },
+                );
+            }
+        }
+        Resolved::TaskSatellite {
+            satellite,
+            tasking,
+            report_ms,
+        } => {
+            if let Some(e) = entity(world, satellite)
+                && let Some(mut st) = world.get_mut::<SatelliteState>(e)
+            {
+                let pass_ms = tasking.pass_ms;
+                st.taskings.push(tasking);
+                st.taskings.sort_by_key(|t| t.pass_ms);
+                emit(
+                    world,
+                    side,
+                    EventKind::SatelliteTasked {
+                        satellite,
+                        pass_ms,
+                        report_ms,
+                    },
+                );
+            }
+        }
     }
 }
 
@@ -692,6 +833,7 @@ fn split(world: &mut World, side: u8, pick: &GroupPick) -> Option<Entity> {
         on_station: false,
         launch: false,
         behaviour: g.behaviour,
+        system: g.system,
     };
     Some(spawn_unit(
         world,

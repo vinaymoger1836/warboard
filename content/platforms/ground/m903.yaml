@@ -1,6 +1,7 @@
 id: m903
 kind: platform
 name: M903 launching station (Patriot)
+short_name: M903
 category: ground/launcher
 target_class: launcher
 mobility:

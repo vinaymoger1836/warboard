@@ -1,6 +1,7 @@
 id: an-mpq-65
 kind: platform
 name: AN/MPQ-65 radar set (Patriot)
+short_name: AN/MPQ-65
 category: ground/radar
 target_class: radar_site
 mobility:

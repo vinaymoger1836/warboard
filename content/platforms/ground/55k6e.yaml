@@ -1,6 +1,7 @@
 id: 55k6e
 kind: platform
 name: 55K6E command post (S-400)
+short_name: 55K6E
 category: ground/c2
 target_class: c2_node
 mobility:

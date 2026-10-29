@@ -1,6 +1,7 @@
 id: rafale-c
 kind: platform
 name: Rafale C
+short_name: Rafale
 category: aircraft/fighter
 target_class: fighter
 crew: 1

@@ -1,0 +1,25 @@
+id: kondor-fka-1
+kind: platform
+name: Kondor-FKA No. 1
+short_name: Kondor-FKA 1
+category: satellite/sar
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [kondor-fka-sar]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 56756U 23074A   26301.61918727  .00002055  00000+0  99479-4 0  9991"
+  tle_line2: "2 56756  97.4372 134.2705 0001758  87.4560 272.6876 15.19695834189957"
+provenance:
+  confidence: medium
+  notes: >-
+    Elements from CelesTrak (NORAD 56756, epoch 2026 day 301). Satellites are not targetable
+    in v1 (doc 02 13), so signature and durability are placeholders.
+  estimates:
+    - signature
+    - durability
+  sources:
+    - { title: "CelesTrak GP elements, NORAD 56756", url: "https://celestrak.org/NORAD/elements/gp.php?CATNR=56756&FORMAT=TLE", accessed: 2026-10-29 }
+    - { title: "Kondor (satellite)", url: "https://en.wikipedia.org/wiki/Kondor_(satellite)", accessed: 2026-10-29 }

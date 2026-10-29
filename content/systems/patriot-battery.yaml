@@ -1,6 +1,7 @@
 id: patriot-battery
 kind: system
 name: Patriot battery (PAC-3 MSE)
+short_name: MIM-104 Patriot PAC-3
 deploy_as: site
 setup_min: 30
 components:

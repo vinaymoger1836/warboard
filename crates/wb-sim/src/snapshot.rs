@@ -8,9 +8,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::clock::{EngagementState, RngSeed, SimClock};
 use crate::components::{
-    Allegiance, BaseRef, BaseSite, Fuel, Group, GroupMember, Identity, Kinematics, Magazine,
-    PlatformRef, Posture, Steer, TankerState,
+    Allegiance, BaseRef, BaseSite, EmconState, Fuel, Group, GroupMember, Identity, Kinematics,
+    Magazine, PlatformRef, Posture, SatelliteState, ScriptedTarget, Steer, TankerState,
 };
+use crate::picture::SidePictures;
+use crate::scenario::TestTerrain;
+use crate::sensors::LosMemo;
 use crate::events::EventLog;
 use crate::orders::{OrderLog, OrderQueue};
 use crate::probe::ProbeState;
@@ -19,7 +22,7 @@ use crate::world::{ForceFineTick, Sides, UnitIdAlloc, UnitIndex};
 
 const MAGIC: &[u8; 8] = b"WB-STATE";
 /// Bump when the snapshot layout changes: every hash changes with it.
-pub const FORMAT_VERSION: u8 = 2;
+pub const FORMAT_VERSION: u8 = 3;
 
 /// All components of one unit, group or base.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -36,6 +39,9 @@ pub struct UnitRecord {
     pub tanker: Option<TankerState>,
     pub group: Option<Group>,
     pub base: Option<BaseSite>,
+    pub emcon: Option<EmconState>,
+    pub satellite: Option<SatelliteState>,
+    pub scripted: Option<ScriptedTarget>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -48,6 +54,8 @@ pub struct Snapshot {
     pub force_fine: ForceFineTick,
     pub probe: Option<ProbeState>,
     pub orders: OrderQueue,
+    pub pictures: SidePictures,
+    pub test_terrain: Option<TestTerrain>,
     pub units: Vec<UnitRecord>,
 }
 
@@ -70,6 +78,9 @@ pub fn capture(world: &World) -> Snapshot {
                 tanker: world.get::<TankerState>(e).copied(),
                 group: world.get::<Group>(e).cloned(),
                 base: world.get::<BaseSite>(e).cloned(),
+                emcon: world.get::<EmconState>(e).copied(),
+                satellite: world.get::<SatelliteState>(e).cloned(),
+                scripted: world.get::<ScriptedTarget>(e).copied(),
             })
         })
         .collect();
@@ -82,6 +93,8 @@ pub fn capture(world: &World) -> Snapshot {
         force_fine: *world.resource::<ForceFineTick>(),
         probe: world.get_resource::<ProbeState>().copied(),
         orders: world.resource::<OrderQueue>().clone(),
+        pictures: world.resource::<SidePictures>().clone(),
+        test_terrain: world.get_resource::<TestTerrain>().cloned(),
         units,
     }
 }
@@ -94,6 +107,7 @@ pub fn base_resources(world: &mut World, rules: Rules) {
     world.insert_resource(OrderLog::default());
     world.insert_resource(EventLog::default());
     world.insert_resource(UnitIndex::default());
+    world.insert_resource(LosMemo::default());
 }
 
 /// Builds a world from a snapshot (in `UnitId` order). The order log and
@@ -107,6 +121,10 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
     world.insert_resource(snap.sides);
     world.insert_resource(snap.alloc);
     world.insert_resource(snap.orders);
+    world.insert_resource(snap.pictures);
+    if let Some(t) = snap.test_terrain {
+        world.insert_resource(t);
+    }
     if let Some(p) = snap.probe {
         world.insert_resource(p);
     }
@@ -144,6 +162,15 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
             e.insert(c);
         }
         if let Some(c) = u.base {
+            e.insert(c);
+        }
+        if let Some(c) = u.emcon {
+            e.insert(c);
+        }
+        if let Some(c) = u.satellite {
+            e.insert(c);
+        }
+        if let Some(c) = u.scripted {
             e.insert(c);
         }
         let ent = e.id();

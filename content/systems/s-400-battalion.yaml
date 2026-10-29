@@ -1,6 +1,7 @@
 id: s-400-battalion
 kind: system
 name: S-400 Triumf battalion
+short_name: S-400
 deploy_as: site
 setup_min: 5
 components:

@@ -22,9 +22,14 @@ pk_base: { surface_ship: 0.8 }
 countermeasure_resistance: { chaff: 0.4 }
 mass_kg: 610
 station_category: [uran_launcher]
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 4.4
 provenance:
   confidence: medium
   estimates:
+    - signature
     - profile.min_range_km
     - guidance.seeker_range_km
     - guidance.seeker_eccm

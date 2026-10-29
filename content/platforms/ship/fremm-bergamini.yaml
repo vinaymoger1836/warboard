@@ -1,6 +1,7 @@
 id: fremm-bergamini
 kind: platform
 name: FREMM Bergamini class (GP)
+short_name: FREMM
 category: ship/frigate
 target_class: surface_ship
 crew: 199

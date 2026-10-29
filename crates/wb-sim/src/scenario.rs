@@ -4,11 +4,18 @@
 //! mode, platform units (a group of `count` aircraft or ships at a base or in
 //! the air), orders with their ticks, and optionally test-only blocks: bare
 //! units and the determinism probe (P0), `force_fine_tick` and
-//! `generated_units` (benchmarks), `golden` (bands read by `wb golden`).
+//! `generated_units` (benchmarks), `golden` (bands read by `wb golden`),
+//! `scripted_targets` and `test_terrain` (P4 goldens and tests).
+//!
+//! A unit is a group of `count` platforms, a composite `system` (its
+//! components as one stationary group), or a satellite (a platform with an
+//! orbit, no position).
 
+use bevy_ecs::prelude::Resource;
 use bevy_ecs::world::World;
 use core::f64::consts::TAU;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use wb_content::source::Emcon;
 use std::collections::BTreeSet;
 use wb_content::compiled::{CountryIx, LoadoutIx, PlatformIx};
 use wb_core::geo::{LatLon, destination_point, normalize_bearing};
@@ -18,9 +25,11 @@ use wb_core::{RngPurpose, UnitId, rng};
 use crate::bases::{self, content_kind};
 use crate::clock::{RngSeed, SimClock, TickLen};
 use crate::components::{
-    Allegiance, BaseRef, BaseSite, Fuel, Group, GroupMember, Identity, Kinematics, Magazine, Mode,
-    PlatformRef, Posture, Speed, Steer, TankerState, Task,
+    Allegiance, BaseRef, BaseSite, EmconState, Fuel, Group, GroupMember, Identity, Kinematics,
+    Magazine, Mode, PlatformRef, Posture, SatelliteState, ScriptedTarget, Speed, Steer,
+    TankerState, Task,
 };
+use crate::picture::SidePictures;
 use crate::orders::{Order, OrderQueue};
 use crate::probe::ProbeState;
 use crate::rules::Rules;
@@ -86,8 +95,15 @@ pub struct Scenario {
     pub units: Vec<ScenarioUnit>,
     #[serde(default)]
     pub orders: Vec<Order>,
+    /// Benchmark populations; one block or a list.
+    #[serde(default, deserialize_with = "one_or_many")]
+    pub generated_units: Vec<GeneratedUnits>,
+    /// Test-only straight-and-level targets with a weapon's signature.
     #[serde(default)]
-    pub generated_units: Option<GeneratedUnits>,
+    pub scripted_targets: Vec<ScriptedTargetSpec>,
+    /// Test-only terrain built in memory; replaces the region packs.
+    #[serde(default)]
+    pub test_terrain: Option<TestTerrain>,
     /// Golden-scenario variants and bands, read by `wb golden` (doc 08 §3).
     #[serde(default)]
     pub golden: Option<serde_yaml::Value>,
@@ -131,10 +147,107 @@ pub struct ScenarioUnit {
     pub heading_deg: f64,
     #[serde(default)]
     pub speed_mps: Option<f64>,
+    /// Content system id (S-400 battalion): its components as one group at
+    /// the unit's position, instead of `platform`.
+    #[serde(default)]
+    pub system: Option<String>,
+    /// Emission control at start; the system's or doctrine's default otherwise.
+    #[serde(default)]
+    pub emcon: Option<Emcon>,
 }
 
 fn one() -> u32 {
     1
+}
+
+fn one_or_many<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Vec<GeneratedUnits>, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum OneOrMany {
+        One(GeneratedUnits),
+        Many(Vec<GeneratedUnits>),
+    }
+    Ok(match Option::<OneOrMany>::deserialize(d)? {
+        None => Vec::new(),
+        Some(OneOrMany::One(g)) => vec![g],
+        Some(OneOrMany::Many(v)) => v,
+    })
+}
+
+/// A test-only target (G1): flies straight and level with the signature of
+/// a content weapon.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ScriptedTargetSpec {
+    pub id: u32,
+    pub name: String,
+    pub weapon: String,
+    pub country: String,
+    pub lat_deg: f64,
+    pub lon_deg: f64,
+    pub alt_m: f64,
+    pub heading_deg: f64,
+    pub speed_mps: f64,
+}
+
+/// A straight ridge: `[lon, lat]` ends in degrees.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RidgeSpec {
+    pub from: [f64; 2],
+    pub to: [f64; 2],
+    pub height_m: f64,
+    pub half_width_m: f64,
+}
+
+/// Synthetic terrain for goldens and tests that must run without packs
+/// (`wb_geo::synthetic`). Saved with the war, so a reload rebuilds it.
+#[derive(Resource, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TestTerrain {
+    /// South-west corner of the first 1° tile, degrees.
+    pub west: i16,
+    pub south: i16,
+    #[serde(default = "one_u16")]
+    pub cols: u16,
+    #[serde(default = "one_u16")]
+    pub rows: u16,
+    #[serde(default)]
+    pub base_m: i16,
+    #[serde(default)]
+    pub ridges: Vec<RidgeSpec>,
+}
+
+fn one_u16() -> u16 {
+    1
+}
+
+impl TestTerrain {
+    pub fn geo(&self) -> Result<wb_geo::Geo, String> {
+        let ridges: Vec<wb_geo::synthetic::Ridge> = self
+            .ridges
+            .iter()
+            .map(|r| wb_geo::synthetic::Ridge {
+                from: LatLon::from_deg(r.from[1], r.from[0]),
+                to: LatLon::from_deg(r.to[1], r.to[0]),
+                height_m: r.height_m,
+                half_width_m: r.half_width_m,
+            })
+            .collect();
+        let pack = wb_geo::synthetic::ridge_pack(
+            "test-terrain",
+            self.west,
+            self.south,
+            self.cols,
+            self.rows,
+            self.base_m,
+            &ridges,
+        )
+        .map_err(|e| e.to_string())?;
+        let mut geo = wb_geo::Geo::new();
+        geo.add_pack(pack).map_err(|e| e.to_string())?;
+        Ok(geo)
+    }
 }
 
 /// Benchmark population: groups spread over an area, each on a patrol.
@@ -170,7 +283,13 @@ impl Scenario {
                 name: u.name.clone(),
                 reason: reason.to_owned(),
             };
-            let ids = if u.platform.is_some() {
+            if u.platform.is_some() && u.system.is_some() {
+                return Err(bad("give a platform or a system, not both"));
+            }
+            let ids = if u.system.is_some() {
+                // Members are counted from content at build time; reserve the id.
+                u.id..=u.id
+            } else if u.platform.is_some() {
                 if u.count == 0 || u.count > 64 {
                     return Err(bad("count must be 1–64"));
                 }
@@ -202,15 +321,16 @@ impl Scenario {
             if u.speed_mps.is_some_and(|s| !s.is_finite() || s < 0.0) {
                 return Err(bad("speed_mps must be zero or positive"));
             }
-            match (&u.platform, &u.base, u.lat_deg.zip(u.lon_deg)) {
-                (None, _, None) => return Err(bad("a bare unit needs lat_deg and lon_deg")),
-                (Some(_), None, None) => {
-                    return Err(bad("needs a base or lat_deg and lon_deg"));
-                }
-                (Some(_), Some(_), Some(_)) => {
+            let unit = u.platform.is_some() || u.system.is_some();
+            match (unit, &u.base, u.lat_deg.zip(u.lon_deg)) {
+                (false, _, None) => return Err(bad("a bare unit needs lat_deg and lon_deg")),
+                (true, Some(_), Some(_)) => {
                     return Err(bad("give a base or a position, not both"));
                 }
                 _ => {}
+            }
+            if u.system.is_some() && u.lat_deg.zip(u.lon_deg).is_none() {
+                return Err(bad("a system needs lat_deg and lon_deg"));
             }
         }
         Ok(())
@@ -251,9 +371,18 @@ impl Scenario {
         for u in units {
             self.spawn(&mut world, &rules, u)?;
         }
-        if let Some(gen_spec) = &self.generated_units {
-            generate(&mut world, &rules, self.seed, gen_spec)?;
+        for (i, gen_spec) in self.generated_units.iter().enumerate() {
+            generate(&mut world, &rules, self.seed.wrapping_add(i as u64), gen_spec)?;
         }
+        for t in &self.scripted_targets {
+            spawn_scripted(&mut world, &rules, t)?;
+        }
+        if let Some(t) = &self.test_terrain {
+            t.geo().map_err(ScenarioError::Generated)?;
+            world.insert_resource(t.clone());
+        }
+        let n_sides = world.resource::<Sides>().len();
+        world.insert_resource(SidePictures::new(n_sides));
         for (index, o) in self.orders.iter().enumerate() {
             crate::orders::submit(&mut world, geo, o).map_err(|reason| {
                 ScenarioError::InvalidOrder {
@@ -313,6 +442,9 @@ impl Scenario {
             name: u.name.clone(),
             reason,
         };
+        if let Some(sid) = &u.system {
+            return spawn_system(world, rules, u, sid);
+        }
         let Some(pid) = &u.platform else {
             // P0 bare unit.
             let p = LatLon::from_deg(u.lat_deg.unwrap_or(0.0), u.lon_deg.unwrap_or(0.0));
@@ -360,7 +492,31 @@ impl Scenario {
             ),
             None => None,
         };
+        let emcon = u.emcon;
+        if rules.platform(pix).orbit.is_some() {
+            if u.base.is_some() || u.lat_deg.is_some() {
+                return Err(bad("a satellite takes no base or position; its orbit places it".into()));
+            }
+            spawn_unit(
+                world,
+                UnitId(u.id),
+                (
+                    Identity {
+                        unit: UnitId(u.id),
+                        name: u.name.clone(),
+                    },
+                    Allegiance { side, country: cix },
+                    PlatformRef(pix),
+                    Kinematics::default(),
+                    SatelliteState::default(),
+                ),
+            );
+            return Ok(());
+        }
         let at = match &u.base {
+            None if u.lat_deg.is_none() => {
+                return Err(bad("needs a base or lat_deg and lon_deg".into()));
+            }
             Some(b) => {
                 let info = bases::list(world)
                     .into_iter()
@@ -394,8 +550,167 @@ impl Scenario {
             at,
             Task::Idle,
         );
+        let default = default_emcon(rules, cix, None);
+        for m in &members {
+            if let Some(e) = entity(world, *m) {
+                world
+                    .entity_mut(e)
+                    .insert(EmconState(emcon.unwrap_or(default)));
+            }
+        }
         Ok(())
     }
+}
+
+/// Starting emission control: the system's default, else the country
+/// doctrine's (doc 03 §11).
+fn default_emcon(rules: &Rules, country: CountryIx, system: Option<wb_content::compiled::SystemIx>) -> Emcon {
+    if let Some(s) = system {
+        return rules.db.systems[s.0 as usize].emcon_default;
+    }
+    let c = &rules.db.countries[country.0 as usize];
+    rules.db.doctrines[c.doctrine.0 as usize].emcon_default
+}
+
+/// A composite system: every component platform (count each) as one
+/// stationary group at the unit's position.
+fn spawn_system(world: &mut World, rules: &Rules, u: &ScenarioUnit, sid: &str) -> Result<(), ScenarioError> {
+    let bad = |reason: String| ScenarioError::InvalidUnit {
+        id: u.id,
+        name: u.name.clone(),
+        reason,
+    };
+    let six = rules
+        .db
+        .systems
+        .iter()
+        .position(|s| rules.db.str(s.id) == sid)
+        .map(|i| wb_content::compiled::SystemIx(i as u32))
+        .ok_or_else(|| bad(format!("unknown system `{sid}`")))?;
+    let cid = u.country.as_deref().ok_or_else(|| bad("needs a country".into()))?;
+    let cix = country(rules, cid).ok_or_else(|| bad(format!("unknown country `{cid}`")))?;
+    let side = world
+        .resource::<Sides>()
+        .side_of(cix)
+        .ok_or_else(|| bad(format!("country `{cid}` is on no side")))?;
+    let sys = &rules.db.systems[six.0 as usize];
+    let comps: Vec<(PlatformIx, u32)> = sys.components.iter().map(|c| (c.platform, c.count)).collect();
+    let total: u32 = comps.iter().map(|c| c.1).sum();
+    if total == 0 || total > 64 {
+        return Err(bad("a system needs 1–64 components".into()));
+    }
+    for id in u.id + 1..=u.id + total {
+        if id >= FIRST_ENGINE_ID || entity(world, UnitId(id)).is_some() {
+            return Err(ScenarioError::DuplicateUnit(id));
+        }
+    }
+    let at = LatLon::from_deg(u.lat_deg.unwrap_or(0.0), u.lon_deg.unwrap_or(0.0));
+    let heading = normalize_bearing(deg_to_rad(u.heading_deg));
+    let emcon = EmconState(u.emcon.unwrap_or(default_emcon(rules, cix, Some(six))));
+    let mut members = Vec::new();
+    let mut next = u.id + 1;
+    for (pix, count) in comps {
+        let p = rules.platform(pix);
+        for i in 0..count {
+            let id = UnitId(next);
+            next += 1;
+            let slot = members.len() as u8;
+            let name = format!("{} {} {}", u.name, rules.db.str(p.short_name), i + 1);
+            spawn_unit(
+                world,
+                id,
+                (
+                    Identity { unit: id, name },
+                    Allegiance { side, country: cix },
+                    PlatformRef(pix),
+                    Kinematics {
+                        lat: at.lat,
+                        lon: at.lon,
+                        alt_m: 0.0,
+                        heading,
+                        speed_mps: 0.0,
+                        climb_mps: 0.0,
+                    },
+                    Steer::default(),
+                    GroupMember { group: UnitId(u.id), slot },
+                    BaseRef { home: None },
+                    Posture::Moving,
+                    Magazine {
+                        loadout: None,
+                        rounds: Vec::new(),
+                        initial: 0,
+                    },
+                    emcon,
+                ),
+            );
+            members.push(id);
+        }
+    }
+    spawn_unit(
+        world,
+        UnitId(u.id),
+        (
+            Identity {
+                unit: UnitId(u.id),
+                name: u.name.clone(),
+            },
+            Allegiance { side, country: cix },
+            Group {
+                members,
+                system: Some(six),
+                ..Group::default()
+            },
+        ),
+    );
+    Ok(())
+}
+
+fn spawn_scripted(world: &mut World, rules: &Rules, t: &ScriptedTargetSpec) -> Result<(), ScenarioError> {
+    let bad = |reason: String| ScenarioError::InvalidUnit {
+        id: t.id,
+        name: t.name.clone(),
+        reason,
+    };
+    if t.id >= FIRST_ENGINE_ID || entity(world, UnitId(t.id)).is_some() {
+        return Err(ScenarioError::DuplicateUnit(t.id));
+    }
+    let wix = rules
+        .db
+        .weapons
+        .iter()
+        .position(|w| rules.db.str(w.id) == t.weapon)
+        .map(|i| wb_content::compiled::WeaponIx(i as u32))
+        .ok_or_else(|| bad(format!("unknown weapon `{}`", t.weapon)))?;
+    if rules.db.weapons[wix.0 as usize].signature.is_none() {
+        return Err(bad(format!("weapon `{}` has no signature", t.weapon)));
+    }
+    let cix = country(rules, &t.country).ok_or_else(|| bad(format!("unknown country `{}`", t.country)))?;
+    let side = world
+        .resource::<Sides>()
+        .side_of(cix)
+        .ok_or_else(|| bad(format!("country `{}` is on no side", t.country)))?;
+    let p = LatLon::from_deg(t.lat_deg, t.lon_deg);
+    spawn_unit(
+        world,
+        UnitId(t.id),
+        (
+            Identity {
+                unit: UnitId(t.id),
+                name: t.name.clone(),
+            },
+            Allegiance { side, country: cix },
+            Kinematics {
+                lat: p.lat,
+                lon: p.lon,
+                alt_m: t.alt_m,
+                heading: normalize_bearing(deg_to_rad(t.heading_deg)),
+                speed_mps: t.speed_mps,
+                climb_mps: 0.0,
+            },
+            ScriptedTarget { weapon: wix },
+        ),
+    );
+    Ok(())
 }
 
 /// Where a new group starts.

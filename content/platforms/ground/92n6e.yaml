@@ -1,6 +1,7 @@
 id: 92n6e
 kind: platform
 name: 92N6E radar vehicle (S-400)
+short_name: 92N6E
 category: ground/radar
 target_class: radar_site
 mobility:

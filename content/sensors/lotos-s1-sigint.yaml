@@ -1,0 +1,22 @@
+id: lotos-s1-sigint
+kind: sensor
+name: Lotos-S1 ELINT payload
+sensor_type: satellite_payload
+role: [elint]
+payload:
+  kind: sigint
+  swath_km: 3000
+  bands: [L, S, C, X]
+  location_sigma_km: 5
+  downlink_delay_min: 20
+provenance:
+  confidence: low
+  notes: >-
+    Electronic intelligence satellite of the Liana system. Footprint, bands and fix accuracy are estimates.
+  estimates:
+    - payload.swath_km
+    - payload.downlink_delay_min
+    - payload.bands
+    - payload.location_sigma_km
+  sources:
+    - { title: "Lotos-S", url: "https://en.wikipedia.org/wiki/Lotos-S", accessed: 2026-10-29 }

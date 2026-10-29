@@ -3,7 +3,8 @@
 //! A [`Sim`] is an ECS world (bevy_ecs) stepped by a fixed list of exclusive
 //! stages on one thread (doc 02 §3–4). Every stage visits units in `UnitId`
 //! order wherever order matters. P3 adds movement, fuel, bases, tasks,
-//! orders, events, saves and the side view.
+//! orders, events, saves and the side view; P4 sensors, satellites and the
+//! side pictures (fog of war).
 
 pub mod bases;
 pub mod clock;
@@ -13,13 +14,16 @@ pub mod events;
 pub mod fuel;
 pub mod movement;
 pub mod orders;
+pub mod picture;
 pub mod placement;
 pub mod probe;
 #[cfg(feature = "ts")]
 pub mod protocol;
 pub mod rules;
+pub mod satellites;
 pub mod save;
 pub mod scenario;
+pub mod sensors;
 pub mod snapshot;
 pub mod tasks;
 pub mod view;
@@ -55,6 +59,10 @@ pub const STAGES: &[Stage] = &[
     ("tasks", tasks::run),
     ("movement", movement::integrate),
     ("formation", movement::formation),
+    ("satellites", satellites::update),
+    ("scripted", sensors::move_scripted),
+    ("sensors", sensors::scan),
+    ("fusion", picture::fusion),
     ("fuel", fuel::burn),
     ("aar", fuel::aar),
     ("arrivals", bases::arrivals),
@@ -69,7 +77,8 @@ pub struct Sim {
     /// Sim milliseconds owed by `advance` but not yet run as a whole tick.
     /// Speed and real time are not part of the simulation and never hashed.
     accum_ms: f64,
-    /// Region packs; read only to validate orders (never per tick).
+    /// Region packs (or a scenario's test terrain): order validation and,
+    /// through `GeoRes`, line of sight every tick (ADR-022).
     geo: Option<Rc<Geo>>,
     /// `(tick, state hash)` every `hash_checkpoint_ticks` (desync checks).
     checkpoints: Vec<(u64, [u8; 32])>,
@@ -84,13 +93,19 @@ impl Sim {
         geo: Option<Rc<Geo>>,
     ) -> Result<Self, ScenarioError> {
         let rules = Rules::new(content, content_hash);
+        let geo = match &scenario.test_terrain {
+            Some(t) => Some(Rc::new(t.geo().map_err(ScenarioError::Generated)?)),
+            None => geo,
+        };
         let world = scenario.build(rules, geo.as_deref())?;
-        Ok(Self {
+        let mut sim = Self {
             world,
             accum_ms: 0.0,
-            geo,
+            geo: None,
             checkpoints: Vec::new(),
-        })
+        };
+        sim.set_geo(geo);
+        Ok(sim)
     }
 
     /// Parses YAML and builds a world.
@@ -122,12 +137,14 @@ impl Sim {
         let mut world = snapshot::restore(body.snapshot, Rules::new(content, content_hash));
         world.resource_mut::<orders::OrderLog>().0 = body.order_log;
         world.resource_mut::<events::EventLog>().0 = body.events;
-        Ok(Self {
+        let mut sim = Self {
             world,
             accum_ms: 0.0,
-            geo,
+            geo: None,
             checkpoints: Vec::new(),
-        })
+        };
+        sim.set_geo(geo);
+        Ok(sim)
     }
 
     /// Writes a `.wbsave`. `created_utc_ms` is the client's wall clock (only
@@ -152,7 +169,14 @@ impl Sim {
         save::encode(&header, &body)
     }
 
+    /// Installs the region packs. A war with test terrain keeps it instead.
     pub fn set_geo(&mut self, geo: Option<Rc<Geo>>) {
+        let geo = match self.world.get_resource::<scenario::TestTerrain>() {
+            Some(t) => t.geo().ok().map(Rc::new),
+            None => geo,
+        };
+        self.world
+            .insert_non_send(sensors::GeoRes(geo.clone()));
         self.geo = geo;
     }
 

@@ -1,6 +1,7 @@
 id: su-35s
 kind: platform
 name: Su-35S
+short_name: Su-35S
 category: aircraft/fighter
 target_class: fighter
 crew: 1
@@ -26,7 +27,7 @@ stations:
   - { id: wing_mid,    kind: external, categories: [aam_medium, arm, ashm, agm], max_kg: 2400, capacity: 2 }
   - { id: wing_inner,  kind: external, categories: [aam_medium, ashm, agm, bomb_500kg], max_kg: 3000, capacity: 2 }
   - { id: fuselage,    kind: external, categories: [aam_medium, bomb_500kg], max_kg: 1800, capacity: 4 }
-sensors: [ols-35]
+sensors: [irbis-e, ols-35]
 countermeasures: { chaff-generic: 60, flare-generic: 60 }
 durability: { model: aircraft, p_kill_on_hit: 0.75 }
 turnaround_min: 75
