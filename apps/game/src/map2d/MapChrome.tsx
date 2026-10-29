@@ -3,6 +3,7 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import type { EngineBridge } from '../bridge';
+import { ui, useUi } from '../store';
 import { TERRAIN_CLASSES } from './terrainOverlay';
 
 const EARTH_CIRCUMFERENCE_M = 40_075_016.686;
@@ -34,6 +35,24 @@ function ScaleBar({ map }: { map: MapLibreMap }) {
     <div className="scale-bar" style={{ width: scale.px }} aria-label={`Scale ${scale.label}`}>
       {scale.label}
     </div>
+  );
+}
+
+/** Sensor rings of every own unit and estimated threat rings (doc 03 §10, doc 10 §6). */
+function SensorToggles() {
+  const all = useUi((s) => s.allSensorRings);
+  const threat = useUi((s) => s.threatRings);
+  return (
+    <>
+      <label className="toggle">
+        <input type="checkbox" checked={all} onChange={(e) => ui.set({ allSensorRings: e.target.checked })} />
+        Sensor rings, all units
+      </label>
+      <label className="toggle">
+        <input type="checkbox" checked={threat} onChange={(e) => ui.set({ threatRings: e.target.checked })} />
+        Threat rings (est.)
+      </label>
+    </>
   );
 }
 
@@ -109,6 +128,7 @@ export function MapChrome({ map, bridge, geoReady, terrainOverlay, onTerrainOver
       </button>
       {layersOpen && (
         <div className="layers-panel" role="dialog" aria-label="Map layers">
+          <SensorToggles />
           <label className="toggle">
             <input
               type="checkbox"

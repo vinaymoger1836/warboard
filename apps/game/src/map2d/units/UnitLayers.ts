@@ -1,14 +1,20 @@
-// Own units on the 2D map (doc 06 §4, doc 10 §4–6): icons from the atlas, labels in the
-// doc 10 grammar, the selected unit's three range rings, its route or patrol circle with
-// WP markers, and the drawing-tool preview. Positions are dead-reckoned from the last
+// Own units and contacts on the 2D map (doc 06 §4, doc 10 §4–6): icons from the atlas,
+// labels in the doc 10 grammar, the selected unit's three range rings, its route or patrol
+// circle with WP markers, and the drawing-tool preview. P4 adds contacts (dashed frame,
+// uncertainty ellipse and "(our estimate)" when estimated, bearing strobes, threat rings of
+// identified SAM types), satellites (yellow dot, two-line label, dashed ground tracks) and
+// the sensor rings of every own unit. Positions are dead-reckoned from the last
 // side view every animation frame (heading × speed × sim time since the view), and the
 // layers go straight to deck.gl, never through React state (doc 06 §1).
 import type { Layer, PickingInfo } from '@deck.gl/core';
 import { PathStyleExtension, type PathStyleExtensionProps } from '@deck.gl/extensions';
 import { IconLayer, PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
-import { FLAG, type GroupDetails, statusOf } from '@warboard/protocol';
+import { CFLAG, contactDomain, FLAG, type GroupDetails, statusOf } from '@warboard/protocol';
 import {
+  contactLabel,
+  ESTIMATE_LINE,
   type IconAtlas,
+  type IconSide,
   iconKey,
   isAircraft,
   markAbove,
@@ -47,6 +53,59 @@ export interface MapPick {
   id: number;
   base: boolean;
   aircraft: boolean;
+  /** A contact of our picture (id is a contact id). */
+  contact: boolean;
+  satellite: boolean;
+}
+
+interface DrawnContact {
+  id: number;
+  symbol: number;
+  side: IconSide;
+  estimated: boolean;
+  position: LonLat;
+  label: string;
+}
+
+interface DrawnSatellite {
+  id: number;
+  position: LonLat;
+  label: string;
+}
+
+/** Satellite symbols (60–62) are drawn as yellow dots, not atlas icons (doc 10 §4). */
+const isSatellite = (symbol: number) => symbol >= 60 && symbol < 70;
+/** Ground tracks are refreshed this often (real ms), ±minutes around now. */
+const TRACK_REFRESH_MS = 30_000;
+const TRACK_BEFORE_MIN = 45;
+const TRACK_AFTER_MIN = 90;
+const IDENTITY_SIDE: IconSide[] = ['unknown', 'enemy', 'neutral', 'own'];
+
+/** Splits a lon/lat path where it crosses the antimeridian. */
+function splitAntimeridian(pts: LonLat[]): LonLat[][] {
+  const out: LonLat[][] = [];
+  let cur: LonLat[] = [];
+  for (const p of pts) {
+    const last = cur[cur.length - 1];
+    if (last && Math.abs(p[0] - last[0]) > 180) {
+      out.push(cur);
+      cur = [];
+    }
+    cur.push(p);
+  }
+  if (cur.length > 1) out.push(cur);
+  return out;
+}
+
+/** An ellipse of semi-axes `a`, `b` (m), major axis along `rotDeg`, as a closed path. */
+function ellipse(centre: LonLat, a: number, b: number, rotDeg: number): LonLat[] {
+  const pts: LonLat[] = [];
+  for (let t = 0; t <= 360; t += 10) {
+    const r = (t * Math.PI) / 180;
+    const along = destination(centre, rotDeg, a * Math.cos(r));
+    pts.push(destination(along, rotDeg + 90, b * Math.sin(r)));
+  }
+  return pts;
 }
 
 export interface ContextRequest {
@@ -81,6 +140,8 @@ export class UnitLayers {
   private raf = 0;
   private cursor: LonLat | null = null;
   private drawn: DrawnUnit[] = [];
+  private contacts: DrawnContact[] = [];
+  private tracks = new Map<number, { paths: LonLat[][]; at: number; pending: boolean }>();
   private readonly offs: (() => void)[] = [];
 
   constructor(
@@ -110,7 +171,7 @@ export class UnitLayers {
         const { tool, locate } = ui.get();
         if (locate && locate.seq !== locateSeq) {
           locateSeq = locate.seq;
-          const at = this.find(locate.id);
+          const at = locate.contact ? this.findContact(locate.id) : this.find(locate.id);
           if (at) map.easeTo({ center: at, duration: 600 });
         }
         if (tool) map.doubleClickZoom.disable();
@@ -134,9 +195,22 @@ export class UnitLayers {
   // ---- Interaction --------------------------------------------------------------------
 
   private pick(x: number, y: number): MapPick | null {
-    const info = this.hub.deck.pickObject({ x, y, radius: 6, layerIds: ['unit-icons'] }) as PickingInfo<DrawnUnit> | null;
+    const info = this.hub.deck.pickObject({
+      x,
+      y,
+      radius: 6,
+      layerIds: ['unit-icons', 'contact-icons', 'satellite-dots'],
+    }) as PickingInfo<DrawnUnit | DrawnContact | DrawnSatellite> | null;
     const d = info?.object;
-    return d ? { id: d.id, base: d.base, aircraft: isAircraft(d.symbol) } : null;
+    if (!d) return null;
+    if (info?.layer?.id === 'contact-icons') {
+      return { id: d.id, base: false, aircraft: false, contact: true, satellite: false };
+    }
+    if (info?.layer?.id === 'satellite-dots') {
+      return { id: d.id, base: false, aircraft: false, contact: false, satellite: true };
+    }
+    const u = d as DrawnUnit;
+    return { id: u.id, base: u.base, aircraft: isAircraft(u.symbol), contact: false, satellite: false };
   }
 
   private click(e: MapMouseEvent): void {
@@ -152,7 +226,9 @@ export class UnitLayers {
       else this.onToolDone({ ...tool, radiusKm: Math.max(1, distance(tool.centre, at) / 1000) });
       return;
     }
-    ui.select(this.pick(e.point.x, e.point.y)?.id ?? null);
+    const p = this.pick(e.point.x, e.point.y);
+    if (p?.contact) ui.selectContact(p.id);
+    else ui.select(p?.id ?? null);
   }
 
   private finishTool(e: MapMouseEvent): void {
@@ -197,6 +273,33 @@ export class UnitLayers {
     return i === undefined ? null : [v.units.lon[i] ?? 0, v.units.lat[i] ?? 0];
   }
 
+  /** Last reported position of a contact. */
+  private findContact(id: number): LonLat | null {
+    const v = this.bridge.frame?.view;
+    const i = v?.contactIndex.get(id);
+    return v && i !== undefined ? [v.contacts.lon[i] ?? 0, v.contacts.lat[i] ?? 0] : null;
+  }
+
+  /** Ground track of an own satellite, fetched from the engine (SGP4 lives there). */
+  private track(id: number): LonLat[][] {
+    const now = performance.now();
+    const t = this.tracks.get(id);
+    if (!t || (!t.pending && now - t.at > TRACK_REFRESH_MS)) {
+      const entry = { paths: t?.paths ?? [], at: now, pending: true };
+      this.tracks.set(id, entry);
+      this.bridge
+        .request({ type: 'groundTrack', id, beforeMin: TRACK_BEFORE_MIN, afterMin: TRACK_AFTER_MIN })
+        .then((pts) => {
+          entry.paths = splitAntimeridian(pts);
+          entry.pending = false;
+        })
+        .catch(() => {
+          entry.pending = false;
+        });
+    }
+    return this.tracks.get(id)?.paths ?? [];
+  }
+
   /** Labels give way when crowded, icons never do (doc 10 §4.1): greedy by priority
    *  (selection, units, bases), dropping any label whose screen box overlaps one kept. */
   private declutter(items: DrawnUnit[], selected: number | null, size: number): DrawnUnit[] {
@@ -234,6 +337,7 @@ export class UnitLayers {
     const state = ui.get();
 
     const drawn: DrawnUnit[] = [];
+    const satellites: DrawnSatellite[] = [];
     const groups = new Map<number, { index: number; count: number }>();
     const at = (i: number): LonLat => {
       const p: LonLat = [u.lon[i] ?? 0, u.lat[i] ?? 0];
@@ -250,6 +354,15 @@ export class UnitLayers {
         continue;
       }
       if (flags & FLAG.AT_BASE) continue;
+      if (isSatellite(symbol)) {
+        const owner = strings.owners.get(id) ?? '';
+        satellites.push({
+          id,
+          position: at(i),
+          label: `${owner} ${strings.name(id)}\n${strings.payloads.get(id) ?? ''}`.trim(),
+        });
+        continue;
+      }
       const group = u.group[i] ?? 0;
       if (zoom >= MEMBERS_ZOOM || group === 0) {
         drawn.push({ id: group || id, symbol, position: at(i), label: strings.name(id), mark: markAbove(symbol), base: false });
@@ -275,6 +388,68 @@ export class UnitLayers {
     }
     this.drawn = drawn;
 
+    // Contacts of our picture: estimates only.
+    const cv = view.contacts;
+    const contacts: DrawnContact[] = [];
+    const ellipses: Path[] = [];
+    const threatLabels: TextItem[] = [];
+    for (let i = 0; i < cv.count; i++) {
+      const id = cv.id[i] ?? 0;
+      const flags = cv.flags[i] ?? 0;
+      const p: LonLat = [cv.lon[i] ?? 0, cv.lat[i] ?? 0];
+      const side = IDENTITY_SIDE[cv.identity[i] ?? 0] ?? 'unknown';
+      const colour = c(side === 'enemy' ? 'side.enemy' : side === 'neutral' ? 'side.neutral' : 'side.unknown', 0.8);
+      if (flags & CFLAG.BEARING_ONLY) {
+        ellipses.push({ path: [p, destination(p, cv.headingDeg[i] ?? 0, cv.ellipseA[i] ?? 0)], color: colour, width: 1.5, dashed: true });
+        continue;
+      }
+      const stale = (flags & CFLAG.STALE) !== 0;
+      const v = cv.speedMps[i] ?? 0;
+      const pos = !stale && v > 0 && dtS > 0 ? destination(p, cv.headingDeg[i] ?? 0, v * dtS) : p;
+      const estimated = (flags & CFLAG.ESTIMATED) !== 0;
+      const symbol = cv.symbol[i] ?? 0;
+      let label = contactLabel({
+        symbol,
+        typeName: strings.contactType(id),
+        domain: contactDomain(flags),
+        countMin: cv.countMin[i] ?? 1,
+        countMax: cv.countMax[i] ?? 1,
+        countKnown: (flags & CFLAG.COUNT_KNOWN) !== 0,
+      });
+      if (estimated) label += `\n${ESTIMATE_LINE}`;
+      contacts.push({ id, symbol, side, estimated, position: pos, label });
+      const a = cv.ellipseA[i] ?? 0;
+      const b = cv.ellipseB[i] ?? 0;
+      if (estimated && a > 50) {
+        ellipses.push({ path: ellipse(pos, a, Math.max(b, 50), cv.ellipseRotDeg[i] ?? 0), color: colour, width: 1, dashed: true });
+      }
+      const threat = cv.threatM[i] ?? 0;
+      if (state.threatRings && threat > 0) {
+        ellipses.push({ path: geodesicCircle(pos, threat), color: c('ring.threat'), width: 1.5, dashed: true });
+        threatLabels.push({ position: destination(pos, 0, threat), text: '(est.)', color: c('ring.threat') });
+      }
+    }
+    this.contacts = contacts;
+    const selectedContact = contacts.find((d) => d.id === state.selectedContact) ?? null;
+
+    // Sensor rings of every own unit (layers button).
+    if (state.allSensorRings) {
+      const rowOf = new Map<number, number>();
+      for (let k = 0; k < u.count; k++) {
+        const g = u.group[k] ?? 0;
+        if (g && !rowOf.has(g)) rowOf.set(g, k);
+      }
+      for (const d of drawn) {
+        if (d.base) continue;
+        const i = view.index.get(d.id) ?? rowOf.get(d.id);
+        const r = i === undefined ? 0 : (u.sensorKm[i] ?? 0) * 1000;
+        if (r > 0) ellipses.push({ path: geodesicCircle(d.position, r), color: c('ring.sensor', 0.45), width: 1, dashed: true });
+      }
+    }
+    const tracks: Path[] = satellites.flatMap((s) =>
+      this.track(s.id).map((path) => ({ path, color: c('sat.track'), width: 1.5, dashed: true })),
+    );
+
     const selected = drawn.find((d) => d.id === state.selected) ?? null;
     const details = state.details?.kind === 'group' && state.details.id === state.selected ? state.details : null;
     const paths: Path[] = [];
@@ -285,6 +460,113 @@ export class UnitLayers {
 
     const size = zoom < SMALL_ZOOM ? 24 : 30;
     const layers: Layer[] = [
+      new PathLayer<Path, PathStyleExtensionProps<Path>>({
+        id: 'contact-paths',
+        data: [...tracks, ...ellipses],
+        getPath: (d) => d.path,
+        getColor: (d) => d.color,
+        getWidth: (d) => d.width,
+        widthUnits: 'pixels',
+        getDashArray: (d) => (d.dashed ? [4, 3] : [0, 0]),
+        dashJustified: true,
+        extensions: [dash],
+        wrapLongitude: true,
+      }),
+      new TextLayer<TextItem>({
+        id: 'threat-labels',
+        data: threatLabels,
+        getPosition: (d) => d.position,
+        getText: (d) => d.text,
+        getColor: (d) => d.color,
+        getSize: 11,
+        getPixelOffset: [0, -8],
+        fontFamily: 'Noto Sans',
+        fontWeight: 'italic',
+        fontSettings: SDF,
+        outlineWidth: 0.3,
+        outlineColor: c('map.label.halo'),
+        characterSet: 'auto',
+      }),
+      new ScatterplotLayer<DrawnContact>({
+        id: 'contact-selection-ring',
+        data: selectedContact ? [selectedContact] : [],
+        getPosition: (d) => d.position,
+        getRadius: size * 0.7,
+        radiusUnits: 'pixels',
+        stroked: true,
+        filled: false,
+        getLineColor: c('weapon.offensive'),
+        getLineWidth: 2,
+        lineWidthUnits: 'pixels',
+      }),
+      new IconLayer<DrawnContact>({
+        id: 'contact-icons',
+        data: contacts,
+        iconAtlas: this.atlas.image,
+        iconMapping: this.atlas.mapping,
+        getIcon: (d) => iconKey(d.symbol, d.side, d.estimated),
+        getPosition: (d) => d.position,
+        getSize: size,
+        sizeUnits: 'pixels',
+        pickable: true,
+      }),
+      new TextLayer<DrawnContact>({
+        id: 'contact-marks',
+        data: contacts.filter((d) => markAbove(d.symbol)),
+        getPosition: (d) => d.position,
+        getText: (d) => markAbove(d.symbol),
+        getSize: 9,
+        getColor: c('side.enemy', 0.8),
+        getPixelOffset: [0, -size * 0.62],
+        fontFamily: 'JetBrains Mono',
+        fontWeight: 600,
+      }),
+      new TextLayer<DrawnContact>({
+        id: 'contact-labels',
+        data: contacts,
+        getPosition: (d) => d.position,
+        getText: (d) => d.label,
+        getSize: 11,
+        getColor: c('label.unit'),
+        getPixelOffset: [0, size * 0.55 + 7],
+        getTextAnchor: 'middle',
+        getAlignmentBaseline: 'top',
+        fontFamily: 'Noto Sans',
+        fontWeight: 'italic',
+        fontSettings: SDF,
+        outlineWidth: 0.3,
+        outlineColor: c('map.label.halo'),
+        characterSet: 'auto',
+      }),
+      new ScatterplotLayer<DrawnSatellite>({
+        id: 'satellite-dots',
+        data: satellites,
+        getPosition: (d) => d.position,
+        getRadius: 7,
+        radiusUnits: 'pixels',
+        getFillColor: c('sat'),
+        stroked: true,
+        getLineColor: (d) => (d.id === state.selected ? c('weapon.offensive') : c('map.label.halo')),
+        getLineWidth: (d) => (d.id === state.selected ? 2 : 1),
+        lineWidthUnits: 'pixels',
+        pickable: true,
+      }),
+      new TextLayer<DrawnSatellite>({
+        id: 'satellite-labels',
+        data: satellites,
+        getPosition: (d) => d.position,
+        getText: (d) => d.label,
+        getSize: 12,
+        getColor: c('sat.label'),
+        getPixelOffset: [0, 14],
+        getAlignmentBaseline: 'top',
+        fontFamily: 'Noto Sans',
+        fontWeight: 700,
+        fontSettings: SDF,
+        outlineWidth: 0.3,
+        outlineColor: c('map.label.halo'),
+        characterSet: 'auto',
+      }),
       new PathLayer<Path, PathStyleExtensionProps<Path>>({
         id: 'unit-paths',
         data: paths,

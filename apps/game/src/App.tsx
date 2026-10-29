@@ -10,7 +10,7 @@ import { PackPanel } from './packs/PackPanel';
 import { fileFor, type InstalledPack } from './packs/types';
 import { Dock } from './panels/Dock';
 import { ForcesPanel } from './panels/ForcesPanel';
-import { isAlert } from './panels/format';
+import { isAlert, isIntel } from './panels/format';
 import { SavesPanel } from './panels/SavesPanel';
 import { TopBar } from './panels/TopBar';
 import { UnitCard } from './panels/UnitCard';
@@ -42,6 +42,7 @@ export function App() {
   const [terrainOverlay, setTerrainOverlay] = useState(false);
   const { toasts, show } = useToasts();
   const selected = useUi((s) => s.selected);
+  const selectedContact = useUi((s) => s.selectedContact);
 
   const choose = useCallback(
     (s: number) => {
@@ -63,7 +64,7 @@ export function App() {
       setWar(w);
     });
     const offEvents = bridge.onEvents((events) => {
-      ui.addEvents(events, isAlert);
+      ui.addEvents(events, isAlert, isIntel);
       const slow = events.find((e) => 'AutoSlow' in e.kind);
       if (slow && 'AutoSlow' in slow.kind) {
         const mode = ui.get().autoSlow;
@@ -107,6 +108,23 @@ export function App() {
       clearInterval(t);
     };
   }, [bridge, selected]);
+
+  // Contact card details, refreshed while a contact is selected.
+  useEffect(() => {
+    if (selectedContact === null) return;
+    let live = true;
+    const load = () =>
+      bridge
+        .request({ type: 'contactDetails', id: selectedContact })
+        .then((c) => live && ui.set({ contact: c }))
+        .catch(() => live && ui.selectContact(null));
+    load();
+    const t = setInterval(load, DETAILS_MS);
+    return () => {
+      live = false;
+      clearInterval(t);
+    };
+  }, [bridge, selectedContact]);
 
   // Packs: the engine worker holds the engine files open; release them before any change.
   useEffect(() => {

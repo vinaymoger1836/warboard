@@ -49,7 +49,7 @@ export function fuelColour(pct: number | null | undefined, bingo = false): strin
   return cssVar('state.ok');
 }
 
-export type EventCategory = 'Task' | 'Fuel' | 'Air' | 'Base' | 'Alert';
+export type EventCategory = 'Task' | 'Fuel' | 'Air' | 'Base' | 'Alert' | 'Contact' | 'Intel' | 'EMCON';
 
 export const CATEGORY_COLOUR: Record<EventCategory, string> = {
   Task: cssVar('text.secondary'),
@@ -57,7 +57,27 @@ export const CATEGORY_COLOUR: Record<EventCategory, string> = {
   Air: cssVar('side.own'),
   Base: cssVar('ring.sensor'),
   Alert: cssVar('state.bad'),
+  Contact: cssVar('side.enemy'),
+  Intel: cssVar('sat.label'),
+  EMCON: cssVar('ring.sensor'),
 };
+
+const SOURCE: Record<string, string> = {
+  radar: 'radar',
+  esm: 'ESM',
+  irst: 'IRST',
+  eo_ir: 'EO/IR',
+  visual: 'visual',
+  sonar: 'sonar',
+  imagery: 'satellite imagery',
+  sigint: 'SIGINT',
+};
+
+/** `C3 (Steregushchiy)` or `C3` while unclassified. */
+function contactName(id: number, s: StringTable): string {
+  const t = s.contactType(id);
+  return t ? `C${id} (${t})` : `C${id}`;
+}
 
 /** Category chip and plain-English text of an event. */
 export function describe(e: Event, s: StringTable): { category: EventCategory; text: string } {
@@ -78,7 +98,55 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     return { category: 'Air', text: `${n(k.Landed.unit)} arrived at ${n(k.Landed.base)} with ${Math.round(k.Landed.fuel_kg)} kg fuel` };
   if ('TurnaroundDone' in k) return { category: 'Base', text: `${n(k.TurnaroundDone.unit)} ready at ${n(k.TurnaroundDone.base)}` };
   if ('BaseActivated' in k) return { category: 'Base', text: `${n(k.BaseActivated.base)} is active` };
+  if ('ContactNew' in k) {
+    const c = k.ContactNew;
+    return {
+      category: 'Contact',
+      text: `New ${c.domain} contact C${c.contact}: ${SOURCE[c.source] ?? c.source}, ${n(c.observer)}`,
+    };
+  }
+  if ('ContactClassified' in k) {
+    const c = k.ContactClassified;
+    return { category: 'Contact', text: `${contactName(c.contact, s)} classified to ${c.level} by ${SOURCE[c.source] ?? c.source}` };
+  }
+  if ('ContactCount' in k) {
+    const c = k.ContactCount;
+    return { category: 'Contact', text: `${contactName(c.contact, s)} counted: ${c.min === c.max ? c.min : `${c.min}–${c.max}`}` };
+  }
+  if ('ContactLost' in k) return { category: 'Contact', text: `${contactName(k.ContactLost.contact, s)} lost; last known position kept` };
+  if ('IntelReport' in k) {
+    const r = k.IntelReport;
+    return { category: 'Intel', text: `${n(r.satellite)} report (pass ${elapsed(r.pass_ms)}): ${r.outcome}` };
+  }
+  if ('SatelliteTasked' in k) {
+    const t = k.SatelliteTasked;
+    return { category: 'Intel', text: `${n(t.satellite)} tasked: pass at ${elapsed(t.pass_ms)}, report by ${elapsed(t.report_ms)}` };
+  }
+  if ('EmconChanged' in k) {
+    const m = k.EmconChanged;
+    return { category: 'EMCON', text: `${n(m.group)} emission control ${m.emcon === 'on' ? 'ACTIVE' : m.emcon === 'off' ? 'SILENT' : 'BLINK'}` };
+  }
   return { category: 'Alert', text: `Auto-slow: ${k.AutoSlow.reason}` };
+}
+
+/** Events that also go to the intel log (doc 03 §10). */
+export const isIntel = (e: Event) =>
+  'ContactNew' in e.kind ||
+  'ContactClassified' in e.kind ||
+  'ContactCount' in e.kind ||
+  'ContactLost' in e.kind ||
+  'IntelReport' in e.kind ||
+  'SatelliteTasked' in e.kind;
+
+/** The contact an event is about, for click-to-locate. */
+export function contactOf(e: Event): number | null {
+  const k = e.kind;
+  if ('ContactNew' in k) return k.ContactNew.contact;
+  if ('ContactClassified' in k) return k.ContactClassified.contact;
+  if ('ContactCount' in k) return k.ContactCount.contact;
+  if ('ContactLost' in k) return k.ContactLost.contact;
+  if ('IntelReport' in k) return k.IntelReport.contacts[0] ?? null;
+  return null;
 }
 
 /** Events that also go to the alert feed. */
@@ -97,5 +165,7 @@ export function subjectOf(e: Event): number | null {
   if ('Landed' in k) return k.Landed.unit;
   if ('TurnaroundDone' in k) return k.TurnaroundDone.unit;
   if ('BaseActivated' in k) return k.BaseActivated.base;
+  if ('EmconChanged' in k) return k.EmconChanged.group;
+  if ('SatelliteTasked' in k) return k.SatelliteTasked.satellite;
   return null;
 }

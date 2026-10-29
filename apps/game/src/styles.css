@@ -664,6 +664,56 @@ button:focus-visible {
   opacity: 0.45;
 }
 
+.range-row.threat {
+  color: var(--ring-threat);
+}
+
+/* EMCON: ACTIVE / BLINK / SILENT (doc 10 §7 Sensors & EMCON). */
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.segmented .seg {
+  background: none;
+  border: none;
+  border-right: 1px solid var(--panel-border);
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.segmented .seg:last-child {
+  border-right: none;
+}
+
+.segmented .seg.active {
+  color: var(--btn-text);
+  box-shadow: inset 0 0 0 1px var(--btn-border);
+}
+
+.card-subhead {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 8px 0 4px;
+}
+
+.sources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  display: grid;
+  gap: 2px;
+}
+
 .card-section {
   border-top: 1px solid var(--panel-border);
   padding-top: 6px;
