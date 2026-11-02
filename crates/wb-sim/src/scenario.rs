@@ -5,7 +5,8 @@
 //! the air), orders with their ticks, and optionally test-only blocks: bare
 //! units and the determinism probe (P0), `force_fine_tick` and
 //! `generated_units` (benchmarks), `golden` (bands read by `wb golden`),
-//! `scripted_targets` and `test_terrain` (P4 goldens and tests).
+//! `scripted_targets` and `test_terrain` (P4 goldens and tests), `base_stock`
+//! (P5: munitions at real bases instead of the inventory's).
 //!
 //! A unit is a group of `count` platforms, a composite `system` (its
 //! components as one stationary group), or a satellite (a platform with an
@@ -62,6 +63,8 @@ pub enum ScenarioError {
     },
     #[error("generated_units: {0}")]
     Generated(String),
+    #[error("base_stock `{base}`: {reason}")]
+    BaseStock { base: String, reason: String },
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
@@ -104,6 +107,10 @@ pub struct Scenario {
     /// Test-only terrain built in memory; replaces the region packs.
     #[serde(default)]
     pub test_terrain: Option<TestTerrain>,
+    /// Munitions at real bases, replacing the inventory's `munition_basing`
+    /// (tests and goldens).
+    #[serde(default)]
+    pub base_stock: Vec<BaseStockSpec>,
     /// Golden-scenario variants and bands, read by `wb golden` (doc 08 §3).
     #[serde(default)]
     pub golden: Option<serde_yaml::Value>,
@@ -117,6 +124,14 @@ pub struct SideSpec {
     pub countries: Vec<String>,
     #[serde(default)]
     pub player: bool,
+}
+
+/// The stock of one real base: weapon id → rounds.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BaseStockSpec {
+    pub base: String,
+    pub munitions: std::collections::BTreeMap<String, u32>,
 }
 
 /// A bare unit (P0: position only) or a group of platforms. A group with id
@@ -365,6 +380,9 @@ impl Scenario {
 
         if self.start_mode == StartMode::Garrisoned {
             spawn_real_bases(&mut world, &rules);
+        }
+        for b in &self.base_stock {
+            set_stock(&mut world, &rules, b)?;
         }
         let mut units: Vec<&ScenarioUnit> = self.units.iter().collect();
         units.sort_by_key(|u| u.id);
@@ -803,6 +821,36 @@ fn spawn_real_bases(world: &mut World, rules: &Rules) {
             ),
         );
     }
+}
+
+/// Replaces a real base's stock (scenario `base_stock`).
+fn set_stock(world: &mut World, rules: &Rules, spec: &BaseStockSpec) -> Result<(), ScenarioError> {
+    let bad = |reason: String| ScenarioError::BaseStock {
+        base: spec.base.clone(),
+        reason,
+    };
+    let info = bases::list(world)
+        .into_iter()
+        .find(|x| {
+            x.content
+                .is_some_and(|ix| rules.db.str(rules.db.bases[ix.0 as usize].id) == spec.base)
+        })
+        .ok_or_else(|| bad("not a base in this war".into()))?;
+    let mut stock = std::collections::BTreeMap::new();
+    for (wid, n) in &spec.munitions {
+        let wix = rules
+            .db
+            .weapons
+            .iter()
+            .position(|w| rules.db.str(w.id) == wid)
+            .ok_or_else(|| bad(format!("unknown weapon `{wid}`")))?;
+        if *n > 0 {
+            stock.insert(WeaponIx(wix as u32), *n);
+        }
+    }
+    let be = entity(world, info.id).expect("listed base");
+    world.get_mut::<BaseSite>(be).expect("base").stock = stock;
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
