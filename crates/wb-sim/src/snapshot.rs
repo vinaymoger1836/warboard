@@ -87,6 +87,7 @@ pub fn capture(world: &World) -> Snapshot {
                 emcon: world.get::<EmconState>(e).copied(),
                 satellite: world.get::<SatelliteState>(e).cloned(),
                 scripted: world.get::<ScriptedTarget>(e).copied(),
+                weapon: world.get::<WeaponFlight>(e).cloned(),
             })
         })
         .collect();
@@ -101,6 +102,7 @@ pub fn capture(world: &World) -> Snapshot {
         orders: world.resource::<OrderQueue>().clone(),
         pictures: world.resource::<SidePictures>().clone(),
         test_terrain: world.get_resource::<TestTerrain>().cloned(),
+        combat: world.resource::<Combat>().clone(),
         units,
     }
 }
@@ -114,6 +116,7 @@ pub fn base_resources(world: &mut World, rules: Rules) {
     world.insert_resource(EventLog::default());
     world.insert_resource(UnitIndex::default());
     world.insert_resource(LosMemo::default());
+    world.insert_resource(Combat::default());
 }
 
 /// Builds a world from a snapshot (in `UnitId` order). The order log and
@@ -128,6 +131,7 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
     world.insert_resource(snap.alloc);
     world.insert_resource(snap.orders);
     world.insert_resource(snap.pictures);
+    world.insert_resource(snap.combat);
     if let Some(t) = snap.test_terrain {
         world.insert_resource(t);
     }
@@ -180,6 +184,9 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
             e.insert(c);
         }
         if let Some(c) = u.scripted {
+            e.insert(c);
+        }
+        if let Some(c) = u.weapon {
             e.insert(c);
         }
         let ent = e.id();

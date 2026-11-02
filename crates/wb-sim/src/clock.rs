@@ -4,6 +4,7 @@
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::weapons::Combat;
 use crate::world::ForceFineTick;
 
 /// Length of one tick. The rule depends only on state, so it is deterministic.
@@ -66,8 +67,8 @@ impl SimClock {
 #[derive(Resource, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RngSeed(pub u64);
 
-/// Inputs to the adaptive tick rule. Weapons (P5) and engagement envelopes
-/// (P5/P6) fill it in; nothing engages in P3.
+/// Inputs to the adaptive tick rule, derived each tick from the saved
+/// `weapons::Combat` resource so a loaded war picks the same tick length.
 #[derive(Resource, Clone, Copy, Debug, Default)]
 pub struct EngagementState {
     pub weapons_in_flight: u32,
