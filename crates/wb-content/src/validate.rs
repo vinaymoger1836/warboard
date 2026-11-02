@@ -910,10 +910,7 @@ impl<'a> Cx<'a, '_> {
                 "needs at least one location with a positive weight".into(),
             );
         }
-        self.probability(
-            "damage.propulsion_speed_factor",
-            d.propulsion_speed_factor,
-        );
+        self.probability("damage.propulsion_speed_factor", d.propulsion_speed_factor);
         self.probability(
             "damage.munitions_store_loss_fraction",
             d.munitions_store_loss_fraction,
@@ -925,7 +922,10 @@ impl<'a> Cx<'a, '_> {
             ("weapons.seeker_half_angle_deg", w.seeker_half_angle_deg),
             ("weapons.datalink_update_s", w.datalink_update_s),
             ("weapons.fuze_radius_m", w.fuze_radius_m),
-            ("weapons.self_destruct_after_lost_s", w.self_destruct_after_lost_s),
+            (
+                "weapons.self_destruct_after_lost_s",
+                w.self_destruct_after_lost_s,
+            ),
             ("weapons.cruise_alt_default_m", w.cruise_alt_default_m),
             ("weapons.max_flight_path_deg", w.max_flight_path_deg),
         ] {
