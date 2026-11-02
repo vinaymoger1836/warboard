@@ -487,6 +487,7 @@ fn fuse(pics: &mut SidePictures, rules: &Rules, seed: u64, det: Detection, out: 
             det.side,
             EventKind::AutoSlow {
                 reason: "New hostile contact".to_owned(),
+                cause: crate::events::SlowCause::HostileContact,
             },
         ));
     }

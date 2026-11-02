@@ -373,7 +373,19 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
         Task::Rtb { base } | Task::Land { base } | Task::Transfer { base } => {
             (Vec::new(), None, false, None, brief(world, *base))
         }
-        Task::Idle => (Vec::new(), None, false, None, None),
+        Task::Cap {
+            centre,
+            radius_m,
+            alt_m,
+            ..
+        } => (vec![lonlat(*centre)], Some(*radius_m), true, *alt_m, None),
+        Task::Strike {
+            target: crate::components::StrikeTarget::Point(at),
+            ..
+        } => (vec![lonlat(*at)], None, false, None, None),
+        Task::Idle | Task::Intercept { .. } | Task::Strike { .. } => {
+            (Vec::new(), None, false, None, None)
+        }
     };
     let (mode, mode_base) = match g.mode {
         Mode::Task => ("task", None),

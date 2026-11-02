@@ -934,7 +934,14 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
                 emit(world, side, EventKind::BaseActivated { base: id });
             }
         }
-        Resolved::AutoSlow { reason } => emit(world, side, EventKind::AutoSlow { reason }),
+        Resolved::AutoSlow { reason } => emit(
+            world,
+            side,
+            EventKind::AutoSlow {
+                reason,
+                cause: crate::events::SlowCause::Test,
+            },
+        ),
         Resolved::Emcon { groups, emcon } => {
             for pick in groups {
                 for m in &pick.members {
@@ -1077,6 +1084,8 @@ fn split(world: &mut World, side: u8, pick: &GroupPick) -> Option<Entity> {
         launch: false,
         behaviour: g.behaviour,
         system: g.system,
+        evade: g.evade,
+        doctrine: g.doctrine,
     };
     Some(spawn_unit(
         world,

@@ -812,6 +812,7 @@ fn spawn_real_bases(world: &mut World, rules: &Rules) {
                     active: true,
                     stationed: Vec::new(),
                     stock: bases::initial_stock(rules, wb_content::compiled::BaseIx(i as u32)),
+                    damaged: Default::default(),
                 },
             ),
         );
