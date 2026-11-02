@@ -224,7 +224,7 @@ fn winchester(world: &World, members: &[UnitId]) -> bool {
     let mags: Vec<&Magazine> = members
         .iter()
         .filter_map(|m| entity(world, *m).and_then(|e| world.get::<Magazine>(e)))
-        .filter(|m| m.initial > 0)
+        .filter(|m| m.capacity() > 0)
         .collect();
     !mags.is_empty() && mags.iter().all(|m| m.remaining() == 0)
 }

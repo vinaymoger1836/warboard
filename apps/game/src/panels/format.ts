@@ -126,6 +126,14 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     const m = k.EmconChanged;
     return { category: 'EMCON', text: `${n(m.group)} emission control ${m.emcon === 'on' ? 'ACTIVE' : m.emcon === 'off' ? 'SILENT' : 'BLINK'}` };
   }
+  if ('LoadoutChanged' in k) {
+    const l = k.LoadoutChanged;
+    return { category: 'Base', text: `${n(l.unit)} loadout changed at ${n(l.base)}${l.loadout ? ` (${l.loadout})` : ' (custom)'}` };
+  }
+  if ('RearmShort' in k) {
+    const r = k.RearmShort;
+    return { category: 'Base', text: `${n(r.unit)} rearm short at ${n(r.base)}: ${r.short} × ${r.weapon} missing` };
+  }
   return { category: 'Alert', text: `Auto-slow: ${k.AutoSlow.reason}` };
 }
 
@@ -150,7 +158,7 @@ export function contactOf(e: Event): number | null {
 }
 
 /** Events that also go to the alert feed. */
-export const isAlert = (e: Event) => 'AutoSlow' in e.kind || 'BingoRtb' in e.kind;
+export const isAlert = (e: Event) => 'AutoSlow' in e.kind || 'BingoRtb' in e.kind || 'RearmShort' in e.kind;
 
 /** The unit an event is about, for click-to-locate. */
 export function subjectOf(e: Event): number | null {
@@ -167,5 +175,7 @@ export function subjectOf(e: Event): number | null {
   if ('BaseActivated' in k) return k.BaseActivated.base;
   if ('EmconChanged' in k) return k.EmconChanged.group;
   if ('SatelliteTasked' in k) return k.SatelliteTasked.satellite;
+  if ('LoadoutChanged' in k) return k.LoadoutChanged.unit;
+  if ('RearmShort' in k) return k.RearmShort.unit;
   return null;
 }

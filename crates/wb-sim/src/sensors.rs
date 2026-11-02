@@ -124,14 +124,14 @@ pub fn horizon_m(rules: &Rules, h1: f64, h2: f64) -> f64 {
 
 /// External stores raise RCS while any weapon hangs on an external station.
 fn stores_mult(rules: &Rules, p: &Platform, mag: Option<&Magazine>) -> f64 {
-    let Some(m) = mag else { return 1.0 };
-    let Some(l) = m.loadout else { return 1.0 };
-    let lo = &rules.db.loadouts[l.0 as usize];
-    let external = lo.items.iter().any(|it| {
-        p.stations
-            .get(it.station as usize)
-            .is_some_and(|s| s.kind == StationKind::External)
-            && m.rounds.iter().any(|(w, n)| *w == it.weapon && *n > 0)
+    let _ = rules;
+    let external = mag.is_some_and(|m| {
+        m.stations.iter().any(|s| {
+            s.count > 0
+                && p.stations
+                    .get(s.station as usize)
+                    .is_some_and(|st| st.kind == StationKind::External)
+        })
     });
     if external {
         p.signature.external_stores_rcs_multiplier
