@@ -27,7 +27,7 @@ use crate::bases::{self, content_kind};
 use crate::clock::{RngSeed, SimClock, TickLen};
 use crate::components::{
     Allegiance, BaseRef, BaseSite, Countermeasures, EmconState, Fuel, Group, GroupMember, Identity,
-    Kinematics, Mode, PlatformRef, Posture, SatelliteState, ScriptedTarget, Speed, Steer,
+    Kinematics, Mode, PlatformRef, Posture, Roe, SatelliteState, ScriptedTarget, Speed, Steer,
     TankerState, Task,
 };
 use crate::orders::{Order, OrderQueue};
@@ -111,6 +111,9 @@ pub struct Scenario {
     /// (tests and goldens).
     #[serde(default)]
     pub base_stock: Vec<BaseStockSpec>,
+    /// Test-only territory used when no packs are installed (ADR-030).
+    #[serde(default)]
+    pub test_territory: Vec<TerritorySpec>,
     /// Golden-scenario variants and bands, read by `wb golden` (doc 08 §3).
     #[serde(default)]
     pub golden: Option<serde_yaml::Value>,
@@ -124,6 +127,20 @@ pub struct SideSpec {
     pub countries: Vec<String>,
     #[serde(default)]
     pub player: bool,
+    /// Side default ROE; Charlie when absent.
+    #[serde(default)]
+    pub roe: Option<Roe>,
+    /// Self-defence against incoming weapons; on when absent.
+    #[serde(default)]
+    pub self_defence: Option<bool>,
+}
+
+/// A test territory polygon (ADR-030): `[lon, lat]` corners in degrees.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TerritorySpec {
+    pub country: String,
+    pub polygon: Vec<[f64; 2]>,
 }
 
 /// The stock of one real base: weapon id → rounds.
@@ -404,6 +421,22 @@ impl Scenario {
             t.geo().map_err(ScenarioError::Generated)?;
             world.insert_resource(t.clone());
         }
+        if !self.test_territory.is_empty() {
+            let mut areas = Vec::new();
+            for (i, t) in self.test_territory.iter().enumerate() {
+                let bad = |reason: String| ScenarioError::InvalidSide { side: i, reason };
+                let c = country(&rules, &t.country)
+                    .ok_or_else(|| bad(format!("test_territory: unknown country `{}`", t.country)))?;
+                if t.polygon.len() < 3 {
+                    return Err(bad("test_territory: a polygon needs 3 corners".into()));
+                }
+                areas.push(crate::roe::TerritoryArea {
+                    country: c,
+                    polygon: t.polygon.clone(),
+                });
+            }
+            world.insert_resource(crate::roe::TestTerritory(areas));
+        }
         let n_sides = world.resource::<Sides>().len();
         world.insert_resource(SidePictures::new(n_sides));
         for (index, o) in self.orders.iter().enumerate() {
@@ -443,6 +476,8 @@ impl Scenario {
                 name: s.name.clone(),
                 countries: s.countries.clone(),
                 player: s.player,
+                roe: s.roe.unwrap_or(Roe::Charlie),
+                self_defence: s.self_defence.unwrap_or(true),
             });
         }
         if sides.len() > 8 {

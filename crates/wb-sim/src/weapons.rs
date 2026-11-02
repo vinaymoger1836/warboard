@@ -79,6 +79,8 @@ pub struct Combat {
     pub hostile_acts: BTreeMap<(u8, ContactId), u64>,
     /// Whether a side last saw a hostile contact inside its territory.
     pub inside: BTreeMap<(u8, ContactId), bool>,
+    /// Weapon contacts judged aimed at an own unit, and that unit.
+    pub incoming: BTreeMap<(u8, ContactId), UnitId>,
 }
 
 /// Why a weapon was fired: the launch event and the golden checks read it.

@@ -4,7 +4,7 @@
 
 use bevy_ecs::prelude::*;
 use core::f64::consts::PI;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use wb_content::compiled::{ContentDb, Platform, PlatformIx, Realism};
 use wb_content::source::{Domain, PlatformCategory};
 use wb_core::math::sqrt;
@@ -21,6 +21,9 @@ pub struct Rules {
     pub realism: usize,
     /// BLAKE3 of the pack body; saves record it.
     pub content_hash: [u8; 32],
+    /// Weapon flyout tables (ADR-028), built on first use: a pure function
+    /// of the content, never saved.
+    flyouts: Arc<OnceLock<Vec<crate::flyout::Flyout>>>,
 }
 
 impl Rules {
@@ -35,7 +38,13 @@ impl Rules {
             db,
             realism,
             content_hash,
+            flyouts: Arc::new(OnceLock::new()),
         }
+    }
+
+    /// The flyout table of a weapon (ADR-028).
+    pub fn flyout(&self, w: wb_content::compiled::WeaponIx) -> &crate::flyout::Flyout {
+        &self.flyouts.get_or_init(|| crate::flyout::build(self))[w.0 as usize]
     }
 
     pub fn realism(&self) -> &Realism {

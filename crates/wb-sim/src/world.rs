@@ -18,6 +18,9 @@ pub struct SideInfo {
     /// Content country ids, e.g. `pol`.
     pub countries: Vec<String>,
     pub player: bool,
+    /// Side default ROE and self-defence (doc 03 §7).
+    pub roe: crate::components::Roe,
+    pub self_defence: bool,
 }
 
 #[derive(Resource, Clone, Debug, PartialEq, Serialize, Deserialize)]

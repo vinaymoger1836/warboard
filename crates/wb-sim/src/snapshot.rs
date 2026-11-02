@@ -19,6 +19,7 @@ use crate::probe::ProbeState;
 use crate::rules::Rules;
 use crate::scenario::TestTerrain;
 use crate::sensors::LosMemo;
+use crate::roe::{RoeRequests, TestTerritory};
 use crate::weapons::Combat;
 use crate::world::{ForceFineTick, Sides, UnitIdAlloc, UnitIndex};
 
@@ -63,6 +64,8 @@ pub struct Snapshot {
     pub pictures: SidePictures,
     pub test_terrain: Option<TestTerrain>,
     pub combat: Combat,
+    pub roe_requests: RoeRequests,
+    pub test_territory_areas: Option<TestTerritory>,
     pub units: Vec<UnitRecord>,
 }
 
@@ -107,6 +110,8 @@ pub fn capture(world: &World) -> Snapshot {
         pictures: world.resource::<SidePictures>().clone(),
         test_terrain: world.get_resource::<TestTerrain>().cloned(),
         combat: world.resource::<Combat>().clone(),
+        roe_requests: world.resource::<RoeRequests>().clone(),
+        test_territory_areas: world.get_resource::<TestTerritory>().cloned(),
         units,
     }
 }
@@ -121,6 +126,7 @@ pub fn base_resources(world: &mut World, rules: Rules) {
     world.insert_resource(UnitIndex::default());
     world.insert_resource(LosMemo::default());
     world.insert_resource(Combat::default());
+    world.insert_resource(RoeRequests::default());
 }
 
 /// Builds a world from a snapshot (in `UnitId` order). The order log and
@@ -136,6 +142,10 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
     world.insert_resource(snap.orders);
     world.insert_resource(snap.pictures);
     world.insert_resource(snap.combat);
+    world.insert_resource(snap.roe_requests);
+    if let Some(t) = snap.test_territory_areas {
+        world.insert_resource(t);
+    }
     if let Some(t) = snap.test_terrain {
         world.insert_resource(t);
     }
