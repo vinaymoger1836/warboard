@@ -47,7 +47,7 @@ use wb_core::{ContactId, UnitId};
 
 use crate::clock::SimClock;
 use crate::components::{
-    Allegiance, AimPoint, EmconState, FlightPhase, GroupMember, Identity, Kinematics, Magazine,
+    AimPoint, Allegiance, EmconState, FlightPhase, GroupMember, Identity, Kinematics, Magazine,
     PlatformRef, Posture, SeekerState, WeaponFlight, WeaponTarget,
 };
 use crate::events::{AimRef, EventKind, Factors, Outcome, emit};
@@ -500,15 +500,7 @@ pub fn fly(world: &mut World) {
         let side = world.get::<Allegiance>(e).map_or(0, |a| a.side);
         let w = &rules.db.weapons[f.weapon.0 as usize];
         let ended = step(
-            world,
-            &rules,
-            &clock,
-            update_due,
-            update_ms,
-            &mut cands,
-            side,
-            &mut f,
-            k,
+            world, &rules, &clock, update_due, update_ms, &mut cands, side, &mut f, k,
         );
         match ended {
             Ok(k2) => {
@@ -561,12 +553,13 @@ fn step(
                     f.aim = aim;
                 }
             }
-            WeaponTarget::Truth(u) => match entity(world, u).and_then(|e| world.get::<Kinematics>(e))
-            {
-                Some(tk) => f.aim = truth_aim(tk, now),
-                None if needs_track(seeker) => return Err((Outcome::LostTrack, k, None)),
-                None => {}
-            },
+            WeaponTarget::Truth(u) => {
+                match entity(world, u).and_then(|e| world.get::<Kinematics>(e)) {
+                    Some(tk) => f.aim = truth_aim(tk, now),
+                    None if needs_track(seeker) => return Err((Outcome::LostTrack, k, None)),
+                    None => {}
+                }
+            }
             WeaponTarget::Point { .. } => {}
         }
     }
@@ -593,7 +586,8 @@ fn step(
             f.seeker = SeekerState::Searching { lost_ms: None };
         }
         if let SeekerState::Locked { unit, memory } = f.seeker {
-            let alive = entity(world, unit).and_then(|e| world.get::<Kinematics>(e).map(|tk| (e, *tk)));
+            let alive =
+                entity(world, unit).and_then(|e| world.get::<Kinematics>(e).map(|tk| (e, *tk)));
             match alive {
                 Some((_, tk)) if in_fov(to_enu(k.pos(), k.alt_m, tk.pos(), tk.alt_m)) => {
                     if seeker == Seeker::AntiRadiation {
@@ -611,17 +605,18 @@ fn step(
                         f.seeker = SeekerState::Locked { unit, memory: !on };
                     }
                 }
-                _ => {
-                    f.seeker = SeekerState::Searching {
-                        lost_ms: Some(now),
-                    }
-                }
+                _ => f.seeker = SeekerState::Searching { lost_ms: Some(now) },
             }
         }
         if let SeekerState::Searching { lost_ms } = f.seeker {
             let list = cands.get_or_insert_with(|| candidates(world, rules, now));
             match acquire(list, w, f, side, k, aim_pos, seeker_range, &in_fov) {
-                Some(unit) => f.seeker = SeekerState::Locked { unit, memory: false },
+                Some(unit) => {
+                    f.seeker = SeekerState::Locked {
+                        unit,
+                        memory: false,
+                    }
+                }
                 None => {
                     let lost = lost_ms.or(reached_aim.then_some(now));
                     if lost.is_some_and(|t| {
@@ -644,10 +639,20 @@ fn step(
         _ => None,
     };
     let (t_pos, t_alt, t_vel) = match locked {
-        Some(tk) => (tk.pos(), tk.alt_m, vel(tk.heading, tk.speed_mps, tk.climb_mps)),
-        None if matches!(f.seeker, SeekerState::Locked { memory: true, .. }) => {
-            (f.aim.at, f.aim.alt_m, Enu { e: 0.0, n: 0.0, u: 0.0 })
-        }
+        Some(tk) => (
+            tk.pos(),
+            tk.alt_m,
+            vel(tk.heading, tk.speed_mps, tk.climb_mps),
+        ),
+        None if matches!(f.seeker, SeekerState::Locked { memory: true, .. }) => (
+            f.aim.at,
+            f.aim.alt_m,
+            Enu {
+                e: 0.0,
+                n: 0.0,
+                u: 0.0,
+            },
+        ),
         None => (
             aim_pos,
             aim_alt,
@@ -796,9 +801,8 @@ fn step(
     };
 
     // Fuze: closest approach within the tick.
-    let fuze_target = locked.is_some()
-        || matches!(f.seeker, SeekerState::Locked { .. })
-        || !locks(seeker);
+    let fuze_target =
+        locked.is_some() || matches!(f.seeker, SeekerState::Locked { .. }) || !locks(seeker);
     if fuze_target {
         let rel_v = sub(t_vel, scale(u2, v));
         let vv = dot(rel_v, rel_v);

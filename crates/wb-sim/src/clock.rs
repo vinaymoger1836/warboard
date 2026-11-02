@@ -86,14 +86,21 @@ pub fn tick_len_for(engagement: &EngagementState, force_fine: bool) -> TickLen {
 
 /// Tick length the next `step` will use.
 pub fn next_tick_len(world: &World) -> TickLen {
-    tick_len_for(
-        world.resource::<EngagementState>(),
-        world.resource::<ForceFineTick>().0,
-    )
+    tick_len_for(&engagement(world), world.resource::<ForceFineTick>().0)
+}
+
+fn engagement(world: &World) -> EngagementState {
+    let c = world.resource::<Combat>();
+    EngagementState {
+        weapons_in_flight: c.in_flight,
+        hostile_in_envelope: c.hostile_in_envelope,
+    }
 }
 
 /// Second stage of every tick (after orders).
 pub fn choose_tick_len(world: &mut World) {
+    let e = engagement(world);
+    *world.resource_mut::<EngagementState>() = e;
     let len = next_tick_len(world);
     world.resource_mut::<SimClock>().tick_len = len;
 }

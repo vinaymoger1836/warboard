@@ -4,7 +4,7 @@
 //! stages on one thread (doc 02 §3–4). Every stage visits units in `UnitId`
 //! order wherever order matters. P3 adds movement, fuel, bases, tasks,
 //! orders, events, saves and the side view; P4 sensors, satellites and the
-//! side pictures (fog of war).
+//! side pictures (fog of war); P5 loadouts and weapons in flight.
 
 pub mod bases;
 pub mod clock;
@@ -27,6 +27,7 @@ pub mod sensors;
 pub mod snapshot;
 pub mod tasks;
 pub mod view;
+pub mod weapons;
 pub mod world;
 
 use bevy_ecs::world::World;
@@ -61,6 +62,9 @@ pub const STAGES: &[Stage] = &[
     ("formation", movement::formation),
     ("satellites", satellites::update),
     ("scripted", sensors::move_scripted),
+    // After every mover, so a weapon's closest approach sees where its
+    // target went this tick.
+    ("weapons", weapons::fly),
     ("sensors", sensors::scan),
     ("fusion", picture::fusion),
     ("fuel", fuel::burn),
