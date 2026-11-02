@@ -1,5 +1,6 @@
 //! ECS components (doc 02 §2): movement, fuel, groups, tasks and bases (P3),
-//! emission control, satellites and scripted targets (P4).
+//! emission control, satellites and scripted targets (P4), weapons in
+//! flight, countermeasures, damage and ROE (P5).
 //!
 //! Components refer to each other by [`UnitId`] only, never by bevy `Entity`,
 //! so a loaded world is identical to the saved one whatever the archetype
@@ -7,11 +8,14 @@
 
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
-use wb_content::compiled::{BaseIx, CountryIx, LoadoutIx, PlatformIx, SystemIx, WeaponIx};
+use wb_content::compiled::{
+    BaseIx, CountermeasureIx, CountryIx, LoadoutIx, LoadoutItem, PlatformIx, SystemIx, WeaponIx,
+};
 use wb_content::source::Emcon;
-use wb_content::source::realism::BaseKind;
-use wb_core::UnitId;
+use wb_content::source::realism::{BaseComponentKind, BaseKind, Subsystem};
+use wb_content::source::world::LaunchDoctrine;
 use wb_core::geo::LatLon;
+use wb_core::{ContactId, UnitId};
 
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Identity {
