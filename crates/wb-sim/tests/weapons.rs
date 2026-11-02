@@ -233,53 +233,6 @@ fn calibration_report() {
 }
 
 #[test]
-#[ignore = "temporary trace"]
-fn trace_shot() {
-    let (db, hash) = content();
-    let id = std::env::var("WB_WEAPON").unwrap_or("r-77-1".into());
-    let scale: f64 = std::env::var("WB_SCALE").map_or(3.0, |s| s.parse().unwrap());
-    let ix = db.weapons.iter().position(|w| db.str(w.id) == id).unwrap();
-    let mut tuned = (*db).clone();
-    if let Some(t) = tuned.weapons[ix].profile.coast_tau_s.as_mut() {
-        t.sea_level *= scale;
-        t.high_alt *= scale;
-    }
-    let r = tuned.weapons[ix].profile.max_range_m;
-    let tuned = Arc::new(tuned);
-    let mut sim = setup(&tuned, hash, WeaponIx(ix as u32), r);
-    for i in 0..40_000 {
-        sim.step();
-        let w = sim.world_mut();
-        let mut q = w.query::<(&wb_sim::components::WeaponFlight, &wb_sim::Kinematics)>();
-        let row = q.iter(w).next().map(|(f, k)| {
-            format!(
-                "t={:>5.1} alt={:>7.0} v={:>6.0} fpa={:>6.1} flown={:>7.0} seeker={:?} phase={:?}",
-                (i + 1) as f64 / 10.0,
-                k.alt_m,
-                k.speed_mps,
-                f.fpa.to_degrees(),
-                f.flown_m,
-                f.seeker,
-                f.phase
-            )
-        });
-        match row {
-            Some(r) if i % 50 == 0 => println!("{r}"),
-            Some(_) => {}
-            None => break,
-        }
-    }
-    for e in sim.events() {
-        if let EventKind::WeaponTerminated {
-            outcome, factors, ..
-        } = &e.kind
-        {
-            println!("{outcome:?} {factors:?}");
-        }
-    }
-}
-
-#[test]
 fn save_in_flight_reloads_to_the_same_hash() {
     let (db, hash) = content();
     let wix = WeaponIx(
