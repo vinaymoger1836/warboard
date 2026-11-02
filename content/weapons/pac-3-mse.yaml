@@ -8,7 +8,7 @@ profile:
   kind: rocket
   boost_s: 8
   max_speed_mach: 5.0
-  coast_tau_s: { sea_level: 15, high_alt: 60 }
+  coast_tau_s: { sea_level: 22.6, high_alt: 90.4 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
   min_speed_mach: 1.2
   max_range_km: 120
   min_range_km: 3
