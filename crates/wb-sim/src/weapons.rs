@@ -162,10 +162,14 @@ pub fn launch(world: &mut World, l: &Launch) -> Result<UnitId, String> {
                 .est
                 .ok_or_else(|| format!("C{} has no position estimate", id.0))?;
             if !w.targets.contains(&c.domain) {
-                return Err(format!(
-                    "{wname} cannot engage {} targets",
-                    c.domain.as_str()
-                ));
+                let domain = match c.domain {
+                    Domain::Air => "air",
+                    Domain::Surface => "surface",
+                    Domain::Subsurface => "subsurface",
+                    Domain::Ground => "ground",
+                    Domain::Space => "space",
+                };
+                return Err(format!("{wname} cannot engage {domain} targets"));
             }
             (
                 WeaponTarget::Track {
