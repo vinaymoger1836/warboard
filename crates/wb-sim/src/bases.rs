@@ -1,8 +1,12 @@
 //! Bases: lookup, suitability, landing and berthing, turnaround and
-//! activation (doc 02 §6, doc 03 §3–4).
+//! activation, munitions stock and rearming (doc 02 §6, doc 03 §3–4, §6).
 
 use bevy_ecs::prelude::*;
-use wb_content::compiled::{Base as ContentBase, Platform};
+use std::collections::BTreeMap;
+use wb_content::compiled::{
+    Base as ContentBase, BaseIx, LoadoutIx, Platform, WeaponIx, station_cells,
+};
+use wb_content::source::StationKind;
 use wb_content::source::realism::BaseKind;
 use wb_content::source::world::BaseType;
 use wb_core::UnitId;
@@ -10,8 +14,8 @@ use wb_core::geo::{LatLon, distance_m};
 
 use crate::clock::SimClock;
 use crate::components::{
-    Allegiance, BaseRef, BaseSite, Fuel, Group, Identity, Kinematics, Magazine, Mode, PlatformRef,
-    Posture, ReturnWhy, TankerState, Task,
+    Allegiance, BaseRef, BaseSite, Countermeasures, Fuel, Group, Identity, Kinematics, Magazine,
+    Mode, PlatformRef, Posture, ReturnWhy, TankerState, Task,
 };
 use crate::events::{EventKind, emit};
 use crate::rules::Rules;
@@ -252,8 +256,8 @@ pub fn arrivals(world: &mut World) {
     }
 }
 
-/// Logistics (every `logistics_period_s`): turnarounds finish, placed bases
-/// activate.
+/// Logistics (every `logistics_period_s`): turnarounds finish (refuel,
+/// countermeasures, rearm from the base's stock), placed bases activate.
 pub fn logistics(world: &mut World) {
     let rules = world.resource::<Rules>().clone();
     let clock = world.resource::<SimClock>().clone();
@@ -291,11 +295,10 @@ pub fn logistics(world: &mut World) {
             {
                 t.offload_left_kg = tk.offload_kg;
             }
-            if let Some(mut m) = world.get_mut::<Magazine>(e)
-                && let Some(lix) = m.loadout
-            {
-                m.rounds = loadout_rounds(&rules, lix);
+            if let Some(mut c) = world.get_mut::<Countermeasures>(e) {
+                c.refill();
             }
+            rearm(world, &rules, id, e, base);
             let side = world.get::<Allegiance>(e).map_or(0, |a| a.side);
             emit(world, side, EventKind::TurnaroundDone { unit: id, base });
         }
@@ -310,18 +313,127 @@ pub fn logistics(world: &mut World) {
     }
 }
 
-/// Rounds per weapon of a loadout, merged and sorted.
-pub fn loadout_rounds(
-    rules: &Rules,
-    lix: wb_content::compiled::LoadoutIx,
-) -> Vec<(wb_content::compiled::WeaponIx, u32)> {
-    let mut out: Vec<(wb_content::compiled::WeaponIx, u32)> = Vec::new();
-    for item in &rules.db.loadouts[lix.0 as usize].items {
-        match out.iter_mut().find(|(w, _)| *w == item.weapon) {
-            Some((_, n)) => *n += item.count,
-            None => out.push((item.weapon, item.count)),
+/// A full magazine of a loadout template.
+pub fn template_magazine(rules: &Rules, lix: LoadoutIx) -> Magazine {
+    let items = &rules.db.loadouts[lix.0 as usize].items;
+    Magazine::full(Some(lix), items.iter().map(|i| (i.station, i.weapon, i.count)))
+}
+
+/// A system component's content magazine, spread over the stations that fit
+/// each weapon in station order (`wb content check` has checked the cells).
+pub fn system_magazine(rules: &Rules, p: &Platform, rounds: &[(WeaponIx, u32)]) -> Magazine {
+    let db = &rules.db;
+    let mut free: Vec<u32> = p.stations.iter().map(|s| s.capacity).collect();
+    let mut items = Vec::new();
+    for (wix, n) in rounds {
+        let w = &db.weapons[wix.0 as usize];
+        let mut left = *n;
+        for (i, st) in p.stations.iter().enumerate() {
+            if left == 0 {
+                break;
+            }
+            if !w.station_category.iter().any(|c| st.categories.contains(c)) {
+                continue;
+            }
+            let per_cell = match st.kind {
+                StationKind::Vls | StationKind::Launcher => w.rounds_per_cell.max(1),
+                StationKind::Internal | StationKind::External => 1,
+            };
+            let take = left.min(free[i] * per_cell);
+            if take > 0 {
+                free[i] -= station_cells(st.kind, w.rounds_per_cell, take);
+                items.push((i as u32, *wix, take));
+                left -= take;
+            }
         }
     }
-    out.sort();
-    out
+    Magazine::full(None, items)
+}
+
+/// Munitions at a real base at war start: its `munition_basing` in the
+/// latest inventory of the base's country.
+pub fn initial_stock(rules: &Rules, base: BaseIx) -> BTreeMap<WeaponIx, u32> {
+    let db = &rules.db;
+    let country = db.bases[base.0 as usize].country;
+    db.inventories
+        .iter()
+        .filter(|i| i.country == country)
+        .max_by(|a, b| db.str(a.as_of).cmp(db.str(b.as_of)))
+        .and_then(|inv| inv.munition_basing.iter().find(|(b, _)| *b == base))
+        .map(|(_, m)| m.iter().copied().filter(|(_, n)| *n > 0).collect())
+        .unwrap_or_default()
+}
+
+/// Whether a base reloads VLS cells (doc 03 §4: naval bases only).
+pub fn vls_reload(rules: &Rules, kind: BaseKind) -> bool {
+    rules.realism().bases.get(&kind).is_some_and(|r| r.vls_reload)
+}
+
+/// Draws up to `n` rounds of a weapon from a base's stock; returns what it got.
+pub fn draw(stock: &mut BTreeMap<WeaponIx, u32>, w: WeaponIx, n: u32) -> u32 {
+    let Some(have) = stock.get_mut(&w) else {
+        return 0;
+    };
+    let got = n.min(*have);
+    *have -= got;
+    if *have == 0 {
+        stock.remove(&w);
+    }
+    got
+}
+
+/// Puts rounds back into a base's stock.
+pub fn put_back(stock: &mut BTreeMap<WeaponIx, u32>, w: WeaponIx, n: u32) {
+    if n > 0 {
+        *stock.entry(w).or_default() += n;
+    }
+}
+
+/// Tops a unit's stations up from its base's stock (VLS cells only where the
+/// base reloads them) and reports each weapon it could not fill.
+pub fn rearm(world: &mut World, rules: &Rules, unit: UnitId, e: Entity, base: UnitId) {
+    let Some(be) = entity(world, base) else {
+        return;
+    };
+    let Some(mut mag) = world.get::<Magazine>(e).cloned() else {
+        return;
+    };
+    let Some(pix) = world.get::<PlatformRef>(e).map(|p| p.0) else {
+        return;
+    };
+    let p = rules.platform(pix);
+    let mut site = world.get::<BaseSite>(be).expect("base").clone();
+    let vls = vls_reload(rules, site.kind);
+    let mut short: BTreeMap<WeaponIx, u32> = BTreeMap::new();
+    for s in &mut mag.stations {
+        let need = s.full.saturating_sub(s.count);
+        if need == 0 {
+            continue;
+        }
+        let kind = p.stations.get(s.station as usize).map(|st| st.kind);
+        if kind == Some(StationKind::Vls) && !vls {
+            continue;
+        }
+        let got = draw(&mut site.stock, s.weapon, need);
+        s.count += got;
+        if got < need {
+            *short.entry(s.weapon).or_default() += need - got;
+        }
+    }
+    *world.get_mut::<Magazine>(e).expect("magazine") = mag;
+    world.get_mut::<BaseSite>(be).expect("base").stock = site.stock;
+    let side = world.get::<Allegiance>(e).map_or(0, |a| a.side);
+    for (w, n) in short {
+        let weapon = rules.db.str(rules.db.weapons[w.0 as usize].id).to_owned();
+        emit(
+            world,
+            side,
+            EventKind::RearmShort {
+                unit,
+                base,
+                weapon,
+                short: n,
+            },
+        );
+    }
 }

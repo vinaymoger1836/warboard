@@ -1,5 +1,6 @@
 //! ECS components (doc 02 §2): movement, fuel, groups, tasks and bases (P3),
-//! emission control, satellites and scripted targets (P4).
+//! emission control, satellites and scripted targets (P4), per-station
+//! magazines, countermeasures and base stock (P5).
 //!
 //! Components refer to each other by [`UnitId`] only, never by bevy `Entity`,
 //! so a loaded world is identical to the saved one whatever the archetype
@@ -7,7 +8,10 @@
 
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
-use wb_content::compiled::{BaseIx, CountryIx, LoadoutIx, PlatformIx, SystemIx, WeaponIx};
+use std::collections::BTreeMap;
+use wb_content::compiled::{
+    BaseIx, CountermeasureIx, CountryIx, LoadoutIx, PlatformIx, SystemIx, WeaponIx,
+};
 use wb_content::source::Emcon;
 use wb_content::source::realism::BaseKind;
 use wb_core::UnitId;
@@ -63,18 +67,87 @@ pub struct Fuel {
     pub reserve_at_bingo_kg: Option<f64>,
 }
 
-/// Weapons carried. Nothing fires before P5; the count drives winchester.
-#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
+/// Rounds of one weapon on one station: `full` is the configured load (what
+/// a rearm tops up to), `count` what is left.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StationLoad {
+    /// Index into the platform's `stations`.
+    pub station: u32,
+    pub weapon: WeaponIx,
+    pub full: u32,
+    pub count: u32,
+}
+
+/// Weapons carried, per station (doc 03 §6). `loadout` names the template
+/// the configuration came from; `None` for a custom or system magazine.
+#[derive(Component, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Magazine {
     pub loadout: Option<LoadoutIx>,
-    pub rounds: Vec<(WeaponIx, u32)>,
-    /// Rounds at load-out, so an unarmed unit is never "winchester".
-    pub initial: u32,
+    /// In (station, weapon) order.
+    pub stations: Vec<StationLoad>,
 }
 
 impl Magazine {
+    /// A full magazine from `(station, weapon, count)` items; entries for the
+    /// same station and weapon merge.
+    pub fn full(loadout: Option<LoadoutIx>, items: impl IntoIterator<Item = (u32, WeaponIx, u32)>) -> Self {
+        let mut stations: Vec<StationLoad> = Vec::new();
+        for (station, weapon, n) in items {
+            match stations
+                .iter_mut()
+                .find(|s| s.station == station && s.weapon == weapon)
+            {
+                Some(s) => {
+                    s.full += n;
+                    s.count += n;
+                }
+                None => stations.push(StationLoad {
+                    station,
+                    weapon,
+                    full: n,
+                    count: n,
+                }),
+            }
+        }
+        stations.retain(|s| s.full > 0);
+        stations.sort_by_key(|s| (s.station, s.weapon));
+        Self { loadout, stations }
+    }
+
     pub fn remaining(&self) -> u32 {
-        self.rounds.iter().map(|(_, n)| n).sum()
+        self.stations.iter().map(|s| s.count).sum()
+    }
+
+    /// Rounds when full, so an unarmed unit is never "winchester".
+    pub fn capacity(&self) -> u32 {
+        self.stations.iter().map(|s| s.full).sum()
+    }
+
+    /// Rounds left per weapon, merged, in weapon order.
+    pub fn rounds(&self) -> Vec<(WeaponIx, u32)> {
+        let mut out: BTreeMap<WeaponIx, u32> = BTreeMap::new();
+        for s in &self.stations {
+            *out.entry(s.weapon).or_default() += s.count;
+        }
+        out.into_iter().collect()
+    }
+}
+
+/// Chaff and flares left (doc 02 §11), from the platform; refilled at
+/// turnaround. `(countermeasure, full, count)`.
+#[derive(Component, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct Countermeasures(pub Vec<(CountermeasureIx, u32, u32)>);
+
+impl Countermeasures {
+    pub fn full(p: &wb_content::compiled::Platform) -> Option<Self> {
+        (!p.countermeasures.is_empty())
+            .then(|| Self(p.countermeasures.iter().map(|(c, n)| (*c, *n, *n)).collect()))
+    }
+
+    pub fn refill(&mut self) {
+        for c in &mut self.0 {
+            c.2 = c.1;
+        }
     }
 }
 
@@ -293,6 +366,8 @@ pub struct BaseSite {
     pub active: bool,
     /// Platforms stationed here, sorted.
     pub stationed: Vec<UnitId>,
+    /// Munitions in store (not on aircraft or ships), by weapon.
+    pub stock: BTreeMap<WeaponIx, u32>,
 }
 
 /// Emission control of a platform's radars (doc 02 §9, doc 03 §5 sites).
