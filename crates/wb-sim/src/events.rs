@@ -109,6 +109,21 @@ pub enum EventKind {
         group: UnitId,
         emcon: Emcon,
     },
+    /// A unit's loadout was changed at a base (`SetLoadout`); `loadout` is
+    /// the template id, none for a custom one. A turnaround follows.
+    LoadoutChanged {
+        unit: UnitId,
+        base: UnitId,
+        loadout: Option<String>,
+    },
+    /// The base's stock could not fill a unit's stations: `short` rounds of
+    /// `weapon` (content id) are missing.
+    RearmShort {
+        unit: UnitId,
+        base: UnitId,
+        weapon: String,
+        short: u32,
+    },
     /// A satellite was tasked; `pass_ms` is the sim time of the pass.
     SatelliteTasked {
         satellite: UnitId,
