@@ -124,6 +124,26 @@ pub enum EventKind {
         weapon: String,
         short: u32,
     },
+    /// A weapon left its shooter (ADR-027: the shooter's side only). `target`
+    /// is the side's own contact or a point; none for test launches.
+    WeaponLaunched {
+        weapon: UnitId,
+        shooter: UnitId,
+        /// Content weapon id.
+        weapon_type: String,
+        salvo: u32,
+        tag: u32,
+        target: Option<AimRef>,
+    },
+    /// A weapon's flight ended (ADR-027: the shooter's side only).
+    WeaponTerminated {
+        weapon: UnitId,
+        shooter: UnitId,
+        weapon_type: String,
+        tag: u32,
+        outcome: Outcome,
+        factors: Factors,
+    },
     /// A satellite was tasked; `pass_ms` is the sim time of the pass.
     SatelliteTasked {
         satellite: UnitId,
@@ -132,6 +152,41 @@ pub enum EventKind {
         #[cfg_attr(feature = "ts", ts(type = "number"))]
         report_ms: u64,
     },
+}
+
+/// What a weapon was fired at, as its own side knows it.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub enum AimRef {
+    Contact { contact: ContactId },
+    Point { lat_deg: f64, lon_deg: f64 },
+}
+
+/// How a weapon's flight ended (doc 02 §11).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(rename_all = "snake_case")]
+pub enum Outcome {
+    Hit,
+    Miss,
+    Decoyed,
+    Jammed,
+    OutOfEnergy,
+    Intercepted,
+    LostTrack,
+    SelfDestruct,
+}
+
+/// The numbers behind an outcome, so a report can explain it (CLAUDE.md
+/// rule 4). `miss_distance_m` is set when the weapon fuzed.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct Factors {
+    pub speed_mps: f64,
+    pub time_of_flight_s: f64,
+    pub launch_range_m: f64,
+    pub flown_m: f64,
+    pub miss_distance_m: Option<f64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -573,6 +573,21 @@ fn age(pics: &mut SidePictures, rules: &Rules, now: u64, out: &mut Pending) {
     }
 }
 
+/// Drops every side's contact on a truth object that no longer exists (a
+/// weapon whose flight ended), with its radar tracks and queued detections.
+pub fn forget(pics: &mut SidePictures, truth: UnitId) {
+    for pic in &mut pics.sides {
+        if let Some(id) = pic.by_truth.remove(&truth) {
+            pic.contacts.remove(&id);
+        }
+    }
+    pics.tracks.retain(|(_, _, t), _| *t != truth);
+    pics.pending.retain(|d| d.det.truth != truth);
+    for r in &mut pics.reports {
+        r.dets.retain(|d| d.truth != truth);
+    }
+}
+
 /// Bearing from a contact estimate to a point (UI helpers and tests).
 pub fn bearing_to(c: &Contact, p: LatLon) -> Option<f64> {
     c.est.map(|e| initial_bearing(e.at, p))

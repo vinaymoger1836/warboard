@@ -1,8 +1,9 @@
 //! Sensors (doc 02 §7, §16): radar, ESM, IRST, EO/IR, visual lookout and
 //! simplified sonar. Each tick on which a sensor is due, the stage builds a
-//! list of bodies (every platform and scripted target, in `UnitId` order), a
-//! spatial index of H3 res-3 buckets, and evaluates candidate pairs through
-//! domain → range → horizon → field of regard → line of sight → Pd.
+//! list of bodies (every platform, weapon in flight and scripted target, in
+//! `UnitId` order), a spatial index of H3 res-3 buckets, and evaluates
+//! candidate pairs through domain → range → horizon → field of regard →
+//! line of sight → Pd.
 //!
 //! The index only prunes: candidates come from a conservative ring of
 //! buckets and are checked by exact distance, then visited in `UnitId`
@@ -26,7 +27,7 @@ use wb_geo::{Geo, LosParams};
 use crate::clock::{RngSeed, SimClock};
 use crate::components::{
     Allegiance, EmconState, Group, GroupMember, Kinematics, Magazine, PlatformRef, Posture,
-    SatelliteState, ScriptedTarget,
+    SatelliteState, ScriptedTarget, WeaponFlight,
 };
 use crate::movement::angle_diff;
 use crate::picture::{Bearing, Detection, Measured, Quality, SidePictures, SourceKind, TypeRef};
@@ -154,7 +155,7 @@ fn route(rules: &Rules, p: Option<&Platform>) -> (Option<DatalinkIx>, f64, bool)
     }
 }
 
-fn emitting(rules: &Rules, emcon: Emcon, uid: UnitId, now_ms: u64) -> bool {
+pub(crate) fn emitting(rules: &Rules, emcon: Emcon, uid: UnitId, now_ms: u64) -> bool {
     match emcon {
         Emcon::On => true,
         Emcon::Off => false,
@@ -198,6 +199,8 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
         let (type_ref, platform, domain, observer) = if let Some(s) = world.get::<ScriptedTarget>(e)
         {
             (TypeRef::Weapon(s.weapon), None, Domain::Air, false)
+        } else if let Some(f) = world.get::<WeaponFlight>(e) {
+            (TypeRef::Weapon(f.weapon), None, Domain::Air, false)
         } else if let Some(p) = world.get::<PlatformRef>(e) {
             (
                 TypeRef::Platform(p.0),
