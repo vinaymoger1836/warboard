@@ -715,10 +715,10 @@ fn step(
     let max_fp = deg_to_rad(wr.max_flight_path_deg);
     let closing = (-dot(t0, rel_v) / sqrt(r2)).max(1.0);
     let terminal = horiz / closing <= TERMINAL_DIVE_S;
-    // Rockets loft until the terminal seconds: toward `tau_high_alt_m`,
-    // where they coast furthest, but never above what they can descend from
-    // at the flight-path limit over the distance left.
-    let loft = mode(w) == Mode::Intercept && !terminal;
+    // Rockets loft while the seeker is off: toward `tau_high_alt_m`, where
+    // they coast furthest, but never above what they can descend from at
+    // the flight-path limit over the distance left.
+    let loft = mode(w) == Mode::Intercept && f.seeker == SeekerState::Off && !terminal;
     let held = (mode(w) != Mode::Intercept || loft) && !terminal;
     match mode(w) {
         _ if !held => {}
