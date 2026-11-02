@@ -592,8 +592,15 @@ fn step(
         if let SeekerState::Locked { unit, memory } = f.seeker {
             let alive =
                 entity(world, unit).and_then(|e| world.get::<Kinematics>(e).map(|tk| (e, *tk)));
+            // Within two ticks of closing the target may already be abeam
+            // (it moved this tick, the weapon not yet): the lock holds so the
+            // fuze can judge the closest approach.
+            let holds = |tk: &Kinematics| {
+                let rel = to_enu(k.pos(), k.alt_m, tk.pos(), tk.alt_m);
+                in_fov(rel) || norm(rel) <= 2.0 * (k.speed_mps + tk.speed_mps) * dt
+            };
             match alive {
-                Some((_, tk)) if in_fov(to_enu(k.pos(), k.alt_m, tk.pos(), tk.alt_m)) => {
+                Some((_, tk)) if holds(&tk) => {
                     if seeker == Seeker::AntiRadiation {
                         let on = cands
                             .get_or_insert_with(|| candidates(world, rules, now))
@@ -708,10 +715,19 @@ fn step(
     let max_fp = deg_to_rad(wr.max_flight_path_deg);
     let closing = (-dot(t0, rel_v) / sqrt(r2)).max(1.0);
     let terminal = horiz / closing <= TERMINAL_DIVE_S;
-    let held = mode(w) != Mode::Intercept && !terminal;
+    // Rockets loft until the terminal seconds: toward `tau_high_alt_m`,
+    // where they coast furthest, but never above what they can descend from
+    // at the flight-path limit over the distance left.
+    let loft = mode(w) == Mode::Intercept && !terminal;
+    let held = (mode(w) != Mode::Intercept || loft) && !terminal;
     match mode(w) {
         _ if !held => {}
-        Mode::Intercept => {}
+        Mode::Intercept => {
+            let ceiling = t_alt + horiz * wb_core::math::tan(max_fp);
+            let want = wr.tau_high_alt_m.max(t_alt).min(ceiling);
+            let cmd = atan((want - k.alt_m) / (v * 4.0 * PITCH_TAU_S)).clamp(-max_fp, max_fp);
+            gam_dot = (cmd - f.fpa) / PITCH_TAU_S;
+        }
         Mode::Hold => {
             let in_seeker = aim_dist <= seeker_range;
             let cruise = w.profile.cruise_alt_m.unwrap_or(wr.cruise_alt_default_m);
