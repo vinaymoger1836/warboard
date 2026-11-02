@@ -316,7 +316,10 @@ pub fn logistics(world: &mut World) {
 /// A full magazine of a loadout template.
 pub fn template_magazine(rules: &Rules, lix: LoadoutIx) -> Magazine {
     let items = &rules.db.loadouts[lix.0 as usize].items;
-    Magazine::full(Some(lix), items.iter().map(|i| (i.station, i.weapon, i.count)))
+    Magazine::full(
+        Some(lix),
+        items.iter().map(|i| (i.station, i.weapon, i.count)),
+    )
 }
 
 /// A system component's content magazine, spread over the stations that fit
@@ -366,7 +369,11 @@ pub fn initial_stock(rules: &Rules, base: BaseIx) -> BTreeMap<WeaponIx, u32> {
 
 /// Whether a base reloads VLS cells (doc 03 §4: naval bases only).
 pub fn vls_reload(rules: &Rules, kind: BaseKind) -> bool {
-    rules.realism().bases.get(&kind).is_some_and(|r| r.vls_reload)
+    rules
+        .realism()
+        .bases
+        .get(&kind)
+        .is_some_and(|r| r.vls_reload)
 }
 
 /// Draws up to `n` rounds of a weapon from a base's stock; returns what it got.

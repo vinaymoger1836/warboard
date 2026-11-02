@@ -8,7 +8,8 @@
 
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
-use wb_content::compiled::CountryIx;
+use std::collections::BTreeMap;
+use wb_content::compiled::{CountryIx, LoadoutItem, LoadoutIx, WeaponIx};
 use wb_content::source::realism::BaseKind;
 use wb_core::UnitId;
 use wb_core::geo::{LatLon, distance_m, intermediate_point};
@@ -18,14 +19,14 @@ use wb_geo::{Geo, TerrainClass};
 use crate::bases::{self, BaseInfo};
 use crate::clock::SimClock;
 use crate::components::{
-    Allegiance, BaseSite, Behaviour, EmconState, Group, GroupMember, Identity, Kinematics, Mode,
-    PlatformRef, Posture, ReturnWhy, SatelliteState, Speed, Task, Tasking,
+    Allegiance, BaseSite, Behaviour, EmconState, Group, GroupMember, Identity, Kinematics,
+    Magazine, Mode, PlatformRef, Posture, ReturnWhy, SatelliteState, Speed, Task, Tasking,
 };
 use crate::events::{EventKind, emit};
 use crate::placement;
 use crate::rules::Rules;
 use crate::world::{Sides, UnitIdAlloc, entity, spawn_unit};
-use wb_content::source::{Emcon, PayloadKind};
+use wb_content::source::{Domain, Emcon, PayloadKind, StationKind};
 
 /// `[lon, lat]` in degrees (doc 04 §7.2).
 pub type LonLat = [f64; 2];
@@ -103,6 +104,30 @@ fn yes() -> bool {
     true
 }
 
+/// Weapons to fit at a base (doc 03 §6): a loadout template of the
+/// platform, or stations filled by hand.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum LoadoutChoice {
+    /// Content loadout id.
+    Template {
+        id: String,
+    },
+    Custom {
+        stations: Vec<StationItem>,
+    },
+}
+
+/// Rounds of a weapon on a station, by content ids.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct StationItem {
+    pub station: String,
+    pub weapon: String,
+    pub count: u32,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 #[serde(tag = "type")]
@@ -138,6 +163,12 @@ pub enum Command {
         satellite: u32,
         centre: LonLat,
         radius_km: f64,
+    },
+    /// Change the weapons of units at a base, drawn from its stock; a
+    /// turnaround follows (doc 03 §6).
+    SetLoadout {
+        units: Vec<u32>,
+        loadout: LoadoutChoice,
     },
 }
 
@@ -180,6 +211,11 @@ pub enum Resolved {
         satellite: UnitId,
         tasking: Tasking,
         report_ms: u64,
+    },
+    /// Each unit's new magazine, full; `template` is the content id.
+    Loadout {
+        units: Vec<(UnitId, Magazine)>,
+        template: Option<String>,
     },
 }
 
@@ -394,7 +430,149 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
                 report_ms,
             })
         }
+        Command::SetLoadout { units, loadout } => {
+            let units = resolve_loadout(world, side, units, loadout)?;
+            let template = match loadout {
+                LoadoutChoice::Template { id } => Some(id.clone()),
+                LoadoutChoice::Custom { .. } => None,
+            };
+            Ok(Resolved::Loadout { units, template })
+        }
     }
+}
+
+/// Checks a loadout change for every unit picked, in this order: the unit is
+/// at a base, the loadout fits its stations, VLS cells are only changed at a
+/// base that reloads them, and the base's stock covers the rounds added
+/// (rounds taken off go back to stock).
+fn resolve_loadout(
+    world: &World,
+    side: u8,
+    units: &[u32],
+    choice: &LoadoutChoice,
+) -> Result<Vec<(UnitId, Magazine)>, String> {
+    let rules = world.resource::<Rules>();
+    let db = &rules.db;
+    let mut members: Vec<UnitId> = pick_groups(world, side, units)?
+        .into_iter()
+        .flat_map(|p| p.members)
+        .collect();
+    members.sort();
+    members.dedup();
+    // Base -> weapon -> rounds drawn (negative: returned).
+    let mut net: BTreeMap<UnitId, BTreeMap<WeaponIx, i64>> = BTreeMap::new();
+    let mut out = Vec::new();
+    for m in members {
+        let e = entity(world, m).ok_or("Unknown unit")?;
+        let name = world.get::<Identity>(e).map_or("", |i| i.name.as_str());
+        let pix = world
+            .get::<PlatformRef>(e)
+            .ok_or_else(|| format!("{name} carries no weapons"))?
+            .0;
+        let p = rules.platform(pix);
+        let Some(Posture::AtBase { base, .. }) = world.get::<Posture>(e).copied() else {
+            return Err(match p.domain {
+                Domain::Air => format!("Loadout locked: {name} is airborne"),
+                Domain::Surface | Domain::Subsurface => format!("Loadout locked: {name} is at sea"),
+                Domain::Ground | Domain::Space => {
+                    format!("Loadout locked: {name} is not at a base")
+                }
+            });
+        };
+        let new = match choice {
+            LoadoutChoice::Template { id } => {
+                let lix = db
+                    .loadouts
+                    .iter()
+                    .position(|l| db.str(l.id) == id)
+                    .map(|i| LoadoutIx(i as u32))
+                    .ok_or_else(|| format!("Unknown loadout `{id}`"))?;
+                let lo = &db.loadouts[lix.0 as usize];
+                if lo.platform != pix {
+                    return Err(format!(
+                        "{} is not a loadout for the {}",
+                        db.str(lo.name),
+                        db.str(p.short_name)
+                    ));
+                }
+                db.check_loadout(pix, &lo.items)?;
+                bases::template_magazine(rules, lix)
+            }
+            LoadoutChoice::Custom { stations } => {
+                let items = stations
+                    .iter()
+                    .map(|s| {
+                        let station = p
+                            .stations
+                            .iter()
+                            .position(|st| db.str(st.id) == s.station)
+                            .ok_or_else(|| {
+                                format!(
+                                    "The {} has no station `{}`",
+                                    db.str(p.short_name),
+                                    s.station
+                                )
+                            })?;
+                        let weapon = db
+                            .weapons
+                            .iter()
+                            .position(|w| db.str(w.id) == s.weapon)
+                            .ok_or_else(|| format!("Unknown weapon `{}`", s.weapon))?;
+                        Ok(LoadoutItem {
+                            station: station as u32,
+                            weapon: WeaponIx(weapon as u32),
+                            count: s.count,
+                        })
+                    })
+                    .collect::<Result<Vec<_>, String>>()?;
+                db.check_loadout(pix, &items)?;
+                Magazine::full(None, items.iter().map(|i| (i.station, i.weapon, i.count)))
+            }
+        };
+        let old = world.get::<Magazine>(e).cloned().unwrap_or_default();
+        let be = entity(world, base).ok_or("Unknown base")?;
+        let site = world.get::<BaseSite>(be).ok_or("Unknown base")?;
+        let base_name = world.get::<Identity>(be).map_or("", |i| i.name.as_str());
+        let vls_changed = p.stations.iter().enumerate().any(|(i, st)| {
+            let on = |m: &Magazine, full: bool| -> Vec<(WeaponIx, u32)> {
+                m.stations
+                    .iter()
+                    .filter(|s| s.station == i as u32)
+                    .map(|s| (s.weapon, if full { s.full } else { s.count }))
+                    .filter(|(_, n)| *n > 0)
+                    .collect()
+            };
+            st.kind == StationKind::Vls && on(&old, false) != on(&new, true)
+        });
+        if vls_changed && !bases::vls_reload(rules, site.kind) {
+            return Err(format!(
+                "{base_name} cannot reload VLS cells; {name} needs a naval base"
+            ));
+        }
+        let n = net.entry(base).or_default();
+        for s in &old.stations {
+            *n.entry(s.weapon).or_default() -= i64::from(s.count);
+        }
+        for s in &new.stations {
+            *n.entry(s.weapon).or_default() += i64::from(s.full);
+        }
+        out.push((m, new));
+    }
+    for (base, weapons) in net {
+        let be = entity(world, base).ok_or("Unknown base")?;
+        let site = world.get::<BaseSite>(be).ok_or("Unknown base")?;
+        let base_name = world.get::<Identity>(be).map_or("", |i| i.name.as_str());
+        for (w, need) in weapons {
+            let have = i64::from(site.stock.get(&w).copied().unwrap_or(0));
+            if need > have {
+                return Err(format!(
+                    "Not enough {} at {base_name}: {need} needed, {have} in stock",
+                    db.str(db.weapons[w.0 as usize].name)
+                ));
+            }
+        }
+    }
+    Ok(out)
 }
 
 /// `[lon, lat]` degrees to a point, checking the ranges.
@@ -796,7 +974,66 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
                 );
             }
         }
+        Resolved::Loadout { units, template } => {
+            for (unit, mag) in units {
+                set_loadout(world, side, unit, mag, template.clone());
+            }
+        }
     }
+}
+
+/// Swaps a unit's magazine at its base: the old rounds go back to stock, the
+/// new ones are drawn from it, and a turnaround starts. A shortfall (another
+/// order drew the stock since this one was checked) is left to the rearm at
+/// the end of the turnaround, which reports it. A unit that left its base
+/// since the order was checked keeps its weapons.
+fn set_loadout(
+    world: &mut World,
+    side: u8,
+    unit: UnitId,
+    mut mag: Magazine,
+    template: Option<String>,
+) {
+    let rules = world.resource::<Rules>().clone();
+    let now = world.resource::<SimClock>().sim_time_ms;
+    let Some(e) = entity(world, unit) else {
+        return;
+    };
+    let Some(Posture::AtBase { base, .. }) = world.get::<Posture>(e).copied() else {
+        return;
+    };
+    let Some(be) = entity(world, base) else {
+        return;
+    };
+    let old = world.get::<Magazine>(e).cloned().unwrap_or_default();
+    {
+        let mut site = world.get_mut::<BaseSite>(be).expect("base");
+        for s in &old.stations {
+            bases::put_back(&mut site.stock, s.weapon, s.count);
+        }
+        for s in &mut mag.stations {
+            s.count = bases::draw(&mut site.stock, s.weapon, s.full);
+        }
+    }
+    let p = rules.platform(world.get::<PlatformRef>(e).expect("platform").0);
+    let ready_at_ms = now + (bases::turnaround_s(&rules, p) * 1_000.0) as u64;
+    world.entity_mut(e).insert((
+        mag,
+        Posture::AtBase {
+            base,
+            ready_at_ms,
+            ready: false,
+        },
+    ));
+    emit(
+        world,
+        side,
+        EventKind::LoadoutChanged {
+            unit,
+            base,
+            loadout: template,
+        },
+    );
 }
 
 /// The group entity the pick applies to: the group itself when it names

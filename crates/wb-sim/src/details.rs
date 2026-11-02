@@ -4,7 +4,8 @@
 
 use bevy_ecs::prelude::*;
 use serde::Serialize;
-use wb_content::source::SensorType;
+use wb_content::compiled::WeaponIx;
+use wb_content::source::{SensorType, StationKind};
 use wb_core::UnitId;
 use wb_core::geo::LatLon;
 use wb_core::units::rad_to_deg;
@@ -12,8 +13,8 @@ use wb_core::units::rad_to_deg;
 use crate::bases::kind_name;
 use crate::clock::SimClock;
 use crate::components::{
-    Allegiance, BaseRef, BaseSite, Fuel, Group, GroupMember, Identity, Kinematics, Magazine, Mode,
-    PlatformRef, Posture, Task,
+    Allegiance, BaseRef, BaseSite, Countermeasures, Fuel, Group, GroupMember, Identity, Kinematics,
+    Magazine, Mode, PlatformRef, Posture, Task,
 };
 use crate::rules::Rules;
 use crate::view::status;
@@ -166,6 +167,19 @@ pub struct WeaponCount {
     pub count: u32,
 }
 
+/// One weapon on one station of the lead (doc 03 §6).
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct StationView {
+    /// Content station id, e.g. `bay_l_in`.
+    pub station: String,
+    /// `internal`, `external`, `vls` or `launcher`.
+    pub kind: String,
+    pub weapon: String,
+    pub count: u32,
+    pub full: u32,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 pub struct GroupDetails {
@@ -194,8 +208,14 @@ pub struct GroupDetails {
     pub home_base: Option<BaseBrief>,
     pub ranges: Ranges,
     pub members: Vec<MemberView>,
+    /// Template name; none for a custom or system magazine.
     pub loadout: Option<String>,
+    /// Rounds left per weapon, lead.
     pub weapons: Vec<WeaponCount>,
+    /// Lead's stations.
+    pub stations: Vec<StationView>,
+    /// Chaff and flares left, lead.
+    pub countermeasures: Vec<WeaponCount>,
     /// Provenance confidence of the platform's data.
     pub confidence: String,
     /// Emission control of the lead: `on`, `off` or `blink` (none without radars).
@@ -231,6 +251,8 @@ pub struct BaseDetails {
     pub active: bool,
     pub active_in_s: f64,
     pub stationed: Vec<StationedView>,
+    /// Munitions in store, by weapon.
+    pub stock: Vec<WeaponCount>,
 }
 
 fn brief(world: &World, id: UnitId) -> Option<BaseBrief> {
@@ -373,17 +395,46 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
         })
         .max_by(|a, b| a.total_cmp(b));
     let mag = world.get::<Magazine>(lead);
-    let engage_m = mag
-        .into_iter()
-        .flat_map(|m| m.rounds.iter())
+    let rounds = mag.map(Magazine::rounds).unwrap_or_default();
+    let engage_m = rounds
+        .iter()
         .filter(|(_, n)| *n > 0)
         .map(|(w, _)| db.weapons[w.0 as usize].profile.max_range_m)
         .max_by(|a, b| a.total_cmp(b));
-    let weapons = mag
-        .into_iter()
-        .flat_map(|m| m.rounds.iter())
+    let weapon_name = |w: WeaponIx| db.str(db.weapons[w.0 as usize].name).to_owned();
+    let weapons = rounds
+        .iter()
         .map(|(w, n)| WeaponCount {
-            name: db.str(db.weapons[w.0 as usize].name).to_owned(),
+            name: weapon_name(*w),
+            count: *n,
+        })
+        .collect();
+    let stations = mag
+        .into_iter()
+        .flat_map(|m| m.stations.iter())
+        .filter_map(|s| {
+            let st = p.stations.get(s.station as usize)?;
+            Some(StationView {
+                station: db.str(st.id).to_owned(),
+                kind: match st.kind {
+                    StationKind::Internal => "internal",
+                    StationKind::External => "external",
+                    StationKind::Vls => "vls",
+                    StationKind::Launcher => "launcher",
+                }
+                .to_owned(),
+                weapon: weapon_name(s.weapon),
+                count: s.count,
+                full: s.full,
+            })
+        })
+        .collect();
+    let countermeasures = world
+        .get::<Countermeasures>(lead)
+        .into_iter()
+        .flat_map(|c| c.0.iter())
+        .map(|(c, _, n)| WeaponCount {
+            name: db.str(db.countermeasures[c.0 as usize].name).to_owned(),
             count: *n,
         })
         .collect();
@@ -432,6 +483,8 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
         loadout: mag
             .and_then(|m| m.loadout)
             .map(|l| db.str(db.loadouts[l.0 as usize].name).to_owned()),
+        stations,
+        countermeasures,
         weapons,
         confidence: format!("{:?}", p.provenance.confidence).to_lowercase(),
         emcon: world
@@ -608,5 +661,13 @@ fn base(world: &World, id: UnitId, e: Entity) -> BaseDetails {
         active: b.active,
         active_in_s: b.active_at_ms.saturating_sub(now) as f64 / 1_000.0,
         stationed,
+        stock: b
+            .stock
+            .iter()
+            .map(|(w, n)| WeaponCount {
+                name: rules.db.str(rules.db.weapons[w.0 as usize].name).to_owned(),
+                count: *n,
+            })
+            .collect(),
     }
 }

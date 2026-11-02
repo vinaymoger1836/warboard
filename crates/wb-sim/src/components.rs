@@ -90,7 +90,10 @@ pub struct Magazine {
 impl Magazine {
     /// A full magazine from `(station, weapon, count)` items; entries for the
     /// same station and weapon merge.
-    pub fn full(loadout: Option<LoadoutIx>, items: impl IntoIterator<Item = (u32, WeaponIx, u32)>) -> Self {
+    pub fn full(
+        loadout: Option<LoadoutIx>,
+        items: impl IntoIterator<Item = (u32, WeaponIx, u32)>,
+    ) -> Self {
         let mut stations: Vec<StationLoad> = Vec::new();
         for (station, weapon, n) in items {
             match stations
@@ -140,8 +143,14 @@ pub struct Countermeasures(pub Vec<(CountermeasureIx, u32, u32)>);
 
 impl Countermeasures {
     pub fn full(p: &wb_content::compiled::Platform) -> Option<Self> {
-        (!p.countermeasures.is_empty())
-            .then(|| Self(p.countermeasures.iter().map(|(c, n)| (*c, *n, *n)).collect()))
+        (!p.countermeasures.is_empty()).then(|| {
+            Self(
+                p.countermeasures
+                    .iter()
+                    .map(|(c, n)| (*c, *n, *n))
+                    .collect(),
+            )
+        })
     }
 
     pub fn refill(&mut self) {

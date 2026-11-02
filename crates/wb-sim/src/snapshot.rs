@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::clock::{EngagementState, RngSeed, SimClock};
 use crate::components::{
-    Allegiance, BaseRef, BaseSite, EmconState, Fuel, Group, GroupMember, Identity, Kinematics,
-    Magazine, PlatformRef, Posture, SatelliteState, ScriptedTarget, Steer, TankerState,
+    Allegiance, BaseRef, BaseSite, Countermeasures, EmconState, Fuel, Group, GroupMember, Identity,
+    Kinematics, Magazine, PlatformRef, Posture, SatelliteState, ScriptedTarget, Steer, TankerState,
 };
 use crate::events::EventLog;
 use crate::orders::{OrderLog, OrderQueue};
@@ -22,7 +22,7 @@ use crate::world::{ForceFineTick, Sides, UnitIdAlloc, UnitIndex};
 
 const MAGIC: &[u8; 8] = b"WB-STATE";
 /// Bump when the snapshot layout changes: every hash changes with it.
-pub const FORMAT_VERSION: u8 = 3;
+pub const FORMAT_VERSION: u8 = 4;
 
 /// All components of one unit, group or base.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -33,6 +33,7 @@ pub struct UnitRecord {
     pub platform: Option<PlatformRef>,
     pub fuel: Option<Fuel>,
     pub magazine: Option<Magazine>,
+    pub countermeasures: Option<Countermeasures>,
     pub member: Option<GroupMember>,
     pub base_ref: Option<BaseRef>,
     pub posture: Option<Posture>,
@@ -72,6 +73,7 @@ pub fn capture(world: &World) -> Snapshot {
                 platform: world.get::<PlatformRef>(e).copied(),
                 fuel: world.get::<Fuel>(e).copied(),
                 magazine: world.get::<Magazine>(e).cloned(),
+                countermeasures: world.get::<Countermeasures>(e).cloned(),
                 member: world.get::<GroupMember>(e).copied(),
                 base_ref: world.get::<BaseRef>(e).copied(),
                 posture: world.get::<Posture>(e).copied(),
@@ -144,6 +146,9 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
             e.insert(c);
         }
         if let Some(c) = u.magazine {
+            e.insert(c);
+        }
+        if let Some(c) = u.countermeasures {
             e.insert(c);
         }
         if let Some(c) = u.member {

@@ -16,7 +16,7 @@ use bevy_ecs::prelude::Resource;
 use bevy_ecs::world::World;
 use core::f64::consts::TAU;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use wb_content::compiled::{CountryIx, LoadoutIx, PlatformIx, WeaponIx};
 use wb_content::source::Emcon;
 use wb_core::geo::{LatLon, destination_point, normalize_bearing};
@@ -131,7 +131,7 @@ pub struct SideSpec {
 #[serde(deny_unknown_fields)]
 pub struct BaseStockSpec {
     pub base: String,
-    pub munitions: std::collections::BTreeMap<String, u32>,
+    pub munitions: BTreeMap<String, u32>,
 }
 
 /// A bare unit (P0: position only) or a group of platforms. A group with id
@@ -836,7 +836,7 @@ fn set_stock(world: &mut World, rules: &Rules, spec: &BaseStockSpec) -> Result<(
                 .is_some_and(|ix| rules.db.str(rules.db.bases[ix.0 as usize].id) == spec.base)
         })
         .ok_or_else(|| bad("not a base in this war".into()))?;
-    let mut stock = std::collections::BTreeMap::new();
+    let mut stock = BTreeMap::new();
     for (wid, n) in &spec.munitions {
         let wix = rules
             .db
