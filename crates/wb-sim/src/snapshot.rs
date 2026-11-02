@@ -10,7 +10,7 @@ use crate::clock::{EngagementState, RngSeed, SimClock};
 use crate::components::{
     Allegiance, BaseRef, BaseSite, Countermeasures, EmconState, Fuel, Group, GroupMember, Identity,
     Kinematics, Magazine, PlatformRef, Posture, SatelliteState, ScriptedTarget, Steer, TankerState,
-    WeaponFlight,
+    WeaponFlight, Health, RoeSetting,
 };
 use crate::events::EventLog;
 use crate::orders::{OrderLog, OrderQueue};
@@ -46,6 +46,8 @@ pub struct UnitRecord {
     pub satellite: Option<SatelliteState>,
     pub scripted: Option<ScriptedTarget>,
     pub weapon: Option<WeaponFlight>,
+    pub health: Option<Health>,
+    pub roe: Option<RoeSetting>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -88,6 +90,8 @@ pub fn capture(world: &World) -> Snapshot {
                 satellite: world.get::<SatelliteState>(e).cloned(),
                 scripted: world.get::<ScriptedTarget>(e).copied(),
                 weapon: world.get::<WeaponFlight>(e).cloned(),
+                health: world.get::<Health>(e).cloned(),
+                roe: world.get::<RoeSetting>(e).copied(),
             })
         })
         .collect();
@@ -187,6 +191,12 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
             e.insert(c);
         }
         if let Some(c) = u.weapon {
+            e.insert(c);
+        }
+        if let Some(c) = u.health {
+            e.insert(c);
+        }
+        if let Some(c) = u.roe {
             e.insert(c);
         }
         let ent = e.id();

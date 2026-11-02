@@ -260,7 +260,15 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
             type_ref,
             platform,
             stores_mult: p.map_or(1.0, |p| stores_mult(p, world.get::<Magazine>(e))),
-            emcon: world.get::<EmconState>(e).map_or(Emcon::On, |x| x.0),
+            // A knocked-out radar is silent and blind (doc 02 §13).
+            emcon: if world
+                .get::<crate::components::Health>(e)
+                .is_some_and(|h| h.has_out(wb_content::source::realism::Subsystem::Radar))
+            {
+                Emcon::Off
+            } else {
+                world.get::<EmconState>(e).map_or(Emcon::On, |x| x.0)
+            },
             fixed: sys.is_some_and(|s| {
                 rules.db.systems[s.0 as usize].deploy_as
                     == wb_content::source::system::DeployAs::Site
