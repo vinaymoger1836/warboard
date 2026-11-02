@@ -18,7 +18,7 @@ use wb_core::geo::{LatLon, destination_point};
 use wb_core::units::deg_to_rad;
 use wb_sim::components::{Magazine, StationLoad};
 use wb_sim::events::Outcome;
-use wb_sim::weapons::{Aim, Launch, launch};
+use wb_sim::weapons::{Aim, Launch, LaunchReason, launch};
 use wb_sim::world::entity;
 use wb_sim::{EventKind, Rules, Sim};
 
@@ -117,6 +117,7 @@ fn setup(db: &Arc<wb_content::ContentDb>, hash: [u8; 32], wix: WeaponIx, range_m
             weapon: wix,
             aim,
             salvo: None,
+            reason: LaunchReason::Test,
         },
     )
     .expect("launches");
@@ -146,8 +147,9 @@ fn outcome(sim: &mut Sim) -> (Outcome, f64) {
     panic!("weapon still flying after 40000 ticks");
 }
 
+/// The weapon reached its target (whatever the endgame roll said).
 fn fuzed(o: Outcome) -> bool {
-    matches!(o, Outcome::Hit | Outcome::Miss)
+    matches!(o, Outcome::Hit | Outcome::Miss | Outcome::Decoyed)
 }
 
 fn weapons(db: &wb_content::ContentDb) -> Vec<WeaponIx> {
