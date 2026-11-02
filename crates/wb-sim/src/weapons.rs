@@ -37,6 +37,7 @@
 
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use wb_content::compiled::{Weapon, WeaponIx};
 use wb_content::source::weapon::ProfileKind;
 use wb_content::source::{Domain, Seeker, SensorType};
@@ -50,7 +51,7 @@ use crate::components::{
     AimPoint, Allegiance, EmconState, FlightPhase, GroupMember, Identity, Kinematics, Magazine,
     PlatformRef, Posture, SeekerState, WeaponFlight, WeaponTarget,
 };
-use crate::events::{AimRef, EventKind, Factors, Outcome, emit};
+use crate::events::{AimRef, Endgame, EventKind, Factors, Outcome, emit};
 use crate::picture::{Quality, SidePictures};
 use crate::rules::{G0, Rules};
 use crate::world::{UnitIdAlloc, UnitIndex, entity, spawn_unit};
@@ -72,6 +73,34 @@ pub struct Combat {
     pub next_salvo: u32,
     /// Next `M-n` / `INT-n` number per side.
     pub next_tag: Vec<u32>,
+    /// When a side's last weapon at a contact ended (shoot-look-shoot).
+    pub last_end: BTreeMap<(u8, ContactId), u64>,
+    /// When a contact last launched at a side's forces (Bravo return fire).
+    pub hostile_acts: BTreeMap<(u8, ContactId), u64>,
+    /// Whether a side last saw a hostile contact inside its territory.
+    pub inside: BTreeMap<(u8, ContactId), bool>,
+}
+
+/// Why a weapon was fired: the launch event and the golden checks read it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(rename_all = "snake_case")]
+pub enum LaunchReason {
+    /// Engine tests and calibration.
+    #[default]
+    Test,
+    /// Self-defence against an incoming weapon (ADR-031).
+    SelfDefence,
+    /// The target of an Intercept or Strike order (ADR-029).
+    Ordered,
+    /// Allowed by ROE Alpha.
+    WeaponsFree,
+    /// ROE Bravo: the target is inside own territory.
+    Territory,
+    /// ROE Bravo: the target launched at our forces.
+    ReturnFire,
+    /// An approved request (doc 03 §7).
+    Approved,
 }
 
 impl Combat {
@@ -110,6 +139,7 @@ pub struct Launch {
     pub aim: Aim,
     /// Salvo to join; a new one if `None`.
     pub salvo: Option<u32>,
+    pub reason: LaunchReason,
 }
 
 /// Launches a weapon: takes a round from the shooter's magazine, spawns the
@@ -227,6 +257,19 @@ pub fn launch(world: &mut World, l: &Launch) -> Result<UnitId, String> {
         Mode::Hold | Mode::Glide => 0.0,
     };
 
+    // The side fired at, and whether the target is itself a weapon.
+    let victim = match target {
+        WeaponTarget::Track { key, .. } | WeaponTarget::Truth(key) => entity(world, key),
+        WeaponTarget::Point { .. } => None,
+    };
+    let victim_side = victim.and_then(|e| world.get::<Allegiance>(e).map(|a| a.side));
+    let intercept = victim.is_some_and(|e| world.get::<WeaponFlight>(e).is_some())
+        || matches!(l.aim, Aim::Contact(id) if world.resource::<SidePictures>().sides
+            .get(usize::from(alg.side))
+            .and_then(|p| p.get(id))
+            .is_some_and(|c| matches!(c.type_ref, crate::picture::TypeRef::Weapon(_))
+                && c.level >= wb_content::source::realism::ContactLevel::Class));
+
     let id = world.resource_mut::<UnitIdAlloc>().take();
     let (salvo, tag) = {
         let mut c = world.resource_mut::<Combat>();
@@ -234,6 +277,30 @@ pub fn launch(world: &mut World, l: &Launch) -> Result<UnitId, String> {
         c.in_flight += 1;
         (salvo, c.new_tag(alg.side))
     };
+    // A launch at a side's forces whose picture holds the shooter is a
+    // hostile act against that side (ROE Bravo return fire).
+    if let Some(vs) = victim_side.filter(|s| *s != alg.side) {
+        let key = world.get::<GroupMember>(se).map_or(l.shooter, |m| m.group);
+        let seen = world
+            .resource::<SidePictures>()
+            .sides
+            .get(usize::from(vs))
+            .and_then(|p| p.by_truth.get(&key).copied());
+        if let Some(c) = seen {
+            world
+                .resource_mut::<Combat>()
+                .hostile_acts
+                .insert((vs, c), now);
+            emit(
+                world,
+                vs,
+                EventKind::AutoSlow {
+                    reason: format!("C{} launched at our forces", c.0),
+                    cause: crate::events::SlowCause::LaunchAgainstUs,
+                },
+            );
+        }
+    }
     world.get_mut::<Magazine>(se).expect("magazine").stations[station].count -= 1;
     spawn_unit(
         world,
@@ -272,6 +339,9 @@ pub fn launch(world: &mut World, l: &Launch) -> Result<UnitId, String> {
                 vmax_mps: vmax,
                 flown_m: 0.0,
                 manoeuvre_loss_mps: 0.0,
+                intercept,
+                cm_used: Vec::new(),
+                target_aware: false,
             },
         ),
     );
@@ -285,6 +355,8 @@ pub fn launch(world: &mut World, l: &Launch) -> Result<UnitId, String> {
             salvo,
             tag,
             target: aim_ref,
+            reason: l.reason,
+            intercept,
         },
     );
     Ok(id)
@@ -497,9 +569,14 @@ pub fn fly(world: &mut World) {
         .filter(|(_, e)| world.get::<WeaponFlight>(**e).is_some())
         .map(|(u, e)| (*u, *e))
         .collect();
+    let seed = world.resource::<crate::clock::RngSeed>().0;
     let mut cands: Option<Vec<Candidate>> = None;
     for (id, e) in weapons {
-        let mut f = world.get::<WeaponFlight>(e).expect("weapon").clone();
+        // Intercepted earlier this tick.
+        let Some(mut f) = world.get::<WeaponFlight>(e).cloned() else {
+            continue;
+        };
+        crate::endgame::react(world, &rules, clock.sim_time_ms, id, &mut f);
         let k = *world.get::<Kinematics>(e).expect("kinematics");
         let side = world.get::<Allegiance>(e).map_or(0, |a| a.side);
         let w = &rules.db.weapons[f.weapon.0 as usize];
@@ -511,15 +588,61 @@ pub fn fly(world: &mut World) {
                 *world.get_mut::<Kinematics>(e).expect("kinematics") = k2;
                 *world.get_mut::<WeaponFlight>(e).expect("weapon") = f;
             }
-            Err((outcome, k2, miss)) => {
-                terminate(world, &rules, &clock, id, side, w, &f, &k2, outcome, miss);
+            Err((End::Plain(outcome), k2)) => {
+                terminate(world, &rules, &clock, id, side, &f, &k2, outcome, None, None);
+            }
+            Err((End::Fuzed { target, miss }, k2)) => {
+                let (outcome, eg, burst) = crate::endgame::resolve(
+                    world, &rules, seed, clock.tick, id, &f, &k2, target,
+                );
+                terminate(
+                    world,
+                    &rules,
+                    &clock,
+                    id,
+                    side,
+                    &f,
+                    &k2,
+                    outcome,
+                    Some(miss),
+                    Some(eg),
+                );
+                match (outcome, target, f.target) {
+                    (Outcome::Hit, Some(t), _) => crate::damage::hit(world, &rules, seed, id, w, t),
+                    (_, _, WeaponTarget::Point { .. }) => {
+                        crate::damage::burst(world, &rules, seed, id, w, burst);
+                    }
+                    _ => {}
+                }
             }
         }
     }
 }
 
-/// End of a flight: why, and the kinematics and miss distance at the end.
-type Ended = (Outcome, Kinematics, Option<f64>);
+/// How a flight ended.
+enum End {
+    Plain(Outcome),
+    /// The fuze fired at the closest approach to `target` (none: a point).
+    Fuzed { target: Option<UnitId>, miss: f64 },
+}
+
+/// End of a flight and the kinematics at the end.
+type Ended = (End, Kinematics);
+
+/// Ends a weapon's flight from outside the weapons stage (an interceptor hit
+/// it).
+pub fn end_flight(world: &mut World, rules: &Rules, id: UnitId, outcome: Outcome) {
+    let Some(e) = entity(world, id) else { return };
+    let (Some(f), Some(k)) = (
+        world.get::<WeaponFlight>(e).cloned(),
+        world.get::<Kinematics>(e).copied(),
+    ) else {
+        return;
+    };
+    let side = world.get::<Allegiance>(e).map_or(0, |a| a.side);
+    let clock = world.resource::<SimClock>().clone();
+    terminate(world, rules, &clock, id, side, &f, &k, outcome, None, None);
+}
 
 #[allow(clippy::too_many_arguments)]
 fn step(
@@ -546,7 +669,7 @@ fn step(
             WeaponTarget::Track { contact, .. } => {
                 let tracked = shooter_track(world, side, f.shooter, contact, now, 2 * update_ms);
                 if needs_track(seeker) && tracked.is_none() {
-                    return Err((Outcome::LostTrack, k, None));
+                    return Err((End::Plain(Outcome::LostTrack), k));
                 }
                 if let Some(aim) = tracked.or_else(|| {
                     w.engage_on_remote
@@ -560,7 +683,9 @@ fn step(
             WeaponTarget::Truth(u) => {
                 match entity(world, u).and_then(|e| world.get::<Kinematics>(e)) {
                     Some(tk) => f.aim = truth_aim(tk, now),
-                    None if needs_track(seeker) => return Err((Outcome::LostTrack, k, None)),
+                    None if needs_track(seeker) => {
+                        return Err((End::Plain(Outcome::LostTrack), k));
+                    }
                     None => {}
                 }
             }
@@ -633,7 +758,7 @@ fn step(
                     if lost.is_some_and(|t| {
                         now.saturating_sub(t) as f64 / 1_000.0 >= wr.self_destruct_after_lost_s
                     }) {
-                        return Err((Outcome::SelfDestruct, k, None));
+                        return Err((End::Plain(Outcome::SelfDestruct), k));
                     }
                     f.seeker = SeekerState::Searching { lost_ms: lost };
                 }
@@ -838,21 +963,17 @@ fn step(
         });
         let gate = wr.fuze_radius_m.max(lethal_radius_m(rules, w));
         if t_star < dt && miss <= gate {
-            let miss = match (locked, f.target) {
-                (None, WeaponTarget::Track { key, .. }) if !locks(seeker) => {
-                    key_miss(world, key, pos, alt).unwrap_or(f64::INFINITY)
+            let (target, miss) = match (f.seeker, f.target) {
+                (SeekerState::Locked { unit, .. }, _) => (Some(unit), miss),
+                (_, WeaponTarget::Track { key, .. } | WeaponTarget::Truth(key)) => {
+                    match key_miss(world, key, pos, alt) {
+                        Some((u, d)) => (Some(u), d),
+                        None => (None, miss),
+                    }
                 }
-                (None, WeaponTarget::Truth(t)) if !locks(seeker) => {
-                    key_miss(world, t, pos, alt).unwrap_or(f64::INFINITY)
-                }
-                _ => miss,
+                (_, WeaponTarget::Point { .. }) => (None, miss),
             };
-            let hit = miss <= lethal_radius_m(rules, w);
-            return Err((
-                if hit { Outcome::Hit } else { Outcome::Miss },
-                k2,
-                Some(miss),
-            ));
+            return Err((End::Fuzed { target, miss }, k2));
         }
     }
 
@@ -867,7 +988,7 @@ fn step(
         ProfileKind::Glide => alt <= aim_alt,
     };
     if spent || alt < 0.0 || tof > MAX_FLIGHT_S {
-        return Err((Outcome::OutOfEnergy, k2, None));
+        return Err((End::Plain(Outcome::OutOfEnergy), k2));
     }
     Ok(k2)
 }
@@ -919,8 +1040,8 @@ fn acquire(
     best.map(|b| b.2)
 }
 
-/// Distance from a burst point to the nearest member of a truth key.
-fn key_miss(world: &World, key: UnitId, at: LatLon, alt: f64) -> Option<f64> {
+/// The member of a truth key nearest a burst point, and its distance.
+fn key_miss(world: &World, key: UnitId, at: LatLon, alt: f64) -> Option<(UnitId, f64)> {
     let e = entity(world, key)?;
     let members = match world.get::<crate::components::Group>(e) {
         Some(g) => g.members.clone(),
@@ -928,9 +1049,11 @@ fn key_miss(world: &World, key: UnitId, at: LatLon, alt: f64) -> Option<f64> {
     };
     members
         .iter()
-        .filter_map(|m| entity(world, *m).and_then(|e| world.get::<Kinematics>(e)))
-        .map(|tk| norm(to_enu(at, alt, tk.pos(), tk.alt_m)))
-        .min_by(f64::total_cmp)
+        .filter_map(|m| {
+            let tk = entity(world, *m).and_then(|e| world.get::<Kinematics>(e))?;
+            Some((*m, norm(to_enu(at, alt, tk.pos(), tk.alt_m))))
+        })
+        .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)))
 }
 
 /// The side's estimate of a contact when the shooter itself holds a fresh
@@ -981,18 +1104,36 @@ fn terminate(
     clock: &SimClock,
     id: UnitId,
     side: u8,
-    w: &Weapon,
     f: &WeaponFlight,
     k: &Kinematics,
     outcome: Outcome,
     miss: Option<f64>,
+    endgame: Option<Endgame>,
 ) {
+    let w = &rules.db.weapons[f.weapon.0 as usize];
     let factors = Factors {
         speed_mps: k.speed_mps,
         time_of_flight_s: clock.end_ms().saturating_sub(f.launch_ms) as f64 / 1_000.0,
         launch_range_m: f.launch_range_m,
         flown_m: f.flown_m,
         miss_distance_m: miss,
+        target_aware: f.target_aware,
+        cm_used: f.cm_used.iter().map(|c| c.1).sum(),
+        endgame,
+    };
+    let target = match f.target {
+        WeaponTarget::Track { contact, .. } => {
+            world
+                .resource_mut::<Combat>()
+                .last_end
+                .insert((side, contact), clock.end_ms());
+            Some(AimRef::Contact { contact })
+        }
+        WeaponTarget::Point { at, .. } => Some(AimRef::Point {
+            lat_deg: at.lat_deg(),
+            lon_deg: at.lon_deg(),
+        }),
+        WeaponTarget::Truth(_) => None,
     };
     if let Some(e) = entity(world, id) {
         world.despawn(e);
@@ -1011,6 +1152,7 @@ fn terminate(
             shooter: f.shooter,
             weapon_type: rules.db.str(w.id).to_owned(),
             tag: f.tag,
+            target,
             outcome,
             factors,
         },

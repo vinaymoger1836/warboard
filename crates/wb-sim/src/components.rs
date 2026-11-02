@@ -13,7 +13,8 @@ use wb_content::compiled::{
     BaseIx, CountermeasureIx, CountryIx, LoadoutIx, PlatformIx, SystemIx, WeaponIx,
 };
 use wb_content::source::Emcon;
-use wb_content::source::realism::BaseKind;
+use wb_content::source::realism::{BaseComponentKind, BaseKind, Subsystem};
+use wb_content::source::world::LaunchDoctrine;
 use wb_core::geo::LatLon;
 use wb_core::{ContactId, UnitId};
 
@@ -251,6 +252,35 @@ pub enum Task {
     Transfer {
         base: UnitId,
     },
+    /// Chase a contact's estimate at max speed and engage it (pre-approved,
+    /// ADR-029).
+    Intercept {
+        contact: ContactId,
+    },
+    /// Combat air patrol: a patrol circle that engages hostiles inside the
+    /// commit range of its centre.
+    Cap {
+        centre: LatLon,
+        radius_m: f64,
+        commit_m: f64,
+        alt_m: Option<f64>,
+    },
+    /// Close to launch range of a contact or point and fire (pre-approved,
+    /// ADR-029); `weapon` and `count` narrow the shot. Home once fired.
+    Strike {
+        target: StrikeTarget,
+        weapon: Option<WeaponIx>,
+        count: Option<u32>,
+        /// Rounds fired so far.
+        fired: u32,
+    },
+}
+
+/// What a strike is aimed at.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum StrikeTarget {
+    Contact(ContactId),
+    Point(LatLon),
 }
 
 impl Task {
@@ -262,6 +292,9 @@ impl Task {
                 | Task::PatrolCircle { .. }
                 | Task::PatrolRoute { .. }
                 | Task::TankerTrack { .. }
+                | Task::Intercept { .. }
+                | Task::Cap { .. }
+                | Task::Strike { .. }
         )
     }
 
@@ -275,6 +308,9 @@ impl Task {
             Task::Land { .. } => "land",
             Task::TankerTrack { .. } => "tanker_track",
             Task::Transfer { .. } => "transfer",
+            Task::Intercept { .. } => "intercept",
+            Task::Cap { .. } => "cap",
+            Task::Strike { .. } => "strike",
         }
     }
 }
@@ -288,6 +324,8 @@ pub enum ReturnWhy {
     Bingo,
     Winchester,
     Transfer,
+    /// A member was damaged: the mission is aborted (doc 02 §13).
+    Damaged,
 }
 
 /// What a group is doing right now, on top of its task.
@@ -315,6 +353,18 @@ pub enum Mode {
     },
 }
 
+/// What an aware aircraft does about a weapon coming at it (doc 03 §5).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(rename_all = "snake_case")]
+pub enum ThreatReaction {
+    /// Hold course; countermeasures only.
+    None,
+    /// Turn to put the weapon on the beam, then chaff and flares.
+    #[default]
+    Beam,
+}
+
 /// Standing behaviours (doc 03 §5).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Behaviour {
@@ -322,6 +372,7 @@ pub struct Behaviour {
     pub winchester_rtb: bool,
     /// After a bingo or winchester return, turn around and resume the task.
     pub resume_after_turnaround: bool,
+    pub threat_reaction: ThreatReaction,
 }
 
 impl Default for Behaviour {
@@ -330,8 +381,26 @@ impl Default for Behaviour {
             bingo_rtb: true,
             winchester_rtb: true,
             resume_after_turnaround: true,
+            threat_reaction: ThreatReaction::Beam,
         }
     }
+}
+
+/// An aware group turning away from a weapon until `until_ms` (set by the
+/// weapons stage, read by the tasks stage).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Evade {
+    pub heading: f64,
+    pub until_ms: u64,
+}
+
+/// Launch doctrine of a group, overriding its country's (doc 03 §5).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DoctrineOverride {
+    pub launch: Option<LaunchDoctrine>,
+    pub shots_per_target: Option<u32>,
+    /// Rounds fired together at one target (a strike salvo).
+    pub salvo: Option<u32>,
 }
 
 /// A group (flight, ship, squadron): carries the task; its members keep
@@ -349,6 +418,8 @@ pub struct Group {
     pub behaviour: Behaviour,
     /// The composite system (S-400 battalion) the group was deployed as.
     pub system: Option<SystemIx>,
+    pub evade: Option<Evade>,
+    pub doctrine: DoctrineOverride,
 }
 
 impl Group {
@@ -377,6 +448,52 @@ pub struct BaseSite {
     pub stationed: Vec<UnitId>,
     /// Munitions in store (not on aircraft or ships), by weapon.
     pub stock: BTreeMap<WeaponIx, u32>,
+    /// Damaged components and when their repair ends, ms (doc 02 §13).
+    pub damaged: BTreeMap<BaseComponentKind, u64>,
+}
+
+impl BaseSite {
+    pub fn runway_cut(&self) -> bool {
+        self.damaged.contains_key(&BaseComponentKind::Runway)
+    }
+}
+
+/// Rules of engagement (doc 03 §7).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(rename_all = "snake_case")]
+pub enum Roe {
+    /// Weapons free.
+    Alpha,
+    /// Weapons tight: own territory and return fire.
+    Bravo,
+    /// Weapons hold: self-defence only; everything else needs approval.
+    Charlie,
+}
+
+/// ROE override on a group or a unit; `None` inherits (unit → group → side).
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RoeSetting {
+    pub roe: Option<Roe>,
+    pub self_defence: Option<bool>,
+}
+
+/// Damage state of a platform (doc 02 §13): damage points for ships and
+/// ground units, `damaged` for aircraft, knocked-out ship subsystems, and
+/// when a ship sinks.
+#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Health {
+    pub points: f64,
+    pub max: f64,
+    pub damaged: bool,
+    pub out: Vec<Subsystem>,
+    pub sink_at_ms: Option<u64>,
+}
+
+impl Health {
+    pub fn has_out(&self, s: Subsystem) -> bool {
+        self.out.contains(&s)
+    }
 }
 
 /// Emission control of a platform's radars (doc 02 §9, doc 03 §5 sites).
@@ -483,4 +600,11 @@ pub struct WeaponFlight {
     pub flown_m: f64,
     /// Speed lost to manoeuvring so far, m/s.
     pub manoeuvre_loss_mps: f64,
+    /// Fired at a weapon (an interceptor, `INT-n`).
+    pub intercept: bool,
+    /// Countermeasure rounds the target dispensed against this weapon.
+    pub cm_used: Vec<(CountermeasureIx, u32)>,
+    /// The target knew of the weapon (picture or warning receiver) at some
+    /// point in its flight.
+    pub target_aware: bool,
 }

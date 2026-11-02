@@ -1089,7 +1089,7 @@ fn split(world: &mut World, side: u8, pick: &GroupPick) -> Option<Entity> {
     ))
 }
 
-fn reslot(world: &mut World, group: UnitId, members: &[UnitId]) {
+pub(crate) fn reslot(world: &mut World, group: UnitId, members: &[UnitId]) {
     for (slot, m) in members.iter().enumerate() {
         if let Some(e) = entity(world, *m)
             && let Some(mut gm) = world.get_mut::<GroupMember>(e)

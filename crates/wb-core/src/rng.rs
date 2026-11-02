@@ -25,6 +25,16 @@ pub enum RngPurpose {
     CountEstimate = 7,
     /// Satellite collection.
     Satellite = 8,
+    /// Endgame hit roll of a weapon (doc 02 §11).
+    Endgame = 9,
+    /// Kill or damage of a hit unit or base component (doc 02 §13).
+    Damage = 10,
+    /// Radial miss of a CEP weapon.
+    Cep = 11,
+    /// Where a hit lands on a ship or base.
+    HitLocation = 12,
+    /// Countermeasure release (reserved; releases are deterministic in P5).
+    Countermeasure = 13,
 }
 
 const GOLDEN: u64 = 0x9E37_79B9_7F4A_7C15;

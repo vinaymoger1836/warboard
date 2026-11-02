@@ -13,9 +13,11 @@ use wb_core::math::atan;
 use crate::bases::{self, BaseInfo};
 use crate::clock::SimClock;
 use crate::components::{
-    Allegiance, BaseRef, BaseSite, Fuel, Group, GroupMember, Identity, Kinematics, Magazine, Mode,
-    PlatformRef, Posture, ReturnWhy, Speed, Steer, TankerState, Task,
+    Allegiance, BaseRef, BaseSite, Fuel, Group, GroupMember, Health, Identity, Kinematics,
+    Magazine, Mode, PlatformRef, Posture, ReturnWhy, Speed, Steer, StrikeTarget, TankerState,
+    Task,
 };
+use wb_content::source::realism::Subsystem;
 use crate::events::{EventKind, emit};
 use crate::fuel;
 use crate::orders;
@@ -86,6 +88,9 @@ fn step(world: &mut World, ctx: &Ctx, side: u8, gid: UnitId, g: &mut Group) {
     if let Mode::AtBase { base } = g.mode {
         let go = g.launch || (g.task.is_sortie() && g.behaviour.resume_after_turnaround);
         if !go || !orders::all_ready(world, &g.members) {
+            return;
+        }
+        if air && bases.iter().any(|b| b.id == base && b.runway_cut) {
             return;
         }
         take_off(world, side, base, &g.members);
@@ -166,7 +171,28 @@ fn step(world: &mut World, ctx: &Ctx, side: u8, gid: UnitId, g: &mut Group) {
     let Some(k) = world.get::<Kinematics>(le).copied() else {
         return;
     };
-    let steer = match g.mode {
+    // A base that can no longer take the group (runway cut): divert to the
+    // nearest suitable one.
+    if let Mode::Return { base, why } = g.mode
+        && due
+        && bases
+            .iter()
+            .find(|b| b.id == base)
+            .is_some_and(|b| bases::suitable(rules, b, lp).is_err())
+        && let Some(alt) = bases::nearest_suitable(rules, bases, side, lp, k.pos(), None)
+    {
+        g.mode = Mode::Return { base: alt.id, why };
+        emit(
+            world,
+            side,
+            EventKind::Return {
+                group: gid,
+                base: alt.id,
+                why,
+            },
+        );
+    }
+    let mut steer = match g.mode {
         Mode::AtBase { .. } => return,
         Mode::Task => task_steer(world, rules, side, gid, g, lp, &k),
         Mode::ToTanker { tanker } | Mode::Refuelling { tanker, .. } => {
@@ -177,6 +203,21 @@ fn step(world: &mut World, ctx: &Ctx, side: u8, gid: UnitId, g: &mut Group) {
             None => hold(rules, lp, &k, k.pos(), None, Speed::Cruise),
         },
     };
+    // Threat reaction: beam the weapon at full speed (doc 03 §5).
+    match g.evade {
+        Some(ev) if ev.until_ms > ctx.clock.sim_time_ms && air => {
+            steer.heading = ev.heading;
+            steer.speed_mps = rules.max_mps(lp, k.alt_m);
+        }
+        Some(_) => g.evade = None,
+        None => {}
+    }
+    if world
+        .get::<Health>(le)
+        .is_some_and(|h| h.has_out(Subsystem::Propulsion))
+    {
+        steer.speed_mps *= rules.realism().damage.propulsion_speed_factor;
+    }
     if let Some(mut s) = world.get_mut::<Steer>(le) {
         *s = steer;
     }
@@ -245,7 +286,7 @@ fn leave_station(world: &mut World, side: u8, gid: UnitId, g: &mut Group) {
 
 /// Sends a group home. On bingo every member records the reserve it should
 /// land with (the G7 check).
-fn go_home(
+pub(crate) fn go_home(
     world: &mut World,
     rules: &Rules,
     bases: &[BaseInfo],
@@ -517,10 +558,57 @@ fn task_steer(
                 }
             }
         }
+        Task::Cap {
+            centre,
+            radius_m,
+            alt_m,
+            ..
+        } => {
+            let alt = alt_m.unwrap_or(cruise_alt);
+            let on = distance_m(centre, k.pos()) <= radius_m * 1.25;
+            set_station(world, side, gid, g, on);
+            Steer {
+                heading: circle_heading(k.pos(), centre, radius_m),
+                speed_mps: speed_for(rules, p, Speed::Cruise, alt),
+                alt_m: if rules.is_air(p) { alt } else { 0.0 },
+            }
+        }
+        Task::Intercept { contact } => match estimate(world, side, contact) {
+            Some((at, alt)) => {
+                let alt = if rules.is_air(p) {
+                    alt.clamp(300.0, rules.ceiling_m(p))
+                } else {
+                    0.0
+                };
+                to_point(rules, p, k, at, alt, Speed::Max)
+            }
+            None => hold(rules, p, k, k.pos(), None, Speed::Cruise),
+        },
+        Task::Strike { target, .. } => {
+            let at = match target {
+                StrikeTarget::Point(at) => Some(at),
+                StrikeTarget::Contact(c) => estimate(world, side, c).map(|e| e.0),
+            };
+            match at {
+                Some(at) => to_point(rules, p, k, at, cruise_alt, Speed::Cruise),
+                None => hold(rules, p, k, k.pos(), None, Speed::Cruise),
+            }
+        }
         Task::Idle | Task::Rtb { .. } | Task::Land { .. } | Task::Transfer { .. } => {
             hold(rules, p, k, k.pos(), None, Speed::Cruise)
         }
     }
+}
+
+/// A contact's estimate in the side's picture, dead-reckoned to now:
+/// position and altitude.
+fn estimate(world: &World, side: u8, contact: wb_core::ContactId) -> Option<(LatLon, f64)> {
+    let now = world.resource::<SimClock>().sim_time_ms;
+    let pics = world.resource::<crate::picture::SidePictures>();
+    let c = pics.sides.get(usize::from(side))?.get(contact)?;
+    let e = c.est?;
+    let dt = now.saturating_sub(c.last_ms) as f64 / 1_000.0;
+    Some((destination_point(e.at, e.heading, e.speed_mps * dt), e.alt_m))
 }
 
 #[allow(clippy::too_many_arguments)]

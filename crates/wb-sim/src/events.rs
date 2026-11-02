@@ -69,6 +69,7 @@ pub enum EventKind {
     /// The client should drop to ×1 or pause (doc 02 §3).
     AutoSlow {
         reason: String,
+        cause: SlowCause,
     },
     /// A new contact in the side's picture; `observer` is the own unit whose
     /// sensor saw it. Carries contact data only (CLAUDE.md rule 1).
@@ -134,6 +135,9 @@ pub enum EventKind {
         salvo: u32,
         tag: u32,
         target: Option<AimRef>,
+        reason: crate::weapons::LaunchReason,
+        /// Fired at a weapon (`INT-n`).
+        intercept: bool,
     },
     /// A weapon's flight ended (ADR-027: the shooter's side only).
     WeaponTerminated {
@@ -141,8 +145,59 @@ pub enum EventKind {
         shooter: UnitId,
         weapon_type: String,
         tag: u32,
+        /// The side's contact (or point) the weapon was fired at.
+        target: Option<AimRef>,
         outcome: Outcome,
         factors: Factors,
+    },
+    /// A weapon contact judged aimed at an own unit (its predicted closest
+    /// approach is inside `threat_cpa_m`).
+    IncomingWeapon {
+        contact: ContactId,
+        unit: UnitId,
+        time_to_impact_s: f64,
+    },
+    /// An own unit was hit (doc 02 §13). `points_pct` is what is left (ships
+    /// and ground units); `subsystem` what the hit knocked out.
+    Damage {
+        unit: UnitId,
+        points_pct: Option<f64>,
+        subsystem: Option<String>,
+        /// A damaged aircraft aborts its mission.
+        aborted: bool,
+    },
+    UnitDestroyed {
+        unit: UnitId,
+        name: String,
+    },
+    BaseComponentDamaged {
+        base: UnitId,
+        component: String,
+        #[cfg_attr(feature = "ts", ts(type = "number"))]
+        repaired_at_ms: u64,
+    },
+    BaseComponentRepaired {
+        base: UnitId,
+        component: String,
+    },
+    /// An engagement ROE does not allow, waiting for the player (doc 03 §7).
+    RoeRequest {
+        request: u32,
+        group: UnitId,
+        contact: ContactId,
+        weapon_type: String,
+        pk: f64,
+        #[cfg_attr(feature = "ts", ts(type = "number"))]
+        expires_ms: u64,
+    },
+    RoeDecision {
+        request: u32,
+        decision: Decision,
+    },
+    /// A hostile contact's estimate entered (or left) own territory.
+    BorderCrossing {
+        contact: ContactId,
+        inbound: bool,
     },
     /// A satellite was tasked; `pass_ms` is the sim time of the pass.
     SatelliteTasked {
@@ -178,7 +233,7 @@ pub enum Outcome {
 }
 
 /// The numbers behind an outcome, so a report can explain it (CLAUDE.md
-/// rule 4). `miss_distance_m` is set when the weapon fuzed.
+/// rule 4). `miss_distance_m` and `endgame` are set when the weapon fuzed.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 pub struct Factors {
@@ -187,6 +242,52 @@ pub struct Factors {
     pub launch_range_m: f64,
     pub flown_m: f64,
     pub miss_distance_m: Option<f64>,
+    pub target_aware: bool,
+    pub cm_used: u32,
+    pub endgame: Option<Endgame>,
+}
+
+/// The endgame roll (doc 02 §11): `pk` is the clamped product of the
+/// factors, the weapon hit when `roll < pk`. CEP weapons record their radial
+/// miss instead of a Pk table.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct Endgame {
+    pub pk_base: f64,
+    pub f_energy: f64,
+    pub f_aspect: f64,
+    pub f_maneuver: f64,
+    pub f_cm: f64,
+    pub f_ew: f64,
+    pub f_env: f64,
+    pub pk: f64,
+    pub roll: f64,
+    /// 0° head-on, 90° beam, 180° tail.
+    pub aspect_deg: f64,
+    pub target_g: f64,
+    pub cep_m: Option<f64>,
+    pub radial_miss_m: Option<f64>,
+}
+
+/// Why the engine asks the client to slow down (doc 02 §3).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(rename_all = "snake_case")]
+pub enum SlowCause {
+    Test,
+    HostileContact,
+    LaunchAgainstUs,
+    RoeRequest,
+}
+
+/// What happened to an approval request.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(rename_all = "snake_case")]
+pub enum Decision {
+    Approved,
+    Denied,
+    Expired,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

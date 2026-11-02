@@ -38,6 +38,8 @@ pub struct BaseInfo {
     pub ship_berths: u32,
     pub stationed: usize,
     pub active: bool,
+    /// The runway is damaged (doc 02 §13): no take-off or landing.
+    pub runway_cut: bool,
 }
 
 /// Every base, in `UnitId` order.
@@ -60,6 +62,7 @@ pub fn list(world: &mut World) -> Vec<BaseInfo> {
             ship_berths: b.ship_berths,
             stationed: b.stationed.len(),
             active: b.active,
+            runway_cut: b.runway_cut(),
         })
         .collect();
     out.sort_by_key(|b| b.id);
@@ -99,6 +102,9 @@ pub fn suitable(rules: &Rules, b: &BaseInfo, p: &Platform) -> Result<(), String>
     if rules.is_air(p) {
         if !b.air {
             return Err(format!("{} has no airfield", b.name));
+        }
+        if b.runway_cut {
+            return Err(format!("The runway at {} is cut", b.name));
         }
         let rule = &rules.realism().bases[&b.kind];
         if rule.rotary_only && !rules.is_rotary(p) {
@@ -266,6 +272,7 @@ pub fn logistics(world: &mut World) {
         return;
     }
     let now = clock.end_ms();
+    crate::damage::upkeep(world, now);
     let index: Vec<(UnitId, Entity)> = world
         .resource::<UnitIndex>()
         .0

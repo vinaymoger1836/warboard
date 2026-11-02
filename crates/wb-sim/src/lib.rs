@@ -9,7 +9,9 @@
 pub mod bases;
 pub mod clock;
 pub mod components;
+pub mod damage;
 pub mod details;
+pub mod endgame;
 pub mod events;
 pub mod fuel;
 pub mod movement;
