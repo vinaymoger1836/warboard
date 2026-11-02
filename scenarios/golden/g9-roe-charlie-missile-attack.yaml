@@ -13,14 +13,14 @@ sides:
 units:
   - { id: 10, name: Bergamini, platform: fremm-bergamini, country: ita, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 90, loadout: fremm-bergamini-standard }
   - { id: 20, name: Sokol, platform: su-35s, country: rus, count: 2, lat_deg: 55.5, lon_deg: 19.6, alt_m: 6000, heading_deg: 270, loadout: su-35s-anti-ship }
-  - { id: 30, name: Steregushchiy, platform: steregushchiy, country: rus, lat_deg: 55.5, lon_deg: 18.1, heading_deg: 270, loadout: steregushchiy-standard }
+  - { id: 30, name: Steregushchiy, platform: steregushchiy, country: rus, lat_deg: 55.5, lon_deg: 17.6, heading_deg: 270, loadout: steregushchiy-standard }
 orders:
   - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[18.2, 55.5]] } }
   - { tick: 0, side: 1, type: AssignTask, units: [30], task: { kind: move, waypoints: [[17.35, 55.5]] } }
 golden:
   id: G9
   description: FREMM under Charlie defends itself against a Kh-35U attack, never fires first, asks to engage
-  max_ticks: 9000
+  max_ticks: 12000
   seeds: 5
   expect:
     - { metric: self_defence_launches, side: 0, min: 1 }

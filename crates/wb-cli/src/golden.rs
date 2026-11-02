@@ -67,6 +67,9 @@ struct Variant {
     /// stands for different types across variants (G2).
     #[serde(default)]
     replace: Vec<Replace>,
+    /// Orders added to the scenario's (doctrine, threat reaction, ROE).
+    #[serde(default)]
+    orders: Vec<wb_sim::Order>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -152,6 +155,8 @@ enum Aggregate {
     Median,
     Min,
     Max,
+    /// For probabilities estimated per run (a few shots each).
+    Mean,
 }
 
 fn base_variant() -> String {
@@ -396,6 +401,7 @@ fn aggregate(vals: &[Option<f64>], how: Aggregate) -> Option<f64> {
     Some(match how {
         Aggregate::Min => v[0],
         Aggregate::Max => v[v.len() - 1],
+        Aggregate::Mean => v.iter().sum::<f64>() / v.len() as f64,
         Aggregate::Median => {
             let n = v.len();
             if n % 2 == 1 {
@@ -426,6 +432,7 @@ fn apply_variant(s: &mut Scenario, v: &Variant) {
         Command::TaskSatellite { satellite, .. } => !v.drop_units.contains(satellite),
         _ => true,
     });
+    s.orders.extend(v.orders.iter().cloned());
 }
 
 fn members_of(sim: &Sim, group: u32) -> Vec<UnitId> {
