@@ -631,12 +631,7 @@ fn spawn_system(
         .side_of(cix)
         .ok_or_else(|| bad(format!("country `{cid}` is on no side")))?;
     let sys = &rules.db.systems[six.0 as usize];
-    let comps: Vec<(PlatformIx, u32, Vec<(WeaponIx, u32)>)> = sys
-        .components
-        .iter()
-        .map(|c| (c.platform, c.count, c.magazine.clone()))
-        .collect();
-    let total: u32 = comps.iter().map(|c| c.1).sum();
+    let total: u32 = sys.components.iter().map(|c| c.count).sum();
     if total == 0 || total > 64 {
         return Err(bad("a system needs 1–64 components".into()));
     }
@@ -650,9 +645,9 @@ fn spawn_system(
     let emcon = EmconState(u.emcon.unwrap_or(default_emcon(rules, cix, Some(six))));
     let mut members = Vec::new();
     let mut next = u.id + 1;
-    for (pix, count, magazine) in comps {
-        let p = rules.platform(pix);
-        for i in 0..count {
+    for c in &sys.components {
+        let (pix, p) = (c.platform, rules.platform(c.platform));
+        for i in 0..c.count {
             let id = UnitId(next);
             next += 1;
             let slot = members.len() as u8;
@@ -679,7 +674,7 @@ fn spawn_system(
                     },
                     BaseRef { home: None },
                     Posture::Moving,
-                    bases::system_magazine(rules, p, &magazine),
+                    bases::system_magazine(rules, p, &c.magazine),
                     emcon,
                 ),
             );
