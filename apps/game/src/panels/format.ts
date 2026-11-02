@@ -49,7 +49,7 @@ export function fuelColour(pct: number | null | undefined, bingo = false): strin
   return cssVar('state.ok');
 }
 
-export type EventCategory = 'Task' | 'Fuel' | 'Air' | 'Base' | 'Alert' | 'Contact' | 'Intel' | 'EMCON';
+export type EventCategory = 'Task' | 'Fuel' | 'Air' | 'Base' | 'Alert' | 'Contact' | 'Intel' | 'EMCON' | 'Weapon';
 
 export const CATEGORY_COLOUR: Record<EventCategory, string> = {
   Task: cssVar('text.secondary'),
@@ -60,6 +60,7 @@ export const CATEGORY_COLOUR: Record<EventCategory, string> = {
   Contact: cssVar('side.enemy'),
   Intel: cssVar('sat.label'),
   EMCON: cssVar('ring.sensor'),
+  Weapon: cssVar('weapon.offensive'),
 };
 
 const SOURCE: Record<string, string> = {
@@ -134,6 +135,15 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     const r = k.RearmShort;
     return { category: 'Base', text: `${n(r.unit)} rearm short at ${n(r.base)}: ${r.short} × ${r.weapon} missing` };
   }
+  if ('WeaponLaunched' in k) {
+    const l = k.WeaponLaunched;
+    const at = l.target && 'Contact' in l.target ? ` at C${l.target.Contact.contact}` : '';
+    return { category: 'Weapon', text: `${n(l.shooter)} fired M-${l.tag} ${l.weapon_type}${at}` };
+  }
+  if ('WeaponTerminated' in k) {
+    const t = k.WeaponTerminated;
+    return { category: 'Weapon', text: `M-${t.tag} ${t.weapon_type}: ${t.outcome.replace(/_/g, ' ')}` };
+  }
   return { category: 'Alert', text: `Auto-slow: ${k.AutoSlow.reason}` };
 }
 
@@ -177,5 +187,6 @@ export function subjectOf(e: Event): number | null {
   if ('SatelliteTasked' in k) return k.SatelliteTasked.satellite;
   if ('LoadoutChanged' in k) return k.LoadoutChanged.unit;
   if ('RearmShort' in k) return k.RearmShort.unit;
+  if ('WeaponLaunched' in k) return k.WeaponLaunched.shooter;
   return null;
 }
