@@ -11,8 +11,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wb_content::compiled::{CountryIx, LoadoutItem, LoadoutIx, WeaponIx};
 use wb_content::source::realism::BaseKind;
-use wb_core::UnitId;
+use wb_content::source::world::LaunchDoctrine;
 use wb_core::geo::{LatLon, distance_m, intermediate_point};
+use wb_core::{ContactId, UnitId};
 use wb_core::units::{km_to_m, rad_to_deg};
 use wb_geo::{Geo, TerrainClass};
 
@@ -20,7 +21,8 @@ use crate::bases::{self, BaseInfo};
 use crate::clock::SimClock;
 use crate::components::{
     Allegiance, BaseSite, Behaviour, EmconState, Group, GroupMember, Identity, Kinematics,
-    Magazine, Mode, PlatformRef, Posture, ReturnWhy, SatelliteState, Speed, Task, Tasking,
+    Magazine, Mode, PlatformRef, Posture, ReturnWhy, Roe, RoeSetting, SatelliteState, Speed,
+    StrikeTarget, Task, Tasking, ThreatReaction,
 };
 use crate::events::{EventKind, emit};
 use crate::placement;
@@ -98,10 +100,62 @@ pub enum TaskOrder {
     Transfer {
         base: BaseTarget,
     },
+    /// Chase a contact and engage it (pre-approved, ADR-029).
+    Intercept {
+        contact: u32,
+    },
+    /// Combat air patrol: patrol circle, engage hostiles inside the commit
+    /// range of its centre.
+    Cap {
+        centre: LonLat,
+        radius_km: f64,
+        commit_km: f64,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        alt_m: Option<f64>,
+    },
+    /// Attack a contact or a point (pre-approved, ADR-029); `weapon` and
+    /// `count` narrow the shot.
+    Strike {
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        contact: Option<u32>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        point: Option<LonLat>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        weapon: Option<String>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        count: Option<u32>,
+    },
 }
 
 fn yes() -> bool {
     true
+}
+
+/// An ROE to set, or back to the inherited one (doc 03 §7).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(rename_all = "snake_case")]
+pub enum RoeChoice {
+    Alpha,
+    Bravo,
+    Charlie,
+    Inherit,
+}
+
+impl RoeChoice {
+    fn roe(self) -> Option<Roe> {
+        match self {
+            RoeChoice::Alpha => Some(Roe::Alpha),
+            RoeChoice::Bravo => Some(Roe::Bravo),
+            RoeChoice::Charlie => Some(Roe::Charlie),
+            RoeChoice::Inherit => None,
+        }
+    }
 }
 
 /// Weapons to fit at a base (doc 03 §6): a loadout template of the
@@ -145,6 +199,9 @@ pub enum Command {
         #[serde(default)]
         #[cfg_attr(feature = "ts", ts(optional))]
         resume_after_turnaround: Option<bool>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        threat_reaction: Option<ThreatReaction>,
     },
     PlaceBase {
         kind: BaseKind,
@@ -170,6 +227,34 @@ pub enum Command {
         units: Vec<u32>,
         loadout: LoadoutChoice,
     },
+    /// ROE of the side (no `units`), or of groups and units (doc 03 §7).
+    SetRoe {
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        units: Option<Vec<u32>>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        roe: Option<RoeChoice>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        self_defence: Option<bool>,
+    },
+    /// Allows exactly one engagement of a queued request.
+    ApproveEngagement { request: u32 },
+    DenyEngagement { request: u32 },
+    /// Launch doctrine of groups, overriding their country's (doc 03 §5).
+    SetDoctrine {
+        units: Vec<u32>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional, type = "\"max_range\" | \"no_escape_zone\" | \"close\""))]
+        launch: Option<LaunchDoctrine>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        shots_per_target: Option<u32>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        salvo: Option<u32>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -194,6 +279,7 @@ pub enum Resolved {
         bingo_rtb: Option<bool>,
         winchester_rtb: Option<bool>,
         resume_after_turnaround: Option<bool>,
+        threat_reaction: Option<ThreatReaction>,
     },
     PlaceBase {
         site: BaseSite,
@@ -216,6 +302,22 @@ pub enum Resolved {
     Loadout {
         units: Vec<(UnitId, Magazine)>,
         template: Option<String>,
+    },
+    /// `targets` empty: the side default.
+    Roe {
+        targets: Vec<UnitId>,
+        roe: Option<RoeChoice>,
+        self_defence: Option<bool>,
+    },
+    Decide {
+        request: u32,
+        approve: bool,
+    },
+    Doctrine {
+        groups: Vec<GroupPick>,
+        launch: Option<LaunchDoctrine>,
+        shots_per_target: Option<u32>,
+        salvo: Option<u32>,
     },
 }
 
@@ -335,12 +437,88 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
             bingo_rtb,
             winchester_rtb,
             resume_after_turnaround,
+            threat_reaction,
         } => Ok(Resolved::Behaviour {
             groups: pick_groups(world, side, units)?,
             bingo_rtb: *bingo_rtb,
             winchester_rtb: *winchester_rtb,
             resume_after_turnaround: *resume_after_turnaround,
+            threat_reaction: *threat_reaction,
         }),
+        Command::SetRoe {
+            units,
+            roe,
+            self_defence,
+        } => {
+            if roe.is_none() && self_defence.is_none() {
+                return Err("Nothing to change: give an ROE or self-defence".to_owned());
+            }
+            let targets = match units {
+                None => {
+                    if *roe == Some(RoeChoice::Inherit) {
+                        return Err("The side default cannot inherit; choose A, B or C".to_owned());
+                    }
+                    Vec::new()
+                }
+                Some(ids) => {
+                    if ids.is_empty() {
+                        return Err("No units selected".to_owned());
+                    }
+                    let mut out = Vec::new();
+                    for &raw in ids {
+                        let unknown = || format!("Unknown unit {raw}");
+                        let e = entity(world, UnitId(raw)).ok_or_else(unknown)?;
+                        if world.get::<Allegiance>(e).map(|a| a.side) != Some(side)
+                            || (world.get::<Group>(e).is_none()
+                                && world.get::<GroupMember>(e).is_none())
+                        {
+                            return Err(unknown());
+                        }
+                        out.push(UnitId(raw));
+                    }
+                    out.sort();
+                    out.dedup();
+                    out
+                }
+            };
+            Ok(Resolved::Roe {
+                targets,
+                roe: *roe,
+                self_defence: *self_defence,
+            })
+        }
+        Command::ApproveEngagement { request } | Command::DenyEngagement { request } => {
+            let open = world
+                .resource::<crate::roe::RoeRequests>()
+                .open
+                .iter()
+                .any(|r| r.id == *request && r.side == side && !r.approved);
+            if !open {
+                return Err(format!("Request {request} is no longer open"));
+            }
+            Ok(Resolved::Decide {
+                request: *request,
+                approve: matches!(order.command, Command::ApproveEngagement { .. }),
+            })
+        }
+        Command::SetDoctrine {
+            units,
+            launch,
+            shots_per_target,
+            salvo,
+        } => {
+            if shots_per_target.is_some_and(|n| !(1..=8).contains(&n))
+                || salvo.is_some_and(|n| !(1..=64).contains(&n))
+            {
+                return Err("Shots per target must be 1–8 and a salvo 1–64".to_owned());
+            }
+            Ok(Resolved::Doctrine {
+                groups: pick_groups(world, side, units)?,
+                launch: *launch,
+                shots_per_target: *shots_per_target,
+                salvo: *salvo,
+            })
+        }
         Command::PlaceBase {
             kind,
             lat_deg,
@@ -793,12 +971,127 @@ fn resolve_task(
             }
             Task::Transfer { base: b.id }
         }
+        TaskOrder::Intercept { contact } => {
+            let (id, domain) = own_contact(world, side, *contact)?;
+            carried_for(world, &rules, picks, domain, None)?;
+            Task::Intercept { contact: id }
+        }
+        TaskOrder::Cap {
+            centre,
+            radius_km,
+            commit_km,
+            alt_m,
+        } => {
+            if !air {
+                return Err("Only aircraft fly a CAP".to_owned());
+            }
+            if !(1.0..=1_000.0).contains(radius_km) || !(1.0..=1_000.0).contains(commit_km) {
+                return Err("CAP radius and commit range must be 1–1000 km".to_owned());
+            }
+            Task::Cap {
+                centre: point(*centre)?,
+                radius_m: km_to_m(*radius_km),
+                commit_m: km_to_m(*commit_km),
+                alt_m: check_alt(*alt_m)?,
+            }
+        }
+        TaskOrder::Strike {
+            contact,
+            point: at,
+            weapon,
+            count,
+        } => {
+            let weapon = match weapon {
+                Some(wid) => Some(
+                    rules
+                        .db
+                        .weapons
+                        .iter()
+                        .position(|w| rules.db.str(w.id) == wid)
+                        .map(|i| WeaponIx(i as u32))
+                        .ok_or_else(|| format!("Unknown weapon `{wid}`"))?,
+                ),
+                None => None,
+            };
+            if count.is_some_and(|n| !(1..=64).contains(&n)) {
+                return Err("A strike fires 1–64 rounds".to_owned());
+            }
+            let target = match (contact, at) {
+                (Some(c), None) => {
+                    let (id, domain) = own_contact(world, side, *c)?;
+                    carried_for(world, &rules, picks, domain, weapon)?;
+                    StrikeTarget::Contact(id)
+                }
+                (None, Some(p)) => {
+                    carried_for(world, &rules, picks, Domain::Ground, weapon)
+                        .or_else(|_| carried_for(world, &rules, picks, Domain::Surface, weapon))?;
+                    StrikeTarget::Point(point(*p)?)
+                }
+                _ => return Err("A strike needs a contact or a point, not both".to_owned()),
+            };
+            Task::Strike {
+                target,
+                weapon,
+                count: *count,
+                fired: 0,
+            }
+        }
     };
 
     if surface && let Some(geo) = geo {
         check_water(&rules, geo, &bases, lead_pos, &task)?;
     }
     Ok(task)
+}
+
+/// A contact of the side's picture with a position; its id and domain.
+/// Unknown and other sides' ids get the same answer.
+fn own_contact(world: &World, side: u8, raw: u32) -> Result<(ContactId, Domain), String> {
+    let pics = world.resource::<crate::picture::SidePictures>();
+    pics.sides
+        .get(usize::from(side))
+        .and_then(|p| p.get(ContactId(raw)))
+        .filter(|c| c.est.is_some())
+        .map(|c| (c.id, c.domain))
+        .ok_or_else(|| format!("Unknown contact C{raw}"))
+}
+
+/// Some picked member carries a weapon (or the named one) for the domain.
+fn carried_for(
+    world: &World,
+    rules: &Rules,
+    picks: &[GroupPick],
+    domain: Domain,
+    weapon: Option<WeaponIx>,
+) -> Result<(), String> {
+    let ok = picks.iter().flat_map(|p| &p.members).any(|m| {
+        entity(world, *m)
+            .and_then(|e| world.get::<Magazine>(e))
+            .is_some_and(|mag| {
+                mag.stations.iter().any(|s| {
+                    s.full > 0
+                        && weapon.is_none_or(|w| w == s.weapon)
+                        && rules.db.weapons[s.weapon.0 as usize].targets.contains(&domain)
+                })
+            })
+    });
+    if ok {
+        return Ok(());
+    }
+    let what = match domain {
+        Domain::Air => "air",
+        Domain::Surface => "surface",
+        Domain::Subsurface => "subsurface",
+        Domain::Ground => "ground",
+        Domain::Space => "space",
+    };
+    Err(match weapon {
+        Some(w) => format!(
+            "No selected unit carries {} for {what} targets",
+            rules.db.str(rules.db.weapons[w.0 as usize].name)
+        ),
+        None => format!("No selected unit carries a weapon for {what} targets"),
+    })
 }
 
 /// Ships stay on water: every leg is sampled for land, except near ports and
@@ -896,6 +1189,7 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
             bingo_rtb,
             winchester_rtb,
             resume_after_turnaround,
+            threat_reaction,
         } => {
             for pick in groups {
                 if let Some(ge) = split(world, side, &pick)
@@ -910,6 +1204,9 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
                     }
                     if let Some(v) = resume_after_turnaround {
                         b.resume_after_turnaround = v;
+                    }
+                    if let Some(v) = threat_reaction {
+                        b.threat_reaction = v;
                     }
                 }
             }
@@ -984,6 +1281,58 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
         Resolved::Loadout { units, template } => {
             for (unit, mag) in units {
                 set_loadout(world, side, unit, mag, template.clone());
+            }
+        }
+        Resolved::Roe {
+            targets,
+            roe,
+            self_defence,
+        } => {
+            if targets.is_empty() {
+                let mut sides = world.resource_mut::<Sides>();
+                let s = &mut sides.sides[usize::from(side)];
+                if let Some(r) = roe.and_then(RoeChoice::roe) {
+                    s.roe = r;
+                }
+                if let Some(v) = self_defence {
+                    s.self_defence = v;
+                }
+                return;
+            }
+            for t in targets {
+                let Some(e) = entity(world, t) else { continue };
+                let mut r = world.get::<RoeSetting>(e).copied().unwrap_or_default();
+                if let Some(c) = roe {
+                    r.roe = c.roe();
+                }
+                if self_defence.is_some() {
+                    r.self_defence = self_defence;
+                }
+                world.entity_mut(e).insert(r);
+            }
+        }
+        Resolved::Decide { request, approve } => crate::roe::decide(world, side, request, approve),
+        Resolved::Doctrine {
+            groups,
+            launch,
+            shots_per_target,
+            salvo,
+        } => {
+            for pick in groups {
+                if let Some(ge) = split(world, side, &pick)
+                    && let Some(mut g) = world.get_mut::<Group>(ge)
+                {
+                    let d = &mut g.doctrine;
+                    if launch.is_some() {
+                        d.launch = launch;
+                    }
+                    if shots_per_target.is_some() {
+                        d.shots_per_target = shots_per_target;
+                    }
+                    if salvo.is_some() {
+                        d.salvo = salvo;
+                    }
+                }
             }
         }
     }

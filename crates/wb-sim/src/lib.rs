@@ -12,7 +12,9 @@ pub mod components;
 pub mod damage;
 pub mod details;
 pub mod endgame;
+pub mod engage;
 pub mod events;
+pub mod flyout;
 pub mod fuel;
 pub mod movement;
 pub mod orders;
@@ -21,6 +23,7 @@ pub mod placement;
 pub mod probe;
 #[cfg(feature = "ts")]
 pub mod protocol;
+pub mod roe;
 pub mod rules;
 pub mod satellites;
 pub mod save;
@@ -69,6 +72,7 @@ pub const STAGES: &[Stage] = &[
     ("weapons", weapons::fly),
     ("sensors", sensors::scan),
     ("fusion", picture::fusion),
+    ("engage", engage::run),
     ("fuel", fuel::burn),
     ("aar", fuel::aar),
     ("arrivals", bases::arrivals),
