@@ -4,13 +4,21 @@ country: ita
 as_of: 2026-10-27
 platforms:
   fremm-bergamini: 10
+munitions:
+  aster-15: 64
+  aster-30: 64
+  teseo-mk2a: 48
 basing:
   - { platform: fremm-bergamini, base: taranto, count: 6 }
+munition_basing:
+  - { base: taranto, munitions: { aster-15: 32, aster-30: 32, teseo-mk2a: 24 } }
 provenance:
   confidence: low
   notes: >-
-    Source lists 10 Italian FREMMs active; the count includes the ASW variant, all modelled as GP for now. Basing split is an estimate.
+    Source lists 10 Italian FREMMs active; the count includes the ASW variant, all modelled as GP for now. Basing split is an estimate. Munition counts are game placeholders (no public source gives stocks), sized for one or two reloads per ship.
   estimates:
     - basing
+    - munitions
+    - munition_basing
   sources:
     - { title: "FREMM multipurpose frigate (Italian GP variant)", url: "https://en.wikipedia.org/wiki/FREMM_multipurpose_frigate", accessed: 2026-10-27 }

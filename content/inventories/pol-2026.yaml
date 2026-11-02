@@ -1,0 +1,21 @@
+id: pol-2026
+kind: inventory
+country: pol
+as_of: 2026-10-27
+munitions:
+  aim-120d: 96
+  gbu-31: 64
+  jsm: 32
+munition_basing:
+  - { base: lask-air-base-eplk, munitions: { aim-120d: 48, gbu-31: 32, jsm: 16 } }
+  - { base: powidz-military-air-base-eppw, munitions: { aim-120d: 24, gbu-31: 16 } }
+provenance:
+  confidence: estimate
+  notes: >-
+    Game placeholders. No public source gives munition stocks per base; the
+    counts are sized for a few sorties per aircraft and are all estimates.
+  estimates:
+    - munitions
+    - munition_basing
+  sources:
+    - { title: "Polish Air Force", url: "https://en.wikipedia.org/wiki/Polish_Air_Force", accessed: 2026-11-02 }
