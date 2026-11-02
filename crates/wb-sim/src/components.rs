@@ -1,6 +1,6 @@
 //! ECS components (doc 02 §2): movement, fuel, groups, tasks and bases (P3),
 //! emission control, satellites and scripted targets (P4), per-station
-//! magazines, countermeasures and base stock (P5).
+//! magazines, countermeasures, base stock and weapons in flight (P5).
 //!
 //! Components refer to each other by [`UnitId`] only, never by bevy `Entity`,
 //! so a loaded world is identical to the saved one whatever the archetype
@@ -14,8 +14,8 @@ use wb_content::compiled::{
 };
 use wb_content::source::Emcon;
 use wb_content::source::realism::BaseKind;
-use wb_core::UnitId;
 use wb_core::geo::LatLon;
+use wb_core::{ContactId, UnitId};
 
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Identity {
@@ -406,4 +406,81 @@ pub struct SatelliteState {
 #[derive(Component, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScriptedTarget {
     pub weapon: WeaponIx,
+}
+
+/// What a weapon was fired at.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum WeaponTarget {
+    /// A contact of the shooter's side; `key` is its truth key (the target's
+    /// group or the target), engine-internal.
+    Track { contact: ContactId, key: UnitId },
+    /// Coordinates (GPS/INS weapons, strikes on a point).
+    Point { at: LatLon, alt_m: f64 },
+    /// A truth unit, with perfect midcourse updates: tests and calibration
+    /// only, never from an order.
+    Truth(UnitId),
+}
+
+/// Energy phase of a weapon in flight (doc 02 §10).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(rename_all = "snake_case")]
+pub enum FlightPhase {
+    Boost,
+    Sustain,
+    Coast,
+    Cruise,
+    Glide,
+}
+
+/// Terminal seeker state.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SeekerState {
+    /// Not yet within seeker range of the aimpoint, or no seeker at all.
+    Off,
+    /// Looking for a target; `lost_ms` is when it reached the aimpoint (or
+    /// lost its lock) without one, for the self-destruct timer.
+    Searching { lost_ms: Option<u64> },
+    /// Homing on a truth target. `memory`: an anti-radiation seeker whose
+    /// emitter went silent flies to where it last heard it.
+    Locked { unit: UnitId, memory: bool },
+}
+
+/// Where midcourse guidance flies: a position estimate with its velocity at
+/// `at_ms`, dead-reckoned to the current time.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct AimPoint {
+    pub at: LatLon,
+    pub alt_m: f64,
+    pub heading: f64,
+    pub speed_mps: f64,
+    pub climb_mps: f64,
+    pub at_ms: u64,
+}
+
+/// A weapon in flight (doc 02 §2, §10). Its entity also has `Identity`,
+/// `Allegiance` (the shooter's) and `Kinematics`.
+#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct WeaponFlight {
+    pub weapon: WeaponIx,
+    pub shooter: UnitId,
+    pub salvo: u32,
+    /// `M-n` / `INT-n` number, per side.
+    pub tag: u32,
+    pub target: WeaponTarget,
+    pub aim: AimPoint,
+    pub phase: FlightPhase,
+    pub seeker: SeekerState,
+    /// Flight-path angle, radians, climb positive.
+    pub fpa: f64,
+    pub launch_ms: u64,
+    /// Distance from the shooter to the aimpoint at launch.
+    pub launch_range_m: f64,
+    /// Speed at launch and the burnout (or cruise) speed, m/s.
+    pub v0_mps: f64,
+    pub vmax_mps: f64,
+    /// Ground distance flown.
+    pub flown_m: f64,
+    /// Speed lost to manoeuvring so far, m/s.
+    pub manoeuvre_loss_mps: f64,
 }
