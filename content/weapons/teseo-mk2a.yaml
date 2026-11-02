@@ -22,9 +22,14 @@ pk_base: { surface_ship: 0.85 }
 countermeasure_resistance: { chaff: 0.5 }
 mass_kg: 780
 station_category: [teseo_launcher]
+signature:
+  rcs_m2: { front: 0.1, side: 0.6, rear: 0.15, top: 0.6 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 4.5
 provenance:
   confidence: medium
   estimates:
+    - signature
     - profile.min_range_km
     - profile.cruise_alt_m
     - profile.terminal_alt_m

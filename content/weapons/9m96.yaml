@@ -25,11 +25,16 @@ countermeasure_resistance: { chaff: 0.6 }
 mass_kg: 420
 station_category: [s400_tube, redut_cell]
 envelope: { min_alt_m: 5, max_alt_m: 30000 }
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.6 }
+  visual_size_m: 4.75
 provenance:
   confidence: medium
   notes: >-
     Source table: 120 km, 30 km altitude, 1000 m/s, 420 kg, 24 kg warhead, more than 20 g at 30 km. pk_base copies the manufacturer's claimed single-shot values (aircraft 0.9, UAV 0.8, cruise missile 0.7), which are optimistic. Also the missile of the Redut cells on Steregushchiy-class corvettes.
   estimates:
+    - signature
     - profile.boost_s
     - profile.coast_tau_s
     - profile.min_speed_mach

@@ -77,7 +77,17 @@ source_type! {
         /// Peacetime basing.
         #[serde(default)]
         pub basing: Vec<Basing>,
+        /// Where the munitions are stored: each base's stock at war start.
+        #[serde(default)]
+        pub munition_basing: Vec<MunitionBasing>,
         pub provenance: Provenance,
+    }
+
+    #[serde(deny_unknown_fields)]
+    pub struct MunitionBasing {
+        pub base: String,
+        /// Weapon id → rounds stored at this base.
+        pub munitions: BTreeMap<String, u32>,
     }
 
     #[serde(deny_unknown_fields)]

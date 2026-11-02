@@ -26,9 +26,14 @@ countermeasure_resistance: { chaff: 0.7 }
 mass_kg: 450
 station_category: [sylver_a50]
 envelope: { min_alt_m: 3, max_alt_m: 20000 }
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.7 }
+  visual_size_m: 4.9
 provenance:
   confidence: medium
   estimates:
+    - signature
     - profile.boost_s
     - profile.coast_tau_s
     - profile.min_speed_mach

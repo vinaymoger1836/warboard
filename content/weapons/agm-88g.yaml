@@ -23,11 +23,16 @@ warhead: blast_fragmentation
 pk_base: { radar_site: 0.8, launcher: 0.6, c2_node: 0.5 }
 mass_kg: 467
 station_category: [arm]
+signature:
+  rcs_m2: { front: 0.05, side: 0.3, rear: 0.08, top: 0.3 }
+  ir: { cruise: 0.6 }
+  visual_size_m: 4.1
 provenance:
   confidence: low
   notes: >-
     Source: 1030 lb, 68 kg warhead, passive radar homing with GPS/INS and millimetre-wave active radar, about 225 km (estimate). Speed is the AGM-88 figure.
   estimates:
+    - signature
     - profile.boost_s
     - profile.max_speed_mach
     - profile.coast_tau_s

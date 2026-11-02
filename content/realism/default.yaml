@@ -91,6 +91,32 @@ weapons:                             # doc 02 §10
   sea_skim_min_alt_m: 5
   sea_skim_max_alt_m: 15
   range_calibration_tolerance: 0.1
+  # Launch conditions of the published range, per category (doc 02 §10).
+  calibration:
+    aam:       { launch_alt_m: 12000, launch_speed_mach: 1.2, target_alt_m: 12000, target_speed_mach: 0.9 }
+    sam:       { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 8000,  target_speed_mach: 0.9 }
+    ashm:      { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    lacm:      { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    arm:       { launch_alt_m: 10000, launch_speed_mach: 0.9, target_alt_m: 0,     target_speed_mach: 0 }
+    agm:       { launch_alt_m: 10000, launch_speed_mach: 0.9, target_alt_m: 0,     target_speed_mach: 0 }
+    bomb:      { launch_alt_m: 12000, launch_speed_mach: 0.9, target_alt_m: 0,     target_speed_mach: 0 }
+    ballistic: { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    rocket:    { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    shell:     { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    torpedo:   { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    loitering: { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    decoy:     { launch_alt_m: 10000, launch_speed_mach: 0.9, target_alt_m: 0,     target_speed_mach: 0 }
+  tau_high_alt_m: 15000
+  manoeuvre_energy_factor: 0.08
+  g_speed_exponent: 2
+  seeker_half_angle_deg: 40
+  datalink_update_s: 2
+  fuze_radius_m: 15
+  lethal_radius_m: { blast: 20, blast_fragmentation: 12, penetrator: 5, hit_to_kill: 1, shaped_charge: 5 }
+  self_destruct_after_lost_s: 10
+  close_fraction: 0.5
+  cruise_alt_default_m: 30
+  max_flight_path_deg: 45
 
 endgame:                             # doc 02 §11
   maneuver_g_ratio: 3
@@ -104,7 +130,15 @@ endgame:                             # doc 02 §11
     imaging_ir:        { head_on: 0.85, beam: 0.9, tail: 1.0 }
     anti_radiation:    { head_on: 1.0, beam: 1.0, tail: 1.0 }
     command:           { head_on: 1.0, beam: 0.75, tail: 0.85 }
+    laser:             { head_on: 1.0, beam: 1.0, tail: 1.0 }
+    gps_ins:           { head_on: 1.0, beam: 1.0, tail: 1.0 }
+    none:              { head_on: 1.0, beam: 1.0, tail: 1.0 }
   cep_distribution: rayleigh
+
+countermeasures:                     # doc 02 §9, §11; doc 03 §5
+  release_range_m: 6000
+  rounds_per_threat: 4
+  rwr_seekers: [active_radar, semi_active_radar]
 
 tewa:                                # doc 02 §12
   ciws_layer_min_km: 2
@@ -122,8 +156,24 @@ damage:                              # doc 02 §13
     penetrator: 1.4
     hit_to_kill: 0.6
     shaped_charge: 1.2
-  runway_repair_min_h: 4
-  runway_repair_max_h: 12
+  points_per_warhead_kg: 10
+  ship_hits: { hull: 0.4, radar: 0.2, vls: 0.15, launcher: 0.1, propulsion: 0.15 }
+  propulsion_speed_factor: 0.5
+  base_radius_km: 2
+  base_components:
+    runway:    { weight: 0.3,  hardness_kg: 200, repair_min_h: 4,  repair_max_h: 12 }
+    shelters:  { weight: 0.2,  hardness_kg: 500, repair_min_h: 6,  repair_max_h: 24 }
+    fuel:      { weight: 0.15, hardness_kg: 100, repair_min_h: 6,  repair_max_h: 12 }
+    munitions: { weight: 0.15, hardness_kg: 300, repair_min_h: 12, repair_max_h: 24 }
+    radar:     { weight: 0.1,  hardness_kg: 50,  repair_min_h: 2,  repair_max_h: 8 }
+    c2:        { weight: 0.1,  hardness_kg: 300, repair_min_h: 4,  repair_max_h: 12 }
+  munitions_store_loss_fraction: 0.5
+
+roe:                                 # doc 03 §7
+  return_fire_memory_s: 600
+  approval_window_min_s: 10
+  threat_cpa_m: 2000
+  threat_horizon_s: 300
 
 movement:                            # doc 02 §5
   isa_sea_level_temp_k: 288.15       # ISA
@@ -207,6 +257,26 @@ provenance:
     - tewa.iads_autonomous_reaction_factor
     - damage.ship_sink_delay_min
     - damage.warhead_multiplier
+    - weapons.calibration
+    - weapons.tau_high_alt_m
+    - weapons.manoeuvre_energy_factor
+    - weapons.g_speed_exponent
+    - weapons.seeker_half_angle_deg
+    - weapons.datalink_update_s
+    - weapons.fuze_radius_m
+    - weapons.lethal_radius_m
+    - weapons.self_destruct_after_lost_s
+    - weapons.close_fraction
+    - weapons.cruise_alt_default_m
+    - weapons.max_flight_path_deg
+    - countermeasures
+    - damage.points_per_warhead_kg
+    - damage.ship_hits
+    - damage.propulsion_speed_factor
+    - damage.base_radius_km
+    - damage.base_components
+    - damage.munitions_store_loss_fraction
+    - roe
     - ground
     - movement.aircraft_climb_rate_mps
     - movement.aircraft_descent_rate_mps

@@ -26,9 +26,14 @@ mass_kg: 161.5
 station_category: [aam_medium]
 internal_carriage: true
 engage_on_remote: true
+signature:
+  rcs_m2: { front: 0.05, side: 0.3, rear: 0.08, top: 0.3 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 3.7
 provenance:
   confidence: medium
   estimates:
+    - signature
     - profile.boost_s
     - profile.coast_tau_s
     - profile.min_speed_mach

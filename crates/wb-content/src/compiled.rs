@@ -9,14 +9,15 @@
 
 use crate::source::platform::{PlatformCategory, RcsByAspect, StationKind};
 use crate::source::realism::{
-    AspectFactors, BaseKind, CellClass, ContactLevel, EarthRealism, EndgameRealism, EwRealism,
-    FuelRealism, GroundRealism, MovementRealism, RadarRealism, SiteRule, SpatialRealism,
-    TerrainClass, TimeRealism, WeaponRealism,
+    AspectFactors, BaseComponentKind, BaseKind, CellClass, ContactLevel, CountermeasureRealism,
+    EarthRealism, EndgameRealism, EwRealism, FuelRealism, GroundRealism, MovementRealism,
+    RadarRealism, RoeRealism, SiteRule, SpatialRealism, Subsystem, TerrainClass, TimeRealism,
+    WeaponRealism,
 };
 use crate::source::sensor::{PayloadKind, SensorRole, SensorType};
 use crate::source::system::{ComponentRole, DeployAs};
 use crate::source::weapon::{
-    AltitudeEnvelope, CoastTau, Midcourse, ProfileKind, Warhead, WeaponCategory,
+    AltitudeEnvelope, Calibration, CoastTau, Midcourse, ProfileKind, Warhead, WeaponCategory,
 };
 use crate::source::world::{BaseType, LaunchDoctrine};
 use crate::source::{
@@ -347,6 +348,7 @@ pub struct FlightProfile {
     pub max_g: Option<f64>,
     pub cruise_alt_m: Option<f64>,
     pub terminal_alt_m: Option<f64>,
+    pub calibration: Option<Calibration>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -443,6 +445,8 @@ pub struct Inventory {
     pub platforms: Vec<(ForceIx, u32)>,
     pub munitions: Vec<(WeaponIx, u32)>,
     pub basing: Vec<Basing>,
+    /// Each base's munitions at war start, weapons in index order.
+    pub munition_basing: Vec<(BaseIx, Vec<(WeaponIx, u32)>)>,
     pub provenance: Provenance,
 }
 
@@ -485,8 +489,10 @@ pub struct Realism {
     pub ew: EwRealism,
     pub weapons: WeaponRealism,
     pub endgame: EndgameRealism,
+    pub countermeasures: CountermeasureRealism,
     pub tewa: TewaRealism,
     pub damage: DamageRealism,
+    pub roe: RoeRealism,
     pub movement: MovementRealism,
     pub fuel: FuelRealism,
     pub logistics: LogisticsRealism,
@@ -551,8 +557,20 @@ pub struct DamageRealism {
     pub ship_out_of_action_fraction: f64,
     pub ship_sink_delay_s: f64,
     pub warhead_multiplier: BTreeMap<Warhead, f64>,
-    pub runway_repair_min_s: f64,
-    pub runway_repair_max_s: f64,
+    pub points_per_warhead_kg: f64,
+    pub ship_hits: BTreeMap<Subsystem, f64>,
+    pub propulsion_speed_factor: f64,
+    pub base_radius_m: f64,
+    pub base_components: BTreeMap<BaseComponentKind, BaseComponentRule>,
+    pub munitions_store_loss_fraction: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BaseComponentRule {
+    pub weight: f64,
+    pub hardness_kg: f64,
+    pub repair_min_s: f64,
+    pub repair_max_s: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -580,4 +598,75 @@ pub struct BaseRule {
     pub road_capable_only: bool,
     pub rotary_only: bool,
     pub vls_reload: bool,
+}
+
+impl ContentDb {
+    /// Station compatibility, cells and weight of a loadout on a platform
+    /// (doc 03 §6): the same rules `wb content check` applies to templates,
+    /// for loadouts built in the game. The reason names the station and weapon.
+    pub fn check_loadout(&self, platform: PlatformIx, items: &[LoadoutItem]) -> Result<(), String> {
+        let p = &self.platforms[platform.0 as usize];
+        // Station index → (cells used, kg used).
+        let mut used: BTreeMap<u32, (u32, f64)> = BTreeMap::new();
+        for it in items {
+            let Some(st) = p.stations.get(it.station as usize) else {
+                return Err(format!(
+                    "{} has no station {}",
+                    self.str(p.name),
+                    it.station
+                ));
+            };
+            let Some(w) = self.weapons.get(it.weapon.0 as usize) else {
+                return Err(format!("Unknown weapon {}", it.weapon.0));
+            };
+            if it.count == 0 {
+                continue;
+            }
+            if !w.station_category.iter().any(|c| st.categories.contains(c)) {
+                return Err(format!(
+                    "{} does not fit station {} of the {}",
+                    self.str(w.name),
+                    self.str(st.id),
+                    self.str(p.short_name)
+                ));
+            }
+            if st.kind == StationKind::Internal && !w.internal_carriage {
+                return Err(format!(
+                    "{} cannot be carried in the internal bay {}",
+                    self.str(w.name),
+                    self.str(st.id)
+                ));
+            }
+            let u = used.entry(it.station).or_default();
+            u.0 += station_cells(st.kind, w.rounds_per_cell, it.count);
+            u.1 += w.mass_kg * f64::from(it.count);
+        }
+        for (ix, (cells, kg)) in used {
+            let st = &p.stations[ix as usize];
+            if cells > st.capacity {
+                return Err(format!(
+                    "Station {} holds {} but the loadout needs {cells}",
+                    self.str(st.id),
+                    st.capacity
+                ));
+            }
+            if let Some(max) = st.max_kg
+                && kg > max
+            {
+                return Err(format!(
+                    "Station {} carries up to {max:.0} kg, the loadout weighs {kg:.0} kg",
+                    self.str(st.id)
+                ));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Cells (or rounds, for pylons and bays) taken by `count` rounds.
+pub fn station_cells(kind: StationKind, rounds_per_cell: u32, count: u32) -> u32 {
+    match kind {
+        StationKind::Vls | StationKind::Launcher => count.div_ceil(rounds_per_cell.max(1)),
+        StationKind::Internal | StationKind::External => count,
+    }
 }

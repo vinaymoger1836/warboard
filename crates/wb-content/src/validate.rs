@@ -607,6 +607,12 @@ impl<'a> Cx<'a, '_> {
         if !unguided && w.pk_base.is_empty() {
             self.err("pk_base", "is required for guided weapons".into());
         }
+        if w.signature.is_none() {
+            self.err(
+                "signature",
+                "is required: sensors must see the weapon in flight".into(),
+            );
+        }
         self.positive("mass_kg", w.mass_kg);
         self.categories("station_category", &w.station_category);
         if w.rounds_per_cell == 0 {
@@ -785,6 +791,41 @@ impl<'a> Cx<'a, '_> {
                 );
             }
         }
+        let mut stored: BTreeMap<&str, u32> = BTreeMap::new();
+        for (i, b) in inv.munition_basing.iter().enumerate() {
+            let path = format!("munition_basing[{i}]");
+            if let Some(e) = self.reference(&format!("{path}.base"), &b.base, &[Kind::Base])
+                && let Entry::Base(base) = &e.entry
+                && base.country != inv.country
+            {
+                self.err(
+                    &format!("{path}.base"),
+                    format!(
+                        "`{}` belongs to `{}`, not to `{}`",
+                        b.base, base.country, inv.country
+                    ),
+                );
+            }
+            for (wid, n) in &b.munitions {
+                if !inv.munitions.contains_key(wid) {
+                    self.err(
+                        &format!("{path}.munitions.{wid}"),
+                        format!("`{wid}` is not in this inventory's munitions"),
+                    );
+                    continue;
+                }
+                *stored.entry(wid.as_str()).or_default() += n;
+            }
+        }
+        for (id, n) in stored {
+            let have = inv.munitions[id];
+            if n > have {
+                self.err(
+                    "munition_basing",
+                    format!("stores {n} × `{id}` but the inventory has {have}"),
+                );
+            }
+        }
     }
 
     fn realism(&mut self, r: &crate::source::Realism) {
@@ -846,12 +887,104 @@ impl<'a> Cx<'a, '_> {
             "tewa.ciws_layer_max_km",
             r.tewa.ciws_layer_max_km,
         );
-        self.less(
-            "damage.runway_repair_min_h",
-            r.damage.runway_repair_min_h,
-            "damage.runway_repair_max_h",
-            r.damage.runway_repair_max_h,
+        let d = &r.damage;
+        for (k, b) in &d.base_components {
+            let path = format!("damage.base_components.{}", key(k));
+            self.less(
+                &format!("{path}.repair_min_h"),
+                b.repair_min_h,
+                &format!("{path}.repair_max_h"),
+                b.repair_max_h,
+            );
+            self.positive(&format!("{path}.hardness_kg"), b.hardness_kg);
+        }
+        if d.base_components.values().map(|b| b.weight).sum::<f64>() <= 0.0 {
+            self.err(
+                "damage.base_components",
+                "needs at least one component with a positive weight".into(),
+            );
+        }
+        if d.ship_hits.values().sum::<f64>() <= 0.0 {
+            self.err(
+                "damage.ship_hits",
+                "needs at least one location with a positive weight".into(),
+            );
+        }
+        self.probability(
+            "damage.propulsion_speed_factor",
+            d.propulsion_speed_factor,
         );
+        self.probability(
+            "damage.munitions_store_loss_fraction",
+            d.munitions_store_loss_fraction,
+        );
+        self.positive("damage.points_per_warhead_kg", d.points_per_warhead_kg);
+        let w = &r.weapons;
+        for (path, v) in [
+            ("weapons.tau_high_alt_m", w.tau_high_alt_m),
+            ("weapons.seeker_half_angle_deg", w.seeker_half_angle_deg),
+            ("weapons.datalink_update_s", w.datalink_update_s),
+            ("weapons.fuze_radius_m", w.fuze_radius_m),
+            ("weapons.self_destruct_after_lost_s", w.self_destruct_after_lost_s),
+            ("weapons.cruise_alt_default_m", w.cruise_alt_default_m),
+            ("weapons.max_flight_path_deg", w.max_flight_path_deg),
+        ] {
+            self.positive(path, v);
+        }
+        self.probability("weapons.close_fraction", w.close_fraction);
+        self.probability(
+            "weapons.range_calibration_tolerance",
+            w.range_calibration_tolerance,
+        );
+        {
+            use crate::source::WeaponCategory as C;
+            for c in [
+                C::Aam,
+                C::Sam,
+                C::Ashm,
+                C::Lacm,
+                C::Arm,
+                C::Agm,
+                C::Bomb,
+                C::Ballistic,
+                C::Rocket,
+                C::Shell,
+                C::Torpedo,
+                C::Loitering,
+                C::Decoy,
+            ] {
+                if !w.calibration.contains_key(&c) {
+                    self.err(
+                        &format!("weapons.calibration.{}", key(&c)),
+                        "is missing; every weapon category needs calibration conditions".into(),
+                    );
+                }
+            }
+        }
+        for seeker in [
+            Seeker::ActiveRadar,
+            Seeker::SemiActiveRadar,
+            Seeker::Ir,
+            Seeker::ImagingIr,
+            Seeker::AntiRadiation,
+            Seeker::GpsIns,
+            Seeker::Laser,
+            Seeker::Command,
+            Seeker::None,
+        ] {
+            if !r.endgame.aspect.contains_key(&seeker) {
+                self.err(
+                    &format!("endgame.aspect.{}", key(&seeker)),
+                    "is missing; every seeker needs aspect factors".into(),
+                );
+            }
+        }
+        self.positive(
+            "countermeasures.release_range_m",
+            r.countermeasures.release_range_m,
+        );
+        self.positive("roe.threat_cpa_m", r.roe.threat_cpa_m);
+        self.positive("roe.threat_horizon_s", r.roe.threat_horizon_s);
         self.probability(
             "damage.ship_out_of_action_fraction",
             r.damage.ship_out_of_action_fraction,
@@ -949,10 +1082,7 @@ fn has_unit_suffix(field: &str) -> bool {
 
 /// Cells (or rounds, for pylons and bays) taken by `count` rounds.
 pub(crate) fn cells(st: &Station, w: &Weapon, count: u32) -> u32 {
-    match st.kind {
-        StationKind::Vls | StationKind::Launcher => count.div_ceil(w.rounds_per_cell.max(1)),
-        StationKind::Internal | StationKind::External => count,
-    }
+    crate::compiled::station_cells(st.kind, w.rounds_per_cell, count)
 }
 
 /// `YYYY-MM-DD` with a plausible month and day.

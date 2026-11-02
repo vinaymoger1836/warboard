@@ -24,9 +24,14 @@ countermeasure_resistance: { chaff: 0.5 }
 mass_kg: 1835
 station_category: [s400_tube]
 envelope: { min_alt_m: 10, max_alt_m: 27000 }
+signature:
+  rcs_m2: { front: 0.2, side: 1.0, rear: 0.3, top: 1.0 }
+  ir: { cruise: 1.0 }
+  visual_size_m: 7.5
 provenance:
   confidence: medium
   estimates:
+    - signature
     - profile.boost_s
     - profile.coast_tau_s
     - profile.min_speed_mach

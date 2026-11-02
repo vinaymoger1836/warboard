@@ -6,7 +6,7 @@
 
 use super::common::{Domain, Provenance, Seeker, source_enum, source_type};
 use super::platform::PlatformCategory;
-use super::weapon::Warhead;
+use super::weapon::{Calibration, Warhead, WeaponCategory};
 use std::collections::BTreeMap;
 
 source_enum! {
@@ -63,6 +63,27 @@ source_enum! {
         Precise,
     }
 
+    /// Where a hit on a ship lands (doc 02 §13). `hull` damages points only.
+    #[serde(rename_all = "snake_case")]
+    pub enum Subsystem {
+        Hull,
+        Radar,
+        Vls,
+        Launcher,
+        Propulsion,
+    }
+
+    /// Damageable parts of a base (doc 02 §13, doc 03 §3).
+    #[serde(rename_all = "snake_case")]
+    pub enum BaseComponentKind {
+        Runway,
+        Shelters,
+        Fuel,
+        Munitions,
+        Radar,
+        C2,
+    }
+
     /// What a base must be placed on.
     #[serde(rename_all = "snake_case")]
     pub enum SiteRule {
@@ -89,8 +110,10 @@ source_type! {
         pub ew: EwRealism,
         pub weapons: WeaponRealism,
         pub endgame: EndgameRealism,
+        pub countermeasures: CountermeasureRealism,
         pub tewa: TewaRealism,
         pub damage: DamageRealism,
+        pub roe: RoeRealism,
         pub movement: MovementRealism,
         pub fuel: FuelRealism,
         pub logistics: LogisticsRealism,
@@ -267,6 +290,32 @@ source_type! {
         pub sea_skim_max_alt_m: f64,
         /// Calibration: published range must be met within ± this fraction.
         pub range_calibration_tolerance: f64,
+        /// Launch conditions of the published range per category, for weapons
+        /// that give none.
+        pub calibration: BTreeMap<WeaponCategory, Calibration>,
+        /// Coast time constant: `coast_tau_s.sea_level` at sea level, rising
+        /// linearly to `coast_tau_s.high_alt` at this altitude and above.
+        pub tau_high_alt_m: f64,
+        /// Speed lost per second per m/s² of lateral acceleration (induced drag).
+        pub manoeuvre_energy_factor: f64,
+        /// Available G = `max_g × (V / V_max)^exponent` (dynamic pressure).
+        pub g_speed_exponent: f64,
+        /// Seeker field of view, half-angle off the weapon's nose.
+        pub seeker_half_angle_deg: f64,
+        /// Midcourse updates from the shooter or the network.
+        pub datalink_update_s: f64,
+        /// Proximity fuze: the endgame is rolled inside this miss distance.
+        pub fuze_radius_m: f64,
+        /// Lethal radius by warhead for weapons that give none.
+        pub lethal_radius_m: BTreeMap<Warhead, f64>,
+        /// A seeker searching this long without a target self-destructs.
+        pub self_destruct_after_lost_s: f64,
+        /// Launch doctrine *close*: fire inside this fraction of the range.
+        pub close_fraction: f64,
+        /// Cruise altitude of air-breathing weapons that give none.
+        pub cruise_alt_default_m: f64,
+        /// Climb and dive limit of weapons, flight-path angle.
+        pub max_flight_path_deg: f64,
     }
 
     /// Endgame Pk (doc 02 §11).
@@ -287,6 +336,32 @@ source_type! {
         pub head_on: f64,
         pub beam: f64,
         pub tail: f64,
+    }
+
+    /// Countermeasures and threat reaction (doc 02 §9, §11; doc 03 §5).
+    #[serde(deny_unknown_fields)]
+    pub struct CountermeasureRealism {
+        /// An aware target dispenses inside this distance of the weapon.
+        pub release_range_m: f64,
+        /// Rounds of one countermeasure type dispensed per incoming weapon.
+        pub rounds_per_threat: u32,
+        /// A seeker of these kinds locked on a platform warns it (radar
+        /// warning receiver), so the target becomes aware.
+        pub rwr_seekers: Vec<Seeker>,
+    }
+
+    /// Rules of engagement (doc 03 §7).
+    #[serde(deny_unknown_fields)]
+    pub struct RoeRealism {
+        /// A contact that launched at us may be engaged under Bravo for this long.
+        pub return_fire_memory_s: f64,
+        /// No approval request is raised for a shot window shorter than this.
+        pub approval_window_min_s: f64,
+        /// A weapon contact whose predicted closest approach to a unit is
+        /// inside this distance is aimed at it.
+        pub threat_cpa_m: f64,
+        /// Look-ahead for the closest approach of a weapon contact.
+        pub threat_horizon_s: f64,
     }
 
     /// Threat evaluation and weapon assignment (doc 02 §12).
@@ -311,8 +386,29 @@ source_type! {
         pub ship_sink_delay_min: f64,
         /// Damage per kg of warhead by type.
         pub warhead_multiplier: BTreeMap<Warhead, f64>,
-        pub runway_repair_min_h: f64,
-        pub runway_repair_max_h: f64,
+        /// Ship damage points per effective warhead kg.
+        pub points_per_warhead_kg: f64,
+        /// Hit location on a ship, by weight.
+        pub ship_hits: BTreeMap<Subsystem, f64>,
+        /// Speed factor of a ship whose propulsion is hit.
+        pub propulsion_speed_factor: f64,
+        /// A strike point within this distance of a base hits the base.
+        pub base_radius_km: f64,
+        pub base_components: BTreeMap<BaseComponentKind, BaseComponentRule>,
+        /// Fraction of a base's stock lost when its munitions store is hit.
+        pub munitions_store_loss_fraction: f64,
+    }
+
+    /// One damageable part of a base.
+    #[serde(deny_unknown_fields)]
+    pub struct BaseComponentRule {
+        /// Hit location weight.
+        pub weight: f64,
+        /// Effective warhead kg for a certain kill; less damages with
+        /// probability `kg / hardness_kg`.
+        pub hardness_kg: f64,
+        pub repair_min_h: f64,
+        pub repair_max_h: f64,
     }
 
     /// Aircraft and ship movement (doc 02 §5). The aircraft and ship values

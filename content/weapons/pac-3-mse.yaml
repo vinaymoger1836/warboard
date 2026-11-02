@@ -25,11 +25,16 @@ countermeasure_resistance: { chaff: 0.7 }
 mass_kg: 370
 station_category: [patriot_mse_canister]
 envelope: { min_alt_m: 60, max_alt_m: 36000 }
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 5.2
 provenance:
   confidence: low
   notes: >-
     Source: hit-to-kill, active radar seeker, 36 km altitude, aerial range 120 km and ballistic 60 km (both marked as estimates there); mass and speed are listed as unknown.
   estimates:
+    - signature
     - profile.boost_s
     - profile.max_speed_mach
     - profile.coast_tau_s

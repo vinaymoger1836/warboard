@@ -370,6 +370,7 @@ impl Compiler<'_> {
                 max_g: p.max_g,
                 cruise_alt_m: p.cruise_alt_m,
                 terminal_alt_m: p.terminal_alt_m,
+                calibration: p.calibration.clone(),
             },
             guidance: c::Guidance {
                 midcourse: x.guidance.midcourse.clone(),
@@ -517,6 +518,19 @@ impl Compiler<'_> {
                     count: b.count,
                 })
                 .collect(),
+            munition_basing: x
+                .munition_basing
+                .iter()
+                .map(|b| {
+                    let mut m: Vec<(c::WeaponIx, u32)> = b
+                        .munitions
+                        .iter()
+                        .map(|(id, n)| (c::WeaponIx(self.ix(Kind::Weapon, id)), *n))
+                        .collect();
+                    m.sort();
+                    (c::BaseIx(self.ix(Kind::Base, &b.base)), m)
+                })
+                .collect(),
             provenance: self.provenance(&x.provenance, custom),
         }
     }
@@ -602,6 +616,7 @@ impl Compiler<'_> {
             ew: x.ew.clone(),
             weapons: x.weapons.clone(),
             endgame: x.endgame.clone(),
+            countermeasures: x.countermeasures.clone(),
             tewa: c::TewaRealism {
                 ciws_layer_min_m: km_to_m(x.tewa.ciws_layer_min_km),
                 ciws_layer_max_m: km_to_m(x.tewa.ciws_layer_max_km),
@@ -613,9 +628,28 @@ impl Compiler<'_> {
                 ship_out_of_action_fraction: d.ship_out_of_action_fraction,
                 ship_sink_delay_s: min_to_s(d.ship_sink_delay_min),
                 warhead_multiplier: d.warhead_multiplier.clone(),
-                runway_repair_min_s: h_to_s(d.runway_repair_min_h),
-                runway_repair_max_s: h_to_s(d.runway_repair_max_h),
+                points_per_warhead_kg: d.points_per_warhead_kg,
+                ship_hits: d.ship_hits.clone(),
+                propulsion_speed_factor: d.propulsion_speed_factor,
+                base_radius_m: km_to_m(d.base_radius_km),
+                base_components: d
+                    .base_components
+                    .iter()
+                    .map(|(k, b)| {
+                        (
+                            *k,
+                            c::BaseComponentRule {
+                                weight: b.weight,
+                                hardness_kg: b.hardness_kg,
+                                repair_min_s: h_to_s(b.repair_min_h),
+                                repair_max_s: h_to_s(b.repair_max_h),
+                            },
+                        )
+                    })
+                    .collect(),
+                munitions_store_loss_fraction: d.munitions_store_loss_fraction,
             },
+            roe: x.roe.clone(),
             movement: x.movement.clone(),
             fuel: x.fuel.clone(),
             logistics: c::LogisticsRealism {

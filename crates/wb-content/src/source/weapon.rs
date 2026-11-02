@@ -134,6 +134,20 @@ source_type! {
         /// Terminal altitude, e.g. sea-skimming height.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub terminal_alt_m: Option<f64>,
+        /// Launch conditions of the published range; the realism profile gives
+        /// a default per category (doc 02 §10 calibration rule).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub calibration: Option<Calibration>,
+    }
+
+    /// Conditions the published range refers to: launch altitude and speed,
+    /// and a non-manoeuvring head-on target at its altitude and speed.
+    #[serde(deny_unknown_fields)]
+    pub struct Calibration {
+        pub launch_alt_m: f64,
+        pub launch_speed_mach: f64,
+        pub target_alt_m: f64,
+        pub target_speed_mach: f64,
     }
 
     #[serde(deny_unknown_fields)]
