@@ -123,8 +123,7 @@ pub fn horizon_m(rules: &Rules, h1: f64, h2: f64) -> f64 {
 }
 
 /// External stores raise RCS while any weapon hangs on an external station.
-fn stores_mult(rules: &Rules, p: &Platform, mag: Option<&Magazine>) -> f64 {
-    let _ = rules;
+fn stores_mult(p: &Platform, mag: Option<&Magazine>) -> f64 {
     let external = mag.is_some_and(|m| {
         m.stations.iter().any(|s| {
             s.count > 0
@@ -257,7 +256,7 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
             group_size,
             type_ref,
             platform,
-            stores_mult: p.map_or(1.0, |p| stores_mult(rules, p, world.get::<Magazine>(e))),
+            stores_mult: p.map_or(1.0, |p| stores_mult(p, world.get::<Magazine>(e))),
             emcon: world.get::<EmconState>(e).map_or(Emcon::On, |x| x.0),
             fixed: sys.is_some_and(|s| {
                 rules.db.systems[s.0 as usize].deploy_as

@@ -16,7 +16,7 @@ use bevy_ecs::world::World;
 use core::f64::consts::TAU;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
-use wb_content::compiled::{CountryIx, LoadoutIx, PlatformIx};
+use wb_content::compiled::{CountryIx, LoadoutIx, PlatformIx, WeaponIx};
 use wb_content::source::Emcon;
 use wb_core::geo::{LatLon, destination_point, normalize_bearing};
 use wb_core::units::deg_to_rad;
@@ -25,8 +25,8 @@ use wb_core::{RngPurpose, UnitId, rng};
 use crate::bases::{self, content_kind};
 use crate::clock::{RngSeed, SimClock, TickLen};
 use crate::components::{
-    Allegiance, BaseRef, BaseSite, EmconState, Fuel, Group, GroupMember, Identity, Kinematics,
-    Magazine, Mode, PlatformRef, Posture, SatelliteState, ScriptedTarget, Speed, Steer,
+    Allegiance, BaseRef, BaseSite, Countermeasures, EmconState, Fuel, Group, GroupMember, Identity,
+    Kinematics, Mode, PlatformRef, Posture, SatelliteState, ScriptedTarget, Speed, Steer,
     TankerState, Task,
 };
 use crate::orders::{Order, OrderQueue};
@@ -613,10 +613,10 @@ fn spawn_system(
         .side_of(cix)
         .ok_or_else(|| bad(format!("country `{cid}` is on no side")))?;
     let sys = &rules.db.systems[six.0 as usize];
-    let comps: Vec<(PlatformIx, u32)> = sys
+    let comps: Vec<(PlatformIx, u32, Vec<(WeaponIx, u32)>)> = sys
         .components
         .iter()
-        .map(|c| (c.platform, c.count))
+        .map(|c| (c.platform, c.count, c.magazine.clone()))
         .collect();
     let total: u32 = comps.iter().map(|c| c.1).sum();
     if total == 0 || total > 64 {
@@ -632,14 +632,14 @@ fn spawn_system(
     let emcon = EmconState(u.emcon.unwrap_or(default_emcon(rules, cix, Some(six))));
     let mut members = Vec::new();
     let mut next = u.id + 1;
-    for (pix, count) in comps {
+    for (pix, count, magazine) in comps {
         let p = rules.platform(pix);
         for i in 0..count {
             let id = UnitId(next);
             next += 1;
             let slot = members.len() as u8;
             let name = format!("{} {} {}", u.name, rules.db.str(p.short_name), i + 1);
-            spawn_unit(
+            let e = spawn_unit(
                 world,
                 id,
                 (
@@ -661,14 +661,13 @@ fn spawn_system(
                     },
                     BaseRef { home: None },
                     Posture::Moving,
-                    Magazine {
-                        loadout: None,
-                        rounds: Vec::new(),
-                        initial: 0,
-                    },
+                    bases::system_magazine(rules, p, &magazine),
                     emcon,
                 ),
             );
+            if let Some(c) = Countermeasures::full(p) {
+                world.entity_mut(e).insert(c);
+            }
             members.push(id);
         }
     }
@@ -799,6 +798,7 @@ fn spawn_real_bases(world: &mut World, rules: &Rules) {
                     active_at_ms: 0,
                     active: true,
                     stationed: Vec::new(),
+                    stock: bases::initial_stock(rules, wb_content::compiled::BaseIx(i as u32)),
                 },
             ),
         );
@@ -865,10 +865,9 @@ fn spawn_group(
     let home = base_site.or_else(|| {
         bases::nearest_suitable(rules, &bases, allegiance.side, p, kin.pos(), None).map(|b| b.id)
     });
-    let rounds = loadout
-        .map(|l| bases::loadout_rounds(rules, l))
+    let magazine = loadout
+        .map(|l| bases::template_magazine(rules, l))
         .unwrap_or_default();
-    let initial = rounds.iter().map(|(_, n)| n).sum();
     for (slot, m) in members.iter().enumerate() {
         let mname = if members.len() == 1 {
             name.to_owned()
@@ -900,13 +899,12 @@ fn spawn_group(
                     },
                     None => Posture::Moving,
                 },
-                Magazine {
-                    loadout,
-                    rounds: rounds.clone(),
-                    initial,
-                },
+                magazine.clone(),
             ),
         );
+        if let Some(c) = Countermeasures::full(p) {
+            world.entity_mut(e).insert(c);
+        }
         if let Some(cap) = rules.fuel_capacity(p) {
             world.entity_mut(e).insert(Fuel {
                 kg: cap,
