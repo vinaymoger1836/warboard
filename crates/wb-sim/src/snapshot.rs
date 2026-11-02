@@ -10,6 +10,7 @@ use crate::clock::{EngagementState, RngSeed, SimClock};
 use crate::components::{
     Allegiance, BaseRef, BaseSite, Countermeasures, EmconState, Fuel, Group, GroupMember, Identity,
     Kinematics, Magazine, PlatformRef, Posture, SatelliteState, ScriptedTarget, Steer, TankerState,
+    WeaponFlight,
 };
 use crate::events::EventLog;
 use crate::orders::{OrderLog, OrderQueue};
@@ -18,6 +19,7 @@ use crate::probe::ProbeState;
 use crate::rules::Rules;
 use crate::scenario::TestTerrain;
 use crate::sensors::LosMemo;
+use crate::weapons::Combat;
 use crate::world::{ForceFineTick, Sides, UnitIdAlloc, UnitIndex};
 
 const MAGIC: &[u8; 8] = b"WB-STATE";
@@ -43,6 +45,7 @@ pub struct UnitRecord {
     pub emcon: Option<EmconState>,
     pub satellite: Option<SatelliteState>,
     pub scripted: Option<ScriptedTarget>,
+    pub weapon: Option<WeaponFlight>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -57,6 +60,7 @@ pub struct Snapshot {
     pub orders: OrderQueue,
     pub pictures: SidePictures,
     pub test_terrain: Option<TestTerrain>,
+    pub combat: Combat,
     pub units: Vec<UnitRecord>,
 }
 

@@ -506,7 +506,6 @@ pub fn fly(world: &mut World) {
             update_due,
             update_ms,
             &mut cands,
-            id,
             side,
             &mut f,
             k,
@@ -534,7 +533,6 @@ fn step(
     update_due: bool,
     update_ms: u64,
     cands: &mut Option<Vec<Candidate>>,
-    id: UnitId,
     side: u8,
     f: &mut WeaponFlight,
     k: Kinematics,
@@ -589,7 +587,7 @@ fn step(
         let d = norm(rel);
         d > 0.0 && dot(rel, u) / d >= cos(half_fov)
     };
-    let reached_aim = aim_dist <= 2.0 * k.speed_mps.max(1.0) * dt;
+    let reached_aim = aim_dist <= 2.0 * k.speed_mps.max(1.0) * dt || dot(to_aim, u) < 0.0;
     if locks(seeker) {
         if f.seeker == SeekerState::Off && aim_dist <= seeker_range {
             f.seeker = SeekerState::Searching { lost_ms: None };
@@ -683,14 +681,17 @@ fn step(
         n: -cos(k.heading) * sin(f.fpa),
         u: cos(f.fpa),
     };
-    // Before a rocket lines up with the target (launch, a new aimpoint), PN
-    // alone barely turns: add pursuit toward the line of sight.
+    // A target outside the seeker's field of view (a new aimpoint, a
+    // retarget): PN alone barely turns, so add pursuit toward the line of
+    // sight.
     let los = scale(t0, 1.0 / sqrt(r2));
-    a_cmd = Enu {
-        e: a_cmd.e + (los.e - u.e) * v / PITCH_TAU_S,
-        n: a_cmd.n + (los.n - u.n) * v / PITCH_TAU_S,
-        u: a_cmd.u + (los.u - u.u) * v / PITCH_TAU_S,
-    };
+    if dot(los, u) < cos(half_fov) {
+        a_cmd = Enu {
+            e: a_cmd.e + (los.e - u.e) * v / PITCH_TAU_S,
+            n: a_cmd.n + (los.n - u.n) * v / PITCH_TAU_S,
+            u: a_cmd.u + (los.u - u.u) * v / PITCH_TAU_S,
+        };
+    }
     let cg = cos(f.fpa).max(1e-3);
     let mut psi_dot = dot(a_cmd, e_psi) / (v * cg);
     let mut gam_dot = dot(a_cmd, e_gam) / v;
@@ -698,9 +699,11 @@ fn step(
     let max_fp = deg_to_rad(wr.max_flight_path_deg);
     let closing = (-dot(t0, rel_v) / sqrt(r2)).max(1.0);
     let terminal = horiz / closing <= TERMINAL_DIVE_S;
+    let held = mode(w) != Mode::Intercept && !terminal;
     match mode(w) {
+        _ if !held => {}
         Mode::Intercept => {}
-        Mode::Hold if !terminal => {
+        Mode::Hold => {
             let in_seeker = aim_dist <= seeker_range;
             let cruise = w.profile.cruise_alt_m.unwrap_or(wr.cruise_alt_default_m);
             let above = if in_seeker {
@@ -712,10 +715,9 @@ fn step(
             let cmd = atan((want - k.alt_m) / (v * 4.0 * PITCH_TAU_S)).clamp(-max_fp, max_fp);
             gam_dot = (cmd - f.fpa) / PITCH_TAU_S;
         }
-        Mode::Hold => {}
         Mode::Glide => {
             let slope = -atan(1.0 / glide_ratio(rules, w));
-            let cmd = atan2(t0.u, horiz).min(slope).max(-max_fp.max(-slope));
+            let cmd = atan2(t0.u, horiz).min(slope).max(-max_fp);
             gam_dot = (cmd - f.fpa) / PITCH_TAU_S;
         }
     }
@@ -772,7 +774,7 @@ fn step(
     // Move.
     let heading = wb_core::geo::normalize_bearing(k.heading + psi_dot * dt);
     let mut fpa = f.fpa + gam_dot * dt;
-    if mode(w) != Mode::Intercept {
+    if held {
         fpa = fpa.clamp(-max_fp, max_fp);
     }
     let u2 = Enu {
@@ -830,18 +832,19 @@ fn step(
         }
     }
 
-    // Out of energy.
+    // Out of energy: too slow, range flown, or down at the aimpoint's
+    // height without fuzing (a glide weapon short of its target, a rocket
+    // into the sea).
     let spent = match p.kind {
         ProfileKind::Rocket | ProfileKind::Ballistic => {
             tof >= p.boost_s && v < p.min_speed_mach.unwrap_or(0.0) * sound
         }
         ProfileKind::AirBreathing => f.flown_m >= p.max_range_m,
-        ProfileKind::Glide => alt <= t_alt.min(0.0).max(aim_alt.min(alt)) && alt <= 0.0,
+        ProfileKind::Glide => alt <= aim_alt,
     };
-    if spent || alt < 0.0 || tof > MAX_FLIGHT_S || reached_aim && !locks(seeker) && !fuze_target {
+    if spent || alt < 0.0 || tof > MAX_FLIGHT_S {
         return Err((Outcome::OutOfEnergy, k2, None));
     }
-    let _ = id;
     Ok(k2)
 }
 
