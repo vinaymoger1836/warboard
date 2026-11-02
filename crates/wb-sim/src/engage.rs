@@ -194,14 +194,33 @@ fn class_of(rules: &Rules, c: &Contact) -> Option<TargetClass> {
     }
 }
 
-fn has_track(c: &Contact, shooter: UnitId, w: &Weapon, now: u64) -> bool {
-    if c.lost || c.quality > Quality::Track || c.est.is_none() {
+/// Whether the shooter may fire at a contact: its own confirmed radar track
+/// on the contact (fire control needs no report to reach the side's
+/// picture), a fresh own detection at track quality, or, for weapons that
+/// engage on remote tracks, the side's track.
+fn has_track(world: &World, c: &Contact, shooter: UnitId, w: &Weapon, now: u64) -> bool {
+    if c.lost || c.est.is_none() {
         return false;
     }
-    w.engage_on_remote
-        || c.sources
-            .iter()
-            .any(|s| s.observer == shooter && now.saturating_sub(s.last_ms) <= TRACK_FRESH_MS)
+    let pics = world.resource::<SidePictures>();
+    let own_radar = pics
+        .tracks
+        .range((shooter, 0, UnitId(0))..=(shooter, u8::MAX, UnitId(u32::MAX)))
+        .any(|((_, _, t), st)| {
+            st.confirmed
+                && (*t == c.truth
+                    || entity(world, *t)
+                        .and_then(|e| world.get::<crate::components::GroupMember>(e))
+                        .is_some_and(|m| m.group == c.truth))
+        });
+    if own_radar {
+        return true;
+    }
+    c.quality <= Quality::Track
+        && (w.engage_on_remote
+            || c.sources
+                .iter()
+                .any(|s| s.observer == shooter && now.saturating_sub(s.last_ms) <= TRACK_FRESH_MS))
 }
 
 /// A contact's estimate dead-reckoned to now, and its speed toward `from`.
@@ -343,7 +362,7 @@ fn self_defence(
             let pick = s.rounds.iter().map(|r| r.0).find(|wix| {
                 let w = &rules.db.weapons[wix.0 as usize];
                 fits(rules, w, &c)
-                    && has_track(&c, s.uid, w, now)
+                    && has_track(world, &c, s.uid, w, now)
                     && range >= w.profile.min_range_m
                     && range <= rules.flyout(*wix).max_range(v_close)
             });
@@ -508,7 +527,7 @@ fn offensive(
                 .filter(|wix| {
                     let w = &rules.db.weapons[wix.0 as usize];
                     fits(rules, w, &c)
-                        && has_track(&c, s.uid, w, now)
+                        && has_track(world, &c, s.uid, w, now)
                         && range >= w.profile.min_range_m
                         && range <= doctrine_range(rules, *wix, doc, v_close, v_escape)
                 })
