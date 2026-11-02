@@ -27,8 +27,10 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use wb_core::UnitId;
 use wb_core::math::pow;
-use wb_sim::components::{Group, GroupMember, Kinematics, PlatformRef};
+use wb_sim::components::{Group, GroupMember, Kinematics, PlatformRef, WeaponFlight, WeaponTarget};
+use wb_sim::events::Outcome;
 use wb_sim::orders::Command;
+use wb_sim::weapons::LaunchReason;
 use wb_sim::picture::SidePictures;
 use wb_sim::{Event, EventKind, Scenario, Sim};
 
@@ -96,6 +98,27 @@ struct Measure {
     satellite: Option<u32>,
     #[serde(default)]
     imaged: Option<bool>,
+    /// Which launches `launches` counts.
+    #[serde(default)]
+    filter: Option<LaunchFilter>,
+    /// Outcomes `outcome_fraction` counts.
+    #[serde(default)]
+    outcomes: Option<Vec<Outcome>>,
+    /// Content weapon id the weapon metrics are limited to.
+    #[serde(default)]
+    weapon: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum LaunchFilter {
+    /// Target's true position outside the side's territory at launch.
+    OutsideTerritory,
+    /// At weapons (interceptors).
+    AtWeapons,
+    AtNonWeapons,
+    /// Fired under Bravo at a contact that launched at us.
+    ReturnFire,
 }
 
 #[derive(Debug, Deserialize)]
@@ -155,6 +178,21 @@ enum Metric {
     FirstDetectionAfterLosClearS,
     /// Intel reports from a satellite (optionally only `imaged` ones).
     ReportCount,
+    /// Launches by a side (optionally filtered).
+    Launches,
+    /// Self-defence launches by a side.
+    SelfDefenceLaunches,
+    /// Approval requests raised for a side.
+    RoeRequests,
+    /// Requests the side approved.
+    Approvals,
+    /// Share of a side's terminations (of `weapon`) with one of `outcomes`.
+    OutcomeFraction,
+    /// Hits over terminations of a side's weapons (of `weapon`).
+    Pk,
+    /// Seconds from the target's true crossing into the side's territory
+    /// to the side's first launch after it.
+    FirstLaunchAfterCrossingS,
 }
 
 impl Metric {
@@ -165,6 +203,20 @@ impl Metric {
                 | Metric::LandedReserveMarginKg
                 | Metric::BingoCalls
                 | Metric::Refuels
+        )
+    }
+
+    /// Combat metrics run to `max_ticks`.
+    fn is_combat(self) -> bool {
+        matches!(
+            self,
+            Metric::Launches
+                | Metric::SelfDefenceLaunches
+                | Metric::RoeRequests
+                | Metric::Approvals
+                | Metric::OutcomeFraction
+                | Metric::Pk
+                | Metric::FirstLaunchAfterCrossingS
         )
     }
 }
@@ -472,9 +524,19 @@ fn measure_run(sim: &mut Sim, measures: &[Measure], max_ticks: u64) -> Vec<Optio
         .collect();
     let sensing: Vec<&Measure> = measures
         .iter()
-        .filter(|m| !m.metric.is_flight() && m.metric != Metric::ReportCount)
+        .filter(|m| {
+            !m.metric.is_flight() && !m.metric.is_combat() && m.metric != Metric::ReportCount
+        })
         .collect();
     let reports_only = measures.iter().all(|m| m.metric == Metric::ReportCount);
+    let combat = measures.iter().any(|m| m.metric.is_combat());
+    let crossings: Vec<(u8, u32)> = measures
+        .iter()
+        .filter(|m| m.metric == Metric::FirstLaunchAfterCrossingS)
+        .filter_map(|m| Some((m.side?, m.target?)))
+        .collect();
+    let mut log = CombatLog::default();
+    let mut seen_events = 0;
     // Line of sight per (observer, target): clearance each tick and the tick it cleared.
     let mut cleared: BTreeMap<(u32, u32), Option<u64>> = BTreeMap::new();
     let mut history: BTreeMap<(u32, u32), BTreeMap<u64, f64>> = BTreeMap::new();
@@ -498,6 +560,10 @@ fn measure_run(sim: &mut Sim, measures: &[Measure], max_ticks: u64) -> Vec<Optio
                 history.entry((o, t)).or_default().insert(tick - 1, c);
             }
             let _ = side;
+        }
+        if combat {
+            seen_events = log.update(sim, seen_events, &crossings);
+            continue;
         }
         if reports_only {
             continue;
@@ -524,10 +590,173 @@ fn measure_run(sim: &mut Sim, measures: &[Measure], max_ticks: u64) -> Vec<Optio
             Some(((o, t), *c))
         })
         .collect();
+    if combat {
+        log.check_terminations(sim);
+    }
     measures
         .iter()
-        .map(|m| value(sim, m, &groups, &cleared, &at_detect))
+        .map(|m| value(sim, m, &groups, &cleared, &at_detect, &log))
         .collect()
+}
+
+/// What the harness records on truth while a combat golden runs.
+#[derive(Default)]
+struct CombatLog {
+    /// Per launched weapon: its target's true position was outside the
+    /// shooter's territory at launch.
+    outside: BTreeMap<UnitId, bool>,
+    /// (side, target) → sim time the target first crossed into the side's
+    /// territory.
+    crossed: BTreeMap<(u8, u32), u64>,
+}
+
+impl CombatLog {
+    fn update(&mut self, sim: &mut Sim, from: usize, crossings: &[(u8, u32)]) -> usize {
+        let now = sim.clock().sim_time_ms;
+        for &(side, target) in crossings {
+            if self.crossed.contains_key(&(side, target)) {
+                continue;
+            }
+            let Some((at, _, _)) = place(sim, target) else {
+                continue;
+            };
+            let world = sim.world();
+            let rules = world.resource::<wb_sim::Rules>();
+            if wb_sim::roe::own_territory(world, rules, side, at) {
+                self.crossed.insert((side, target), now);
+            }
+        }
+        let launched: Vec<(UnitId, u8)> = sim.events()[from..]
+            .iter()
+            .filter_map(|e| match e.kind {
+                EventKind::WeaponLaunched { weapon, .. } => {
+                    Some((weapon, e.sides.trailing_zeros() as u8))
+                }
+                _ => None,
+            })
+            .collect();
+        let n = sim.events().len();
+        let world = sim.world();
+        let rules = world.resource::<wb_sim::Rules>();
+        for (weapon, side) in launched {
+            let key = wb_sim::world::entity(world, weapon)
+                .and_then(|e| world.get::<WeaponFlight>(e))
+                .and_then(|f| match f.target {
+                    WeaponTarget::Track { key, .. } | WeaponTarget::Truth(key) => Some(key),
+                    WeaponTarget::Point { .. } => None,
+                });
+            let Some((at, _, _)) = key.and_then(|k| place(sim, k.0)) else {
+                continue;
+            };
+            self.outside
+                .insert(weapon, !wb_sim::roe::own_territory(world, rules, side, at));
+        }
+        n
+    }
+
+    /// Every termination must carry its factors (doc 02 §11, CLAUDE.md
+    /// rule 4): an endgame roll when the weapon fuzed.
+    fn check_terminations(&self, sim: &Sim) {
+        for e in sim.events() {
+            if let EventKind::WeaponTerminated {
+                outcome, factors, ..
+            } = &e.kind
+            {
+                let fuzed = matches!(outcome, Outcome::Hit | Outcome::Miss | Outcome::Decoyed);
+                assert!(
+                    !fuzed || factors.endgame.is_some(),
+                    "a fuzed termination without endgame factors: {e:?}"
+                );
+            }
+        }
+    }
+}
+
+fn side_of(e: &Event) -> u8 {
+    e.sides.trailing_zeros() as u8
+}
+
+fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
+    let side = m.side?;
+    let events = sim.events();
+    let mine = || events.iter().filter(move |e| side_of(e) == side);
+    let weapon_ok = |w: &str| m.weapon.as_deref().is_none_or(|x| x == w);
+    match m.metric {
+        Metric::Launches => Some(
+            mine()
+                .filter(|e| match &e.kind {
+                    EventKind::WeaponLaunched {
+                        weapon,
+                        weapon_type,
+                        intercept,
+                        reason,
+                        ..
+                    } => {
+                        weapon_ok(weapon_type)
+                            && match m.filter {
+                                None => true,
+                                Some(LaunchFilter::AtWeapons) => *intercept,
+                                Some(LaunchFilter::AtNonWeapons) => !*intercept,
+                                Some(LaunchFilter::ReturnFire) => *reason == LaunchReason::ReturnFire,
+                                Some(LaunchFilter::OutsideTerritory) => {
+                                    log.outside.get(weapon).copied().unwrap_or(false)
+                                }
+                            }
+                    }
+                    _ => false,
+                })
+                .count() as f64,
+        ),
+        Metric::SelfDefenceLaunches => Some(
+            mine()
+                .filter(|e| {
+                    matches!(&e.kind, EventKind::WeaponLaunched { reason, .. }
+                        if *reason == LaunchReason::SelfDefence)
+                })
+                .count() as f64,
+        ),
+        Metric::RoeRequests => Some(
+            mine()
+                .filter(|e| matches!(e.kind, EventKind::RoeRequest { .. }))
+                .count() as f64,
+        ),
+        Metric::Approvals => Some(
+            mine()
+                .filter(|e| {
+                    matches!(&e.kind, EventKind::RoeDecision { decision, .. }
+                        if *decision == wb_sim::events::Decision::Approved)
+                })
+                .count() as f64,
+        ),
+        Metric::OutcomeFraction | Metric::Pk => {
+            let ends: Vec<Outcome> = mine()
+                .filter_map(|e| match &e.kind {
+                    EventKind::WeaponTerminated {
+                        weapon_type,
+                        outcome,
+                        ..
+                    } if weapon_ok(weapon_type) => Some(*outcome),
+                    _ => None,
+                })
+                .collect();
+            if ends.is_empty() {
+                return None;
+            }
+            let wanted = match m.metric {
+                Metric::Pk => vec![Outcome::Hit],
+                _ => m.outcomes.clone().unwrap_or_default(),
+            };
+            Some(ends.iter().filter(|o| wanted.contains(o)).count() as f64 / ends.len() as f64)
+        }
+        Metric::FirstLaunchAfterCrossingS => {
+            let crossed = *log.crossed.get(&(side, m.target?))?;
+            let first = mine()
+                .filter(|e| e.sim_time_ms >= crossed)
+                .find(|e| matches!(e.kind, EventKind::WeaponLaunched { .. }))?;
+            Some((first.sim_time_ms - crossed) as f64 / 1_000.0)
+        }
+        _ => None,
+    }
 }
 
 fn value(
@@ -536,7 +765,11 @@ fn value(
     groups: &BTreeMap<u32, Vec<UnitId>>,
     cleared: &BTreeMap<(u32, u32), Option<u64>>,
     at_detect: &BTreeMap<(u32, u32), f64>,
+    log: &CombatLog,
 ) -> Option<f64> {
+    if m.metric.is_combat() {
+        return combat_value(sim, m, log);
+    }
     let events = sim.events();
     match m.metric {
         Metric::FirstDetectionRangeKm => {

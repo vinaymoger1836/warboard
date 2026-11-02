@@ -110,6 +110,22 @@ pub fn run(world: &mut World) {
         );
         in_env |= offensive(world, &rules, side, gid, &g, &shooters, &mut inflight, now);
     }
+    // Incoming weapons stay marked while their contact exists, so a threat
+    // whose predicted approach flickers is announced once.
+    let alive: Vec<(u8, ContactId)> = {
+        let pics = world.resource::<SidePictures>();
+        world
+            .resource::<Combat>()
+            .incoming
+            .keys()
+            .filter(|(s, ct)| {
+                pics.sides
+                    .get(usize::from(*s))
+                    .is_some_and(|p| p.get(*ct).is_some())
+            })
+            .copied()
+            .collect()
+    };
     let mut c = world.resource_mut::<Combat>();
     c.hostile_in_envelope = in_env;
     let fresh: Vec<(u8, ContactId, UnitId, f64)> = incoming
@@ -117,7 +133,10 @@ pub fn run(world: &mut World) {
         .filter(|(k, _)| !c.incoming.contains_key(*k))
         .map(|((s, ct), (u, tti))| (*s, *ct, *u, *tti))
         .collect();
-    c.incoming = incoming.iter().map(|(k, v)| (*k, v.0)).collect();
+    c.incoming.retain(|k, _| alive.contains(k));
+    for (k, v) in &incoming {
+        c.incoming.insert(*k, v.0);
+    }
     for (side, contact, unit, tti) in fresh {
         emit(
             world,
@@ -359,13 +378,20 @@ fn self_defence(
                 continue;
             };
             let range = distance_m(s.pos, at);
-            let pick = s.rounds.iter().map(|r| r.0).find(|wix| {
-                let w = &rules.db.weapons[wix.0 as usize];
-                fits(rules, w, &c)
-                    && has_track(world, &c, s.uid, w, now)
-                    && range >= w.profile.min_range_m
-                    && range <= rules.flyout(*wix).max_range(v_close)
-            });
+            // Layers (doc 02 §12): the longest reach first.
+            let pick = s
+                .rounds
+                .iter()
+                .map(|r| (r.0, rules.flyout(r.0).max_range(v_close)))
+                .filter(|(wix, reach)| {
+                    let w = &rules.db.weapons[wix.0 as usize];
+                    fits(rules, w, &c)
+                        && has_track(world, &c, s.uid, w, now)
+                        && range >= w.profile.min_range_m
+                        && range <= *reach
+                })
+                .max_by(|a, b| a.1.total_cmp(&b.1).then(b.0.cmp(&a.0)))
+                .map(|x| x.0);
             let Some(wix) = pick else { continue };
             if launch(
                 world,
