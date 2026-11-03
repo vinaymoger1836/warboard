@@ -634,6 +634,7 @@ impl CombatLog {
             let world = sim.world();
             let rules = world.resource::<wb_sim::Rules>();
             if wb_sim::roe::own_territory(world, rules, side, at) {
+                eprintln!("TRACE crossed t={now} lat={}", wb_core::units::rad_to_deg(at.lat));
                 self.crossed.insert((side, target), now);
             }
         }
@@ -659,6 +660,11 @@ impl CombatLog {
             let Some((at, _, _)) = key.and_then(|k| place(sim, k.0)) else {
                 continue;
             };
+            eprintln!(
+                "TRACE launch t={now} side={side} key={key:?} lat={} lon={}",
+                wb_core::units::rad_to_deg(at.lat),
+                wb_core::units::rad_to_deg(at.lon)
+            );
             self.outside
                 .insert(weapon, !wb_sim::roe::own_territory(world, rules, side, at));
         }

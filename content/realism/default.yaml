@@ -172,6 +172,7 @@ damage:                              # doc 02 §13
 
 roe:                                 # doc 03 §7
   return_fire_memory_s: 600
+  territory_sigma: 3                 # Bravo: the 3-sigma ellipse must be inside
   approval_window_min_s: 10
   threat_cpa_m: 2000
   threat_horizon_s: 300

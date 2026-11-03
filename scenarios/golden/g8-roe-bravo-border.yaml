@@ -1,0 +1,41 @@
+# G8 (doc 08 §3, P5): two F-35A under ROE Bravo fly a CAP inside Polish
+# territory (a test polygon whose northern border runs along 55° N). Two
+# Su-35S fly west along the border about 17 km outside it.
+# - crossing: the Russians hold fire and turn south across the border. The
+#   F-35s never fire while the target is truly outside and fire within 60 s
+#   of it crossing.
+# - return_fire: the Russians stay outside and fire first; the F-35s fire
+#   back although the target never enters our territory.
+name: G8 ROE Bravo along the border
+seed: 8
+start_utc: 2026-10-27T12:00:00Z
+start_mode: deploy
+test_territory:
+  - { country: pol, polygon: [[14.0, 53.0], [20.5, 53.0], [20.5, 55.0], [14.0, 55.0]] }
+sides:
+  - { name: NATO, countries: [pol], roe: bravo, self_defence: true }
+  - { name: Russia, countries: [rus], roe: charlie, self_defence: false }
+units:
+  - { id: 10, name: Husarz, platform: f-35a, country: pol, count: 2, lat_deg: 54.6, lon_deg: 17.0, alt_m: 10000, heading_deg: 90, loadout: f-35a-air-superiority }
+  - { id: 20, name: Sokol, platform: su-35s, country: rus, count: 2, lat_deg: 55.15, lon_deg: 20.3, alt_m: 9000, heading_deg: 270, loadout: su-35s-air-superiority }
+orders:
+  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: patrol_circle, centre: [17.0, 54.6], radius_km: 20, alt_m: 10000 } }
+golden:
+  id: G8
+  description: F-35A under Bravo never engage a hostile flight outside the border, engage within 60 s of it crossing, and return fire
+  max_ticks: 6000
+  seeds: 20
+  variants:
+    crossing:
+      orders:
+        - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: patrol_route, waypoints: [[17.6, 55.15], [17.3, 54.7], [15.0, 54.7]], loop: false, alt_m: 9000 } }
+    return_fire:
+      orders:
+        - { tick: 0, side: 1, type: SetRoe, roe: alpha }
+        - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[14.0, 55.15]], alt_m: 9000 } }
+  expect:
+    - { variant: crossing, metric: launches, side: 0, filter: outside_territory, aggregate: max, max: 0 }
+    - { variant: crossing, metric: first_launch_after_crossing_s, side: 0, target: 20, aggregate: max, min: 0, max: 60 }
+    - { variant: crossing, metric: roe_requests, side: 0, min: 1 }
+    - { variant: return_fire, metric: launches, side: 1, min: 1 }
+    - { variant: return_fire, metric: launches, side: 0, filter: return_fire, min: 1 }

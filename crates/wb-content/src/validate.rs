@@ -987,6 +987,7 @@ impl<'a> Cx<'a, '_> {
             "countermeasures.release_range_m",
             r.countermeasures.release_range_m,
         );
+        self.positive("roe.territory_sigma", r.roe.territory_sigma);
         self.positive("roe.threat_cpa_m", r.roe.threat_cpa_m);
         self.positive("roe.threat_horizon_s", r.roe.threat_horizon_s);
         self.probability(

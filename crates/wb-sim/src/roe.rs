@@ -130,9 +130,7 @@ pub fn gate(world: &World, rules: &Rules, side: u8, unit: UnitId, c: &Contact, n
     match effective(world, side, unit).0 {
         Roe::Alpha => Gate::Fire(LaunchReason::WeaponsFree),
         Roe::Bravo => {
-            if c.est
-                .is_some_and(|e| own_territory(world, rules, side, e.at))
-            {
+            if surely_inside(world, rules, side, c, now) {
                 return Gate::Fire(LaunchReason::Territory);
             }
             let memory_ms = (rules.realism().roe.return_fire_memory_s * 1_000.0) as u64;

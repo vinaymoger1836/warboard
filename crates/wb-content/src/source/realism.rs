@@ -360,6 +360,9 @@ source_type! {
     pub struct RoeRealism {
         /// A contact that launched at us may be engaged under Bravo for this long.
         pub return_fire_memory_s: f64,
+        /// Bravo engages a contact in own territory only when its error
+        /// ellipse scaled by this many sigma lies inside it.
+        pub territory_sigma: f64,
         /// No approval request is raised for a shot window shorter than this.
         pub approval_window_min_s: f64,
         /// A weapon contact whose predicted closest approach to a unit is
