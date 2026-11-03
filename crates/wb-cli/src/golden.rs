@@ -101,7 +101,8 @@ struct Measure {
     satellite: Option<u32>,
     #[serde(default)]
     imaged: Option<bool>,
-    /// Which launches `launches` counts.
+    /// Which launches `launches` counts (`first` also limits the weapon
+    /// outcome metrics).
     #[serde(default)]
     filter: Option<LaunchFilter>,
     /// Outcomes `outcome_fraction` counts.
@@ -122,6 +123,9 @@ enum LaunchFilter {
     AtNonWeapons,
     /// Fired under Bravo at a contact that launched at us.
     ReturnFire,
+    /// The side's first launch (of `weapon`): the shot fired at the
+    /// doctrine's range, not the follow-ups after a miss (G6).
+    First,
 }
 
 #[derive(Debug, Deserialize)]
@@ -688,6 +692,14 @@ fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
     let events = sim.events();
     let mine = || events.iter().filter(move |e| side_of(e) == side);
     let weapon_ok = |w: &str| m.weapon.as_deref().is_none_or(|x| x == w);
+    let first = mine().find_map(|e| match &e.kind {
+        EventKind::WeaponLaunched {
+            weapon,
+            weapon_type,
+            ..
+        } if weapon_ok(weapon_type) => Some(*weapon),
+        _ => None,
+    });
     match m.metric {
         Metric::Launches => Some(
             mine()
@@ -705,6 +717,7 @@ fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
                                 Some(LaunchFilter::AtWeapons) => *intercept,
                                 Some(LaunchFilter::AtNonWeapons) => !*intercept,
                                 Some(LaunchFilter::ReturnFire) => *reason == LaunchReason::ReturnFire,
+                                Some(LaunchFilter::First) => first == Some(*weapon),
                                 Some(LaunchFilter::OutsideTerritory) => {
                                     log.outside.get(weapon).copied().unwrap_or(false)
                                 }
@@ -739,10 +752,15 @@ fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
             let ends: Vec<Outcome> = mine()
                 .filter_map(|e| match &e.kind {
                     EventKind::WeaponTerminated {
+                        weapon,
                         weapon_type,
                         outcome,
                         ..
-                    } if weapon_ok(weapon_type) => Some(*outcome),
+                    } if weapon_ok(weapon_type)
+                        && (m.filter != Some(LaunchFilter::First) || first == Some(*weapon)) =>
+                    {
+                        Some(*outcome)
+                    }
                     _ => None,
                 })
                 .collect();
