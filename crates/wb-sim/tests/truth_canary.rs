@@ -6,7 +6,7 @@
 //!
 //! The test calls exactly what a client can call (wb-wasm wraps the same
 //! functions): `ViewEncoder::encode`, `details`, `contact_details`,
-//! `ground_track` and the side-filtered event log.
+//! `ground_track`, `roe::approvals` and the side-filtered event log.
 
 use std::sync::Arc;
 use wb_core::UnitId;
@@ -139,6 +139,8 @@ fn hidden_enemy_never_leaks() {
                 Err(e) => assert_eq!(e, format!("Unknown contact {id}")),
             }
         }
+        // The approval queue (Charlie by default: requests for the canaries).
+        texts.push(serde_json::to_string(&wb_sim::roe::approvals(sim.world(), 0)).expect("json"));
         // Events side 0 may see.
         let log = sim.world().resource::<wb_sim::events::EventLog>();
         for e in log.visible(0, seen_events) {
