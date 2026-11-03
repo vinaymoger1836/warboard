@@ -425,8 +425,9 @@ impl Scenario {
             let mut areas = Vec::new();
             for (i, t) in self.test_territory.iter().enumerate() {
                 let bad = |reason: String| ScenarioError::InvalidSide { side: i, reason };
-                let c = country(&rules, &t.country)
-                    .ok_or_else(|| bad(format!("test_territory: unknown country `{}`", t.country)))?;
+                let c = country(&rules, &t.country).ok_or_else(|| {
+                    bad(format!("test_territory: unknown country `{}`", t.country))
+                })?;
                 if t.polygon.len() < 3 {
                     return Err(bad("test_territory: a polygon needs 3 corners".into()));
                 }

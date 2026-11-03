@@ -89,7 +89,10 @@ pub fn react(world: &mut World, rules: &Rules, now: u64, id: UnitId, f: &mut Wea
     let (Some(ge), Some(ue)) = (entity(world, gid), entity(world, unit)) else {
         return;
     };
-    let Some(side) = world.get::<crate::components::Allegiance>(ue).map(|a| a.side) else {
+    let Some(side) = world
+        .get::<crate::components::Allegiance>(ue)
+        .map(|a| a.side)
+    else {
         return;
     };
     let Some(p) = world.get::<PlatformRef>(ue).map(|p| rules.platform(p.0)) else {
@@ -116,7 +119,9 @@ pub fn react(world: &mut World, rules: &Rules, now: u64, id: UnitId, f: &mut Wea
     f.target_aware = true;
     let (Some(tk), Some(wk)) = (
         world.get::<Kinematics>(ue).copied(),
-        world.get::<Kinematics>(entity(world, id).expect("weapon")).copied(),
+        world
+            .get::<Kinematics>(entity(world, id).expect("weapon"))
+            .copied(),
     ) else {
         return;
     };
@@ -139,7 +144,9 @@ pub fn react(world: &mut World, rules: &Rules, now: u64, id: UnitId, f: &mut Wea
         }
     }
     let cmr = &rules.realism().countermeasures;
-    if locked_on && f.cm_used.is_empty() && distance_m(tk.pos(), wk.pos()) <= cmr.release_range_m
+    if locked_on
+        && f.cm_used.is_empty()
+        && distance_m(tk.pos(), wk.pos()) <= cmr.release_range_m
         && let Some(mut cms) = world.get_mut::<Countermeasures>(ue)
     {
         for (cm, _, left) in &mut cms.0 {

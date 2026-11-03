@@ -79,15 +79,14 @@ pub fn run(world: &mut World) {
         }
     }
     let mut q = world.query::<(&crate::components::Identity, &Group, &Allegiance)>();
-    let mut groups: Vec<(UnitId, u8)> = q
-        .iter(world)
-        .map(|(i, _, a)| (i.unit, a.side))
-        .collect();
+    let mut groups: Vec<(UnitId, u8)> = q.iter(world).map(|(i, _, a)| (i.unit, a.side)).collect();
     groups.sort();
     let mut in_env = false;
     let mut incoming = BTreeMap::new();
     for (gid, side) in groups {
-        let Some(ge) = entity(world, gid) else { continue };
+        let Some(ge) = entity(world, gid) else {
+            continue;
+        };
         let Some(g) = world.get::<Group>(ge).cloned() else {
             continue;
         };
@@ -256,7 +255,8 @@ fn doctrine(world: &World, rules: &Rules, gid: UnitId, g: &Group) -> (LaunchDoct
     let country = entity(world, gid)
         .and_then(|e| world.get::<Allegiance>(e))
         .map(|a| a.country);
-    let d = country.map(|c| &rules.db.doctrines[rules.db.countries[c.0 as usize].doctrine.0 as usize]);
+    let d =
+        country.map(|c| &rules.db.doctrines[rules.db.countries[c.0 as usize].doctrine.0 as usize]);
     (
         g.doctrine
             .launch
@@ -272,7 +272,13 @@ fn doctrine(world: &World, rules: &Rules, gid: UnitId, g: &Group) -> (LaunchDoct
 
 /// Launch range allowed by doctrine against a target closing at `v_close`
 /// that could run at `v_escape`.
-fn doctrine_range(rules: &Rules, wix: WeaponIx, d: LaunchDoctrine, v_close: f64, v_escape: f64) -> f64 {
+fn doctrine_range(
+    rules: &Rules,
+    wix: WeaponIx,
+    d: LaunchDoctrine,
+    v_close: f64,
+    v_escape: f64,
+) -> f64 {
     let fly = rules.flyout(wix);
     match d {
         LaunchDoctrine::MaxRange => fly.max_range(v_close),
@@ -339,7 +345,11 @@ fn self_defence(
                 let d = distance_m(tp, *at);
                 let brg = initial_bearing(tp, *at);
                 let across = d * wb_core::math::sin(e.heading - brg).abs();
-                let tti = if v_close > 1.0 { d / v_close } else { f64::INFINITY };
+                let tti = if v_close > 1.0 {
+                    d / v_close
+                } else {
+                    f64::INFINITY
+                };
                 if across <= rr.threat_cpa_m && tti <= rr.threat_horizon_s {
                     threats.push((tti, c.id, *m));
                     break;
@@ -446,7 +456,8 @@ fn offensive(
             for (wix, n) in &s.rounds {
                 let w = &rules.db.weapons[wix.0 as usize];
                 let usable = weapon.is_none_or(|x| x == *wix)
-                    && (w.targets.contains(&Domain::Ground) || w.targets.contains(&Domain::Surface))
+                    && (w.targets.contains(&Domain::Ground)
+                        || w.targets.contains(&Domain::Surface))
                     && range >= w.profile.min_range_m
                     && range <= rules.flyout(*wix).max_range(0.0);
                 if !usable {
@@ -526,7 +537,11 @@ fn offensive(
         }
         // Shoot-look-shoot: wait for our weapons at it to end, then assess.
         let flying = inflight.get(&(side, c.id)).copied().unwrap_or(0);
-        let last = world.resource::<Combat>().last_end.get(&(side, c.id)).copied();
+        let last = world
+            .resource::<Combat>()
+            .last_end
+            .get(&(side, c.id))
+            .copied();
         if flying > 0 || last.is_some_and(|t| now.saturating_sub(t) < assess_ms) {
             in_env = true;
             continue;

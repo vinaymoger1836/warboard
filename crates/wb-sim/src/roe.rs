@@ -236,9 +236,11 @@ pub fn ask(
 /// one engagement).
 pub fn take_approval(world: &mut World, side: u8, group: UnitId, contact: ContactId) -> bool {
     let mut q = world.resource_mut::<RoeRequests>();
-    let Some(i) = q.open.iter().position(|r| {
-        r.side == side && r.group == group && r.contact == contact && r.approved
-    }) else {
+    let Some(i) = q
+        .open
+        .iter()
+        .position(|r| r.side == side && r.group == group && r.contact == contact && r.approved)
+    else {
         return false;
     };
     q.open.remove(i);
@@ -248,7 +250,11 @@ pub fn take_approval(world: &mut World, side: u8, group: UnitId, contact: Contac
 /// Applies a player's decision (the order checked the request is open).
 pub fn decide(world: &mut World, side: u8, request: u32, approve: bool) {
     let mut q = world.resource_mut::<RoeRequests>();
-    let Some(i) = q.open.iter().position(|r| r.id == request && r.side == side) else {
+    let Some(i) = q
+        .open
+        .iter()
+        .position(|r| r.id == request && r.side == side)
+    else {
         return;
     };
     if approve {
@@ -307,8 +313,7 @@ pub fn borders(world: &mut World, rules: &Rules) {
             continue;
         };
         for c in pic.contacts.values() {
-            if c.identity != ContactIdentity::Hostile || matches!(c.type_ref, TypeRef::Weapon(_))
-            {
+            if c.identity != ContactIdentity::Hostile || matches!(c.type_ref, TypeRef::Weapon(_)) {
                 continue;
             }
             let Some(e) = c.est else { continue };

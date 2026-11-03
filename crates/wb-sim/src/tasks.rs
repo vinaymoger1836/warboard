@@ -14,15 +14,14 @@ use crate::bases::{self, BaseInfo};
 use crate::clock::SimClock;
 use crate::components::{
     Allegiance, BaseRef, BaseSite, Fuel, Group, GroupMember, Health, Identity, Kinematics,
-    Magazine, Mode, PlatformRef, Posture, ReturnWhy, Speed, Steer, StrikeTarget, TankerState,
-    Task,
+    Magazine, Mode, PlatformRef, Posture, ReturnWhy, Speed, Steer, StrikeTarget, TankerState, Task,
 };
-use wb_content::source::realism::Subsystem;
 use crate::events::{EventKind, emit};
 use crate::fuel;
 use crate::orders;
 use crate::rules::Rules;
 use crate::world::entity;
+use wb_content::source::realism::Subsystem;
 
 /// Standing behaviours (bingo, winchester) are checked this often.
 const BEHAVIOUR_PERIOD_MS: u64 = 1_000;
@@ -608,7 +607,10 @@ fn estimate(world: &World, side: u8, contact: wb_core::ContactId) -> Option<(Lat
     let c = pics.sides.get(usize::from(side))?.get(contact)?;
     let e = c.est?;
     let dt = now.saturating_sub(c.last_ms) as f64 / 1_000.0;
-    Some((destination_point(e.at, e.heading, e.speed_mps * dt), e.alt_m))
+    Some((
+        destination_point(e.at, e.heading, e.speed_mps * dt),
+        e.alt_m,
+    ))
 }
 
 #[allow(clippy::too_many_arguments)]

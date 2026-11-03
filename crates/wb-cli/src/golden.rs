@@ -30,8 +30,8 @@ use wb_core::math::pow;
 use wb_sim::components::{Group, GroupMember, Kinematics, PlatformRef, WeaponFlight, WeaponTarget};
 use wb_sim::events::Outcome;
 use wb_sim::orders::Command;
-use wb_sim::weapons::LaunchReason;
 use wb_sim::picture::SidePictures;
+use wb_sim::weapons::LaunchReason;
 use wb_sim::{Event, EventKind, Scenario, Sim};
 
 use crate::sim::Content;
@@ -716,7 +716,9 @@ fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
                                 None => true,
                                 Some(LaunchFilter::AtWeapons) => *intercept,
                                 Some(LaunchFilter::AtNonWeapons) => !*intercept,
-                                Some(LaunchFilter::ReturnFire) => *reason == LaunchReason::ReturnFire,
+                                Some(LaunchFilter::ReturnFire) => {
+                                    *reason == LaunchReason::ReturnFire
+                                }
                                 Some(LaunchFilter::First) => first == Some(*weapon),
                                 Some(LaunchFilter::OutsideTerritory) => {
                                     log.outside.get(weapon).copied().unwrap_or(false)

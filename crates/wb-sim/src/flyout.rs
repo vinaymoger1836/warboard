@@ -14,9 +14,9 @@ use bevy_ecs::prelude::*;
 use core::f64::consts::FRAC_PI_2;
 use wb_content::compiled::{Weapon, WeaponIx};
 use wb_content::source::weapon::{Calibration, ProfileKind};
+use wb_core::UnitId;
 use wb_core::geo::{LatLon, destination_point};
 use wb_core::math::sqrt;
-use wb_core::UnitId;
 
 use crate::clock::{RngSeed, SimClock, TickLen};
 use crate::components::{

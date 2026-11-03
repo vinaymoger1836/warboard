@@ -8,18 +8,18 @@ use serde::{Deserialize, Serialize};
 
 use crate::clock::{EngagementState, RngSeed, SimClock};
 use crate::components::{
-    Allegiance, BaseRef, BaseSite, Countermeasures, EmconState, Fuel, Group, GroupMember, Identity,
-    Kinematics, Magazine, PlatformRef, Posture, SatelliteState, ScriptedTarget, Steer, TankerState,
-    WeaponFlight, Health, RoeSetting,
+    Allegiance, BaseRef, BaseSite, Countermeasures, EmconState, Fuel, Group, GroupMember, Health,
+    Identity, Kinematics, Magazine, PlatformRef, Posture, RoeSetting, SatelliteState,
+    ScriptedTarget, Steer, TankerState, WeaponFlight,
 };
 use crate::events::EventLog;
 use crate::orders::{OrderLog, OrderQueue};
 use crate::picture::SidePictures;
 use crate::probe::ProbeState;
+use crate::roe::{RoeRequests, TestTerritory};
 use crate::rules::Rules;
 use crate::scenario::TestTerrain;
 use crate::sensors::LosMemo;
-use crate::roe::{RoeRequests, TestTerritory};
 use crate::weapons::Combat;
 use crate::world::{ForceFineTick, Sides, UnitIdAlloc, UnitIndex};
 

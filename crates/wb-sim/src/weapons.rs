@@ -591,12 +591,13 @@ pub fn fly(world: &mut World) {
                 *world.get_mut::<WeaponFlight>(e).expect("weapon") = f;
             }
             Err((End::Plain(outcome), k2)) => {
-                terminate(world, &rules, &clock, id, side, &f, &k2, outcome, None, None);
+                terminate(
+                    world, &rules, &clock, id, side, &f, &k2, outcome, None, None,
+                );
             }
             Err((End::Fuzed { target, miss }, k2)) => {
-                let (outcome, eg, burst) = crate::endgame::resolve(
-                    world, &rules, seed, clock.tick, id, &f, &k2, target,
-                );
+                let (outcome, eg, burst) =
+                    crate::endgame::resolve(world, &rules, seed, clock.tick, id, &f, &k2, target);
                 terminate(
                     world,
                     &rules,
@@ -625,7 +626,10 @@ pub fn fly(world: &mut World) {
 enum End {
     Plain(Outcome),
     /// The fuze fired at the closest approach to `target` (none: a point).
-    Fuzed { target: Option<UnitId>, miss: f64 },
+    Fuzed {
+        target: Option<UnitId>,
+        miss: f64,
+    },
 }
 
 /// End of a flight and the kinematics at the end.

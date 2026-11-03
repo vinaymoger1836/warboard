@@ -83,7 +83,14 @@ fn pick<T: Copy>(items: &[(T, f64)], u: f64) -> Option<T> {
 }
 
 /// A weapon `weapon` (fired by `w`) hit `target`.
-pub fn hit(world: &mut World, rules: &Rules, seed: u64, weapon: UnitId, w: &Weapon, target: UnitId) {
+pub fn hit(
+    world: &mut World,
+    rules: &Rules,
+    seed: u64,
+    weapon: UnitId,
+    w: &Weapon,
+    target: UnitId,
+) {
     let Some(te) = entity(world, target) else {
         return;
     };
@@ -185,7 +192,10 @@ fn abort(world: &mut World, rules: &Rules, side: u8, te: Entity) -> bool {
         return false;
     };
     let mode = world.get::<Group>(ge).map(|g| g.mode);
-    if !matches!(mode, Some(Mode::Task | Mode::ToTanker { .. } | Mode::Refuelling { .. })) {
+    if !matches!(
+        mode,
+        Some(Mode::Task | Mode::ToTanker { .. } | Mode::Refuelling { .. })
+    ) {
         return false;
     }
     let list = bases::list(world);
@@ -225,10 +235,12 @@ pub fn burst(world: &mut World, rules: &Rules, seed: u64, weapon: UnitId, w: &We
     if draw(RngPurpose::Damage, 0) >= p {
         return;
     }
-    let repair = rule.repair_min_s
-        + (rule.repair_max_s - rule.repair_min_s) * draw(RngPurpose::Damage, 1);
+    let repair =
+        rule.repair_min_s + (rule.repair_max_s - rule.repair_min_s) * draw(RngPurpose::Damage, 1);
     let until = now + (repair * 1_000.0) as u64;
-    let Some(be) = entity(world, b.id) else { return };
+    let Some(be) = entity(world, b.id) else {
+        return;
+    };
     {
         let mut site = world.get_mut::<BaseSite>(be).expect("base");
         let e = site.damaged.entry(kind).or_insert(until);
@@ -320,7 +332,11 @@ pub fn upkeep(world: &mut World, now: u64) {
         }
         let side = world.get::<Allegiance>(e).map_or(0, |a| a.side);
         for k in done {
-            world.get_mut::<BaseSite>(e).expect("base").damaged.remove(&k);
+            world
+                .get_mut::<BaseSite>(e)
+                .expect("base")
+                .damaged
+                .remove(&k);
             emit(
                 world,
                 side,

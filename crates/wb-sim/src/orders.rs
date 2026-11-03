@@ -13,8 +13,8 @@ use wb_content::compiled::{CountryIx, LoadoutItem, LoadoutIx, WeaponIx};
 use wb_content::source::realism::BaseKind;
 use wb_content::source::world::LaunchDoctrine;
 use wb_core::geo::{LatLon, distance_m, intermediate_point};
-use wb_core::{ContactId, UnitId};
 use wb_core::units::{km_to_m, rad_to_deg};
+use wb_core::{ContactId, UnitId};
 use wb_geo::{Geo, TerrainClass};
 
 use crate::bases::{self, BaseInfo};
@@ -187,7 +187,10 @@ pub struct StationItem {
 #[serde(tag = "type")]
 pub enum Command {
     /// Units or groups; a part of a group splits off into a new group.
-    AssignTask { units: Vec<u32>, task: TaskOrder },
+    AssignTask {
+        units: Vec<u32>,
+        task: TaskOrder,
+    },
     SetBehaviour {
         units: Vec<u32>,
         #[serde(default)]
@@ -212,9 +215,14 @@ pub enum Command {
         name: Option<String>,
     },
     /// Raises an `AutoSlow` event; exercises the client plumbing (tests).
-    TestAutoSlow { reason: String },
+    TestAutoSlow {
+        reason: String,
+    },
     /// Emission control for units or groups (doc 03 §5, doc 02 §9).
-    SetEmcon { units: Vec<u32>, emcon: Emcon },
+    SetEmcon {
+        units: Vec<u32>,
+        emcon: Emcon,
+    },
     /// Image an area on the satellite's next pass (doc 03 §5 space tasks).
     TaskSatellite {
         satellite: u32,
@@ -240,13 +248,20 @@ pub enum Command {
         self_defence: Option<bool>,
     },
     /// Allows exactly one engagement of a queued request.
-    ApproveEngagement { request: u32 },
-    DenyEngagement { request: u32 },
+    ApproveEngagement {
+        request: u32,
+    },
+    DenyEngagement {
+        request: u32,
+    },
     /// Launch doctrine of groups, overriding their country's (doc 03 §5).
     SetDoctrine {
         units: Vec<u32>,
         #[serde(default)]
-        #[cfg_attr(feature = "ts", ts(optional, type = "\"max_range\" | \"no_escape_zone\" | \"close\""))]
+        #[cfg_attr(
+            feature = "ts",
+            ts(optional, type = "\"max_range\" | \"no_escape_zone\" | \"close\"")
+        )]
         launch: Option<LaunchDoctrine>,
         #[serde(default)]
         #[cfg_attr(feature = "ts", ts(optional))]
@@ -1071,7 +1086,9 @@ fn carried_for(
                 mag.stations.iter().any(|s| {
                     s.full > 0
                         && weapon.is_none_or(|w| w == s.weapon)
-                        && rules.db.weapons[s.weapon.0 as usize].targets.contains(&domain)
+                        && rules.db.weapons[s.weapon.0 as usize]
+                            .targets
+                            .contains(&domain)
                 })
             })
     });
