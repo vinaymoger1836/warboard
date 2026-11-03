@@ -231,7 +231,7 @@ pub fn resolve(
     let f_energy = match w.profile.kind {
         ProfileKind::Rocket | ProfileKind::Ballistic => {
             let vmin = w.profile.min_speed_mach.unwrap_or(0.0) * rules.speed_of_sound(wk.alt_m);
-            let span = (f.vmax_mps - vmin).max(1.0);
+            let span = (er.nominal_speed_fraction * (f.vmax_mps - vmin)).max(1.0);
             sqrt(((v - vmin) / span).clamp(0.0, 1.0))
         }
         _ => 1.0,

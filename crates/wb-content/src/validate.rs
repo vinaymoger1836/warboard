@@ -861,6 +861,10 @@ impl<'a> Cx<'a, '_> {
             }
         }
         self.probability("endgame.maneuver_floor", r.endgame.maneuver_floor);
+        self.probability(
+            "endgame.nominal_speed_fraction",
+            r.endgame.nominal_speed_fraction,
+        );
         self.probability("endgame.pk_min", r.endgame.pk_min);
         self.probability("endgame.pk_max", r.endgame.pk_max);
         self.less(

@@ -121,6 +121,7 @@ weapons:                             # doc 02 §10
 endgame:                             # doc 02 §11
   maneuver_g_ratio: 3
   maneuver_floor: 0.2
+  nominal_speed_fraction: 0.25        # V_nom = V_min + 0.25 × (V_max − V_min)
   pk_min: 0
   pk_max: 0.99
   aspect:
@@ -253,6 +254,7 @@ provenance:
     - ew.seeker_jam_effect
     - ew.arm_memory_pk_factor
     - endgame.aspect
+    - endgame.nominal_speed_fraction
     - tewa.kill_assessment_s
     - tewa.iads_autonomous_reaction_factor
     - damage.ship_sink_delay_min

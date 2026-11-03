@@ -324,6 +324,10 @@ source_type! {
         /// `f_maneuver = min(1, G_missile / (ratio × G_target))`.
         pub maneuver_g_ratio: f64,
         pub maneuver_floor: f64,
+        /// `f_energy = √((V − V_min)/(V_nom − V_min))` with
+        /// `V_nom = V_min + fraction × (V_max − V_min)`: a rocket faster than
+        /// `V_nom` has its full endgame energy.
+        pub nominal_speed_fraction: f64,
         pub pk_min: f64,
         pub pk_max: f64,
         /// `f_aspect` by seeker type.
