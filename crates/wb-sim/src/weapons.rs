@@ -1113,6 +1113,7 @@ fn terminate(
     endgame: Option<Endgame>,
 ) {
     let w = &rules.db.weapons[f.weapon.0 as usize];
+    eprintln!("TRACE term v={} alt={} mloss={} vmax={}", k.speed_mps, k.alt_m, f.manoeuvre_loss_mps, f.vmax_mps);
     let factors = Factors {
         speed_mps: k.speed_mps,
         time_of_flight_s: clock.end_ms().saturating_sub(f.launch_ms) as f64 / 1_000.0,
