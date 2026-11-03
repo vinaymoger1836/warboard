@@ -466,7 +466,12 @@ impl ViewEncoder {
             }
             if let (Some(f), Some(k)) = (world.get::<WeaponFlight>(e), world.get::<Kinematics>(e)) {
                 let w = &rules.db.weapons[f.weapon.0 as usize];
-                want(&mut self.sent, uid.0, string_kind::TYPE, rules.db.str(w.name));
+                want(
+                    &mut self.sent,
+                    uid.0,
+                    string_kind::TYPE,
+                    rules.db.str(w.name),
+                );
                 wrows.push(WRow {
                     id: uid.0,
                     salvo: f.salvo,

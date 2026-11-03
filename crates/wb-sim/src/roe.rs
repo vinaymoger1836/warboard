@@ -205,7 +205,10 @@ pub struct ApprovalView {
 pub fn approvals(world: &World, side: u8) -> Vec<ApprovalView> {
     use wb_content::source::realism::ContactLevel;
     let rules = world.resource::<Rules>();
-    let pic = world.resource::<SidePictures>().sides.get(usize::from(side));
+    let pic = world
+        .resource::<SidePictures>()
+        .sides
+        .get(usize::from(side));
     world
         .resource::<RoeRequests>()
         .open
@@ -234,7 +237,10 @@ pub fn approvals(world: &World, side: u8) -> Vec<ApprovalView> {
                 group_name,
                 contact: r.contact.0,
                 contact_type,
-                weapon_type: rules.db.str(rules.db.weapons[r.weapon.0 as usize].name).to_owned(),
+                weapon_type: rules
+                    .db
+                    .str(rules.db.weapons[r.weapon.0 as usize].name)
+                    .to_owned(),
                 pk: r.pk,
                 expires_ms: r.expires_ms,
                 approved: r.approved,

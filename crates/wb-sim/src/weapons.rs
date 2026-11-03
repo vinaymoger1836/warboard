@@ -1161,6 +1161,7 @@ fn terminate(
             target,
             outcome,
             factors,
+            intercept: f.intercept,
         },
     );
 }

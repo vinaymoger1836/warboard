@@ -1,7 +1,8 @@
 # The war the browser app opens until war setup arrives in P9: NATO against
 # Russia around the Baltic, garrisoned on real bases. P4 adds Russian forces
 # around Kaliningrad, a Growler for ESM and satellites on both sides, so the
-# fog of war has something to show. Not a golden scenario.
+# fog of war has something to show; P5 lets the F-35s ask to engage from max
+# range. Not a golden scenario.
 name: Baltic demo
 seed: 2026
 start_utc: 2026-10-27T06:00:00Z
@@ -28,6 +29,9 @@ units:
   - { id: 254, name: Cosmos 2549, platform: cosmos-2549, country: rus }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: patrol_route, waypoints: [[17.5, 55.0], [19.0, 55.6], [19.2, 54.95]], loop: true } }
+  # P5: the F-35s may shoot from max range, so under the default ROE (Charlie) they
+  # ask to engage the Su-35S pair and the Approvals tab has something to show.
+  - { tick: 0, side: 0, type: SetDoctrine, units: [10], launch: max_range }
   - { tick: 0, side: 0, type: AssignTask, units: [20], task: { kind: patrol_circle, centre: [21.5, 54.0], radius_km: 35, alt_m: 8000 } }
   - { tick: 0, side: 0, type: AssignTask, units: [30], task: { kind: tanker_track, a: [18.9, 53.7], b: [19.1, 52.9] } }
   - { tick: 0, side: 0, type: AssignTask, units: [40], task: { kind: patrol_circle, centre: [22.6, 54.2], radius_km: 25 } }

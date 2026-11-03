@@ -149,6 +149,8 @@ pub enum EventKind {
         target: Option<AimRef>,
         outcome: Outcome,
         factors: Factors,
+        /// An interceptor (`INT-n`).
+        intercept: bool,
     },
     /// A weapon contact judged aimed at an own unit (its predicted closest
     /// approach is inside `threat_cpa_m`).

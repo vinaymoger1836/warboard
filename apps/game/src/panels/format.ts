@@ -49,7 +49,7 @@ export function fuelColour(pct: number | null | undefined, bingo = false): strin
   return cssVar('state.ok');
 }
 
-export type EventCategory = 'Task' | 'Fuel' | 'Air' | 'Base' | 'Alert' | 'Contact' | 'Intel' | 'EMCON' | 'Weapon';
+export type EventCategory = 'Task' | 'Fuel' | 'Air' | 'Base' | 'Alert' | 'Contact' | 'Intel' | 'EMCON' | 'Weapon' | 'ROE';
 
 export const CATEGORY_COLOUR: Record<EventCategory, string> = {
   Task: cssVar('text.secondary'),
@@ -61,6 +61,7 @@ export const CATEGORY_COLOUR: Record<EventCategory, string> = {
   Intel: cssVar('sat.label'),
   EMCON: cssVar('ring.sensor'),
   Weapon: cssVar('weapon.offensive'),
+  ROE: cssVar('state.warn'),
 };
 
 const SOURCE: Record<string, string> = {
@@ -137,15 +138,59 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
   }
   if ('WeaponLaunched' in k) {
     const l = k.WeaponLaunched;
-    const at = l.target && 'Contact' in l.target ? ` at C${l.target.Contact.contact}` : '';
-    return { category: 'Weapon', text: `${n(l.shooter)} fired M-${l.tag} ${l.weapon_type}${at}` };
+    const at = l.target && 'Contact' in l.target ? ` at ${contactName(l.target.Contact.contact, s)}` : '';
+    const why = LAUNCH_REASON[l.reason] ?? '';
+    return { category: 'Weapon', text: `${n(l.shooter)} fired ${l.intercept ? 'INT' : 'M'}-${l.tag} ${l.weapon_type}${at}${why}` };
   }
   if ('WeaponTerminated' in k) {
     const t = k.WeaponTerminated;
-    return { category: 'Weapon', text: `M-${t.tag} ${t.weapon_type}: ${t.outcome.replace(/_/g, ' ')}` };
+    return { category: 'Weapon', text: `${t.intercept ? 'INT' : 'M'}-${t.tag} ${t.weapon_type}: ${t.outcome.replace(/_/g, ' ')}` };
+  }
+  if ('IncomingWeapon' in k) {
+    const w = k.IncomingWeapon;
+    return {
+      category: 'Alert',
+      text: `${contactName(w.contact, s)} inbound on ${n(w.unit)}, impact in ${duration(w.time_to_impact_s)}`,
+    };
+  }
+  if ('Damage' in k) {
+    const d = k.Damage;
+    const left = d.points_pct == null ? '' : `, ${Math.round(d.points_pct)}% left`;
+    const what = d.subsystem ? `, ${d.subsystem.replace(/_/g, ' ')} out` : '';
+    return { category: 'Alert', text: `${n(d.unit)} hit${left}${what}${d.aborted ? ', aborting mission' : ''}` };
+  }
+  if ('UnitDestroyed' in k) return { category: 'Alert', text: `${k.UnitDestroyed.name} destroyed` };
+  if ('BaseComponentDamaged' in k) {
+    const b = k.BaseComponentDamaged;
+    return { category: 'Base', text: `${n(b.base)}: ${b.component.replace(/_/g, ' ')} damaged, repaired by ${elapsed(b.repaired_at_ms)}` };
+  }
+  if ('BaseComponentRepaired' in k) {
+    const b = k.BaseComponentRepaired;
+    return { category: 'Base', text: `${n(b.base)}: ${b.component.replace(/_/g, ' ')} repaired` };
+  }
+  if ('RoeRequest' in k) {
+    const r = k.RoeRequest;
+    return {
+      category: 'ROE',
+      text: `${n(r.group)} asks to engage ${contactName(r.contact, s)} with ${r.weapon_type} (Pk ${Math.round(r.pk * 100)}%)`,
+    };
+  }
+  if ('RoeDecision' in k) return { category: 'ROE', text: `Request ${k.RoeDecision.request} ${k.RoeDecision.decision}` };
+  if ('BorderCrossing' in k) {
+    const b = k.BorderCrossing;
+    return { category: 'Contact', text: `${contactName(b.contact, s)} ${b.inbound ? 'entered' : 'left'} our territory` };
   }
   return { category: 'Alert', text: `Auto-slow: ${k.AutoSlow.reason}` };
 }
+
+/** Why a weapon was fired, after the line (doc 03 §7). */
+const LAUNCH_REASON: Record<string, string> = {
+  self_defence: ' (self-defence)',
+  ordered: ' (ordered)',
+  territory: ' (in our territory)',
+  return_fire: ' (return fire)',
+  approved: ' (approved)',
+};
 
 /** Events that also go to the intel log (doc 03 §10). */
 export const isIntel = (e: Event) =>
@@ -164,11 +209,21 @@ export function contactOf(e: Event): number | null {
   if ('ContactCount' in k) return k.ContactCount.contact;
   if ('ContactLost' in k) return k.ContactLost.contact;
   if ('IntelReport' in k) return k.IntelReport.contacts[0] ?? null;
+  if ('IncomingWeapon' in k) return k.IncomingWeapon.contact;
+  if ('RoeRequest' in k) return k.RoeRequest.contact;
+  if ('BorderCrossing' in k) return k.BorderCrossing.contact;
   return null;
 }
 
 /** Events that also go to the alert feed. */
-export const isAlert = (e: Event) => 'AutoSlow' in e.kind || 'BingoRtb' in e.kind || 'RearmShort' in e.kind;
+export const isAlert = (e: Event) =>
+  'AutoSlow' in e.kind ||
+  'BingoRtb' in e.kind ||
+  'RearmShort' in e.kind ||
+  'IncomingWeapon' in e.kind ||
+  'Damage' in e.kind ||
+  'UnitDestroyed' in e.kind ||
+  'RoeRequest' in e.kind;
 
 /** The unit an event is about, for click-to-locate. */
 export function subjectOf(e: Event): number | null {
@@ -188,5 +243,8 @@ export function subjectOf(e: Event): number | null {
   if ('LoadoutChanged' in k) return k.LoadoutChanged.unit;
   if ('RearmShort' in k) return k.RearmShort.unit;
   if ('WeaponLaunched' in k) return k.WeaponLaunched.shooter;
+  if ('Damage' in k) return k.Damage.unit;
+  if ('BaseComponentDamaged' in k) return k.BaseComponentDamaged.base;
+  if ('BaseComponentRepaired' in k) return k.BaseComponentRepaired.base;
   return null;
 }
