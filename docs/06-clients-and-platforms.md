@@ -45,7 +45,7 @@ sequenceDiagram
 | Header | magic `WBSV`, version u16, side u8, tick u64, sim_time_ms i64, counts |
 | Own units (N) | id u32, symbol u16, flags u32 (selected-able, damaged, emitting, jamming, landed…), lon f64, lat f64, alt_m f32, heading_deg f32, speed_mps f32, fuel_pct u8, group u32 |
 | Contacts (M) | contact_id u32, symbol u16, identity u8, level u8, lon f64, lat f64, alt_m f32, heading f32, speed f32, ellipse_a_m f32, ellipse_b_m f32, ellipse_rot f32, age_s f32, count_min u16, count_max u16 |
-| Weapons visible (K) | id u32, symbol u16, relation u8 (ours / theirs / interceptor), lon f64, lat f64, alt_m f32, heading f32, speed f32, salvo u32 |
+| Weapons visible (K) | id u32, symbol u16, relation u8 (ours / theirs / interceptor), lon f64, lat f64, alt_m f32, heading f32, speed f32, salvo u32, shooter u32, target u32 (own contact id, 0 for a point), tag u32 (`M-n` / `INT-n`). The side's own weapons only; other sides' weapons reach it as contacts, so `theirs` is reserved (view v3, P5) |
 | Effects (E) | kind u8 (launch, intercept, impact, splash), lon, lat, alt, age_ms |
 | Strings delta | New or changed labels only (names, salvo labels) |
 

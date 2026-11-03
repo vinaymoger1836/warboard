@@ -17,13 +17,15 @@ import {
   weaponTag,
 } from '@warboard/symbols';
 import type { LonLat } from '../../store';
-import { destination } from './geo';
+import { destination, distance } from './geo';
 
 /** Per-weapon tags from this zoom (doc 10 §5). */
 const TAG_ZOOM = 7;
 /** Trail points kept per weapon (one per side view, ~10 s at ×1). */
 const TRAIL_POINTS = 120;
-const MISSILE_PX = 16;
+const MISSILE_PX = 20;
+/** Tags closer than this on screen share one label, `M-8 M-6` (reference 04). */
+const TAG_MERGE_PX = 28;
 
 interface DrawnWeapon {
   id: number;
@@ -131,6 +133,17 @@ export class WeaponLayers {
     }
     const missiles = weapons.filter((d) => !d.interceptor);
     const heads = weapons.filter((d) => d.interceptor);
+    // Web Mercator metres per pixel at this zoom and latitude.
+    const lat = weapons[0]?.position[1] ?? 0;
+    const merge = TAG_MERGE_PX * ((156_543 * Math.cos((lat * Math.PI) / 180)) / 2 ** zoom);
+    const tags: Label[] = [];
+    if (zoom >= TAG_ZOOM) {
+      for (const d of weapons) {
+        const near = tags.find((t) => distance(t.position, d.position) < merge);
+        if (near) near.text += ` ${d.tag}`;
+        else tags.push({ position: d.position, text: d.tag });
+      }
+    }
 
     return [
       new PathLayer<LonLat[], PathStyleExtensionProps<LonLat[]>>({
@@ -185,11 +198,11 @@ export class WeaponLayers {
         radiusUnits: 'pixels',
         getFillColor: c('glyph'),
       }),
-      new TextLayer<DrawnWeapon>({
+      new TextLayer<Label>({
         id: 'weapon-tags',
-        data: zoom >= TAG_ZOOM ? weapons : [],
+        data: tags,
         getPosition: (d) => d.position,
-        getText: (d) => d.tag,
+        getText: (d) => d.text,
         getSize: 11,
         getColor: c('label.unit'),
         getPixelOffset: [9, 0],
