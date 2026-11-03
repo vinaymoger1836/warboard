@@ -6,7 +6,8 @@
 //!   self-defence on.
 //! - **Gates** (offensive engagements; self-defence and ordered targets are
 //!   handled by `engage`): Alpha fires at any hostile; Bravo fires when the
-//!   contact's *estimated* position is in own coalition territory, or when it
+//!   contact's *estimated* position and its error ellipse (×
+//!   `roe.territory_sigma`) are in own coalition territory, or when it
 //!   launched at our forces within `return_fire_memory_s`; Charlie fires at
 //!   nothing. A blocked opportunity becomes an approval request.
 //! - **Territory (ADR-030):** the packs' `territory_owner` when packs are
@@ -16,9 +17,11 @@
 //!   to leave the envelope.
 
 use bevy_ecs::prelude::*;
+use core::f64::consts::FRAC_PI_4;
 use serde::{Deserialize, Serialize};
 use wb_content::compiled::{CountryIx, WeaponIx};
-use wb_core::geo::LatLon;
+use wb_core::geo::{LatLon, destination_point};
+use wb_core::math::{atan2, cos, sin, sqrt};
 use wb_core::units::rad_to_deg;
 use wb_core::{ContactId, UnitId};
 
@@ -118,6 +121,23 @@ pub fn effective(world: &World, side: u8, unit: UnitId) -> (Roe, RoeSource, bool
         }
     }
     (roe.0, roe.1, sd)
+}
+
+/// Whether a contact's estimate and its error ellipse, scaled to
+/// `roe.territory_sigma`, lie in `side`'s territory (centre and eight points
+/// on the ellipse).
+fn surely_inside(world: &World, rules: &Rules, side: u8, c: &Contact, now: u64) -> bool {
+    let (Some(e), Some((a, b, rot))) = (c.est, c.ellipse(rules, now)) else {
+        return false;
+    };
+    let k = rules.realism().roe.territory_sigma;
+    own_territory(world, rules, side, e.at)
+        && (0..8).all(|i| {
+            let t = f64::from(i) * FRAC_PI_4;
+            let (x, y) = (k * a * cos(t), k * b * sin(t));
+            let p = destination_point(e.at, rot + atan2(y, x), sqrt(x * x + y * y));
+            own_territory(world, rules, side, p)
+        })
 }
 
 /// What ROE says about an offensive shot at a hostile contact.

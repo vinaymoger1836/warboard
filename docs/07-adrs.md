@@ -144,8 +144,44 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Decision.** Every position a sensor reports is the truth plus normal errors (`rng(seed, ContactError | EsmBearing | Satellite, …)`), with a floor of `contact_sigma_floor_m` (25 m), so no estimate equals the truth. `ContactId`s are a per-side sequence in their own namespace: views carry them in the contacts section and string kind 2, the API answers them through `contact_details`, and events carry only contact data and own unit ids. Labels come from type and class names, never from unit names. A truth-canary test (`crates/wb-sim/tests/truth_canary.rs`) scans every view, details response and visible event for the hidden units' names, unit ids and exact coordinates.
 **Consequences.** + No path from a client to the truth; "precise" contacts are still estimates. − Precise contacts jitter by metres between reports.
 
+## ADR-027 Weapon and damage events go to one side
+**Status — Proposed, 3 Nov 2026 (P5; written after the code).** Refines ADR-026.
+**Decision.** `WeaponLaunched` and `WeaponTerminated` go to the shooter's side only, naming the target by that side's own contact or a point. Damage events go to the damaged side only. The other side learns of a weapon only through its sensors (a weapon contact) and of the damage it dealt only through its picture.
+**Alternatives.** Broadcast combat events to both sides (leaks shooter identity and battle damage).
+**Consequences.** + No truth reaches the other side through the event log; the truth canary covers it. − Battle damage assessment is the picture's job, not the log's.
+
+## ADR-028 Flyout tables for launch decisions
+**Status — Proposed, 3 Nov 2026 (P5; written after the code).** Refines doc 02 §10.
+**Decision.** Each weapon gets a table, per second of flight, of the ground distance flown and `f_energy`, built once by flying the weapon through the real flight model (rockets, loft included) from its calibration launch conditions in a scratch world. Launch range against a target closing at `v` is `max_i(d_i + v·t_i)`; launch doctrine (max range, no-escape zone, close) reads it. Tables are a pure function of the content, built on first use and never saved.
+**Alternatives.** A closed-form range formula (drifts from the flight model); flying a trial missile per decision (too slow).
+**Consequences.** + Launch decisions agree with how the weapon actually flies; deterministic and save-free. − Tables assume calibration altitude and speed; shots from other conditions are approximate.
+
+## ADR-029 Intercept and Strike orders are pre-approved
+**Status — Proposed, 3 Nov 2026 (P5; written after the code).** Refines doc 03 §7.
+**Decision.** A player's Intercept (chase a contact and engage it) or Strike (close on a contact or point and fire, optionally a given weapon and count) is itself the approval: the engagement of that target skips the ROE gate and is logged with reason `ordered`. Every other engagement goes through ROE.
+**Alternatives.** Run ordered targets through ROE too (an order under Charlie would just raise a request).
+**Consequences.** + An explicit order does what it says under any ROE. − A player can fire across a border under Bravo by ordering it; the event log says so.
+
+## ADR-030 Test territory without packs
+**Status — Proposed, 3 Nov 2026 (P5; written after the code).** Like `test_terrain` (P2).
+**Decision.** Territory comes from the packs' `territory_owner` when packs are installed; otherwise from the scenario's `test_territory` polygons (country, `[lon, lat]` corners), saved with the war; otherwise nowhere is anyone's territory.
+**Alternatives.** Require packs for ROE tests (goldens would need the multi-GB packs in CI).
+**Consequences.** + G8 and ROE tests run in CI without packs. − Test polygons must stay out of real scenarios.
+
+## ADR-031 Self-defence for ships and ground units only
+**Status — Proposed, 3 Nov 2026 (P5; written after the code).** Refines doc 03 §7.
+**Decision.** Self-defence (on by default, per unit toggle) lets ships and ground units engage, without approval, weapon contacts their side's picture shows heading for them: predicted closest approach inside `roe.threat_cpa_m` within `roe.threat_horizon_s`, earliest impact first, one interceptor per threat, again after `kill_assessment_s` if it survived. Aircraft defend by beaming and countermeasures in the endgame, not by shooting at missiles.
+**Alternatives.** Let aircraft fire at incoming missiles too (no fielded air-to-air weapon does this routinely).
+**Consequences.** + G9: a FREMM under Charlie intercepts without approval and never fires first. − Self-defence uses the picture, so an undetected missile is not engaged.
+
 ## ADR-032 Endgame nominal speed `V_nom`
 **Status — Proposed, 3 Nov 2026 (P5).** Defines `V_nom` in doc 02 §11.
 **Decision.** For rockets and ballistic weapons `V_nom = V_min + nominal_speed_fraction × (V_max − V_min)` (realism `endgame.nominal_speed_fraction`, 0.25, an estimate). At `V_nom` or faster a weapon has full `f_energy` and its full `max_g` in `f_maneuver`; below it, `f_energy = √((V − V_min)/(V_nom − V_min))` and endgame g scales with `(V / V_nom)^g_speed_exponent`. The flight model's turn limit still scales against `V_max`. Air-breathing weapons keep `V_nom = V_max`.
 **Alternatives.** `V_nom = V_max` (the first P5 build): with a coasting rocket's speed falling roughly linearly with distance, a half-range AIM-120D reached the target at Mach 1.8 with `f_energy` 0.49 and 8 g, Pk 0.14, against G6's 0.6–0.85.
 **Consequences.** + G6 holds: at half range head-on Pk 0.70; at max range against a beaming target every first shot runs out of energy. Energy only costs Pk in the last part of a flight. − Endgame g and flight turn limit differ for slow missiles.
+
+## ADR-033 Bravo needs the error ellipse inside our territory
+**Status — Proposed, 3 Nov 2026 (P5).** Refines doc 03 §7 (Bravo).
+**Decision.** Under Bravo a contact counts as inside our territory only when its estimated position and eight points on its current error ellipse scaled by `roe.territory_sigma` (3, an estimate) are all inside. The ellipse is the one the player sees, so the decision uses only the side picture. Return fire is unchanged.
+**Alternatives.** The estimated centre alone (the first P5 build): in one G8 run in 20 the estimate crossed a second before the aircraft did, and the F-35s fired at a target 82 m outside the border.
+**Consequences.** + "Never engaged outside" holds against the truth; the shooter waits until the picture is sure. − Engagements come later after a crossing (up to 22 s in G8, as an air contact's ellipse grows quickly between scans); a contact hugging the border inside it may never be engaged.
