@@ -10,6 +10,8 @@
 //!   countermeasure that defeats the weapon's seeker, once per weapon.
 //! - **Roll:** `Pk = clamp(pk_base × f_energy × f_aspect × f_maneuver × f_cm
 //!   × f_ew × f_env)`, hit when `rng(seed, Endgame, weapon, tick, 0) < Pk`.
+//!   A rocket at `V_nom` (`endgame.nominal_speed_fraction` of the way from
+//!   `V_min` to `V_max`) or faster has full `f_energy` and full endgame g.
 //!   A miss that would have hit with `f_cm = 1` is `Decoyed`. CEP weapons
 //!   roll a Rayleigh radial miss against their lethal radius instead.
 //!   `f_ew` is 1 until electronic warfare (P6); `f_env` carries the
@@ -166,11 +168,12 @@ fn f_aspect(rules: &Rules, seeker: Seeker, aspect_rad: f64) -> f64 {
     }
 }
 
-/// Available lateral acceleration of a weapon at speed `v`, in g.
-pub fn weapon_g(rules: &Rules, w: &Weapon, v: f64, vmax: f64) -> Option<f64> {
+/// Lateral acceleration a weapon at speed `v` has in the endgame, in g:
+/// full at `v_full` and above.
+pub fn weapon_g(rules: &Rules, w: &Weapon, v: f64, v_full: f64) -> Option<f64> {
     w.profile.max_g.map(|g| {
         g * pow(
-            (v / vmax.max(1.0)).min(1.0),
+            (v / v_full.max(1.0)).min(1.0),
             rules.realism().weapons.g_speed_exponent,
         )
     })
@@ -228,13 +231,14 @@ pub fn resolve(
         .and_then(|c| w.pk_base.get(&c).copied())
         .unwrap_or(0.0);
     let v = wk.speed_mps;
-    let f_energy = match w.profile.kind {
+    // A rocket at or above V_nom has its full endgame energy and g.
+    let (f_energy, v_nom) = match w.profile.kind {
         ProfileKind::Rocket | ProfileKind::Ballistic => {
             let vmin = w.profile.min_speed_mach.unwrap_or(0.0) * rules.speed_of_sound(wk.alt_m);
             let span = (er.nominal_speed_fraction * (f.vmax_mps - vmin)).max(1.0);
-            sqrt(((v - vmin) / span).clamp(0.0, 1.0))
+            (sqrt(((v - vmin) / span).clamp(0.0, 1.0)), vmin + span)
         }
-        _ => 1.0,
+        _ => (1.0, f.vmax_mps),
     };
     // Aspect: 0° when the weapon meets the target nose-on.
     let (aspect, f_asp) = match tk {
@@ -256,7 +260,7 @@ pub fn resolve(
                 .mobility
                 .sustained_g
                 .unwrap_or(rules.realism().movement.aircraft_sustained_g);
-            match weapon_g(rules, w, v, f.vmax_mps) {
+            match weapon_g(rules, w, v, v_nom) {
                 Some(gm) => (
                     (gm / (er.maneuver_g_ratio * gt)).clamp(er.maneuver_floor, 1.0),
                     gt,

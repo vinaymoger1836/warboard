@@ -325,8 +325,9 @@ source_type! {
         pub maneuver_g_ratio: f64,
         pub maneuver_floor: f64,
         /// `f_energy = √((V − V_min)/(V_nom − V_min))` with
-        /// `V_nom = V_min + fraction × (V_max − V_min)`: a rocket faster than
-        /// `V_nom` has its full endgame energy.
+        /// `V_nom = V_min + fraction × (V_max − V_min)`: a rocket at `V_nom`
+        /// or faster has its full endgame energy, and its `G_missile` in
+        /// `f_maneuver` scales with `(V / V_nom)^g_speed_exponent`.
         pub nominal_speed_fraction: f64,
         pub pk_min: f64,
         pub pk_max: f64,
