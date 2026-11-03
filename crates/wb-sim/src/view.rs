@@ -1,11 +1,13 @@
-//! `SideView` v2 encoder (doc 06 §3, ADR-002): what one side may see, as a
+//! `SideView` v3 encoder (doc 06 §3, ADR-002): what one side may see, as a
 //! little-endian structure of arrays the UI decodes without copying.
 //!
-//! The side's own platforms, satellites and bases, and the contacts of its
-//! picture (P4). Weapons and effects arrive with P5 (count 0). Nothing about
-//! other sides' units is written except contact estimates: contact rows carry
-//! a [`ContactId`](wb_core::ContactId), estimated position and type names only
-//! (CLAUDE.md rule 1, ADR-026).
+//! The side's own platforms, satellites and bases, the contacts of its
+//! picture (P4) and its own weapons in flight (P5; other sides' weapons are
+//! contacts). Effects are not sent yet (count 0). Nothing about other sides'
+//! units is written except contact estimates: contact rows carry a
+//! [`ContactId`](wb_core::ContactId), estimated position and type names only,
+//! and a weapon's target is the side's own contact id (CLAUDE.md rule 1,
+//! ADR-026).
 //!
 //! ```text
 //! header (48 bytes)
@@ -23,8 +25,10 @@
 //!             count_min u16, count_max u16, identity u8, level u8
 //!             (a bearing-only contact: lon/lat is the bearing's origin,
 //!             heading the bearing, ellipse_a the strobe length)
-//!   weapons:  lon f64, lat f64, id u32, salvo u32, alt_m f32, heading_deg f32,
-//!             speed_mps f32, symbol u16, relation u8
+//!   weapons:  lon f64, lat f64, id u32, salvo u32, shooter u32,
+//!             target u32 (own contact id, 0: a point), tag u32 (`M-n` /
+//!             `INT-n`), alt_m f32, heading_deg f32, speed_mps f32,
+//!             symbol u16, relation u8
 //!   effects:  lon f64, lat f64, alt_m f32, age_ms u32, kind u8
 //!   strings:  (id u32, kind u8, len u16, utf-8 bytes)*  — new or changed only
 //! ```
@@ -38,14 +42,14 @@ use wb_core::units::rad_to_deg;
 use crate::clock::SimClock;
 use crate::components::{
     Allegiance, BaseSite, Fuel, Group, GroupMember, Identity, Kinematics, Mode, PlatformRef,
-    Posture, ReturnWhy, Task,
+    Posture, ReturnWhy, Task, WeaponFlight, WeaponTarget,
 };
 use crate::picture::{ContactIdentity, SidePictures};
 use crate::rules::Rules;
 use crate::world::{UnitIndex, entity};
 
 pub const MAGIC: [u8; 4] = *b"WBSV";
-pub const VERSION: u16 = 2;
+pub const VERSION: u16 = 3;
 /// Drawn length of a bearing-only strobe, metres (display only).
 const STROBE_M: f32 = 300_000.0;
 pub const HEADER_BYTES: usize = 48;
@@ -80,6 +84,16 @@ pub mod cflag {
     /// Bits 8–10 hold the domain: 0 air, 1 surface, 2 subsurface, 3 ground, 4 space.
     pub const DOMAIN_SHIFT: u32 = 8;
     pub const DOMAIN_MASK: u32 = 0x7 << DOMAIN_SHIFT;
+}
+
+/// Weapon `relation` values.
+pub mod relation {
+    /// Our offensive weapon (amber, `M-n`).
+    pub const OURS: u8 = 0;
+    /// Reserved: other sides' weapons reach a side as contacts.
+    pub const THEIRS: u8 = 1;
+    /// Our interceptor, fired at a weapon (cyan, `INT-n`).
+    pub const INTERCEPTOR: u8 = 2;
 }
 
 /// Contact flag bits by name, for the generated TS.
@@ -191,7 +205,19 @@ pub const SYMBOLS: &[(u16, &str)] = &[
     (107, "sam_site"),
     (108, "missile_site"),
     (109, "hq"),
+    (120, "missile"),
+    (121, "bomb"),
+    (122, "torpedo"),
 ];
+
+pub fn weapon_symbol(c: wb_content::source::WeaponCategory) -> u16 {
+    use wb_content::source::WeaponCategory::*;
+    match c {
+        Bomb => 121,
+        Torpedo => 122,
+        _ => 120,
+    }
+}
 
 pub fn platform_symbol(c: PlatformCategory) -> u16 {
     use PlatformCategory::*;
@@ -357,6 +383,22 @@ struct CRow {
     level: u8,
 }
 
+/// One row of the weapons section.
+struct WRow {
+    id: u32,
+    salvo: u32,
+    shooter: u32,
+    target: u32,
+    tag: u32,
+    lon: f64,
+    lat: f64,
+    alt: f32,
+    heading: f32,
+    speed: f32,
+    symbol: u16,
+    relation: u8,
+}
+
 /// Builds side views; remembers which strings each client already has.
 #[derive(Default)]
 pub struct ViewEncoder {
@@ -383,6 +425,7 @@ impl ViewEncoder {
         let rules = world.resource::<Rules>();
         let clock = world.resource::<SimClock>();
         let mut rows: Vec<Row> = Vec::new();
+        let mut wrows: Vec<WRow> = Vec::new();
         let mut strings: Vec<(u32, u8, String)> = Vec::new();
         let mut want = |sent: &mut BTreeMap<(u32, u8), String>, id: u32, kind: u8, s: &str| {
             if sent.get(&(id, kind)).is_none_or(|old| old != s) {
@@ -418,6 +461,32 @@ impl ViewEncoder {
                     symbol: base_symbol(b),
                     sensor_km: 0,
                     fuel: 255,
+                });
+                continue;
+            }
+            if let (Some(f), Some(k)) = (world.get::<WeaponFlight>(e), world.get::<Kinematics>(e)) {
+                let w = &rules.db.weapons[f.weapon.0 as usize];
+                want(&mut self.sent, uid.0, string_kind::TYPE, rules.db.str(w.name));
+                wrows.push(WRow {
+                    id: uid.0,
+                    salvo: f.salvo,
+                    shooter: f.shooter.0,
+                    target: match f.target {
+                        WeaponTarget::Track { contact, .. } => contact.0,
+                        _ => 0,
+                    },
+                    tag: f.tag,
+                    lon: rad_to_deg(k.lon),
+                    lat: rad_to_deg(k.lat),
+                    alt: k.alt_m as f32,
+                    heading: rad_to_deg(k.heading) as f32,
+                    speed: k.speed_mps as f32,
+                    symbol: weapon_symbol(w.category),
+                    relation: if f.intercept {
+                        relation::INTERCEPTOR
+                    } else {
+                        relation::OURS
+                    },
                 });
                 continue;
             }
@@ -600,8 +669,8 @@ impl ViewEncoder {
         b.extend_from_slice(&(clock.sim_time_ms as i64).to_le_bytes());
         b.extend_from_slice(&(n as u32).to_le_bytes());
         b.extend_from_slice(&(crows.len() as u32).to_le_bytes());
-        b.extend_from_slice(&0u32.to_le_bytes()); // weapons (P5)
-        b.extend_from_slice(&0u32.to_le_bytes()); // effects (P5)
+        b.extend_from_slice(&(wrows.len() as u32).to_le_bytes());
+        b.extend_from_slice(&0u32.to_le_bytes()); // effects (not sent yet)
         b.extend_from_slice(&(strings.len() as u32).to_le_bytes());
         let strings_len: usize = strings.iter().map(|s| 7 + s.2.len()).sum();
         b.extend_from_slice(&(strings_len as u32).to_le_bytes());
@@ -679,7 +748,27 @@ impl ViewEncoder {
         col!(cmax);
         col!(identity);
         col!(level);
-        // Weapons, effects: empty until P5.
+        macro_rules! wcol {
+            ($field:ident) => {
+                for r in &wrows {
+                    b.extend_from_slice(&r.$field.to_le_bytes());
+                }
+                pad(b);
+            };
+        }
+        wcol!(lon);
+        wcol!(lat);
+        wcol!(id);
+        wcol!(salvo);
+        wcol!(shooter);
+        wcol!(target);
+        wcol!(tag);
+        wcol!(alt);
+        wcol!(heading);
+        wcol!(speed);
+        wcol!(symbol);
+        wcol!(relation);
+        // Effects: none yet.
         for (id, kind, s) in &strings {
             b.extend_from_slice(&id.to_le_bytes());
             b.push(*kind);

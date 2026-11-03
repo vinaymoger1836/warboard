@@ -1,4 +1,4 @@
-// SideView v2 decoder (doc 06 §3; layout in crates/wb-sim/src/view.rs). Columns are
+// SideView v3 decoder (doc 06 §3; layout in crates/wb-sim/src/view.rs). Columns are
 // typed-array views onto the transferred buffer, so decoding copies nothing but strings.
 import { CFLAG, FLAG, STATUS, STRING_KIND, VIEW_HEADER_BYTES, VIEW_MAGIC, VIEW_VERSION } from './generated/symbols';
 
@@ -47,6 +47,27 @@ export interface ContactColumns {
   level: Uint8Array;
 }
 
+/** The side's own weapons in flight (other sides' weapons are contacts). */
+export interface WeaponColumns {
+  count: number;
+  lon: Float64Array;
+  lat: Float64Array;
+  id: Uint32Array;
+  salvo: Uint32Array;
+  /** Own unit that fired it. */
+  shooter: Uint32Array;
+  /** The side's contact it was fired at; 0 for a point. */
+  target: Uint32Array;
+  /** `M-n` or `INT-n` number. */
+  tag: Uint32Array;
+  altM: Float32Array;
+  headingDeg: Float32Array;
+  speedMps: Float32Array;
+  symbol: Uint16Array;
+  /** `RELATION` value. */
+  relation: Uint8Array;
+}
+
 export interface SideView {
   buffer: ArrayBuffer;
   side: number;
@@ -54,6 +75,7 @@ export interface SideView {
   simTimeMs: number;
   units: UnitColumns;
   contacts: ContactColumns;
+  weapons: WeaponColumns;
   /** Index of each unit id in the unit columns. */
   index: Map<number, number>;
   /** Index of each contact id in the contact columns. */
@@ -123,7 +145,7 @@ export function decodeSideView(buffer: ArrayBuffer, strings: StringTable): SideV
   const nWeapons = dv.getUint32(32, true);
   const nEffects = dv.getUint32(36, true);
   const nStrings = dv.getUint32(40, true);
-  if (nWeapons + nEffects !== 0) throw new Error('Weapons and effects arrive in a later phase');
+  if (nEffects !== 0) throw new Error('Effects are not supported yet');
 
   let at = VIEW_HEADER_BYTES;
   const col = <T>(make: (b: ArrayBuffer, off: number, len: number) => T, size: number, len: number): T => {
@@ -171,6 +193,22 @@ export function decodeSideView(buffer: ArrayBuffer, strings: StringTable): SideV
     identity: u8(nc),
     level: u8(nc),
   };
+  const nw = nWeapons;
+  const weapons: WeaponColumns = {
+    count: nw,
+    lon: f64(nw),
+    lat: f64(nw),
+    id: u32(nw),
+    salvo: u32(nw),
+    shooter: u32(nw),
+    target: u32(nw),
+    tag: u32(nw),
+    altM: f32(nw),
+    headingDeg: f32(nw),
+    speedMps: f32(nw),
+    symbol: u16(nw),
+    relation: u8(nw),
+  };
 
   for (let i = 0; i < nStrings; i++) {
     const id = dv.getUint32(at, true);
@@ -192,6 +230,7 @@ export function decodeSideView(buffer: ArrayBuffer, strings: StringTable): SideV
     simTimeMs: Number(dv.getBigInt64(16, true)),
     units,
     contacts,
+    weapons,
     index,
     contactIndex,
   };

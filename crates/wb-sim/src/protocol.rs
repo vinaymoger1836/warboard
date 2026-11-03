@@ -70,6 +70,17 @@ mod tests {
         }
         lines.push("} as const;".to_owned());
         lines.push(String::new());
+        lines.push("/** Weapon `relation` values. */".to_owned());
+        lines.push("export const RELATION = {".to_owned());
+        for (name, v) in [
+            ("OURS", crate::view::relation::OURS),
+            ("THEIRS", crate::view::relation::THEIRS),
+            ("INTERCEPTOR", crate::view::relation::INTERCEPTOR),
+        ] {
+            lines.push(format!("  {name}: {v},"));
+        }
+        lines.push("} as const;".to_owned());
+        lines.push(String::new());
         lines.push("/** Status names by value (bits 8–11 of `flags`). */".to_owned());
         let names: Vec<String> = crate::view::STATUS_NAMES
             .iter()
