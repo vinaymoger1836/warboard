@@ -1,7 +1,8 @@
 # G6 (doc 08 §3, P5): an F-35A with AIM-120D against a Su-35S, head-on at
 # 12 km. Fired at maximum range at a target that beams the missile, the
 # AMRAAM mostly runs out of energy or misses; fired at half range at a
-# target that holds its course, it hits 60–85 % of the time.
+# target that holds its course, it hits 60–85 % of the time. Only the first
+# shot counts: follow-ups after a miss are fired from a different range.
 name: G6 AIM-120D vs aware fighter
 seed: 6
 start_utc: 2026-10-27T12:00:00Z
@@ -32,5 +33,5 @@ golden:
   expect:
     # A slow missile chasing a beaming target loses it off the seeker's
     # field of view and self-destructs: an energy defeat like running out.
-    - { variant: max_range_beam, metric: outcome_fraction, side: 0, weapon: aim-120d, outcomes: [out_of_energy, miss, self_destruct], aggregate: mean, min: 0.7 }
-    - { variant: half_range_head_on, metric: pk, side: 0, weapon: aim-120d, aggregate: mean, min: 0.6, max: 0.85 }
+    - { variant: max_range_beam, metric: outcome_fraction, side: 0, weapon: aim-120d, filter: first, outcomes: [out_of_energy, miss, self_destruct], aggregate: mean, min: 0.7 }
+    - { variant: half_range_head_on, metric: pk, side: 0, weapon: aim-120d, filter: first, aggregate: mean, min: 0.6, max: 0.85 }
