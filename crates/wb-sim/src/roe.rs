@@ -183,6 +183,66 @@ pub struct RoeRequest {
     pub approved: bool,
 }
 
+/// An open request as the Approvals tab shows it: own units, the side's
+/// own contact and its label, never the truth behind it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct ApprovalView {
+    pub request: u32,
+    pub group: u32,
+    pub group_name: String,
+    pub contact: u32,
+    /// Type short name at type level, class name at class level, empty below.
+    pub contact_type: String,
+    pub weapon_type: String,
+    pub pk: f64,
+    #[cfg_attr(feature = "ts", ts(type = "number"))]
+    pub expires_ms: u64,
+    pub approved: bool,
+}
+
+/// The side's open requests, oldest first.
+pub fn approvals(world: &World, side: u8) -> Vec<ApprovalView> {
+    use wb_content::source::realism::ContactLevel;
+    let rules = world.resource::<Rules>();
+    let pic = world.resource::<SidePictures>().sides.get(usize::from(side));
+    world
+        .resource::<RoeRequests>()
+        .open
+        .iter()
+        .filter(|r| r.side == side)
+        .map(|r| {
+            let contact_type = pic
+                .and_then(|p| p.get(r.contact))
+                .map(|c| {
+                    if c.level >= ContactLevel::Type {
+                        c.type_ref.short_name(rules).to_owned()
+                    } else if c.level >= ContactLevel::Class {
+                        c.type_ref.class_name(rules)
+                    } else {
+                        String::new()
+                    }
+                })
+                .unwrap_or_default();
+            let group_name = entity(world, r.group)
+                .and_then(|e| world.get::<crate::components::Identity>(e))
+                .map(|i| i.name.clone())
+                .unwrap_or_default();
+            ApprovalView {
+                request: r.id,
+                group: r.group.0,
+                group_name,
+                contact: r.contact.0,
+                contact_type,
+                weapon_type: rules.db.str(rules.db.weapons[r.weapon.0 as usize].name).to_owned(),
+                pk: r.pk,
+                expires_ms: r.expires_ms,
+                approved: r.approved,
+            }
+        })
+        .collect()
+}
+
 /// The approval queue (saved).
 #[derive(Resource, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct RoeRequests {

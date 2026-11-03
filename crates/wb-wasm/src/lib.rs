@@ -142,6 +142,11 @@ impl Engine {
             .map_err(|e| JsError::new(&e))
     }
 
+    /// Open ROE approval requests of this side, JSON (`ApprovalView[]`).
+    pub fn approvals(&self) -> String {
+        json(&wb_sim::roe::approvals(self.sim.world(), self.side))
+    }
+
     /// Ground track of an own satellite, `[[lon, lat], …]` every `step_s`.
     pub fn ground_track(
         &self,

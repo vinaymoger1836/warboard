@@ -23,7 +23,7 @@ export type { Speed } from './generated/Speed';
 export type { StationedView } from './generated/StationedView';
 export type { TaskOrder } from './generated/TaskOrder';
 export type { TaskView } from './generated/TaskView';
-export { CFLAG, FLAG, STATUS, STRING_KIND, SYMBOLS, type SymbolName } from './generated/symbols';
+export { CFLAG, FLAG, RELATION, STATUS, STRING_KIND, SYMBOLS, type SymbolName } from './generated/symbols';
 export {
   contactDomain,
   decodeSideView,
@@ -34,6 +34,7 @@ export {
   type SideView,
   type StatusName,
   type UnitColumns,
+  type WeaponColumns,
 } from './sideview';
 
 // Fog of war (P4): contact and satellite cards.
