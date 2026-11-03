@@ -3,7 +3,8 @@
 // circle with WP markers, and the drawing-tool preview. P4 adds contacts (dashed frame,
 // uncertainty ellipse and "(our estimate)" when estimated, bearing strobes, threat rings of
 // identified SAM types), satellites (yellow dot, two-line label, dashed ground tracks) and
-// the sensor rings of every own unit. Positions are dead-reckoned from the last
+// the sensor rings of every own unit. P5 adds our weapons in flight (weaponLayers.ts).
+// Positions are dead-reckoned from the last
 // side view every animation frame (heading × speed × sim time since the view), and the
 // layers go straight to deck.gl, never through React state (doc 06 §1).
 import type { Layer, PickingInfo } from '@deck.gl/core';
@@ -27,6 +28,7 @@ import type { EngineBridge } from '../../bridge';
 import { type LonLat, type Tool, ui } from '../../store';
 import type { LayerHub } from '../layerHub';
 import { destination, distance, geodesicCircle } from './geo';
+import { WeaponLayers } from './weaponLayers';
 
 /** Zoom below which icons shrink to 24 px (doc 10 §4). */
 const SMALL_ZOOM = 5;
@@ -142,6 +144,7 @@ export class UnitLayers {
   private drawn: DrawnUnit[] = [];
   private contacts: DrawnContact[] = [];
   private tracks = new Map<number, { paths: LonLat[][]; at: number; pending: boolean }>();
+  private readonly weapons = new WeaponLayers();
   private readonly offs: (() => void)[] = [];
 
   constructor(
@@ -683,6 +686,8 @@ export class UnitLayers {
         getFillColor: c('ring.radius'),
       }),
     ];
+    const contactAt = new Map(contacts.map((d) => [d.id, d.position]));
+    layers.push(...this.weapons.layers(view, frame.receivedAt, strings, dtS, zoom, (id) => contactAt.get(id) ?? null));
     this.hub.set('units', layers);
   }
 

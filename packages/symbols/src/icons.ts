@@ -141,6 +141,21 @@ export function iconSvg(symbol: number, side: IconSide, opts: IconOptions = {}):
   );
 }
 
+/** Our missile in flight (doc 10 §5): a small amber missile pointing north on a 32 grid;
+ *  the map rotates it to the heading. */
+export function missileSvg(): string {
+  const fill = tokens['weapon.offensive'];
+  return (
+    '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
+    `<path d="M16 2 L18.5 8 V21 L22 25 V28 L18.5 26.5 V29 H13.5 V26.5 L10 28 V25 L13.5 21 V8 Z" fill="${fill}" stroke="${darker(fill)}" stroke-width="1" stroke-linejoin="round"/>` +
+    '</svg>'
+  );
+}
+
+export function missileDataUrl(): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(missileSvg())}`;
+}
+
 export function iconDataUrl(symbol: number, side: IconSide, opts: IconOptions = {}): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(iconSvg(symbol, side, opts))}`;
 }

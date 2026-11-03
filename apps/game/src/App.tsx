@@ -215,7 +215,7 @@ export function App() {
         {savesOpen && <SavesPanel bridge={bridge} toast={show} onClose={() => setSavesOpen(false)} />}
         <Toasts toasts={toasts} sticky={speed === 0 ? ['Simulation paused'] : []} />
       </main>
-      <Dock strings={bridge.strings} />
+      <Dock bridge={bridge} toast={show} />
     </div>
   );
 }

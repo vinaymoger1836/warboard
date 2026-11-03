@@ -50,3 +50,18 @@ export function contactLabel(c: ContactLabelInput): string {
 
 /** Second line under an estimated contact. */
 export const ESTIMATE_LINE = '(our estimate)';
+
+/** Weapon labels (doc 10 §5): `M-8`, `INT-3`. */
+export function weaponTag(interceptor: boolean, tag: number): string {
+  return `${interceptor ? 'INT' : 'M'}-${tag}`;
+}
+
+/** At a salvo's centroid: `JSM mk1 (12× salvo)`. */
+export function salvoLabel(typeName: string, count: number): string {
+  return `${typeName} (${count}× salvo)`;
+}
+
+/** At a shooter's interceptors: `SHIP FREMM class (5× interceptors)`. */
+export function interceptorsLabel(shooterLabel: string, count: number): string {
+  return `${shooterLabel} (${count}× interceptors)`;
+}

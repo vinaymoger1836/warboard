@@ -18,16 +18,18 @@ const TABS = [
 type Tab = (typeof TABS)[number][0];
 
 const LATER: Partial<Record<Tab, string>> = {
-  approvals: 'The approval queue arrives with rules of engagement in P5.',
   operations: 'Operations arrive in P7.',
 };
 
-export function Dock({ strings }: { strings: StringTable }) {
+export function Dock({ bridge, toast }: { bridge: EngineBridge; toast: (t: string) => void }) {
+  const strings = bridge.strings;
   const [tab, setTab] = useState<Tab>('events');
   const [open, setOpen] = useState(true);
   const events = useUi((s) => s.events);
   const alerts = useUi((s) => s.alerts);
   const intel = useUi((s) => s.intel);
+  const approvals = useApprovals(bridge);
+  const waiting = approvals.filter((r) => !r.approved).length;
   const lines = tab === 'alerts' ? alerts : tab === 'events' ? events : tab === 'intel' ? intel : [];
   return (
     <section className={open ? 'dock' : 'dock closed'} aria-label="Dock">
@@ -46,6 +48,7 @@ export function Dock({ strings }: { strings: StringTable }) {
           >
             {label}
             {id === 'alerts' && alerts.length > 0 ? ` (${alerts.length})` : ''}
+            {id === 'approvals' && waiting > 0 ? <span className="dock-count-warn"> ({waiting})</span> : ''}
           </button>
         ))}
         <button type="button" className="dock-tab dock-toggle" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
@@ -56,6 +59,8 @@ export function Dock({ strings }: { strings: StringTable }) {
         <div className="dock-body" role="tabpanel">
           {LATER[tab] ? (
             <p className="muted">{LATER[tab]}</p>
+          ) : tab === 'approvals' ? (
+            <Approvals bridge={bridge} list={approvals} toast={toast} />
           ) : lines.length === 0 ? (
             <p className="muted">
               {tab === 'alerts' ? 'No alerts.' : tab === 'intel' ? 'No contacts or reports yet.' : 'Nothing has happened yet.'}
