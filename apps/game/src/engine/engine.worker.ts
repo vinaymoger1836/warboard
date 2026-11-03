@@ -141,6 +141,9 @@ async function handle(req: WorkerRequest): Promise<{ data: ReplyData[WorkerReque
     case 'contactDetails':
       if (!engine) throw new Error('No war is running');
       return { data: JSON.parse(engine.contact_details(req.id)) as ReplyData['contactDetails'] };
+    case 'approvals':
+      if (!engine) throw new Error('No war is running');
+      return { data: JSON.parse(engine.approvals()) as ReplyData['approvals'] };
     case 'groundTrack':
       if (!engine) throw new Error('No war is running');
       return {

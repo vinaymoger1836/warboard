@@ -3,7 +3,9 @@
 // the contact for intel lines (doc 03 §10).
 import type { StringTable } from '@warboard/protocol';
 import { useState } from 'react';
+import type { EngineBridge } from '../bridge';
 import { type EventLine, ui, useUi } from '../store';
+import { Approvals, useApprovals } from './Approvals';
 import { CATEGORY_COLOUR, contactOf, describe, elapsed, subjectOf } from './format';
 
 const TABS = [

@@ -37,6 +37,9 @@ export {
   type WeaponColumns,
 } from './sideview';
 
+// Rules of engagement (P5): the approval queue.
+export type { ApprovalView } from './generated/ApprovalView';
+
 // Fog of war (P4): contact and satellite cards.
 export type { ContactDetails } from './generated/ContactDetails';
 export type { ContactSourceView } from './generated/ContactSourceView';

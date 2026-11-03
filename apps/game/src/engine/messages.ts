@@ -1,4 +1,14 @@
-import type { ContactDetails, Details, Event, Order, OrderAck, SaveHeader, SideInfo, TickReport } from '@warboard/protocol';
+import type {
+  ApprovalView,
+  ContactDetails,
+  Details,
+  Event,
+  Order,
+  OrderAck,
+  SaveHeader,
+  SideInfo,
+  TickReport,
+} from '@warboard/protocol';
 
 /** The three engine files of an installed pack, by OPFS file name. */
 export interface PackFiles {
@@ -17,6 +27,8 @@ export type WorkerRequest =
   | { type: 'point'; lat: number; lon: number }
   | { type: 'details'; id: number }
   | { type: 'contactDetails'; id: number }
+  /** Open ROE approval requests of the player's side. */
+  | { type: 'approvals' }
   /** Ground track of an own satellite, minutes before and after now. */
   | { type: 'groundTrack'; id: number; beforeMin: number; afterMin: number }
   | { type: 'order'; order: Order }
@@ -46,6 +58,7 @@ export interface ReplyData {
   point: number[];
   details: Details;
   contactDetails: ContactDetails;
+  approvals: ApprovalView[];
   /** `[lon, lat]` points every minute. */
   groundTrack: [number, number][];
   order: OrderReply;
