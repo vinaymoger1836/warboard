@@ -16,8 +16,9 @@ profile:
   max_g: 30
 guidance:
   terminal: active_radar
+engage_on_remote: true
 envelope:
-  min_alt_m: 5
+  min_alt_m: 0
   max_alt_m: 20000
 warhead_kg: 20
 warhead: blast_fragmentation

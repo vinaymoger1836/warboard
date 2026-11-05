@@ -28,7 +28,7 @@ use std::path::Path;
 use wb_core::UnitId;
 use wb_core::math::pow;
 use wb_sim::components::{Group, GroupMember, Kinematics, PlatformRef, WeaponFlight, WeaponTarget};
-use wb_sim::events::Outcome;
+use wb_sim::events::{AimRef, Outcome};
 use wb_sim::orders::Command;
 use wb_sim::picture::SidePictures;
 use wb_sim::weapons::LaunchReason;
@@ -656,11 +656,11 @@ impl CombatLog {
                 self.crossed.insert((side, target), now);
             }
         }
-        let launched: Vec<(UnitId, u8)> = sim.events()[from..]
+        let launched: Vec<(UnitId, u8, Option<AimRef>)> = sim.events()[from..]
             .iter()
-            .filter_map(|e| match e.kind {
-                EventKind::WeaponLaunched { weapon, .. } => {
-                    Some((weapon, e.sides.trailing_zeros() as u8))
+            .filter_map(|e| match &e.kind {
+                EventKind::WeaponLaunched { weapon, target, .. } => {
+                    Some((*weapon, e.sides.trailing_zeros() as u8, target.clone()))
                 }
                 _ => None,
             })
@@ -668,12 +668,22 @@ impl CombatLog {
         let n = sim.events().len();
         let world = sim.world();
         let rules = world.resource::<wb_sim::Rules>();
-        for (weapon, side) in launched {
+        for (weapon, side, aim_ref) in launched {
             let key = wb_sim::world::entity(world, weapon)
                 .and_then(|e| world.get::<WeaponFlight>(e))
                 .and_then(|f| match f.target {
                     WeaponTarget::Track { key, .. } | WeaponTarget::Truth(key) => Some(key),
                     WeaponTarget::Point { .. } => None,
+                })
+                .or_else(|| match aim_ref {
+                    Some(AimRef::Contact { contact }) => {
+                        let pics = world.resource::<SidePictures>();
+                        pics.sides
+                            .get(usize::from(side))
+                            .and_then(|p| p.get(contact))
+                            .map(|c| c.truth)
+                    }
+                    _ => None,
                 });
             if let Some(target_uid) = key {
                 self.targets.insert(weapon, target_uid.0);
@@ -714,8 +724,18 @@ fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
     let events = sim.events();
     let mine = || events.iter().filter(move |e| side_of(e) == side);
     let weapon_ok = |w: &str| m.weapon.as_deref().is_none_or(|x| x == w);
-    let target_ok = |w: &UnitId| m.target.is_none_or(|t| log.targets.get(w).copied() == Some(t));
-    let shooter_ok = |s: &UnitId| m.shooter.is_none_or(|sh| s.0 == sh);
+    let target_ok = |w: &UnitId| {
+        m.target.is_none_or(|t| {
+            log.targets.get(w).copied() == Some(t)
+                || log.targets
+                    .get(w)
+                    .is_some_and(|tid| members_of(sim, t).contains(&UnitId(*tid)))
+        })
+    };
+    let shooter_ok = |s: &UnitId| {
+        m.shooter
+            .is_none_or(|sh| s.0 == sh || members_of(sim, sh).contains(s))
+    };
     let first = mine().find_map(|e| match &e.kind {
         EventKind::WeaponLaunched {
             weapon,
@@ -813,11 +833,11 @@ fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
         Metric::FirstTarget => {
             let ev = mine().find(|e| match &e.kind {
                 EventKind::WeaponLaunched {
-                    weapon,
+                    weapon: _,
                     shooter,
                     weapon_type,
                     ..
-                } => weapon_ok(weapon_type) && shooter_ok(shooter) && target_ok(weapon),
+                } => weapon_ok(weapon_type) && shooter_ok(shooter),
                 _ => false,
             })?;
             if let EventKind::WeaponLaunched { weapon, .. } = &ev.kind {

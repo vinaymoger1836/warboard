@@ -1,0 +1,31 @@
+# G10: 12 test anti-ship missiles vs 2 test frigates (fixtures).
+# Expected: 60–95% of missiles intercepted or decoyed; each frigate engages
+# threats to itself first.
+name: G10 Naval Layered Defence
+seed: 1000
+content: scenarios/fixtures
+start_utc: 2026-10-27T10:00:00Z
+start_mode: deploy
+sides:
+  - { name: Blue, countries: [tst], roe: charlie, self_defence: true }
+  - { name: Red, countries: [opp], roe: alpha }
+units:
+  # Blue frigates: 2 frigates 5.5 km apart, defending each other
+  - { id: 10, name: Frigate1, platform: test-frigate, country: tst, lat_deg: 55.50, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
+  - { id: 20, name: Frigate2, platform: test-frigate, country: tst, lat_deg: 55.55, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
+  # Red shooters: 2 corvettes ~40 km East, each firing 6 anti-ship missiles
+  - { id: 30, name: RedCorvette1, platform: test-corvette, country: opp, lat_deg: 55.50, lon_deg: 17.65, heading_deg: 270, loadout: test-corvette-standard }
+  - { id: 40, name: RedCorvette2, platform: test-corvette, country: opp, lat_deg: 55.55, lon_deg: 17.65, heading_deg: 270, loadout: test-corvette-standard }
+orders:
+  # Corvette 1 fires a salvo of 6 test-asm at Frigate 1's position
+  - { tick: 0, side: 1, type: AssignTask, units: [30], task: { kind: strike, point: [17.0, 55.50], count: 6, weapon: test-asm } }
+  # Corvette 2 fires a salvo of 6 test-asm at Frigate 2's position
+  - { tick: 0, side: 1, type: AssignTask, units: [40], task: { kind: strike, point: [17.0, 55.55], count: 6, weapon: test-asm } }
+golden:
+  id: G10
+  description: 12 test anti-ship missiles vs 2 test frigates, 60–95% intercepted or decoyed
+  max_ticks: 1600
+  seeds: 5
+  expect:
+    - { metric: launches, side: 1, weapon: test-asm, min: 12, max: 12 }
+    - { metric: outcome_fraction, side: 1, weapon: test-asm, outcomes: [intercepted, decoyed], aggregate: mean, min: 0.60, max: 0.95 }
