@@ -104,7 +104,7 @@ Each sensor instance has a content type (detection parameters) and a mounting (h
 ```
 σ_eff   = σ(aspect) × m_stores                 # RCS interpolated front/side/rear/top; external stores raise it
 R50     = R_ref × (σ_eff / σ_ref)^(1/4)         # R_ref = 50% detection range vs σ_ref (usually 1 m²)
-R50'    = R50 × f_clutter × f_jam              # §9 for jamming
+R50'    = R50 × f_clutter × f_jam              # f_jam from the jamming rules in §9
 horizon = 4.12 × (√h_radar_m + √h_target_m) km
 Pd      = 1 / (1 + (d / R50')^k)               # per scan, k from realism profile (default 8)
 track   = 2 detections in last 3 scans; dropped after 3 misses
@@ -166,19 +166,28 @@ Contact {
 
 ## 9. Electronic warfare
 
-| Effect | Model |
-|---|---|
-| **Self-screening jamming** | Burn-through range `R_bt = R50² / 10^(J_eff_dB/20)` (km). Detection range becomes `min(R50, R_bt)` while the jammer is on and in band |
-| **Stand-off / escort jamming** | `R_eff = R50 × (1 + 10^(J_eff_dB/10) × G_sl / R_j²)^(-1/4)`; `R_j` = jammer–radar distance (km); `G_sl` sidelobe gain (−30 dB default, 0 dB in main beam). Several jammers add |
-| **Effective jamming power** | `J_eff_dB = J_dB − ECCM_dB(radar) − band_mismatch_dB` |
-| **Comms jamming** | Raises network latency and drops links in the jammed area; affected units fall back to their own sensors |
-| **GPS jamming** | GPS-guided weapons in the area: CEP × factor unless the weapon has anti-jam |
-| **Seeker jamming** | Reduces endgame Pk (§11) by `jam_effect × (1 − seeker_ECCM)` |
-| **Decoys** | Chaff vs radar seekers, flares vs IR, towed and air-launched decoys create false contacts that draw interceptors |
-| **EMCON** | Off = invisible to ESM but blind on own radar. The core trade-off for SAM sites and ships |
-| **Anti-radiation missiles** | Home on emitters; if the radar shuts down they continue in memory mode with reduced Pk |
+Electronic warfare is a set of **game stats and modifiers** (ADR-034). Public sources give almost no real figures for jammer power or radar jamming resistance, so the model uses small integer stats that are easy to enter, compare and balance. It keeps the effects players expect: jamming delays detection, stops working up close, works best in line with the radar, degrades missile seekers and data links, and switching a radar off is a real trade-off.
 
-The constants (`k`, sidelobe default, latency defaults) live in the realism profile; golden scenarios pin their behaviour.
+**Stats (content):** each jammer mode has `jam_strength` 0–10, `coverage_km` and `sector_deg`; each radar has `jam_resistance` 0–10; each seeker has `seeker_resistance` 0–1; each weapon may be `nav_resistant`.
+
+**Advantage:** `a = jam_strength − jam_resistance`, clamped to −10…10. The realism profile maps it to a detection-range multiplier `m(a)`, interpolated:
+
+| a | ≤ −4 | −2 | 0 | +2 | +4 | ≥ +6 |
+|---|---|---|---|---|---|---|
+| m(a) | 1.00 | 0.90 | 0.75 | 0.60 | 0.45 | 0.35 |
+
+| Effect | Game rule |
+|---|---|
+| **Self-protection jamming** (jammer on the target) | `R50' = max(R50 × m(a), R50 × close_in)`; `close_in` = 0.35. Inside that distance the radar sees through the jamming ("burn-through") |
+| **Escort and stand-off jamming** (jammer elsewhere) | Applies to radars within the jammer's `coverage_km`. Full `m(a)` when the target is within `sector_deg / 2` of the jammer's bearing from the radar; otherwise `1 − (1 − m(a)) × off_axis` with `off_axis` = 0.3. Several jammers: strongest effect, then +10% of the remaining reduction per extra jammer, at most 3 |
+| **Seeker effect** | Endgame factor (§11) `f_ew = 1 − seeker_jam × (1 − seeker_resistance)` when a friendly jammer covers the target; `seeker_jam` = 0.25 |
+| **Data link disruption** | Inside a jammer's coverage, enemy data link latency × 3 and 30% of shared track updates are lost; units fall back to their own sensors |
+| **Navigation disruption** | Area effect: weapons that rely on satellite navigation get CEP × 4 unless `nav_resistant` |
+| **Decoys** | Chaff against radar seekers, flares against IR seekers; towed and expendable decoys create false contacts that draw interceptors. Effect through `f_cm` (§11) |
+| **EMCON** | Radar off = invisible to ESM but blind on its own radar. The core trade-off for SAM sites and ships |
+| **Emitter-homing (anti-radiation) weapons** | Guide on an emitting radar; if it switches off they fly on to its last known position with Pk × `memory` (0.45) |
+
+All numbers above are realism-profile defaults (`content/realism/default.yaml`), not code; golden scenarios G11 and G12 pin their behaviour.
 
 ## 10. Weapons in flight
 
@@ -187,7 +196,7 @@ Every missile, bomb, shell salvo, torpedo and decoy in flight is an entity.
 - **Energy profile:** boost (time, acceleration) → sustain (speed at profile altitude) → coast `V(t) = V_burnout × e^(−Δt/τ(alt))` until `V < V_min` (out of energy). Air-breathing cruise missiles keep speed until fuel (range) runs out. Manoeuvre costs energy in proportion to lateral acceleration.
 - **Calibration rule:** fired at its reference altitude and speed against a non-manoeuvring head-on target, a weapon must reach its published range ± 10%. Ranges against crossing or beaming targets fall out of the model.
 - **Altitude profiles:** sea-skimming (5–15 m), high–low, ballistic with apogee, quasi-ballistic, glide (bombs: range from release altitude and speed).
-- **Guidance:** proportional navigation (N 3–4) limited by max G. Before seeker activation the weapon flies on shooter or data-link updates (if the shooter still tracks the target), otherwise to the predicted point. Semi-active weapons need the shooter's illuminator until impact (it occupies a fire channel). IR weapons need lock. Anti-radiation weapons need an emitter. GPS/INS weapons fly to coordinates with CEP.
+- **Guidance:** proportional navigation (N 3–4) limited by max G. Before seeker activation the weapon flies on shooter or data-link updates (if the shooter still tracks the target), otherwise to the predicted point. Semi-active weapons need the shooter's illuminator until impact (it occupies a fire channel). IR weapons need lock. Emitter-homing weapons need an emitting radar. Satellite-navigation/INS weapons fly to coordinates with CEP.
 - **Retargeting:** if the target dies first, an active seeker may acquire another valid target in its field of view (e.g. the next ship); otherwise it self-destructs.
 
 ## 11. Endgame
@@ -208,7 +217,7 @@ hit  ⇔  rng(seed, ENDGAME, weapon_id, tick) < Pk
 
 Outcomes: `Hit`, `Miss`, `Decoyed`, `Jammed`, `OutOfEnergy`, `Intercepted`, `LostTrack`, `SelfDestruct`. The event stores every factor, so a report can say "missed — out of energy (f_energy 0.11), target beaming".
 
-Bombs and other unguided or GPS weapons use a CEP roll (Rayleigh) against the target's lethal radius instead of `Pk_base`.
+Bombs and other unguided or satellite-navigation weapons use a CEP roll (Rayleigh) against the target's lethal radius instead of `Pk_base`.
 
 ## 12. Defence: threat evaluation and weapon assignment (TEWA)
 
@@ -265,6 +274,6 @@ Techniques: spatial index on H3 resolution 3 buckets rebuilt per scan wave; cand
 
 ## 17. Calibration
 
-- All tuning constants live in `content/realism/default.yaml` (Pd curve steepness, track rules, contact timeouts, jamming defaults, CEP distribution, ground combat coefficients).
+- All tuning constants live in `content/realism/default.yaml` (Pd curve steepness, track rules, contact timeouts, the jamming table and factors in §9, CEP distribution, ground combat coefficients).
 - **Golden scenarios** (doc 08 §3) pin expected outcome bands, e.g. "12 × JSM vs 2 × FREMM: 60–95% of missiles intercepted or decoyed". A change that moves a golden result out of band fails CI and needs an explicit decision.
 - The admin app's **test bench** runs Monte Carlo engagements (e.g. 1,000 × AIM-120D vs Su-35S at 60 km, beaming) so OSINT values can be sanity-checked before they ship.

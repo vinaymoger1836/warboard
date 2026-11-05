@@ -12,7 +12,8 @@ Sizes are weeks of focused work for one person with Claude Code (*estimates*). E
 | P3 | Engine core | 2–3 wk | ECS world, adaptive scheduler, aircraft/ship movement, fuel, bases and placement rules, stationing, tasks (move, patrol circle/route, RTB, land, tanker refuel), time controls, side view, unit card, waypoint drawing, save/load | Patrol until bingo then RTB; tanker extends patrol; 2,000 dummy units ≤ 6 ms/tick at ×10; save/load mid-flight resumes with identical hash |
 | P4 | Sensors & fog of war | 2–3 wk | Radar, ESM, IRST, EO/IR, visual, satellites (SGP4, EO/SAR, tasking), contacts, classification, ellipses, data links, EMCON, intel log | Golden G1–G5 pass; no code path from UI to truth (API test) |
 | P5 | Weapons, air combat & ROE | 3 wk | Stations and loadouts (locked airborne), launch doctrine, missile flyout, seekers, endgame, countermeasures, damage, ROE + approval queue + self-defence, weapon visuals | G6, G8, G9 pass; every termination event carries factors |
-| P6 | Naval, IADS & EW | 3 wk | Ships, VLS magazines, AShM salvos, TEWA layers and fire channels, CIWS, decoys, IADS with C2, jamming (self-screen, stand-off, escort), burn-through, comms/GPS jamming, ARMs, SEAD/DEAD; weapon effects, targeted halo and red enemy-weapon labels (moved from P5) | G10–G12 pass |
+| P6a | Naval combat & layered air defence | 2 wk | Ships, VLS magazines, anti-ship salvos, defence assignment layers and fire channels, close-in guns, chaff and flares, air-defence networks with command posts; weapon effects, targeted halo and red enemy-weapon labels (moved from P5) | G10 passes |
+| P6b | Electronic warfare (game stats) | 1–1.5 wk | Jamming stats and effects (doc 02 §9, ADR-034), data link and navigation disruption, EMCON tactics, emitter-homing weapons, air-defence suppression task | G11, G12 pass |
 | P7 | Operations & reports | 2–3 wk | Operation model and triggers, planner UI with timeline, validation, salvo/loss/munitions/sortie/operation reports, export, replay with seeking | G13 passes; report totals equal event counts; replay hash matches |
 | P8 | Admin app & Tier-1 content | 3–4 wk | Admin editor, schema forms, provenance, inventories, test bench; Tier-1 content (~200 systems, ~150 weapons) with sources | Every entry has sources and confidence; test-bench sanity suite passes |
 | P9 | Enemy AI v1 & war setup | 2–3 wk | Coalition setup, garrisoned start on real bases, AI posture, CAP, IADS, intercepts, retaliation, difficulty | 24 h sim-time AI-vs-AI soak without errors; AI never reads truth (test); AI reacts to incursions within its doctrine time |
@@ -36,7 +37,8 @@ gantt
   section Combat
   P4 Sensors + fog      :10, 13
   P5 Weapons + ROE      :13, 16
-  P6 Naval, IADS, EW    :16, 19
+  P6a Naval + air defence :16, 18
+  P6b EW game stats     :18, 19
   P7 Operations + AAR   :19, 22
   section Game
   P8 Admin + content    :22, 26
@@ -88,7 +90,7 @@ Stored in `scenarios/golden/` with expected bands; Monte Carlo ones run 500 seed
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| R1 | OSINT specs missing, inconsistent or classified (RCS, Pk, ECCM) | High | High | Provenance and confidence fields; estimates flagged; test bench; golden bands; values in data not code |
+| R1 | OSINT specs missing, inconsistent or classified (RCS, Pk, jamming) | High | High | Provenance and confidence fields; estimates flagged; test bench; golden bands; values in data not code |
 | R2 | Engine too slow at ×10 with 2,000 units | Medium | High | Adaptive tick, staggered scans, spatial index, LOS memo, CI benchmark from P3 |
 | R3 | Determinism breaks silently | Medium | High | Lints (`disallowed-methods`, no hash iteration), counter RNG, native-vs-WASM hash check in CI |
 | R4 | Scope creep across all domains | High | High | Phase gates; air, naval and air defence first; ground in P11 |
@@ -100,3 +102,4 @@ Stored in `scenarios/golden/` with expected bands; Monte Carlo ones run 500 seed
 | R10 | Third-party breaking changes (MapLibre v6 ESM-only, Cesium releases) | Medium | Low | Pinned versions, `docs/versions.md`, upgrade only between phases |
 | R11 | Real, ongoing conflicts make inventories go stale | High | Low | `as_of` dates, low-confidence flags, easy edits in admin |
 | R12 | Large geodata builds on a personal machine | Medium | Low | COG overviews and `pmtiles extract`; build once per pack version |
+| R13 | Coding-assistant safety checks stop a military-themed phase | Medium | Medium | Narrow game-mechanics phases; game stats instead of signal-level formulas (ADR-034); project context in `CLAUDE.md`; report clear false positives with `/feedback` |

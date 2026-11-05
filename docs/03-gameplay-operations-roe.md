@@ -55,7 +55,7 @@ Every base has damageable components (runway, shelters, fuel, munitions store, r
 
 | Domain | Tasks |
 |---|---|
-| Air | Patrol (circle, racetrack, waypoint loop), CAP, Intercept, Strike (contact or point), SEAD/DEAD, Escort, AEW orbit, Tanker track, Recon (area, point, route), Jam (stand-off orbit or escort), Transfer, RTB |
+| Air | Patrol (circle, racetrack, waypoint loop), CAP, Intercept, Strike (contact or point), Air-defence suppression (SEAD), Escort, AEW orbit, Tanker track, Recon (area, point, route), Jam (stand-off orbit or escort), Transfer, RTB |
 | Sea | Move, Patrol (area or route), Strike (anti-ship, land attack), Escort / screen, Station-keep, ASW hunt (simplified), RTB |
 | Ground (Phase 11) | Move, Attack, Defend, Hold, Withdraw, Recon, Raid, Designate |
 | Sites | EMCON on / off / blink, Engage (manual), Relocate (mobile systems) |
@@ -120,7 +120,7 @@ An operation is a **graph of phases**. Each phase has tasks, a start trigger, an
 | 5. Strike ship 2 | Same FREMM launches 3 × Teseo Mk2/A at corvette 2 | **With Phase 4** | Weapons terminate |
 | 6. Kill the SAM | 2 × F-35A, 4 × AGM-88G AARGM-ER on the S-400 site | Phase 2 started + 10 min | Site destroyed or weapons gone |
 
-The defending corvettes run TEWA: each engages missiles aimed at itself first, then those aimed at the other corvette, with Redut SAMs, then guns and decoys. The S-400 site defends itself and the ships if its envelope covers them, and may switch off its radar when anti-radiation missiles are detected (EMCON), sending AARGM-ERs into memory mode.
+The defending corvettes run TEWA: each engages missiles aimed at itself first, then those aimed at the other corvette, with Redut SAMs, then guns and decoys. The S-400 site defends itself and the ships if its envelope covers them, and may switch off its radar when emitter-homing missiles are detected (EMCON), sending the AARGM-ERs into memory mode (doc 02 §9).
 
 ### 8.2 Worked example — the brief's strike chain
 
@@ -153,7 +153,7 @@ flowchart TB
 ```
 
 - Lives inside the engine (deterministic, portable) and reads **only its side's picture**.
-- **Doctrine profile** per country (content): aggression, risk tolerance, EMCON discipline, missile conservation, IADS layering template, CAP rotation, strike package template (SEAD + escort + strikers + jammer), defended asset priorities.
+- **Doctrine profile** per country (content): aggression, risk tolerance, EMCON discipline, missile conservation, IADS layering template, CAP rotation, strike package template (air-defence suppression + escort + strikers + jammer), defended asset priorities.
 - **Technique:** utility scoring with doctrine weights + templates. Tactical behaviours are the same code that drives the player's units.
 - **v1 (Phase 9):** garrisons or deploys, maintains CAP and SAM coverage, scrambles interceptors, responds to incursions, retaliates against detected shooters and bases.
 - **v2 (Phase 12):** plans its own multi-phase operations with the same operation model, including decoys and timing.

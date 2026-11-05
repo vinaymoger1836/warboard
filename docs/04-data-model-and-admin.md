@@ -17,7 +17,7 @@
 | `system` | `content/systems/` | Composite systems deployed as a site or group (S-400 battalion, Patriot battery, Iskander brigade) |
 | `sensor` | `content/sensors/` | Radars, ESM, IRST, EO/IR, sonar, satellite payloads |
 | `weapon` | `content/weapons/` | Missiles, bombs, shells, rockets, torpedoes, loitering munitions, decoys |
-| `ew_suite` | `content/ew/` | Jammers (self-protection, escort, stand-off), comms and GPS jammers |
+| `ew_suite` | `content/ew/` | Jammer modes as game stats (self-protection, escort, stand-off; data link and navigation disruption), doc 02 §9 |
 | `countermeasure` | `content/countermeasures/` | Chaff, flares, towed decoys, DIRCM |
 | `datalink` | `content/datalinks/` | Latency, capacity, engage-on-remote support |
 | `loadout` | `content/loadouts/` | Named loadout templates per platform |
@@ -46,12 +46,12 @@ radar:
   field_of_regard_deg: 120
   clutter_rejection: 0.85
   pulse_doppler: true
-  eccm_db: 20
+  jam_resistance: 6       # 0–10 game stat, doc 02 §9 (replaces eccm_db in P6b)
   erp_class_dbw: 75        # for enemy ESM
   fire_channels: 8
 provenance:
   confidence: low
-  estimates: [radar.r_ref_km, radar.eccm_db, radar.erp_class_dbw]
+  estimates: [radar.r_ref_km, radar.jam_resistance, radar.erp_class_dbw]
   sources:
     - { title: "Manufacturer fact sheet", url: "https://…", accessed: 2026-11-02 }
 ```
@@ -77,7 +77,7 @@ guidance:
   midcourse: [inertial, datalink]
   terminal: active_radar
   seeker_range_km: 18
-  seeker_eccm: 0.6
+  seeker_resistance: 0.6   # 0–1 game stat, doc 02 §9 (replaces seeker_eccm in P6b)
 warhead_kg: 18
 pk_base: { fighter: 0.75, bomber: 0.85, helicopter: 0.8, cruise_missile: 0.5, uav: 0.85 }
 countermeasure_resistance: { chaff: 0.7, towed_decoy: 0.4 }
@@ -124,7 +124,23 @@ turnaround_min: 60
 provenance: { confidence: low, estimates: [signature.rcs_m2, signature.ir], sources: [ … ] }
 ```
 
-### 3.4 Composite system
+### 3.4 Jammer (EW suite)
+
+```yaml
+id: example-escort-jammer
+kind: ew_suite
+name: Escort jamming pods (example)
+modes:                           # 0–10 game stats, doc 02 §9
+  self_protect: { jam_strength: 5 }
+  escort:       { jam_strength: 6, coverage_km: 150, sector_deg: 60 }
+  stand_off:    { jam_strength: 7, coverage_km: 250, sector_deg: 60 }
+effects: [radar, datalink]       # optional: navigation
+provenance: { confidence: estimate, estimates: [modes], sources: [ … ] }
+```
+
+Strengths are relative game values chosen for balance and checked with the test bench, not measured figures.
+
+### 3.5 Composite system
 
 ```yaml
 id: s-400-battalion
@@ -145,7 +161,7 @@ iads_capable: true
 
 Each component is its own damageable entity on the map; destroying the fire-control radar stops guided engagements even if launchers survive.
 
-### 3.5 Custom system
+### 3.6 Custom system
 
 ```yaml
 id: custom-f-35a-block-x
@@ -158,7 +174,7 @@ overrides:
   signature.rcs_m2.front: 0.002
 ```
 
-### 3.6 Inventory
+### 3.7 Inventory
 
 ```yaml
 country: POL

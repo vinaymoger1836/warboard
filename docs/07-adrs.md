@@ -185,3 +185,10 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Decision.** Under Bravo a contact counts as inside our territory only when its estimated position and eight points on its current error ellipse scaled by `roe.territory_sigma` (3, an estimate) are all inside. The ellipse is the one the player sees, so the decision uses only the side picture. Return fire is unchanged.
 **Alternatives.** The estimated centre alone (the first P5 build): in one G8 run in 20 the estimate crossed a second before the aircraft did, and the F-35s fired at a target 82 m outside the border.
 **Consequences.** + "Never engaged outside" holds against the truth; the shooter waits until the picture is sure. − Engagements come later after a crossing (up to 22 s in G8, as an air contact's ellipse grows quickly between scans); a contact hugging the border inside it may never be engaged.
+
+## ADR-034 Electronic warfare as game stats
+**Status — Accepted, 5 Nov 2026 (before P6).** Supersedes the jamming formulas in ADR-005 and doc 02 §9; the rest of ADR-005 stands.
+**Context.** The first design modelled jamming with signal-level formulas (decibels, sidelobe gain, ECCM in dB). Public sources give almost no real values for jammer power or radar jamming resistance, so every input would have been a guess (risk R1).
+**Decision.** Jammers carry `jam_strength` 0–10 per mode with coverage and sector; radars carry `jam_resistance` 0–10; seekers `seeker_resistance` 0–1. A realism-profile table maps the advantage to a detection-range multiplier; fixed game rules cover burn-through, sector, seekers, data links, navigation and emitter-homing weapons (doc 02 §9). P6b migrates `eccm_db` and `seeker_eccm` in the schema and seed content.
+**Alternatives.** Keep the formulas with guessed decibel values; drop electronic warfare.
+**Consequences.** + Same gameplay effects; easier data entry and balancing; a plainer, game-level hand-off. − Less physically grounded; effect sizes are set by balance testing.

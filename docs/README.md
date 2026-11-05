@@ -14,7 +14,7 @@ A real-world strategy wargame for the browser, built to grow into an Android gam
 | Sides | Any countries grouped into two coalitions; player controls one, AI the other |
 | Map | Whole real world: borders, coastlines, 12 nm territorial seas, terrain and land cover |
 | Views | 2D strategic map **and** 3D tactical view, both in the browser |
-| Realism | Engineering-level models (radar range vs RCS, horizon, terrain line of sight, jamming and burn-through, missile energy, probability of kill), not full flight physics |
+| Realism | Engineering-level models (radar range vs RCS, horizon, terrain line of sight, missile energy, probability of kill) with electronic warfare as game stats (ADR-034), not full flight physics |
 | Scale target | Theatre war: ~2,000 units and ~300 weapons in flight, smooth at ×10 |
 | Logistics | Fixed inventory. Fuel and munitions run out; no production |
 | Starting map | Real bases preloaded; player picks "start garrisoned" or "deploy everything yourself" |
@@ -38,7 +38,7 @@ All game state lives in a **deterministic simulation engine written in Rust**. I
 | 04 | [Data model & admin](04-data-model-and-admin.md) | Content schema with examples, provenance, inventories, admin app, content pipeline, saves, events |
 | 05 | [Map & geodata](05-map-and-geodata.md) | Data sources and licences, geodata pipeline, region packs, H3 terrain, elevation, territory, map styling |
 | 06 | [Clients & platforms](06-clients-and-platforms.md) | Browser app structure, worker bridge, view format, 2D/3D rendering, symbology, UI layout, storage, Android path |
-| 07 | [Architecture decisions](07-adrs.md) | 18 ADRs with alternatives and consequences |
+| 07 | [Architecture decisions](07-adrs.md) | ADRs with alternatives and consequences (design-time and as built) |
 | 08 | [Roadmap, metrics & risks](08-roadmap-and-risks.md) | Phases 0–12 (+ Unity in Phase 13) with exit criteria, success metrics, golden scenarios, risk register |
 | 09 | [Claude Code hand-off](09-claude-code-handoff.md) | How to run the build with Claude Code, per-phase prompts, acceptance tests, review checklists |
 | 10 | [UI style guide](10-ui-style-guide.md) | Tokens, map style, unit symbols and labels, weapon visuals, unit card, chrome — derived from the reference screenshots in `ui-reference/` |
