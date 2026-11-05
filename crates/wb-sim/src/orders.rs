@@ -1452,6 +1452,7 @@ fn split(world: &mut World, side: u8, pick: &GroupPick) -> Option<Entity> {
         system: g.system,
         evade: g.evade,
         doctrine: g.doctrine,
+        autonomous_after_ms: g.autonomous_after_ms,
     };
     Some(spawn_unit(
         world,

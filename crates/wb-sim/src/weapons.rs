@@ -81,6 +81,32 @@ pub struct Combat {
     pub inside: BTreeMap<(u8, ContactId), bool>,
     /// Weapon contacts judged aimed at an own unit, and that unit.
     pub incoming: BTreeMap<(u8, ContactId), UnitId>,
+    /// Tracked salvos for salvo reporting.
+    pub salvos: BTreeMap<u32, SalvoStats>,
+    /// Recent visual effects for SideView (doc 10 §5).
+    pub effects: Vec<VisualEffect>,
+}
+
+/// Statistics of a salvo in flight.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct SalvoStats {
+    pub side: u8,
+    pub shooter: UnitId,
+    pub total: u32,
+    pub terminated: u32,
+    pub hits: u32,
+    pub misses: u32,
+    pub intercepted: u32,
+    pub decoyed: u32,
+}
+
+/// A visual combat effect (launch flash, intercept burst, hit burst).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct VisualEffect {
+    pub time_ms: u64,
+    pub at: LatLon,
+    pub alt_m: f32,
+    pub kind: u8,
 }
 
 /// Why a weapon was fired: the launch event and the golden checks read it.
@@ -277,6 +303,23 @@ pub fn launch(world: &mut World, l: &Launch) -> Result<UnitId, String> {
         let mut c = world.resource_mut::<Combat>();
         let salvo = l.salvo.unwrap_or_else(|| c.new_salvo());
         c.in_flight += 1;
+        let s = c.salvos.entry(salvo).or_insert_with(|| SalvoStats {
+            side: alg.side,
+            shooter: l.shooter,
+            total: 0,
+            terminated: 0,
+            hits: 0,
+            misses: 0,
+            intercepted: 0,
+            decoyed: 0,
+        });
+        s.total += 1;
+        c.effects.push(VisualEffect {
+            time_ms: now,
+            at: sk.pos(),
+            alt_m: alt as f32,
+            kind: crate::view::effect::LAUNCH,
+        });
         (salvo, c.new_tag(alg.side))
     };
     // A launch at a side's forces whose picture holds the shooter is a
@@ -1145,10 +1188,50 @@ fn terminate(
         world.despawn(e);
     }
     world.resource_mut::<UnitIndex>().0.remove(&id);
-    {
+    let salvo_report = {
         let mut c = world.resource_mut::<Combat>();
         c.in_flight = c.in_flight.saturating_sub(1);
-    }
+        let mut report = None;
+        if let Some(s) = c.salvos.get_mut(&f.salvo) {
+            s.terminated += 1;
+            match outcome {
+                Outcome::Hit => s.hits += 1,
+                Outcome::Miss => s.misses += 1,
+                Outcome::Intercepted => s.intercepted += 1,
+                Outcome::Decoyed => s.decoyed += 1,
+                _ => {}
+            }
+            if s.terminated >= s.total {
+                report = Some((
+                    s.side,
+                    EventKind::SalvoReport {
+                        salvo: f.salvo,
+                        shooter: s.shooter,
+                        total: s.total,
+                        hits: s.hits,
+                        misses: s.misses,
+                        intercepted: s.intercepted,
+                        decoyed: s.decoyed,
+                    },
+                ));
+            }
+        }
+        let eff_kind = match outcome {
+            Outcome::Intercepted => Some(crate::view::effect::INTERCEPT),
+            Outcome::Hit => Some(crate::view::effect::HIT),
+            _ => None,
+        };
+        if let Some(kind) = eff_kind {
+            c.effects.push(VisualEffect {
+                time_ms: clock.end_ms(),
+                at: k.pos(),
+                alt_m: k.alt_m as f32,
+                kind,
+            });
+        }
+        c.effects.retain(|e| clock.end_ms().saturating_sub(e.time_ms) <= 2_000);
+        report
+    };
     crate::picture::forget(&mut world.resource_mut::<SidePictures>(), id);
     emit(
         world,
@@ -1164,4 +1247,7 @@ fn terminate(
             intercept: f.intercept,
         },
     );
+    if let Some((rep_side, rep_event)) = salvo_report {
+        emit(world, rep_side, rep_event);
+    }
 }

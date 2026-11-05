@@ -29,7 +29,7 @@ use crate::bases;
 use crate::clock::SimClock;
 use crate::components::{
     Allegiance, BaseSite, Group, GroupMember, Health, Identity, Mode, PlatformRef, Posture,
-    ReturnWhy, ScriptedTarget, WeaponFlight,
+    ReturnWhy, ScriptedTarget, SystemMemberRole, WeaponFlight,
 };
 use crate::events::{EventKind, Outcome, emit};
 use crate::picture::SidePictures;
@@ -272,6 +272,9 @@ pub fn destroy(world: &mut World, unit: UnitId) {
     let name = world
         .get::<Identity>(e)
         .map_or_else(String::new, |i| i.name.clone());
+    let was_c2 = world
+        .get::<SystemMemberRole>(e)
+        .is_some_and(|r| r.0 == wb_content::source::system::ComponentRole::C2);
     if let Some(m) = world.get::<GroupMember>(e).copied()
         && let Some(ge) = entity(world, m.group)
     {
@@ -286,6 +289,51 @@ pub fn destroy(world: &mut World, unit: UnitId) {
             crate::picture::forget(&mut world.resource_mut::<SidePictures>(), m.group);
         } else {
             crate::orders::reslot(world, m.group, &remaining);
+            if was_c2 {
+                let c2_survives = remaining.iter().any(|rem| {
+                    entity(world, *rem).is_some_and(|re| {
+                        world
+                            .get::<SystemMemberRole>(re)
+                            .is_some_and(|r| r.0 == wb_content::source::system::ComponentRole::C2)
+                    })
+                });
+                if !c2_survives {
+                    let needs_auto = {
+                        let g = world.get::<Group>(ge).expect("group");
+                        g.system.is_some() && g.autonomous_after_ms.is_none()
+                    };
+                    if needs_auto {
+                        let (delay_s, delay_ms) = {
+                            let rules = world.resource::<Rules>();
+                            let country = world
+                                .get::<Allegiance>(ge)
+                                .map(|a| a.country);
+                            let reaction_time_s = country
+                                .and_then(|c| rules.db.countries.get(c.0 as usize))
+                                .and_then(|c| rules.db.doctrines.get(c.doctrine.0 as usize))
+                                .map_or(2.0, |d| d.reaction_time_s);
+                            let factor = rules
+                                .realism()
+                                .tewa
+                                .iads_autonomous_reaction_factor;
+                            let delay_s = reaction_time_s * factor;
+                            (delay_s, (delay_s * 1_000.0) as u64)
+                        };
+                        let now = world.resource::<SimClock>().sim_time_ms;
+                        if let Some(mut g) = world.get_mut::<Group>(ge) {
+                            g.autonomous_after_ms = Some(now + delay_ms);
+                        }
+                        emit(
+                            world,
+                            side,
+                            EventKind::AutonomousMode {
+                                group: m.group,
+                                delay_s,
+                            },
+                        );
+                    }
+                }
+            }
         }
     }
     if let Some(Posture::AtBase { base, .. }) = world.get::<Posture>(e).copied()
