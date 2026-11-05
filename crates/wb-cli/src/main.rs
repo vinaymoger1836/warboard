@@ -221,13 +221,13 @@ fn run(a: RunArgs) -> anyhow::Result<()> {
     let content = sim::content(&a.content)?;
     let geo = sim::geo(&a.packs)?;
     let packs: Vec<String> = a.packs.iter().map(|p| p.display().to_string()).collect();
-    let (label, mut sim) = match (&a.scenario, &a.load) {
+    let (label, scn_content, mut sim) = match (&a.scenario, &a.load) {
         (_, Some(path)) => {
             let bytes =
                 std::fs::read(path).with_context(|| format!("cannot read {}", path.display()))?;
             let sim = Sim::load(&bytes, content.db.clone(), content.hash, geo.clone())
                 .with_context(|| format!("cannot load {}", path.display()))?;
-            (path.display().to_string(), sim)
+            (path.display().to_string(), content, sim)
         }
         (Some(path), None) => {
             let scn = sim::read_scenario(path)?;
@@ -235,9 +235,11 @@ fn run(a: RunArgs) -> anyhow::Result<()> {
                 Some(c) if a.content == Path::new(DEFAULT_CONTENT) => sim::content(Path::new(c))?,
                 _ => content,
             };
+            let sim = sim::build(&scn, &scn_content, geo.clone())?;
             (
                 path.display().to_string(),
-                sim::build(&scn, &scn_content, geo.clone())?,
+                scn_content,
+                sim,
             )
         }
         (None, None) => anyhow::bail!("give --scenario or --load"),
@@ -251,7 +253,7 @@ fn run(a: RunArgs) -> anyhow::Result<()> {
         if let Some(out) = &a.save_out {
             write_file(out, &bytes)?;
         }
-        sim = Sim::load(&bytes, content.db.clone(), content.hash, geo.clone())
+        sim = Sim::load(&bytes, scn_content.db.clone(), scn_content.hash, geo.clone())
             .context("cannot reload the save")?;
         eprintln!(
             "saved and reloaded at tick {} ({} bytes)",
