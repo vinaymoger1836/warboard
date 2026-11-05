@@ -36,14 +36,14 @@ All game state lives in a **deterministic simulation engine written in Rust**. I
 | 01 | [Overview](01-overview.md) | Requirements, NFRs, system context, components, tech stack, repo layout |
 | 02 | [Simulation engine](02-simulation-engine.md) | Tick scheduler, determinism, movement, sensors, fog of war, EW, weapons, endgame, damage, logistics, performance |
 | 03 | [Gameplay, operations & ROE](03-gameplay-operations-roe.md) | War setup, bases, deployment, tasks, loadouts, operations, ROE, time control, AI, after-action reports |
-| 04 | [Data model & admin](04-data-model-and-admin.md) | Content schema with examples, provenance, inventories, admin app, content pipeline, saves, events |
-| 05 | [Map & geodata](05-map-and-geodata.md) | Data sources and licences, geodata pipeline, region packs, H3 terrain, elevation, territory, map styling |
+| 04 | [Data model & admin](04-data-model-and-admin.md) | Content schema with examples, archetypes and balance, inventories, admin app, content pipeline, saves, events |
+| 05 | [Map & geodata](05-map-and-geodata.md) | Data sources and licences, geodata pipeline, region packs, H3 terrain, elevation, generated territory, map styling |
 | 06 | [Clients & platforms](06-clients-and-platforms.md) | Browser app structure, worker bridge, view format, 2D/3D rendering, symbology, UI layout, storage, Android path |
 | 07 | [Architecture decisions](07-adrs.md) | ADRs with alternatives and consequences (design-time and as built) |
 | 08 | [Roadmap, metrics & risks](08-roadmap-and-risks.md) | Phases 0–12 (+ Unity in Phase 13) with exit criteria, success metrics, golden scenarios, risk register |
 | 09 | [Claude Code hand-off](09-claude-code-handoff.md) | How to run the build with Claude Code, per-phase prompts, acceptance tests, review checklists |
-| 11 | [Fictional setting](11-fictional-setting.md) | Nations of Theatre North, generated borders, place names, bases, the fictional catalogue and the migration |
 | 10 | [UI style guide](10-ui-style-guide.md) | Tokens, map style, unit symbols and labels, weapon visuals, unit card, chrome — derived from the reference screenshots in `ui-reference/` |
+| 11 | [Fictional setting](11-fictional-setting.md) | Nations of Theatre North, generated borders, place names, bases, the fictional catalogue and the migration |
 | — | [CLAUDE.md](CLAUDE.md) | Drop-in project memory file for the repo root |
 
 ## Headline targets

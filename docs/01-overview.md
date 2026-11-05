@@ -2,22 +2,22 @@
 
 ## 1. Problem
 
-Build a wargame that feels like real operational command: real countries, real weapon systems with open-source (OSINT) specifications, a real world map, and engagements decided by the factors that decide them in reality — who sees whom first, terrain, radar horizon, stealth, jamming, missile energy, magazine depth and coordination. It starts as an offline browser game against an AI and must later become an Android game without rewriting the simulation.
+Build a wargame that feels like real operational command on real Earth terrain, with fictional nations and weapon systems (doc 11), where engagements are decided by the factors that decide them in reality: who sees whom first, terrain, radar horizon, stealth, jamming, missile energy, magazine depth and coordination. It starts as an offline browser game against an AI and must later become an Android game without rewriting the simulation.
 
 ## 2. Functional requirements
 
-Numbered to match the original brief.
+Numbered to match the original brief. On 5 Nov 2026 the setting changed from real countries and systems to fictional ones on real terrain (ADR-036); the requirements below are worded for that.
 
 1. **Offline play** vs AI. PvP later.
-2. **Country and coalition selection.** Any countries, grouped into two coalitions.
-3. **Two sides of the product.** *Game*: select countries, deploy, fight. *Admin*: define every country's systems, quantities and metadata.
-4. **Real and custom systems.** Real systems (S-400, F-35A, AIM-120D, JDAM …) and admin-created custom systems, each with type-specific specs, assignable to one or many countries. Platforms carry **weapon stations** that accept compatible weapons.
-5. **OSINT database** covering fighters, bombers, tankers, AEW, drones, helicopters, destroyers, frigates, corvettes, submarines, coastal defence, SAM systems, radars, missiles of all kinds, bombs, artillery, satellites, tanks, infantry, special forces, airborne and marines.
-6. **Country inventories** with quantities; the game offers only what the chosen country owns.
-7. **World map** with borders and environment (mountain, desert, forest, jungle, urban, arctic, sea) that affects combat.
+2. **Nation and coalition selection.** Any nations, grouped into two coalitions.
+3. **Two sides of the product.** *Game*: select nations, deploy, fight. *Admin*: define every nation's systems, quantities and metadata.
+4. **Catalogue and custom systems.** A fictional catalogue (VF-5 Vantor, LR-SAM Bastra, AR-7, GB-900 …) and admin-created custom systems, each with type-specific specs, assignable to one or many nations. Platforms carry **weapon stations** that accept compatible weapons.
+5. **Class-based catalogue** (archetypes, doc 04 §4) covering fighters, bombers, tankers, AEW, drones, helicopters, destroyers, frigates, corvettes, submarines, coastal defence, SAM systems, radars, missiles of all kinds, bombs, artillery, satellites, tanks, infantry, special forces, airborne and marines.
+6. **Nation inventories** with quantities; the game offers only what the chosen nation owns.
+7. **World map**: real terrain with fictional borders and place names, and environment (mountain, desert, forest, jungle, urban, arctic, sea) that affects combat.
 8. **Bases** with placement rules (no destroyer at an airbase, no naval base inland). Deploy units to bases; patrol and attack from them. **Fog of war**: you see your own units; enemy units only through intel (satellites, drones, recon, radar, ESM).
 9. **Realistic engagements** with terrain, integrated air defence, data links and electronic warfare.
-10. **Missions**: e.g. satellite spots a tank column → drone confirms count → F-35s launch with a chosen loadout (2 × JDAM + 2 × AIM-120) and strike. All units share intel.
+10. **Missions**: e.g. satellite spots a tank column → drone confirms count → VF-5 fighters launch with a chosen loadout (2 × GB-900 + 2 × AR-7) and strike. All units share intel.
 11. **Real-time clock** from war start with ×3, ×5, ×10 (plus ×30, ×60 for transits with auto-drop to ×1). Patrol a circle or a waypoint loop until bingo fuel, then return to base or refuel from a tanker. Patrolling units can be retasked to attack. **Loadout cannot change once a unit leaves base.**
 12. **ROE Alpha / Bravo / Charlie** globally, per group or per unit. Click any unit for full status and to retask.
 13. **Operations** with phases that run in sequence or in parallel (e.g. Operation Rising Sun, six phases). Start any time. Defenders prioritise their own defence, then protect friendlies.
@@ -34,7 +34,7 @@ Numbered to match the original brief.
 | Fair fog of war | UI and AI see only their side | Engine API returns side views only; contacts have their own IDs |
 | Offline | Everything works without network | Installable web app + region packs in browser storage (OPFS) |
 | Portability | Same engine in Unity later | Engine has no browser or UI dependencies; C ABI planned |
-| Data integrity | Every spec traceable | Provenance and confidence on every content entry |
+| Data integrity | Every spec explained | Archetype and balance note on every entry; band and denylist checks |
 | Changeability | New system = new data | Component-based schema; no system-specific code |
 | Cost | ₹0 / $0 tooling | Open-source stack and open data |
 
@@ -46,7 +46,8 @@ flowchart LR
   A[Owner as admin] -->|edits systems, inventories| AD[Admin app\nlocal web app]
   AD -->|YAML files| REPO[(Git repo\ncontent/)]
   REPO -->|content compiler| CP[(Content pack)]
-  OD[(Open data\nOSM, Natural Earth, Copernicus DEM,\nESA WorldCover, Marine Regions,\nOurAirports, CelesTrak)] --> GEO[Geodata pipeline]
+  OD[(Open data\nOSM, Copernicus DEM,\nESA WorldCover)] --> GEO[Geodata pipeline]
+  REPO -->|nation seeds, places, bases| GEO
   GEO --> MP[(Map packs)]
   CP & MP -->|install once| G
   HOST[Free static host] -.->|app + packs download| G
@@ -100,14 +101,14 @@ Versions verified 27 Oct 2026; Claude Code pins exact versions at bootstrap and 
 | H3 grid | `h3o` 0.10.x | BSD-3 | Pure Rust, compiles to WASM |
 | Serialization | `serde`, `postcard` (binary), `serde_yaml` | MIT/Apache-2.0 | Packs, saves, view format |
 | Schema export | `schemars` → JSON Schema, `ts-rs` → TypeScript types | MIT | Admin forms and UI types generated from Rust |
-| Satellites | `sgp4` crate + CelesTrak TLEs | MIT / free data | Real orbits where public |
+| Satellites | Own SGP4 in `wb-core::orbit` (ADR-024) | — | Orbital elements authored in content for fictional satellites |
 | WASM bridge | `wasm-bindgen` | MIT/Apache-2.0 | Engine in a dedicated Web Worker |
 | UI | TypeScript, React, Vite, Zustand, pnpm | MIT | Panels only; map layers are not React-rendered per frame |
 | 2D map | MapLibre GL JS v6 (ESM-only, WebGL2) | BSD-3 | Dark vector style like the screenshots |
 | 2D overlays | deck.gl 9.x via `@deck.gl/maplibre` `MapLibreOverlay` | MIT | Icons, trails, rings, labels on the GPU |
 | 3D view | CesiumJS 1.14x, self-hosted, no Cesium ion account | Apache-2.0 | `CustomHeightmapTerrainProvider` fed from our DEM tiles |
 | Basemap tiles | Protomaps basemap (OpenStreetMap) as PMTiles, cut with `pmtiles extract` | ODbL data, BSD-3 code, CC0 styles | Attribute © OpenStreetMap |
-| Symbols | Custom SVG icon set (game style) + `milsymbol` 3.x for NATO mode | MIT | Packed into a texture atlas |
+| Symbols | Custom SVG icon set (game style) + `milsymbol` 3.x for an APP-6 symbol mode | MIT | Packed into a texture atlas |
 | Geodata tooling | Python 3.12, GDAL, `h3` (Python), `pmtiles` CLI | MIT/Apache/BSD | Runs on the owner's machine or CI |
 | Offline | Service worker (Workbox), OPFS, IndexedDB | MIT / web standards | `navigator.storage.persist()` |
 | Admin app | React + `@rjsf/core` schema forms + File System Access API | Apache-2.0 | Chromium browsers |
@@ -138,7 +139,7 @@ warboard/
 ├── packages/
 │   ├── protocol/                  # generated TS types + SideView decoder
 │   └── symbols/                   # icon SVGs, milsymbol adapter, atlas builder
-├── content/                       # YAML source of truth (countries, platforms, weapons…)
+├── content/                       # YAML source of truth (nations, world, catalogue, archetypes…)
 ├── geodata/                       # pipeline scripts and configs (outputs to build/packs/)
 ├── scenarios/                     # test + tutorial scenarios, golden expectations
 └── docs/                          # this architecture package
@@ -152,10 +153,10 @@ warboard/
 | Side view | What one side knows: its own units (exact) + contacts (estimated) |
 | Contact | A detected thing with its own ID, estimated position, uncertainty ellipse, classification level |
 | COP | Common operational picture: a side's fused contacts |
-| Classification level | Unknown → domain (air/surface/…) → class (fighter, frigate…) → type (Su-57) → precise (count, state) |
+| Classification level | Unknown → domain (air/surface/…) → class (fighter, frigate…) → type (HF-4 Corvan) → precise (count, state) |
 | TEWA | Threat evaluation and weapon assignment, how defenders pick threats and interceptors |
 | EMCON | Emission control: whether a unit's radars and radios are on |
 | Bingo | Fuel state at which a unit must return to base |
 | Pk | Probability of kill for one weapon against one target in one engagement |
 | Region pack | Downloadable map data for the world or one theatre |
-| Content pack | Compiled database of systems, weapons, countries and inventories |
+| Content pack | Compiled database of nations, systems, weapons and inventories |

@@ -63,7 +63,7 @@ Content work (P8) can start in parallel after PF: YAML entries need only the sch
 | Fog of war | Zero truth fields in any view or details response | API test with a truth-canary unit |
 | Offline | Full war with network disabled | Manual test per release |
 | Save/load | < 2 s, 2,000 units | Benchmark |
-| Content quality | 100% of shipped entries with sources and confidence | `wb-cli content check` |
+| Content quality | 100% of entries with archetype and note; bands respected or explained; denylist clean | `wb-cli content check`, CI denylist step |
 | Realism | All golden scenarios within bands | CI |
 
 ## 3. Golden scenarios

@@ -4,15 +4,17 @@ The look of WarBoard is defined by the reference screenshots in `docs/ui-referen
 
 **Precedence:** this guide → the screenshots → anything else. Where screenshots disagree with each other, this guide says which one wins.
 
+The screenshots are for the **look only**. Their labels and map names come from an earlier real-world mock-up and are not used; the game uses the label formats in §4.1 with nation and catalogue names (doc 11).
+
 ## 1. Reference screenshots
 
 | File | Take from it |
 |---|---|
-| `01-strike-route-baltic.png` | Coalition territory tints on land **and** territorial waters, territory outlines, ship hexagon, squadron tiles with "SQN", battalion stack with "II" marks, SITE icons (air base, naval base, S-400), waypoints "WP 1–3", amber route, dashed strike lines, salvo label "JSM mk1 (15× salvo)", "(our estimate)" second line |
+| `01-strike-route.png` | Coalition territory tints on land **and** territorial waters, territory outlines, ship hexagon, squadron tiles with "SQN", battalion stack with "II" marks, SITE icons (air base, naval base, long-range SAM), waypoints "WP 1–3", amber route, dashed strike lines, a salvo label, "(our estimate)" second line |
 | `02-salvo-vs-ships.png` | Salvo leaving a ship toward two targets, amber target lines. **Its cyan outgoing trail is superseded by 04:** offensive weapons are amber |
 | `03-ships-targeted.png` | Red glow halo on targeted units, amber selection ring, sensor range arc, enemy-tinted sea |
-| `04-interceptors.png` | Offensive missiles amber with `M-n` tags, interceptors cyan dashed with `INT-n` tags, group labels "SHIP FREMM class (5× interceptors)" |
-| `05-unit-card-rings.png` | Unit card layout, the three range rings and their colours, combat-radius label, country labels, dark basemap |
+| `04-interceptors.png` | Offensive missiles amber with `M-n` tags, interceptors cyan dashed with `INT-n` tags, group labels "SHIP <class> (5× interceptors)" |
+| `05-unit-card-rings.png` | Unit card layout, the three range rings and their colours, combat-radius label, nation labels, dark basemap |
 | `06-world-satellites.png` | World view, satellite dot + ground tracks + yellow label, enemy missile red label with speed, enemy territory tint and outline, city dots, "OPEN 3D TACTICAL VIEW" button, "Simulation paused" toast, scale bar, zoom buttons |
 
 ## 2. Tokens
@@ -25,9 +27,9 @@ Use these names everywhere (CSS variables in `apps/game`, RGBA arrays for deck.g
 |---|---|---|
 | `map.sea` | `#2C343C` | Sea |
 | `map.land` | `#0E0E0E` | Land (neutral) |
-| `map.border` | `#3A4048` | Country borders, thin |
+| `map.border` | `#3A4048` | Nation borders, thin |
 | `map.coast` | `#3A4048` | Coastline |
-| `map.label.country` | `#E6E8EB` | Country names, uppercase |
+| `map.label.country` | `#E6E8EB` | Nation names, uppercase |
 | `map.label.sea` | `#5E6E86` | Sea names, italic uppercase |
 | `map.label.city` | `#E6E8EB` | City names, italic |
 | `map.city.dot` | `#C9A227` | City dot |
@@ -90,7 +92,7 @@ Use these names everywhere (CSS variables in `apps/game`, RGBA arrays for deck.g
 
 - Dark basemap from the Protomaps vector tiles, restyled with the map tokens. No light theme on the map.
 - **Territory tints** cover land **and** the 12 nm territorial sea (the purple band along the coast in 01). The tint replaces the base land/sea colour inside the territory; the outline is drawn on top in the territory line colour.
-- Labels: countries uppercase, letter-spaced 0.12em, bold; seas italic uppercase muted; cities italic with an amber-gold dot. All map labels get a 2 px dark halo (`#0E0E0E`).
+- Labels (fictional, from `places.yaml`; basemap labels hidden): nations uppercase, letter-spaced 0.12em, bold; seas italic uppercase muted; cities italic with an amber-gold dot. All map labels get a 2 px dark halo (`#0E0E0E`).
 - Chrome on the map: zoom `+`/`−` square buttons bottom right, scale bar above them (white box, dark text), layers button on the right edge (round), **OPEN 3D TACTICAL VIEW** top right (§9).
 
 ## 4. Unit symbols
@@ -102,7 +104,7 @@ Icons are SVG in `packages/symbols`, packed into one atlas used by both 2D and 3
 | Ship / submarine | Flat-top hexagon (wider than tall) | Ship / submarine | — |
 | Aircraft flight / squadron | Rounded tile with a small point at the bottom | Aircraft type silhouette (fighter, bomber, tanker, AEW, transport, helicopter) | `SQN` |
 | Drone | Same tile | Drone | `SQN` |
-| Battalion-size system (Patriot, S-400) | Two overlapping tiles (launcher + radar) | Launcher, radar arc | `II` |
+| Battalion-size system (medium and long-range SAM) | Two overlapping tiles (launcher + radar) | Launcher, radar arc | `II` |
 | Site (air base, naval base, SAM, radar, HQ) | Rounded hexagon, pointy top | Runway + aircraft, anchor, radar arc, antenna, flag | — |
 | Ground formation | Chevron tile | Armour, infantry, artillery, SOF, airborne, marines | Echelon (`I`, `II`, `III`, `X`) |
 | Satellite | Yellow dot | — | — |
@@ -113,14 +115,14 @@ Italic 11 px, light grey `#D9D9D9` with dark halo, centred under the icon.
 
 | Case | Format | Example |
 |---|---|---|
-| Ship | `SHIP <class or name>` | `SHIP FREMM class` |
-| Flight / squadron | `<n> × <type>` (count and type) or `SQN <type>` for a single airframe | `3 × Rafale`, `SQN MQ-9A Reaper` |
-| Battalion | `BN <system>` | `BN MIM-104 Patriot PAC-3` |
+| Ship | `SHIP <class or name>` | `SHIP Halvard class` |
+| Flight / squadron | `<n> × <type>` (count and type) or `SQN <type>` for a single airframe | `3 × MF-4 Sellis`, `SQN UD-9 Longwatch` |
+| Battalion | `BN <system>` | `BN MR-SAM Tolven` |
 | Site | `SITE <name>` | `SITE Air base`, `SITE Naval base` |
-| Estimated contact (below *Precise* or stale) | Second line `(our estimate)`; dashed frame at 60% opacity; uncertainty ellipse dashed | `SITE S-400` / `(our estimate)` |
+| Estimated contact (below *Precise* or stale) | Second line `(our estimate)`; dashed frame at 60% opacity; uncertainty ellipse dashed | `SITE LR-SAM Bastra` / `(our estimate)` |
 | Unknown contact | `UNKNOWN AIR` / `UNKNOWN SURFACE`, amber frame | — |
-| Satellite | Bold yellow, 2 lines: owner + name, then `[<payload> <swath>km]` | `USA KH-11 Block IV Keyhole` / `[OPTICAL 460km]` |
-| Enemy weapon | Red, 2 lines: type, then speed | `9M96 (Redut)` / `(4288 km/h)` |
+| Satellite | Bold yellow, 2 lines: owner + name, then `[<payload> <swath>km]` | `ALD Orbit EO-2` / `[OPTICAL 460km]` |
+| Enemy weapon | Red, 2 lines: type, then speed | `SL-20` / `(4288 km/h)` |
 
 At low zoom, groups collapse into one icon with the count in the label. Labels are hidden first when crowded; icons never are.
 
@@ -129,10 +131,10 @@ At low zoom, groups collapse into one icon with the count in the label. Labels a
 | Element | Rule |
 |---|---|
 | Our missile | Small amber missile glyph with a 1.5 px amber trail |
-| Salvo label | At the salvo's centroid: `<type> (<n>× salvo)`, e.g. `JSM mk1 (12× salvo)` |
+| Salvo label | At the salvo's centroid: `<type> (<n>× salvo)`, e.g. `AS-4 Tarn (12× salvo)` |
 | Per-missile tags | `M-1 … M-n` from zoom 7, next to each missile |
 | Shooter→target line | Dashed amber while weapons fly (01, 04) |
-| Interceptors | Cyan dashed trail with a ring-dot head; tags `INT-1 … INT-n`; group label `SHIP FREMM class (5× interceptors)` |
+| Interceptors | Cyan dashed trail with a ring-dot head; tags `INT-1 … INT-n`; group label `SHIP Halvard class (5× interceptors)` |
 | Enemy weapons | Red glyph and red label with speed (06) |
 | Launch | Small white flash at the shooter |
 | Intercept | Cyan burst |
@@ -154,7 +156,7 @@ Floating, bottom right, width `min(470px, 100vw − 32px)`, `panel.bg`, 1 px `pa
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│ [type icon]  12 × Eurofighter Typhoon            [×] │  header band, title 15 px semibold
+│ [type icon]  12 × MF-4 Sellis                    [×] │  header band, title 15 px semibold
 │              643 Tactical Formation · 12 Personnel   │  12 px text.muted
 ├──────────────────────────────────────────────────────┤
 │ Status: ON STATION                       Fuel: 95%   │  state colours (§2.3)
@@ -217,4 +219,4 @@ Same tokens, atlas and label grammar. Trails and trajectories at true altitude; 
 
 ## 13. Checking a UI change
 
-Before finishing any UI task, run the app, open the same kind of view as the closest reference screenshot (e.g. the Baltic around Kaliningrad at zoom 7 for 01, 03, 04), take a screenshot, and list the differences in the phase report. Accept differences only where this guide deliberately changes the reference (§1 for 02, §7 for emoji).
+Before finishing any UI task, run the app, open the same kind of view as the closest reference screenshot (e.g. the test sea area or a gulf of Theatre North at zoom 7 for 01, 03, 04), take a screenshot, and list the differences in the phase report. Accept differences only where this guide deliberately changes the reference (§1 for 02, §7 for emoji).
