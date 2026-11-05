@@ -14,6 +14,7 @@ use wb_content::compiled::{
 };
 use wb_content::source::Emcon;
 use wb_content::source::realism::{BaseComponentKind, BaseKind, Subsystem};
+use wb_content::source::system::ComponentRole;
 use wb_content::source::world::LaunchDoctrine;
 use wb_core::geo::LatLon;
 use wb_core::{ContactId, UnitId};
@@ -167,6 +168,10 @@ pub struct GroupMember {
     pub group: UnitId,
     pub slot: u8,
 }
+
+/// The role of a component within a composite system (e.g. C2, FireControl, Launcher).
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SystemMemberRole(pub ComponentRole);
 
 /// Home base of a platform.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -420,6 +425,8 @@ pub struct Group {
     pub system: Option<SystemIx>,
     pub evade: Option<Evade>,
     pub doctrine: DoctrineOverride,
+    /// When C2 is lost, autonomous mode activates after this sim time (ms).
+    pub autonomous_after_ms: Option<u64>,
 }
 
 impl Group {

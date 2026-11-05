@@ -209,6 +209,21 @@ pub enum EventKind {
         #[cfg_attr(feature = "ts", ts(type = "number"))]
         report_ms: u64,
     },
+    /// A composite site's C2 node was destroyed, dropping it into autonomous mode after `delay_s`.
+    AutonomousMode {
+        group: UnitId,
+        delay_s: f64,
+    },
+    /// A salvo finished: counts of hits, misses, intercepts and decoys.
+    SalvoReport {
+        salvo: u32,
+        shooter: UnitId,
+        total: u32,
+        hits: u32,
+        misses: u32,
+        intercepted: u32,
+        decoyed: u32,
+    },
 }
 
 /// What a weapon was fired at, as its own side knows it.

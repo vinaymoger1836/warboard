@@ -28,7 +28,7 @@ use crate::clock::{RngSeed, SimClock, TickLen};
 use crate::components::{
     Allegiance, BaseRef, BaseSite, Countermeasures, EmconState, Fuel, Group, GroupMember, Identity,
     Kinematics, Mode, PlatformRef, Posture, Roe, SatelliteState, ScriptedTarget, Speed, Steer,
-    TankerState, Task,
+    SystemMemberRole, TankerState, Task,
 };
 use crate::orders::{Order, OrderQueue};
 use crate::picture::SidePictures;
@@ -715,6 +715,7 @@ fn spawn_system(
                     Posture::Moving,
                     bases::system_magazine(rules, p, &c.magazine),
                     emcon,
+                    SystemMemberRole(c.role),
                 ),
             );
             if let Some(c) = Countermeasures::full(p) {

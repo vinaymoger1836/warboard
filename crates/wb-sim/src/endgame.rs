@@ -98,7 +98,9 @@ pub fn react(world: &mut World, rules: &Rules, now: u64, id: UnitId, f: &mut Wea
     let Some(p) = world.get::<PlatformRef>(ue).map(|p| rules.platform(p.0)) else {
         return;
     };
-    if p.domain != Domain::Air || matches!(world.get::<Posture>(ue), Some(Posture::AtBase { .. })) {
+    if (p.domain != Domain::Air && p.domain != Domain::Surface)
+        || matches!(world.get::<Posture>(ue), Some(Posture::AtBase { .. }))
+    {
         return;
     }
     let w = &rules.db.weapons[f.weapon.0 as usize];
@@ -128,7 +130,7 @@ pub fn react(world: &mut World, rules: &Rules, now: u64, id: UnitId, f: &mut Wea
     let reaction = world
         .get::<Group>(ge)
         .map_or(ThreatReaction::None, |g| g.behaviour.threat_reaction);
-    if reaction == ThreatReaction::Beam {
+    if p.domain == Domain::Air && reaction == ThreatReaction::Beam {
         let b = initial_bearing(tk.pos(), wk.pos());
         let (l, r) = (b - FRAC_PI_2, b + FRAC_PI_2);
         let heading = if angle_diff(tk.heading, l).abs() <= angle_diff(tk.heading, r).abs() {
