@@ -218,6 +218,10 @@ pub enum Command {
     TestAutoSlow {
         reason: String,
     },
+    /// Destroys a unit; exercises casualty handling and IADS autonomous mode (tests).
+    TestDestroyUnit {
+        unit: u32,
+    },
     /// Emission control for units or groups (doc 03 §5, doc 02 §9).
     SetEmcon {
         units: Vec<u32>,
@@ -303,6 +307,9 @@ pub enum Resolved {
     },
     AutoSlow {
         reason: String,
+    },
+    TestDestroyUnit {
+        unit: UnitId,
     },
     Emcon {
         groups: Vec<GroupPick>,
@@ -565,6 +572,9 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
         }
         Command::TestAutoSlow { reason } => Ok(Resolved::AutoSlow {
             reason: reason.clone(),
+        }),
+        Command::TestDestroyUnit { unit } => Ok(Resolved::TestDestroyUnit {
+            unit: UnitId(*unit),
         }),
         Command::SetEmcon { units, emcon } => Ok(Resolved::Emcon {
             groups: pick_groups(world, side, units)?,
@@ -1256,6 +1266,9 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
                 cause: crate::events::SlowCause::Test,
             },
         ),
+        Resolved::TestDestroyUnit { unit } => {
+            crate::damage::destroy(world, unit);
+        }
         Resolved::Emcon { groups, emcon } => {
             for pick in groups {
                 for m in &pick.members {

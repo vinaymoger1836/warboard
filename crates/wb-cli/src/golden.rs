@@ -94,6 +94,9 @@ struct Measure {
     /// Unit or scripted target (its group is the contact).
     #[serde(default)]
     target: Option<u32>,
+    /// Shooter unit that fired the weapon.
+    #[serde(default)]
+    shooter: Option<u32>,
     /// Own sensor unit, for line-of-sight metrics.
     #[serde(default)]
     observer: Option<u32>,
@@ -202,6 +205,10 @@ enum Metric {
     /// Seconds from the target's true crossing into the side's territory
     /// to the side's first launch after it.
     FirstLaunchAfterCrossingS,
+    /// Truth target of the side's first launch (of `weapon` / `shooter`).
+    FirstTarget,
+    /// Seconds from the start of the simulation to the side's first launch.
+    FirstLaunchTimeS,
 }
 
 impl Metric {
@@ -226,6 +233,8 @@ impl Metric {
                 | Metric::OutcomeFraction
                 | Metric::Pk
                 | Metric::FirstLaunchAfterCrossingS
+                | Metric::FirstTarget
+                | Metric::FirstLaunchTimeS
         )
     }
 }
@@ -627,6 +636,8 @@ struct CombatLog {
     /// (side, target) → sim time the target first crossed into the side's
     /// territory.
     crossed: BTreeMap<(u8, u32), u64>,
+    /// Per launched weapon: truth UnitId of its target.
+    targets: BTreeMap<UnitId, u32>,
 }
 
 impl CombatLog {
@@ -664,6 +675,9 @@ impl CombatLog {
                     WeaponTarget::Track { key, .. } | WeaponTarget::Truth(key) => Some(key),
                     WeaponTarget::Point { .. } => None,
                 });
+            if let Some(target_uid) = key {
+                self.targets.insert(weapon, target_uid.0);
+            }
             let Some((at, _, _)) = key.and_then(|k| place(sim, k.0)) else {
                 continue;
             };
@@ -700,12 +714,15 @@ fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
     let events = sim.events();
     let mine = || events.iter().filter(move |e| side_of(e) == side);
     let weapon_ok = |w: &str| m.weapon.as_deref().is_none_or(|x| x == w);
+    let target_ok = |w: &UnitId| m.target.is_none_or(|t| log.targets.get(w).copied() == Some(t));
+    let shooter_ok = |s: &UnitId| m.shooter.is_none_or(|sh| s.0 == sh);
     let first = mine().find_map(|e| match &e.kind {
         EventKind::WeaponLaunched {
             weapon,
+            shooter,
             weapon_type,
             ..
-        } if weapon_ok(weapon_type) => Some(*weapon),
+        } if weapon_ok(weapon_type) && shooter_ok(shooter) && target_ok(weapon) => Some(*weapon),
         _ => None,
     });
     match m.metric {
@@ -714,12 +731,15 @@ fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
                 .filter(|e| match &e.kind {
                     EventKind::WeaponLaunched {
                         weapon,
+                        shooter,
                         weapon_type,
                         intercept,
                         reason,
                         ..
                     } => {
                         weapon_ok(weapon_type)
+                            && shooter_ok(shooter)
+                            && target_ok(weapon)
                             && match m.filter {
                                 None => true,
                                 Some(LaunchFilter::AtWeapons) => *intercept,
@@ -789,6 +809,34 @@ fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
                 .filter(|e| e.sim_time_ms >= crossed)
                 .find(|e| matches!(e.kind, EventKind::WeaponLaunched { .. }))?;
             Some((first.sim_time_ms - crossed) as f64 / 1_000.0)
+        }
+        Metric::FirstTarget => {
+            let ev = mine().find(|e| match &e.kind {
+                EventKind::WeaponLaunched {
+                    weapon,
+                    shooter,
+                    weapon_type,
+                    ..
+                } => weapon_ok(weapon_type) && shooter_ok(shooter) && target_ok(weapon),
+                _ => false,
+            })?;
+            if let EventKind::WeaponLaunched { weapon, .. } = &ev.kind {
+                log.targets.get(weapon).map(|t| *t as f64)
+            } else {
+                None
+            }
+        }
+        Metric::FirstLaunchTimeS => {
+            let ev = mine().find(|e| match &e.kind {
+                EventKind::WeaponLaunched {
+                    weapon,
+                    shooter,
+                    weapon_type,
+                    ..
+                } => weapon_ok(weapon_type) && shooter_ok(shooter) && target_ok(weapon),
+                _ => false,
+            })?;
+            Some(ev.sim_time_ms as f64 / 1_000.0)
         }
         _ => None,
     }
