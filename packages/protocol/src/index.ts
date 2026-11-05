@@ -23,7 +23,7 @@ export type { Speed } from './generated/Speed';
 export type { StationedView } from './generated/StationedView';
 export type { TaskOrder } from './generated/TaskOrder';
 export type { TaskView } from './generated/TaskView';
-export { CFLAG, FLAG, RELATION, STATUS, STRING_KIND, SYMBOLS, type SymbolName } from './generated/symbols';
+export { CFLAG, EFFECT, FLAG, RELATION, STATUS, STRING_KIND, SYMBOLS, type SymbolName } from './generated/symbols';
 export {
   contactDomain,
   decodeSideView,
@@ -31,6 +31,7 @@ export {
   StringTable,
   type ContactColumns,
   type DomainName,
+  type EffectColumns,
   type SideView,
   type StatusName,
   type UnitColumns,

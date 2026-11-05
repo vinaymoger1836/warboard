@@ -17,7 +17,7 @@ profile:
 guidance:
   terminal: active_radar
 envelope:
-  min_alt_m: 10
+  min_alt_m: 5
   max_alt_m: 20000
 warhead_kg: 20
 warhead: blast_fragmentation

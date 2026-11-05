@@ -146,6 +146,26 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     const t = k.WeaponTerminated;
     return { category: 'Weapon', text: `${t.intercept ? 'INT' : 'M'}-${t.tag} ${t.weapon_type}: ${t.outcome.replace(/_/g, ' ')}` };
   }
+  if ('SalvoReport' in k) {
+    const r = k.SalvoReport;
+    const parts = [];
+    if (r.intercepted > 0) parts.push(`${r.intercepted} intercepted`);
+    if (r.decoyed > 0) parts.push(`${r.decoyed} decoyed`);
+    if (r.hits > 0) parts.push(`${r.hits} hits`);
+    if (r.misses > 0) parts.push(`${r.misses} misses`);
+    const summary = parts.length > 0 ? parts.join(', ') : 'no effect';
+    return {
+      category: 'Weapon',
+      text: `Salvo #${r.salvo} (${r.total} missiles from ${n(r.shooter)}): ${summary}`,
+    };
+  }
+  if ('AutonomousMode' in k) {
+    const a = k.AutonomousMode;
+    return {
+      category: 'Alert',
+      text: `${n(a.group)} command post destroyed, entering autonomous mode in ${duration(a.delay_s)}`,
+    };
+  }
   if ('IncomingWeapon' in k) {
     const w = k.IncomingWeapon;
     return {

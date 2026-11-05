@@ -10,7 +10,7 @@
 import type { Layer, PickingInfo } from '@deck.gl/core';
 import { PathStyleExtension, type PathStyleExtensionProps } from '@deck.gl/extensions';
 import { IconLayer, PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
-import { CFLAG, contactDomain, FLAG, type GroupDetails, statusOf } from '@warboard/protocol';
+import { CFLAG, contactDomain, EFFECT, FLAG, type GroupDetails, statusOf } from '@warboard/protocol';
 import {
   contactLabel,
   ESTIMATE_LINE,
@@ -67,6 +67,13 @@ interface DrawnContact {
   estimated: boolean;
   position: LonLat;
   label: string;
+  isWeapon: boolean;
+}
+
+interface DrawnEffect {
+  position: LonLat;
+  radius: number;
+  color: [number, number, number, number];
 }
 
 interface DrawnSatellite {
@@ -411,16 +418,19 @@ export class UnitLayers {
       const pos = !stale && v > 0 && dtS > 0 ? destination(p, cv.headingDeg[i] ?? 0, v * dtS) : p;
       const estimated = (flags & CFLAG.ESTIMATED) !== 0;
       const symbol = cv.symbol[i] ?? 0;
-      let label = contactLabel({
-        symbol,
-        typeName: strings.contactType(id),
-        domain: contactDomain(flags),
-        countMin: cv.countMin[i] ?? 1,
-        countMax: cv.countMax[i] ?? 1,
-        countKnown: (flags & CFLAG.COUNT_KNOWN) !== 0,
-      });
+      const isWeapon = symbol >= 120 && symbol <= 122;
+      let label = isWeapon
+        ? `${strings.contactType(id) || 'WEAPON'}\n(${Math.round(v * 3.6)} km/h)`
+        : contactLabel({
+            symbol,
+            typeName: strings.contactType(id),
+            domain: contactDomain(flags),
+            countMin: cv.countMin[i] ?? 1,
+            countMax: cv.countMax[i] ?? 1,
+            countKnown: (flags & CFLAG.COUNT_KNOWN) !== 0,
+          });
       if (estimated) label += `\n${ESTIMATE_LINE}`;
-      contacts.push({ id, symbol, side, estimated, position: pos, label });
+      contacts.push({ id, symbol, side, estimated, position: pos, label, isWeapon });
       const a = cv.ellipseA[i] ?? 0;
       const b = cv.ellipseB[i] ?? 0;
       if (estimated && a > 50) {
@@ -461,8 +471,50 @@ export class UnitLayers {
     if (details && selected) this.selectionOverlays(details, selected.position, paths, texts, waypoints);
     if (state.tool) this.toolOverlays(state.tool, paths, waypoints);
 
+    const targetedUnits = drawn.filter((d) => {
+      const idx = view.index.get(d.id);
+      return idx !== undefined && ((u.flags[idx] ?? 0) & FLAG.TARGETED) !== 0;
+    });
+
+    const effects: DrawnEffect[] = [];
+    const ev = view.effects;
+    for (let k = 0; k < ev.count; k++) {
+      const age = ev.ageMs[k] ?? 0;
+      if (age > 2000) continue;
+      const fade = Math.max(0, 1 - age / 2000);
+      const p: LonLat = [ev.lon[k] ?? 0, ev.lat[k] ?? 0];
+      const kind = ev.kind[k] ?? 0;
+      if (kind === EFFECT.LAUNCH) {
+        effects.push({ position: p, radius: 8 + (age / 2000) * 12, color: [255, 255, 255, Math.round(255 * fade)] });
+      } else if (kind === EFFECT.INTERCEPT) {
+        effects.push({ position: p, radius: 12 + (age / 2000) * 20, color: [78, 205, 196, Math.round(220 * fade)] });
+      } else if (kind === EFFECT.HIT) {
+        effects.push({ position: p, radius: 16 + (age / 2000) * 28, color: [255, 180, 80, Math.round(240 * fade)] });
+      }
+    }
+
     const size = zoom < SMALL_ZOOM ? 24 : 30;
     const layers: Layer[] = [
+      new ScatterplotLayer<DrawnUnit>({
+        id: 'targeted-halos',
+        data: targetedUnits,
+        getPosition: (d) => d.position,
+        getRadius: 34,
+        radiusUnits: 'pixels',
+        filled: true,
+        stroked: false,
+        getFillColor: [160, 84, 96, Math.round(255 * (0.35 + 0.15 * Math.sin(Date.now() / 300)))],
+      }),
+      new ScatterplotLayer<DrawnEffect>({
+        id: 'combat-effects',
+        data: effects,
+        getPosition: (d) => d.position,
+        getRadius: (d) => d.radius,
+        radiusUnits: 'pixels',
+        filled: true,
+        stroked: false,
+        getFillColor: (d) => d.color,
+      }),
       new PathLayer<Path, PathStyleExtensionProps<Path>>({
         id: 'contact-paths',
         data: [...tracks, ...ellipses],
@@ -530,7 +582,7 @@ export class UnitLayers {
         getPosition: (d) => d.position,
         getText: (d) => d.label,
         getSize: 11,
-        getColor: c('label.unit'),
+        getColor: (d) => (d.isWeapon ? c('weapon.enemy') : c('label.unit')),
         getPixelOffset: [0, size * 0.55 + 7],
         getTextAnchor: 'middle',
         getAlignmentBaseline: 'top',
