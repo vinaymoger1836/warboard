@@ -28,7 +28,7 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 ## ADR-005 Engineering-level models, not physics
 **Decision.** Radar range scales with RCS^¼ around a published reference; horizon and DEM line of sight; jamming via burn-through and stand-off formulas; missiles with boost/sustain/coast energy and proportional navigation; endgame Pk from a base value and explained modifiers.
 **Alternatives.** 6-DOF flight models, full radar equation with antenna patterns, or pure probability tables.
-**Consequences.** + Realistic behaviour from public data, fast, explainable. − Precision limited by OSINT; calibration needed (golden scenarios).
+**Consequences.** + Realistic behaviour from public data, fast, explainable. − Precision limited by class-level data; calibration needed (golden scenarios).
 
 ## ADR-006 Determinism rules and counter-based RNG
 **Decision.** Single-threaded schedule, `UnitId`-ordered iteration where order matters, no hash-map iteration, `libm` for transcendental maths, and random numbers drawn as `rng(seed, purpose, entity, tick, n)`.
@@ -46,7 +46,7 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Consequences.** + Crisp 2D like the reference screenshots and a real 3D globe. − Two integrations; parity tests needed.
 
 ## ADR-009 Component-based content in YAML with provenance
-**Decision.** Platforms are composed from components; composite systems (S-400 battalion) list component platforms; custom systems use `extends` + overrides. YAML in git is the source of truth; every entry has sources, confidence and listed estimates.
+**Decision.** Platforms are composed from components; composite systems (a long-range SAM battalion) list component platforms; custom systems use `extends` + overrides. YAML in git is the source of truth; every entry names its class archetype and a balance note (since ADR-036; originally sources and confidence).
 **Alternatives.** A database (SQLite) as source of truth; hard-coded system classes.
 **Consequences.** + New systems without code; diffable history; honest about uncertainty. − Schema grows; validation must be strong.
 
@@ -89,7 +89,7 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Consequences.** + Android early for almost no work; Unity effort only when the game is proven. − Two Android generations; WebView performance limits.
 
 ## ADR-018 Free and open stack, attributions in-game
-**Decision.** Only free/open tools and data: Rust, React, MapLibre, deck.gl, CesiumJS (self-hosted), Protomaps/OSM, Natural Earth, Copernicus DEM, ESA WorldCover, Marine Regions, OurAirports, CelesTrak; Unity Personal and Cesium for Unity later. A credits screen carries every required attribution.
+**Decision.** Only free/open tools and data: Rust, React, MapLibre, deck.gl, CesiumJS (self-hosted), Protomaps/OSM, Copernicus DEM, ESA WorldCover (Natural Earth, Marine Regions, OurAirports and CelesTrak dropped from the shipped build by ADR-036); Unity Personal and Cesium for Unity later. A credits screen carries every required attribution.
 **Consequences.** + ₹0 running cost. − Attribution and licence duties (ODbL, CC-BY); revisit if the project ever becomes commercial (real names, trademarks, Unity tier).
 
 ## ADR-019 Pack files read by positional I/O and an LRU cache, natively and in the browser
@@ -108,7 +108,7 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 
 ## ADR-021 Head for the tanker before bingo
 **Status — Proposed, 28 Oct 2026 (P3).** Refines doc 02 §6 ("On bingo … unless a tanker … is reachable").
-**Context.** Bingo is measured to the nearest suitable friendly base. A patrol near any airfield (the Baltic patrol of G7 is about 30 km from Gdańsk) reaches bingo with only the fuel for those 30 km, when a tanker 150 km away is no longer reachable, so the rule as written never uses the tanker there.
+**Context.** Bingo is measured to the nearest suitable friendly base. A patrol near any airfield (the patrol of G7 is about 30 km from an air base) reaches bingo with only the fuel for those 30 km, when a tanker 150 km away is no longer reachable, so the rule as written never uses the tanker there.
 **Decision.** Every second, a group on task looks for a tanker on its track that its member lowest on fuel can reach and get home from. It heads for the nearest such tanker when that member's fuel falls to `(fuel to the tanker + fuel from the tanker to its nearest base) × (1 + reserve)`, or at bingo if one is in reach. Otherwise bingo sends it home as before.
 **Alternatives.** (a) Bingo measured to the home base instead of the nearest base. (b) A separate content "joker fuel" per platform.
 **Consequences.** + Tankers extend patrols wherever they fly (G7: 3.9× time on station). + No new constant. − The landing reserve stays 10 % of the fuel to the nearest base, which is small near a base (open question in the P3 report).
@@ -172,18 +172,18 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Status — Accepted, 3 Nov 2026 (P5; written after the code).** Refines doc 03 §7.
 **Decision.** Self-defence (on by default, per unit toggle) lets ships and ground units engage, without approval, weapon contacts their side's picture shows heading for them: predicted closest approach inside `roe.threat_cpa_m` within `roe.threat_horizon_s`, earliest impact first, one interceptor per threat, again after `kill_assessment_s` if it survived. Aircraft defend by beaming and countermeasures in the endgame, not by shooting at missiles.
 **Alternatives.** Let aircraft fire at incoming missiles too (no fielded air-to-air weapon does this routinely).
-**Consequences.** + G9: a FREMM under Charlie intercepts without approval and never fires first. − Self-defence uses the picture, so an undetected missile is not engaged.
+**Consequences.** + G9: a frigate under Charlie intercepts without approval and never fires first. − Self-defence uses the picture, so an undetected missile is not engaged.
 
 ## ADR-032 Endgame nominal speed `V_nom`
 **Status — Accepted, 3 Nov 2026 (P5).** Defines `V_nom` in doc 02 §11.
 **Decision.** For rockets and ballistic weapons `V_nom = V_min + nominal_speed_fraction × (V_max − V_min)` (realism `endgame.nominal_speed_fraction`, 0.25, an estimate). At `V_nom` or faster a weapon has full `f_energy` and its full `max_g` in `f_maneuver`; below it, `f_energy = √((V − V_min)/(V_nom − V_min))` and endgame g scales with `(V / V_nom)^g_speed_exponent`. The flight model's turn limit still scales against `V_max`. Air-breathing weapons keep `V_nom = V_max`.
-**Alternatives.** `V_nom = V_max` (the first P5 build): with a coasting rocket's speed falling roughly linearly with distance, a half-range AIM-120D reached the target at Mach 1.8 with `f_energy` 0.49 and 8 g, Pk 0.14, against G6's 0.6–0.85.
+**Alternatives.** `V_nom = V_max` (the first P5 build): with a coasting rocket's speed falling roughly linearly with distance, a half-range medium-range air-to-air missile reached the target at Mach 1.8 with `f_energy` 0.49 and 8 g, Pk 0.14, against G6's 0.6–0.85.
 **Consequences.** + G6 holds: at half range head-on Pk 0.70; at max range against a beaming target every first shot runs out of energy. Energy only costs Pk in the last part of a flight. − Endgame g and flight turn limit differ for slow missiles.
 
 ## ADR-033 Bravo needs the error ellipse inside our territory
 **Status — Accepted, 3 Nov 2026 (P5).** Refines doc 03 §7 (Bravo).
 **Decision.** Under Bravo a contact counts as inside our territory only when its estimated position and eight points on its current error ellipse scaled by `roe.territory_sigma` (3, an estimate) are all inside. The ellipse is the one the player sees, so the decision uses only the side picture. Return fire is unchanged.
-**Alternatives.** The estimated centre alone (the first P5 build): in one G8 run in 20 the estimate crossed a second before the aircraft did, and the F-35s fired at a target 82 m outside the border.
+**Alternatives.** The estimated centre alone (the first P5 build): in one G8 run in 20 the estimate crossed a second before the aircraft did, and the fighters fired at a target 82 m outside the border.
 **Consequences.** + "Never engaged outside" holds against the truth; the shooter waits until the picture is sure. − Engagements come later after a crossing (up to 22 s in G8, as an air contact's ellipse grows quickly between scans); a contact hugging the border inside it may never be engaged.
 
 ## ADR-034 Electronic warfare as game stats
@@ -198,3 +198,11 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Context.** Engine phases only need behaviour (detection, interception, jamming, damage), not real systems. Scenarios that stage strikes on named real units at real places add nothing to an engine test, and the P6 sessions in Claude Code were stopped by safety checks twice.
 **Decision.** From P6a on, golden scenarios use generic fixtures in `scenarios/fixtures/` (test frigate, test corvette, test SAM site with radar, launchers and command post, test fighter, test jammer, test anti-ship missile, test interceptor, test emitter-homing missile) with stats in the range of their class, at a neutral open-sea test area with `test_territory`. Engine-phase sessions do not read `content/` beyond the schema. Real systems and the real map stay in content and packs; the P8 test bench checks them against the same bands. Existing G1–G9 stay as they are.
 **Consequences.** + Engine tests are smaller, faster and independent of content edits; real-system data can change without breaking CI. − Fixtures must be kept in plausible ranges; real-system checks move to P8.
+
+## ADR-036 Fictional nations and systems on real terrain
+**Status — Accepted, 5 Nov 2026 (before P6a).** Supersedes the real-world scope in the README (countries, first theatre, OSINT content), the real-data parts of ADR-018 and the provenance rule of ADR-009. Names in earlier ADRs were replaced with class terms.
+**Context.** Three Claude Code sessions for Phase 6 were stopped by safety checks, including a clean start with generic test units. The likely reason is the subject as a whole: a realistic simulation of a war between real, current powers with their real forces and bases. Rewording would only work around the check; changing the setting changes what is being built.
+**Decision.** Keep real Earth terrain, land cover, physics and the real clock. Make nations, borders, territorial seas, bases, place names, weapon systems, satellites and inventories fictional (doc 11). Stats stay in the range of their class (archetype table, doc 04 §4) but are never copied from one real system. A denylist check keeps real names out of content, scenarios, code and docs. The first theatre is Theatre North on the `europe` terrain pack with eight nations.
+**Alternatives.** A fully fictional world (needs a terrain generator); a historical 1980s setting (still real forces and places); generic weapons on today's map (still today's powers and bases).
+**Consequences.** + The P0–P5 engine carries over unchanged in design; no OSINT research in P8; inventories never go stale; the setting is free to balance. − A migration phase (PF): content, packs, place names, base proposals and golden scenarios; the game no longer shows real countries or systems.
+

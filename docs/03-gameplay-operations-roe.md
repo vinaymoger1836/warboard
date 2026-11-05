@@ -16,37 +16,37 @@ flowchart LR
 
 | Setting | Options |
 |---|---|
-| Coalitions | Drag any countries into Coalition A or B; all others are neutral |
+| Coalitions | Drag any nations into Coalition A or B; all others are neutral |
 | Player side | A or B (the other is AI). Hot-seat and PvP come later |
 | AI difficulty | Easy / Normal / Hard (reaction time and planning depth, never extra information) |
-| Start mode | **Garrisoned**: inventories start at real bases. **Deploy yourself**: empty bases, place everything with the clock paused |
+| Start mode | **Garrisoned**: inventories start at each nation's bases. **Deploy yourself**: empty bases, place everything with the clock paused |
 | Start time | Now (real UTC) or a chosen date and time (affects day/night and satellite positions) |
 | Default ROE | Alpha / Bravo / Charlie for the whole side |
 | Packs | Checks the required region packs are installed; offers download if not |
 
-Countries without content yet can be selected, but have nothing to deploy.
+Nations without inventory can be selected, but have nothing to deploy.
 
 ## 3. Bases
 
 | Base type | Where it can go | Capacity | Setup time |
 |---|---|---|---|
-| Air base | Real airfields only (OurAirports). Runway length class limits which aircraft can use it | Parking and shelters from data | Activation 1 h if not garrisoned |
-| Road strip | Flat open land in own territory | ≤ 6 aircraft flagged *road-capable* (e.g. Gripen) | 6 h |
+| Air base | Preset bases from content, or flat open land in own territory with room for the runway class. Runway length class limits which aircraft can use it | Parking and shelters from data | Activation 1 h if not garrisoned; 24 h for a new site |
+| Road strip | Flat open land in own territory | ≤ 6 aircraft flagged *road-capable* | 6 h |
 | Heliport / FARP | Land, slope < 10%, not water or wetland | Helicopters, small drones | 2 h |
-| Naval base | Real ports only (curated list) | Berths by ship size; VLS reload only here | Activation 1 h |
+| Naval base | Preset ports from content, or a coast cell with sheltered water in own territory | Berths by ship size; VLS reload only here | Activation 1 h; 48 h for a new site |
 | Expeditionary anchorage | Sea cell inside own territorial waters | Small craft up to corvettes; no VLS reload | 2 h |
 | Army base / FOB | Land in own territory, not water or wetland | Ground formations by size | 6 h |
-| SAM / radar site | Any land cell | One battery or radar | From content (e.g. S-400 ~5 min after arrival) |
-| Missile launch site | Land | Launchers (Iskander-M, HIMARS) | From content |
+| SAM / radar site | Any land cell | One battery or radar | From content (e.g. a long-range SAM battalion ~5 min after arrival) |
+| Missile launch site | Land | Ballistic and rocket launchers | From content |
 | HQ / C2 node | Land | IADS and C2 node | 1 h |
 
-The placement validator checks terrain class (H3), territory, coast adjacency for naval bases, runway class against aircraft, and capacity. It explains rejections ("Naval base must be at a port"). The rules of the table above are data: one row per base kind in the realism profile (`bases`: site rule `real_airfield` / `real_port` / `terrain`, match radius, allowed terrain classes, own territory, coast, slope, setup time, capacity). Real airfields and ports are checked from content alone; terrain rules need the region packs and are refused without them (P3). Territory means the coalition's land plus 12 nm territorial waters; captured ground arrives with Phase 11.
+The placement validator checks terrain class (H3), territory, coast adjacency for naval bases, runway class against aircraft, and capacity. It explains rejections ("Naval base must be at a port"). The rules of the table above are data: one row per base kind in the realism profile (`bases`: site rule `preset` / `terrain`, match radius, allowed terrain classes, own territory, coast, slope, setup time, capacity). Preset bases are checked from content alone; terrain rules need the region packs and are refused without them (P3). The `real_airfield` and `real_port` rules built in P3 become `preset` in PF (doc 11 §2.5). Territory means the coalition's land plus 12 nm territorial waters; captured ground arrives with Phase 11.
 
-Every base has damageable components (runway, shelters, fuel, munitions store, radar, C2) and a **munitions stock** drawn from the country inventory.
+Every base has damageable components (runway, shelters, fuel, munitions store, radar, C2) and a **munitions stock** drawn from the nation inventory.
 
 ## 4. Inventory and deployment
 
-1. The country inventory is a pool of quantities per system type (from content).
+1. The nation inventory is a pool of quantities per system type (from content).
 2. **Station** units at a base. Moving between bases takes real time (ferry flight, road march, sea transit).
 3. From a base, units take **tasks**. Aircraft leave as a **flight** (1–4 aircraft, more for packages) with a chosen loadout.
 4. Losses are permanent. Munitions used are gone.
@@ -72,7 +72,7 @@ Every base has damageable components (runway, shelters, fuel, munitions store, r
 ## 6. Loadouts
 
 - Platforms have **stations** (internal bay, pylon, VLS cell, launcher rail). Each accepts weapon categories with weight limits.
-- **Loadout templates** per platform from content (e.g. *F-35A — strike, stealth*: 2 × GBU-31 JDAM + 2 × AIM-120D, all internal). Players can build custom loadouts from base stock.
+- **Loadout templates** per platform from content (e.g. *VF-5 Vantor — strike, stealth*: 2 × GB-900 + 2 × AR-7, all internal). Players can build custom loadouts from base stock.
 - Validation: station compatibility, weight, total payload, base stock. External stores raise RCS (shown on the card: "stealth: internal only ✓").
 - **Locked once the unit leaves base.** Changing it requires landing at a base with stock and a turnaround.
 
@@ -109,25 +109,27 @@ An operation is a **graph of phases**. Each phase has tasks, a start trigger, an
 
 **Planner validation before start:** units free and at the right base, loadouts available in base stock, fuel to reach targets and return (with tanker plan), no trigger cycles, ROE conflicts flagged. The planner shows a **timeline** (phases as bars, dependencies as arrows) and draws each phase's routes on the map. Operations can start at any time.
 
-### 8.1 Worked example — Operation Rising Sun (Baltic)
+### 8.1 Worked example — Operation Rising Sun (Theatre North)
+
+Aldmark (player) against Vessmar (AI) in the eastern gulf of the northern sea.
 
 | Phase | Tasks | Trigger | Ends when |
 |---|---|---|---|
-| 1. Eyes on | MQ-9A Reaper flies a recon route off Kaliningrad | H+0 | Both enemy corvettes classified to type and the SAM site located, or 90 min |
-| 2. Blind them | 2 × EA-18G Growler (US) stand-off jamming orbit | After Phase 1 | Manual or bingo |
-| 3. Take station | FREMM *Carlo Bergamini* moves to a patrol box | H+0 (parallel with 1) | Arrives, then patrols |
-| 4. Strike ship 1 | FREMM launches 3 × Teseo Mk2/A at corvette 1 | After Phase 3 arrival **and** Phase 2 started | Weapons terminate |
-| 5. Strike ship 2 | Same FREMM launches 3 × Teseo Mk2/A at corvette 2 | **With Phase 4** | Weapons terminate |
-| 6. Kill the SAM | 2 × F-35A, 4 × AGM-88G AARGM-ER on the S-400 site | Phase 2 started + 10 min | Site destroyed or weapons gone |
+| 1. Eyes on | UD-9 Longwatch drone flies a recon route outside Vessmar's 12 nm belt | H+0 | Both enemy corvettes classified to type and the SAM site located, or 90 min |
+| 2. Blind them | 2 × EJ-2 Wren stand-off jamming orbit | After Phase 1 | Manual or bingo |
+| 3. Take station | Halvard-class frigate *Aldvik* moves to a patrol box | H+0 (parallel with 1) | Arrives, then patrols |
+| 4. Strike ship 1 | *Aldvik* launches 3 × AS-4 Tarn at corvette 1 | After Phase 3 arrival **and** Phase 2 started | Weapons terminate |
+| 5. Strike ship 2 | *Aldvik* launches 3 × AS-4 Tarn at corvette 2 | **With Phase 4** | Weapons terminate |
+| 6. Suppress the SAM | 2 × VF-5 Vantor, 4 × EH-2 at the LR-SAM Bastra site | Phase 2 started + 10 min | Site's fire-control radar destroyed or weapons gone |
 
-The defending corvettes run TEWA: each engages missiles aimed at itself first, then those aimed at the other corvette, with Redut SAMs, then guns and decoys. The S-400 site defends itself and the ships if its envelope covers them, and may switch off its radar when emitter-homing missiles are detected (EMCON), sending the AARGM-ERs into memory mode (doc 02 §9).
+The defending Kest-class corvettes run TEWA: each engages missiles aimed at itself first, then those aimed at the other corvette, with SL-12 missiles, then guns and decoys. The LR-SAM site defends itself and the ships if its envelope covers them, and may switch off its radar when emitter-homing missiles are detected (EMCON), sending the EH-2s into memory mode (doc 02 §9).
 
 ### 8.2 Worked example — the brief's strike chain
 
-1. **Satellite pass** reports an armour column (contact level: *Class*, count unknown).
-2. Event trigger → MQ-9A retasked to the area; its EO/IR camera upgrades the contact to *Type: T-90M, count 12*.
-3. Event trigger → 2 × F-35A launch from an air base with 2 × GBU-31 JDAM + 2 × AIM-120D each, Strike task on the contact; nearby HIMARS can be added as a parallel phase if in range.
-4. Intel is shared over the data link: the F-35s receive the drone's track in flight; the JDAMs fly to the latest coordinates.
+1. **Satellite pass** (Orbit SAR-1) reports an armour column (contact level: *Class*, count unknown).
+2. Event trigger → UD-9 Longwatch retasked to the area; its EO/IR camera upgrades the contact to *Type: MBT-3, count 12*.
+3. Event trigger → 2 × VF-5 Vantor launch from an air base with 2 × GB-900 + 2 × AR-7 each, Strike task on the contact; nearby RA-6 rocket artillery can be added as a parallel phase if in range.
+4. Intel is shared over the data link: the fighters receive the drone's track in flight; the guided bombs fly to the latest coordinates.
 
 ## 9. Time control and alerts
 
@@ -149,11 +151,11 @@ flowchart TB
   S[Strategic — every 5 min\nobjectives, posture, force allocation] --> O[Operational — every 30 s\nCAP stations, IADS layout, intercepts,\nstrike packages, operations]
   O --> T[Tactical — every 1 s, shared with player units\nTEWA, evasion, EMCON, launch decisions]
   PIC[(AI side picture\nsame fog as the player)] --> S & O & T
-  DOC[(Country doctrine profile)] --> S & O
+  DOC[(Nation doctrine profile)] --> S & O
 ```
 
 - Lives inside the engine (deterministic, portable) and reads **only its side's picture**.
-- **Doctrine profile** per country (content): aggression, risk tolerance, EMCON discipline, missile conservation, IADS layering template, CAP rotation, strike package template (air-defence suppression + escort + strikers + jammer), defended asset priorities.
+- **Doctrine profile** per nation (content): aggression, risk tolerance, EMCON discipline, missile conservation, IADS layering template, CAP rotation, strike package template (air-defence suppression + escort + strikers + jammer), defended asset priorities.
 - **Technique:** utility scoring with doctrine weights + templates. Tactical behaviours are the same code that drives the player's units.
 - **v1 (Phase 9):** garrisons or deploys, maintains CAP and SAM coverage, scrambles interceptors, responds to incursions, retaliates against detected shooters and bases.
 - **v2 (Phase 12):** plans its own multi-phase operations with the same operation model, including decoys and timing.
@@ -173,7 +175,7 @@ flowchart TB
 
 During the war, reports show only what your side knows. After the war, truth is unlocked. Export to JSON and CSV, plus a printable HTML report. **Replay:** scrub the timeline (snapshots every 10 sim minutes, re-simulation in between).
 
-Example salvo line: *"Salvo S-17 · FREMM-1 · 3 × Teseo Mk2/A → corvette 1 (Steregushchiy class) at 142 km · 1 intercepted by Redut 9M96, 1 decoyed (chaff), 1 hit · target damaged 46%, radar out of action."*
+Example salvo line: *"Salvo S-17 · Aldvik · 3 × AS-4 Tarn → corvette 1 (Kest class) at 142 km · 1 intercepted by SL-12, 1 decoyed (chaff), 1 hit · target damaged 46%, radar out of action."*
 
 ## 13. Closing and resuming
 

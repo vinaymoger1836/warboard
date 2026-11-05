@@ -85,7 +85,7 @@ Resources: `SimClock`, `RealismProfile`, `ContentDb` (read-only), `TerrainDb`, `
 - **Ships:** cruise and max speed (knots), turn radius; must stay on water cells; port approach via base berth.
 - **Submarines:** depth bands (periscope, shallow, deep), speed affects noise.
 - **Ground (Phase 11):** speed by H3 terrain class and posture; A* pathfinding on the theatre H3 grid (resolution 7). Rivers and roads are later refinements.
-- **Satellites:** SGP4 from TLE (CelesTrak) or orbital elements authored in content.
+- **Satellites:** SGP4 from orbital elements authored in content for the fictional satellites (doc 11).
 
 ## 6. Fuel and logistics
 
@@ -93,7 +93,7 @@ Resources: `SimClock`, `RealismProfile`, `ContentDb` (read-only), `TerrainDb`, `
 - **Bingo** = fuel to reach the nearest suitable friendly base (runway class, capacity) at cruise, plus a half-turn, + reserve (content, default 10% of that fuel). On bingo the unit returns automatically unless a tanker on the same side is reachable on its track; then it refuels (rate from content) and resumes. A group heads for a reachable tanker as soon as its fuel falls to what it needs to reach the tanker and get home from it, both legs with the reserve (ADR-021, Proposed), so a patrol close to a base does not run out of reach first. A tanker serves one receiver at a time, groups in `UnitId` order and members in slot order. A group's bingo is called by its member lowest on fuel.
 - **Winchester** (weapons gone) → return to base, per task setting.
 - **Turnaround** at base: refuel + rearm time from content (e.g. fighter 45–90 min); munitions drawn from base stock.
-- **Fixed inventory:** no production; losses are permanent; base stocks come from country inventory at war start.
+- **Fixed inventory:** no production; losses are permanent; base stocks come from the nation inventory at war start.
 
 ## 7. Sensors
 
@@ -123,7 +123,7 @@ track   = 2 detections in last 3 scans; dropped after 3 misses
 
 | Sensor | Model |
 |---|---|
-| ESM / ELINT | Detects *emitting* radars: `R = R_ref × √(ERP / ERP_ref)` (one-way path), capped by horizon/LOS. Bearing only (σ 1–3°). A position needs two bearings (two platforms, or one platform over time) → large ellipse. Emitter library maps radar type → system type, which is how "SITE S-400 (our estimate)" appears |
+| ESM / ELINT | Detects *emitting* radars: `R = R_ref × √(ERP / ERP_ref)` (one-way path), capped by horizon/LOS. Bearing only (σ 1–3°). A position needs two bearings (two platforms, or one platform over time) → large ellipse. Emitter library maps radar type → system type, which is how "SITE LR-SAM Bastra (our estimate)" appears |
 | IRST | `R = R_ref × √(I / I_ref)`, aspect (rear hot, afterburner ×3), works day and night |
 | EO/IR camera (drones, aircraft pods) | Detection by size; classification by ground sample distance (< 1 m → type and count, < 3 m → class); EO needs daylight, IR works at night |
 | Visual / recon teams | Range by terrain (open 4 km, forest 0.5 km, urban 0.3 km) × target size × night factor (×0.3 without night vision) |
@@ -136,7 +136,7 @@ track   = 2 detections in last 3 scans; dropped after 3 misses
 - Output is an **intel report** delivered after a downlink delay (content, e.g. 15 min). Contacts from it are time-stamped and age like any other.
 - The player can **task** a satellite on an area; the engine computes the next pass and schedules the report.
 
-**As built (P4, ADR-024, ADR-025).** `wb-core::orbit` is near-Earth SGP4 on `libm` (tested against Vallado's published vectors); satellites are entities placed by SGP4 every tick on the engine sphere. Content gives each satellite platform an `orbit` (CelesTrak two-line elements) and a sensor with a `payload` (optical, SAR or SIGINT, `swath_km` = the strip the satellite can image along its track, GSD, downlink delay). `TaskSatellite` finds the first pass (step `pass_search_step_s`, refined to the second, within `tasking_horizon_h`) whose sub-satellite point comes within half the strip plus the area radius, and the order's acknowledgement names it ("Next pass 27 17:34Z, report by 27 17:54Z"). At the pass, optical payloads need the sun above `eo_min_sun_elevation_deg` at the area or report "No image: sun −35° at the target"; SAR always images. SIGINT reports emitters in its footprint every `satellite_period_s`, once per emitter per 15 minutes. Reports arrive after the downlink delay; their contacts are time-stamped at the pass.
+**As built (P4, ADR-024, ADR-025).** `wb-core::orbit` is near-Earth SGP4 on `libm` (tested against Vallado's published vectors); satellites are entities placed by SGP4 every tick on the engine sphere. Content gives each satellite platform an `orbit` (two-line elements; since PF authored for the fictional satellites) and a sensor with a `payload` (optical, SAR or SIGINT, `swath_km` = the strip the satellite can image along its track, GSD, downlink delay). `TaskSatellite` finds the first pass (step `pass_search_step_s`, refined to the second, within `tasking_horizon_h`) whose sub-satellite point comes within half the strip plus the area radius, and the order's acknowledgement names it ("Next pass 27 17:34Z, report by 27 17:54Z"). At the pass, optical payloads need the sun above `eo_min_sun_elevation_deg` at the area or report "No image: sun −35° at the target"; SAR always images. SIGINT reports emitters in its footprint every `satellite_period_s`, once per emitter per 15 minutes. Reports arrive after the downlink delay; their contacts are time-stamped at the pass.
 
 ## 8. Fog of war: contacts, fusion, sharing
 
@@ -159,7 +159,7 @@ Contact {
 - **Association** uses ground truth internally (cheap and deterministic) with modelled imperfections: a group shows as **one contact with an unknown count** until a sensor resolves it; decoys and jammers create their own contacts; errors and lag come from the sensor.
 - **Classification** rises with better sensors: search radar → domain, speed, altitude; fire-control radar or several looks → class; ESM emitter match or imagery → type; imagery or recon → precise count.
 - **Ageing:** contacts not refreshed become *Report* quality, then drop to a *last known* marker (air 2 min, surface 30 min, mobile ground 2 h, fixed sites kept).
-- **Data links:** each side has networks (e.g. "Link 16", "RU-TKS-2", none). A detection reaches units on the same network after its latency (default 2 s) and the rest of the side via C2 reports (default 60 s, lower quality).
+- **Data links:** each side has networks (e.g. "Weave", "Tessel", none). A detection reaches units on the same network after its latency (default 2 s) and the rest of the side via C2 reports (default 60 s, lower quality).
 - **Engage on remote:** a shooter may fire on a networked track only if both the network and the weapon support it (content flag). Otherwise it needs its own fire-control track.
 
 **As built (P4).** `wb-sim/src/picture.rs`. `SidePictures` (saved and hashed) holds per side the contacts by `ContactId` and a truth-key index (the target's group, or the target), the radar track states, the delivery queue and pending satellite reports. A detection reaches the picture after the observer's lowest data-link latency, or after `c2_report_delay_s` as *report* quality when the observer has no link; each source records its network. Fusion is truth association (ADR-004): a group is one contact with a count range (drawn once, always containing the truth) until a sensor resolves it (radar inside `group_resolve_fraction` × R50, EO with GSD below `eo_gsd_type_m`, visual, imagery). Levels never fall: search radar → *domain*; fire-control radar or `class_after_looks` detections → *class*; ESM through the emitter library → *type* (derived from content: the radar's only mounting platform, and that platform's only system; otherwise *class*); EO or imagery by GSD → *class* or *precise*. Identity becomes hostile from `identify_at` (*class*). ESM gives bearings; two bearings from any positions (several platforms or one platform over time) crossing at ≥ `esm_fix_min_angle_deg` within `esm_bearing_window_s` give a fix with an ellipse from the geometry. Ageing every `fusion_period_s`: *report* quality after `report_after_s`, last-known marker after `age_out_min` (fixed sites kept), removal after four times that. Events: `ContactNew`, `ContactClassified`, `ContactCount`, `ContactLost`, `IntelReport`, plus `AutoSlow` when a contact first becomes hostile; payloads carry contact data and own unit ids only.
@@ -243,7 +243,7 @@ Runs every second and immediately on a new threat, for every unit or IADS cell a
 
 ## 14. Ground combat (Phase 11)
 
-- Formations, not individual soldiers: e.g. "Tank battalion — 31 × T-90M, 120 personnel".
+- Formations, not individual soldiers: e.g. "Tank battalion — 31 × MBT-3, 120 personnel".
 - **Combat value** = Σ equipment value × readiness × modifiers: terrain (urban, forest, mountain favour the defender), posture (attack / hasty / prepared defence), supply, morale, fatigue, night capability, artillery and air support, EW on C2.
 - **Resolution** every 60 s for formations in contact (adjacent H3 cells or within direct-fire range): Lanchester-style attrition with bounded random variation → losses, retreat, breakthrough.
 - **Special forces and recon:** small, hard to detect, high classification quality, sabotage of base components, laser designation for strikes.
@@ -275,5 +275,5 @@ Techniques: spatial index on H3 resolution 3 buckets rebuilt per scan wave; cand
 ## 17. Calibration
 
 - All tuning constants live in `content/realism/default.yaml` (Pd curve steepness, track rules, contact timeouts, the jamming table and factors in §9, CEP distribution, ground combat coefficients).
-- **Golden scenarios** (doc 08 §3) pin expected outcome bands, e.g. "12 × JSM vs 2 × FREMM: 60–95% of missiles intercepted or decoyed". A change that moves a golden result out of band fails CI and needs an explicit decision.
-- The admin app's **test bench** runs Monte Carlo engagements (e.g. 1,000 × AIM-120D vs Su-35S at 60 km, beaming) so OSINT values can be sanity-checked before they ship.
+- **Golden scenarios** (doc 08 §3) pin expected outcome bands, e.g. "12 test anti-ship missiles vs 2 test frigates: 60–95% of missiles intercepted or decoyed". A change that moves a golden result out of band fails CI and needs an explicit decision.
+- The admin app's **test bench** runs Monte Carlo engagements (e.g. 1,000 × AR-7 vs HF-4 Corvan at 60 km, beaming) so catalogue values can be checked against the class bands before they ship.

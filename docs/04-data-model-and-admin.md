@@ -2,40 +2,66 @@
 
 ## 1. Content principles
 
-1. **Data, not code.** A new system type (real or custom) is a YAML file. No system gets special-case code.
+1. **Data, not code.** A new system type (catalogue or custom) is a YAML file. No system gets special-case code.
 2. **Components.** A platform is assembled from signatures, mobility, fuel, stations, sensors, EW, data links and durability. Anything with the right components works: a drone with an ESM sensor and a jammer is a valid EW drone.
 3. **Units in field names** (`range_km`, `speed_mach`, `rcs_m2`, `warhead_kg`). The compiler converts to SI.
-4. **Provenance everywhere.** Every entry has sources and a confidence level; uncertain fields are listed as estimates.
+4. **Fictional setting** (doc 11, ADR-036). Nations, bases, places and systems are invented. Every entry names its **class archetype** and carries a short **balance note**; key stats sit inside the archetype's bands (§4).
 5. **YAML in git is the source of truth.** The admin app edits those files; the compiler builds the pack the game loads.
 
 ## 2. Entity types
 
 | Type | Folder | Purpose |
 |---|---|---|
-| `country` | `content/countries/` | Name, ISO code, flag, default doctrine, data link families |
-| `platform` | `content/platforms/<category>/` | Aircraft, helicopters, drones, ships, submarines, ground vehicles, launchers, radars, satellites, infantry and SOF formations |
-| `system` | `content/systems/` | Composite systems deployed as a site or group (S-400 battalion, Patriot battery, Iskander brigade) |
+| `nation` | `content/nations/` | Name, id, generated flag (colours and a simple pattern), map colour, capital, default doctrine, data link families |
+| `world` | `content/world/` | Theatre definitions: nation seeds and weights, border overrides (cell lists), place names (`places.yaml`) |
+| `archetype` | `content/archetypes/` | Class bands for key stats (§4), shared by many systems |
+| `platform` | `content/platforms/<category>/` | Aircraft, helicopters, drones, ships, submarines, ground vehicles, launchers, radars, satellites, infantry and special forces formations |
+| `system` | `content/systems/` | Composite systems deployed as a site or group (long-range SAM battalion, medium-range SAM battery, rocket artillery battalion) |
 | `sensor` | `content/sensors/` | Radars, ESM, IRST, EO/IR, sonar, satellite payloads |
 | `weapon` | `content/weapons/` | Missiles, bombs, shells, rockets, torpedoes, loitering munitions, decoys |
 | `ew_suite` | `content/ew/` | Jammer modes as game stats (self-protection, escort, stand-off; data link and navigation disruption), doc 02 §9 |
 | `countermeasure` | `content/countermeasures/` | Chaff, flares, towed decoys, DIRCM |
 | `datalink` | `content/datalinks/` | Latency, capacity, engage-on-remote support |
 | `loadout` | `content/loadouts/` | Named loadout templates per platform |
-| `base` | `content/bases/` | Real air bases and ports (generated from OurAirports + curated list), owner country, runway class, capacity |
-| `inventory` | `content/inventories/` | Per country: quantities, munition stocks, peacetime basing, as-of date |
-| `doctrine` | `content/doctrine/` | AI profile per country |
+| `base` | `content/bases/<nation>.yaml` | Each nation's air and naval bases (proposed by the pipeline, kept or moved by the owner), runway class, berths, capacity |
+| `inventory` | `content/inventories/` | Per nation: quantities, munition stocks, basing |
+| `doctrine` | `content/doctrine/` | AI profile per nation |
 | `realism` | `content/realism/` | Global tuning constants (doc 02 §17) |
+| — | `content/denylist.txt` | Real names refused by the content check and CI (doc 11 §3.1) |
 
 ## 3. Examples (illustrative values)
 
-Values below show the format. Real entries are filled from public sources during Phase 8 and every uncertain number is listed under `estimates`.
+### 3.0 Nation and theatre
+
+```yaml
+id: ALD
+kind: nation
+name: Aldmark
+colour: "#5C7FA8"                # map tint when neutral; coalition colours override
+flag: { pattern: nordic_cross, colours: ["#1F3B5C", "#E8C547"] }
+capital: Aldvik
+doctrine: ald-maritime
+datalinks: [weave]
+```
+
+```yaml
+id: theatre-north
+kind: world
+terrain_pack: europe
+seed: 4711                       # fixes the border growth
+nations:
+  - { nation: ALD, seed_at: [11.8, 57.4], weight: 1.0 }
+  - { nation: VSM, seed_at: [27.5, 58.9], weight: 1.6 }
+  # … six more
+overrides: []                    # hand-edits as H3 cell lists
+```
 
 ### 3.1 Sensor
 
 ```yaml
-id: an-apg-81
+id: vr-81
 kind: sensor
-name: AN/APG-81 AESA
+name: VR-81 AESA
 sensor_type: radar
 role: [air_search, fire_control, ground_mapping]
 radar:
@@ -49,19 +75,15 @@ radar:
   jam_resistance: 6       # 0–10 game stat, doc 02 §9 (replaces eccm_db in P6b)
   erp_class_dbw: 75        # for enemy ESM
   fire_channels: 8
-provenance:
-  confidence: low
-  estimates: [radar.r_ref_km, radar.jam_resistance, radar.erp_class_dbw]
-  sources:
-    - { title: "Manufacturer fact sheet", url: "https://…", accessed: 2026-11-02 }
+design: { archetype: radar-fighter-aesa, note: "Top of the fighter AESA band; pairs with the VF-5's low signature" }
 ```
 
 ### 3.2 Weapon
 
 ```yaml
-id: aim-120d
+id: ar-7
 kind: weapon
-name: AIM-120D AMRAAM
+name: AR-7
 category: aam
 targets: [air]
 profile:
@@ -84,16 +106,16 @@ countermeasure_resistance: { chaff: 0.7, towed_decoy: 0.4 }
 mass_kg: 161
 station_category: [aam_medium]
 internal_carriage: true
-provenance: { confidence: medium, estimates: [profile.coast_tau_s, pk_base], sources: [ … ] }
+design: { archetype: aam-medium-radar, note: "Long end of the band; Aldmark and Morvel only" }
 ```
 
 ### 3.3 Platform
 
 ```yaml
-id: f-35a
+id: vf-5
 kind: platform
 category: aircraft/fighter
-name: F-35A Lightning II
+name: VF-5 Vantor
 crew: 1
 mobility:
   cruise_speed_mach: 0.9
@@ -106,22 +128,22 @@ signature:
   external_stores_rcs_multiplier: 8
   ir: { cruise: 1.0, afterburner: 3.0 }
 fuel:
-  internal_kg: 8278
+  internal_kg: 8300
   burn_kg_h: { cruise: 2600, military: 5200, afterburner: 14000 }
   aar: boom
 stations:
   - { id: bay_l_out, kind: internal, categories: [aam_medium], max_kg: 160 }
-  - { id: bay_l_in,  kind: internal, categories: [aam_medium, bomb_900kg, arm], max_kg: 1000 }
-  - { id: bay_r_in,  kind: internal, categories: [aam_medium, bomb_900kg, arm], max_kg: 1000 }
+  - { id: bay_l_in,  kind: internal, categories: [aam_medium, bomb_900kg, emitter_homing], max_kg: 1000 }
+  - { id: bay_r_in,  kind: internal, categories: [aam_medium, bomb_900kg, emitter_homing], max_kg: 1000 }
   - { id: bay_r_out, kind: internal, categories: [aam_medium], max_kg: 160 }
   - { id: pylon_1,   kind: external, categories: [bomb_900kg, aam_short], max_kg: 1100 }
-sensors: [an-apg-81, an-aaq-37-das, an-aaq-40-eots, asq-239-esm]
-ew: [asq-239-self-protect]
+sensors: [vr-81, das-6, eo-40, esm-39]
+ew: [sp-39]
 countermeasures: { chaff: 60, flares: 60 }
-datalinks: [link-16, mada]
+datalinks: [weave]
 durability: { model: aircraft, p_kill_on_hit: 0.8 }
 turnaround_min: 60
-provenance: { confidence: low, estimates: [signature.rcs_m2, signature.ir], sources: [ … ] }
+design: { archetype: fighter-stealth, note: "Low frontal RCS, modest speed; strong in the first look" }
 ```
 
 ### 3.4 Jammer (EW suite)
@@ -135,28 +157,27 @@ modes:                           # 0–10 game stats, doc 02 §9
   escort:       { jam_strength: 6, coverage_km: 150, sector_deg: 60 }
   stand_off:    { jam_strength: 7, coverage_km: 250, sector_deg: 60 }
 effects: [radar, datalink]       # optional: navigation
-provenance: { confidence: estimate, estimates: [modes], sources: [ … ] }
+design: { archetype: jammer-escort, note: "Strengths set by balance and the test bench" }
 ```
-
-Strengths are relative game values chosen for balance and checked with the test bench, not measured figures.
 
 ### 3.5 Composite system
 
 ```yaml
-id: s-400-battalion
+id: lr-sam-bastra
 kind: system
-name: S-400 Triumf battalion
+name: LR-SAM Bastra battalion
 deploy_as: site
 setup_min: 5
 components:
-  - { platform: 91n6e-big-bird, count: 1, role: surveillance }
-  - { platform: 92n6e-grave-stone, count: 1, role: fire_control }
-  - { platform: 55k6e-command-post, count: 1, role: c2 }
-  - platform: 5p85te2-launcher
+  - { platform: bastra-surveillance-radar, count: 1, role: surveillance }
+  - { platform: bastra-fire-control-radar, count: 1, role: fire_control }
+  - { platform: bastra-command-post, count: 1, role: c2 }
+  - platform: bastra-launcher
     count: 8
-    magazine: { 48n6dm: 2, 40n6e: 1, 9m96e2: 4 }   # per launcher, illustrative mix
+    magazine: { sl-40: 2, sl-20: 4 }   # per launcher, illustrative mix
 emcon_default: blink
 iads_capable: true
+design: { archetype: sam-long-range, note: "Vessmar's main air-defence system" }
 ```
 
 Each component is its own damageable entity on the map; destroying the fire-control radar stops guided engagements even if launchers survive.
@@ -164,11 +185,11 @@ Each component is its own damageable entity on the map; destroying the fire-cont
 ### 3.6 Custom system
 
 ```yaml
-id: custom-f-35a-block-x
+id: custom-vf-5-block-x
 kind: platform
 custom: true
-extends: f-35a                  # resolved at compile time
-name: F-35A Block X (custom)
+extends: vf-5                   # resolved at compile time
+name: VF-5 Vantor Block X (custom)
 overrides:
   mobility.max_speed_mach: 1.8
   signature.rcs_m2.front: 0.002
@@ -177,29 +198,39 @@ overrides:
 ### 3.7 Inventory
 
 ```yaml
-country: POL
-as_of: 2026-10-01               # inventories are dated; all numbers here are illustrative
+nation: ALD
 platforms:
-  f-16c-block-52: 36
-  patriot-battery: 4
+  mf-4: 36
+  mr-sam-tolven: 4
 munitions:
-  aim-120c-7: 300
-  agm-158-jassm: 40
+  ar-7: 300
+  as-4-tarn: 40
 basing:
-  f-16c-block-52: { base: EPKS-krzesiny, count: 18 }
-provenance: { confidence: medium, sources: [ … ] }
+  mf-4: { base: ald-ab-hollin, count: 18 }
+design: { note: "Maritime nation: strong navy, small air force" }
 ```
 
-## 4. Provenance and data quality
+## 4. Archetypes and balance
+
+Each archetype gives bands for the stats that decide engagements. The content check warns when a value falls outside its band, and the admin app shows where a system sits within it.
+
+```yaml
+id: fighter-stealth
+kind: archetype
+bands:
+  signature.rcs_m2.front: [0.001, 0.05]
+  mobility.max_speed_mach: [1.5, 2.0]
+  mobility.sustained_g: [5.0, 7.5]
+  fuel.combat_radius_km: [900, 1300]
+```
 
 | Field | Meaning |
 |---|---|
-| `confidence` | `high` (official), `medium` (consistent OSINT), `low` (single or disputed source), `estimate` (reasoned guess) |
-| `estimates` | Field paths that are guesses even if the entry is otherwise solid (RCS values almost always) |
-| `sources` | Title, URL, access date |
-| `as_of` | For inventories, which change over time |
+| `design.archetype` | The class the entry belongs to (required) |
+| `design.note` | One or two lines on its role and balance (required) |
+| Archetype `bands` | Plausible class range, set from general knowledge of the class, never from one real system |
 
-Rules: public sources only; when sources disagree, record the range in a comment and pick the median; every guessed value goes into `estimates`; the game shows confidence on the unit card ("specs: medium confidence").
+Rules: stay inside the bands unless the note says why; give nations different mixes rather than better copies of the same thing; check new systems with the test bench before they ship. No sources, confidence or `as_of` fields: the content is fiction (ADR-036).
 
 ## 5. Admin app
 
@@ -208,12 +239,13 @@ A local web app (`apps/admin`) for the owner. No server.
 | Feature | How |
 |---|---|
 | Open the content folder | File System Access API (Chrome/Edge), reads and writes YAML directly in the repo |
-| Browse and search | By kind, category, country, confidence |
-| Edit | Forms generated from the JSON Schema (`@rjsf/core`) with custom widgets (RCS by aspect, station editor, magazine mix) |
-| Validate live | `wb-content` compiled to WASM: same rules as the compiler (references, units, ranges) |
-| Inventories | Per country table: quantity, munitions, basing, as-of |
+| Browse and search | By kind, category, nation, archetype |
+| Edit | Forms generated from the JSON Schema (`@rjsf/core`) with custom widgets (RCS by aspect, station editor, magazine mix, archetype band bars) |
+| Validate live | `wb-content` compiled to WASM: same rules as the compiler (references, units, bands, denylist) |
+| Nations and world | Nation list, seeds and weights, regenerate borders preview, place names, base list per nation |
+| Inventories | Per nation table: quantity, munitions, basing |
 | Compare | Two systems side by side |
-| Test bench | Runs Monte Carlo engagements in the browser via `wb-wasm` (e.g. 1,000 × "AIM-120D vs Su-35S at 60 km, beaming") and shows outcome distributions |
+| Test bench | Runs Monte Carlo engagements in the browser via `wb-wasm` (e.g. 1,000 × "AR-7 vs HF-4 Corvan at 60 km, beaming") and shows outcome distributions |
 | Diff and commit | Shows changed files; the owner commits with git |
 
 ## 6. Content pipeline
