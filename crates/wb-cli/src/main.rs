@@ -229,10 +229,17 @@ fn run(a: RunArgs) -> anyhow::Result<()> {
                 .with_context(|| format!("cannot load {}", path.display()))?;
             (path.display().to_string(), sim)
         }
-        (Some(path), None) => (
-            path.display().to_string(),
-            sim::build(&sim::read_scenario(path)?, &content, geo.clone())?,
-        ),
+        (Some(path), None) => {
+            let scn = sim::read_scenario(path)?;
+            let scn_content = match &scn.content {
+                Some(c) if a.content == Path::new(DEFAULT_CONTENT) => sim::content(Path::new(c))?,
+                _ => content,
+            };
+            (
+                path.display().to_string(),
+                sim::build(&scn, &scn_content, geo.clone())?,
+            )
+        }
         (None, None) => anyhow::bail!("give --scenario or --load"),
     };
 
