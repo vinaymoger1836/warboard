@@ -1,9 +1,9 @@
 id: test-link
 kind: datalink
 name: Test Data Link
-band: UHF
-frequency_mhz: 960
-latency_ms: 100
+latency_s: 0.1
+capacity_tracks: 500
 range_km: 500
+engage_on_remote: true
+jam_resistance: 0.5
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
-
