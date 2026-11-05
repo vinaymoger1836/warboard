@@ -727,7 +727,8 @@ fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
     let target_ok = |w: &UnitId| {
         m.target.is_none_or(|t| {
             log.targets.get(w).copied() == Some(t)
-                || log.targets
+                || log
+                    .targets
                     .get(w)
                     .is_some_and(|tid| members_of(sim, t).contains(&UnitId(*tid)))
         })

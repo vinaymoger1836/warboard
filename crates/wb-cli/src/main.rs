@@ -236,11 +236,7 @@ fn run(a: RunArgs) -> anyhow::Result<()> {
                 _ => content,
             };
             let sim = sim::build(&scn, &scn_content, geo.clone())?;
-            (
-                path.display().to_string(),
-                scn_content,
-                sim,
-            )
+            (path.display().to_string(), scn_content, sim)
         }
         (None, None) => anyhow::bail!("give --scenario or --load"),
     };
@@ -253,8 +249,13 @@ fn run(a: RunArgs) -> anyhow::Result<()> {
         if let Some(out) = &a.save_out {
             write_file(out, &bytes)?;
         }
-        sim = Sim::load(&bytes, scn_content.db.clone(), scn_content.hash, geo.clone())
-            .context("cannot reload the save")?;
+        sim = Sim::load(
+            &bytes,
+            scn_content.db.clone(),
+            scn_content.hash,
+            geo.clone(),
+        )
+        .context("cannot reload the save")?;
         eprintln!(
             "saved and reloaded at tick {} ({} bytes)",
             sim.clock().tick,

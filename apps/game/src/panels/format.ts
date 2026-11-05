@@ -151,12 +151,12 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     const parts = [];
     if (r.intercepted > 0) parts.push(`${r.intercepted} intercepted`);
     if (r.decoyed > 0) parts.push(`${r.decoyed} decoyed`);
-    if (r.hits > 0) parts.push(`${r.hits} hits`);
-    if (r.misses > 0) parts.push(`${r.misses} misses`);
+    if (r.hits > 0) parts.push(`${r.hits} ${r.hits === 1 ? 'hit' : 'hits'}`);
+    if (r.misses > 0) parts.push(`${r.misses} ${r.misses === 1 ? 'miss' : 'misses'}`);
     const summary = parts.length > 0 ? parts.join(', ') : 'no effect';
     return {
       category: 'Weapon',
-      text: `Salvo #${r.salvo} (${r.total} missiles from ${n(r.shooter)}): ${summary}`,
+      text: `Salvo #${r.salvo} (${r.total} ${r.total === 1 ? 'missile' : 'missiles'} from ${n(r.shooter)}): ${summary}`,
     };
   }
   if ('AutonomousMode' in k) {

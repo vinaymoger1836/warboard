@@ -47,7 +47,7 @@ use crate::components::{
     Allegiance, BaseSite, Fuel, Group, GroupMember, Identity, Kinematics, Mode, PlatformRef,
     Posture, ReturnWhy, Task, WeaponFlight, WeaponTarget,
 };
-use crate::picture::{ContactIdentity, SidePictures};
+use crate::picture::{ContactIdentity, SidePictures, TypeRef};
 use crate::rules::Rules;
 use crate::world::{UnitIndex, entity};
 
@@ -662,10 +662,14 @@ impl ViewEncoder {
                 } else {
                     0.0
                 };
-                let symbol = if c.level >= ContactLevel::Class {
-                    c.type_ref.symbol(rules)
-                } else {
+                // A weapon track gets the missile / bomb / torpedo glyph (red
+                // on the map, doc 10 §5); the platform lookup has none.
+                let symbol = if c.level < ContactLevel::Class {
                     0
+                } else if let TypeRef::Weapon(w) = c.type_ref {
+                    weapon_symbol(rules.db.weapons[w.0 as usize].category)
+                } else {
+                    c.type_ref.symbol(rules)
                 };
                 let identity = match c.identity {
                     ContactIdentity::Unknown => 0,

@@ -28,7 +28,7 @@ const LIFE_MS: Record<number, number> = {
 const HALO_RADIUS_PX = 34;
 const HALO_PERIOD_MS = 2400;
 /** Concentric steps that fake the soft edge of the glow without a custom shader. */
-const HALO_STEPS = 9;
+const HALO_STEPS = 12;
 
 const BURST_ICON = { url: burstDataUrl(), width: 64, height: 64, id: 'burst', mask: true };
 
@@ -59,12 +59,13 @@ const spin = (p: LonLat) => Math.abs(p[0] * 7919 + p[1] * 104729) % 45;
  *  where the units are drawn this frame. */
 export function haloLayer(positions: LonLat[], nowMs: number): Layer {
   const phase = Math.sin((2 * Math.PI * nowMs) / HALO_PERIOD_MS);
-  const peak = alpha['halo.targeted'] * (0.8 + 0.2 * phase);
+  const peak = alpha['halo.targeted'] * (0.85 + 0.15 * phase);
   const radius = HALO_RADIUS_PX * (0.96 + 0.04 * phase);
   // Layers composite one over the other from the rim in, so each step's opacity is chosen to
-  // make the total at that step follow `peak × (1 − r/R)^1.4`.
+  // make the total at that step follow `peak × (1 − r/R)^0.9`: strongest next to the icon,
+  // nearly gone at the rim, as in reference 03.
   const steps: Disc[] = [];
-  const total = (j: number) => peak * ((j + 1) / HALO_STEPS) ** 1.4;
+  const total = (j: number) => peak * ((j + 1) / HALO_STEPS) ** 0.9;
   for (const position of positions) {
     let before = 0;
     for (let j = 0; j < HALO_STEPS; j++) {

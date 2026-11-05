@@ -73,6 +73,9 @@ interface DrawnContact {
   heading: number;
   label: string;
   isWeapon: boolean;
+  /** Weapon contacts: the type or class name, and the estimated speed. */
+  typeName: string;
+  speedKmh: number;
 }
 
 interface DrawnSatellite {
@@ -333,6 +336,26 @@ export class UnitLayers {
     return kept;
   }
 
+  /** Labels of hostile weapons (doc 10 §4.1): `type` over `(speed)`, red. Weapons whose labels
+   *  would overlap on screen share one label with a count (`anti-ship missile ×6`), so a raid
+   *  of a dozen missiles stays legible; the glyphs are never merged. */
+  private weaponLabels(weapons: DrawnContact[]): { position: LonLat; text: string }[] {
+    const kept: { position: LonLat; type: string; speed: number; count: number; box: [number, number, number, number] }[] = [];
+    for (const d of weapons) {
+      const p = this.map.project(d.position);
+      const w = Math.max(d.typeName.length + 3, 12) * LABEL_CHAR_PX;
+      const y = p.y + ENEMY_WEAPON_PX * 0.5 + 6;
+      const box: [number, number, number, number] = [p.x - w / 2, y, p.x + w / 2, y + 2 * LABEL_LINE_PX];
+      const near = kept.find((k) => box[0] < k.box[2] && box[2] > k.box[0] && box[1] < k.box[3] && box[3] > k.box[1]);
+      if (near) near.count++;
+      else kept.push({ position: d.position, type: d.typeName, speed: d.speedKmh, count: 1, box });
+    }
+    return kept.map((k) => ({
+      position: k.position,
+      text: `${k.type}${k.count > 1 ? ` ×${k.count}` : ''}\n(${k.speed} km/h)`,
+    }));
+  }
+
   /** Position of a unit or group as drawn this frame. */
   positionOf(id: number): LonLat | null {
     return this.drawn.find((d) => d.id === id)?.position ?? null;
@@ -426,9 +449,10 @@ export class UnitLayers {
       const estimated = (flags & CFLAG.ESTIMATED) !== 0;
       const symbol = cv.symbol[i] ?? 0;
       const isWeapon = symbol >= 120 && symbol <= 122;
-      // A hostile weapon: type, then speed (doc 10 §4.1, `SL-20` / `(4288 km/h)`).
+      // A hostile weapon is labelled with its type, then its speed (doc 10 §4.1, `SL-20` /
+      // `(4288 km/h)`); those labels are built per cluster in `weaponLabels`.
       let label = isWeapon
-        ? `${strings.contactType(id) || 'WEAPON'}\n(${Math.round(v * 3.6)} km/h)`
+        ? ''
         : contactLabel({
             symbol,
             typeName: strings.contactType(id),
@@ -438,7 +462,18 @@ export class UnitLayers {
             countKnown: (flags & CFLAG.COUNT_KNOWN) !== 0,
           });
       if (estimated && !isWeapon) label += `\n${ESTIMATE_LINE}`;
-      contacts.push({ id, symbol, side, estimated, position: pos, heading: cv.headingDeg[i] ?? 0, label, isWeapon });
+      contacts.push({
+        id,
+        symbol,
+        side,
+        estimated,
+        position: pos,
+        heading: cv.headingDeg[i] ?? 0,
+        label,
+        isWeapon,
+        typeName: strings.contactType(id) || 'WEAPON',
+        speedKmh: Math.round(v * 3.6),
+      });
       const a = cv.ellipseA[i] ?? 0;
       const b = cv.ellipseB[i] ?? 0;
       if (estimated && a > 50) {
@@ -576,14 +611,31 @@ export class UnitLayers {
         fontFamily: 'JetBrains Mono',
         fontWeight: 600,
       }),
+      new TextLayer<{ position: LonLat; text: string }>({
+        id: 'enemy-weapon-labels',
+        data: this.weaponLabels(contacts.filter((d) => d.isWeapon)),
+        getPosition: (d) => d.position,
+        getText: (d) => d.text,
+        getSize: 11,
+        getColor: c('weapon.enemy.label'),
+        getPixelOffset: [0, ENEMY_WEAPON_PX * 0.5 + 6],
+        getTextAnchor: 'middle',
+        getAlignmentBaseline: 'top',
+        fontFamily: 'Noto Sans',
+        fontWeight: 600,
+        fontSettings: SDF,
+        outlineWidth: 0.3,
+        outlineColor: c('map.label.halo'),
+        characterSet: 'auto',
+      }),
       new TextLayer<DrawnContact>({
         id: 'contact-labels',
-        data: contacts,
+        data: contacts.filter((d) => !d.isWeapon),
         getPosition: (d) => d.position,
         getText: (d) => d.label,
         getSize: 11,
-        getColor: (d) => (d.isWeapon ? c('weapon.enemy.label') : c('label.unit')),
-        getPixelOffset: (d) => [0, d.isWeapon ? ENEMY_WEAPON_PX * 0.5 + 6 : size * 0.55 + 7],
+        getColor: c('label.unit'),
+        getPixelOffset: [0, size * 0.55 + 7],
         getTextAnchor: 'middle',
         getAlignmentBaseline: 'top',
         fontFamily: 'Noto Sans',

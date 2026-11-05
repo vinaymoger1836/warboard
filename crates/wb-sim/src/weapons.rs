@@ -662,7 +662,7 @@ pub fn fly(world: &mut World) {
             }
             Err((End::Plain(outcome), k2)) => {
                 terminate(
-                    world, &rules, &clock, id, side, &f, &k2, outcome, None, None,
+                    world, &rules, &clock, id, side, &f, &k2, outcome, None, None, None,
                 );
             }
             Err((End::Fuzed { target, miss }, k2)) => {
@@ -679,6 +679,7 @@ pub fn fly(world: &mut World) {
                     outcome,
                     Some(miss),
                     Some(eg),
+                    target,
                 );
                 match (outcome, target, f.target) {
                     (Outcome::Hit, Some(t), _) => crate::damage::hit(world, &rules, seed, id, w, t),
@@ -717,7 +718,9 @@ pub fn end_flight(world: &mut World, rules: &Rules, id: UnitId, outcome: Outcome
     };
     let side = world.get::<Allegiance>(e).map_or(0, |a| a.side);
     let clock = world.resource::<SimClock>().clone();
-    terminate(world, rules, &clock, id, side, &f, &k, outcome, None, None);
+    terminate(
+        world, rules, &clock, id, side, &f, &k, outcome, None, None, None,
+    );
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1185,6 +1188,8 @@ fn terminate(
     outcome: Outcome,
     miss: Option<f64>,
     endgame: Option<Endgame>,
+    // The unit the fuze resolved against (a hit's victim).
+    fuzed_on: Option<UnitId>,
 ) {
     let w = &rules.db.weapons[f.weapon.0 as usize];
     let factors = Factors {
@@ -1211,13 +1216,16 @@ fn terminate(
         }),
         WeaponTarget::Truth(_) => None,
     };
-    // The side on the other end of the weapon sees the burst too.
-    let other_side = match f.target {
-        WeaponTarget::Track { key, .. } | WeaponTarget::Truth(key) => entity(world, key)
-            .and_then(|e| world.get::<Allegiance>(e))
-            .map(|a| a.side),
+    // The side on the other end of the weapon sees the burst too: the unit it
+    // fuzed on (a strike on a point can hit a ship), else the unit aimed at.
+    let victim = fuzed_on.or(match f.target {
+        WeaponTarget::Track { key, .. } | WeaponTarget::Truth(key) => Some(key),
         WeaponTarget::Point { .. } => None,
-    };
+    });
+    let other_side = victim
+        .and_then(|u| entity(world, u))
+        .and_then(|e| world.get::<Allegiance>(e))
+        .map(|a| a.side);
     if let Some(e) = entity(world, id) {
         world.despawn(e);
     }

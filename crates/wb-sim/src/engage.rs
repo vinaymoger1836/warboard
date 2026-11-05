@@ -251,12 +251,12 @@ pub(crate) fn available_fire_channels(
         }
     } else if let Some(se) = entity(world, shooter) {
         let health = world.get::<Health>(se);
-        if !health.is_some_and(|h| h.has_out(Subsystem::Radar)) {
-            if let Some(p) = world.get::<PlatformRef>(se).map(|p| rules.platform(p.0)) {
-                for sm in &p.sensors {
-                    if let Some(r) = rules.db.sensors[sm.sensor.0 as usize].radar.as_ref() {
-                        channels += r.fire_channels;
-                    }
+        if !health.is_some_and(|h| h.has_out(Subsystem::Radar))
+            && let Some(p) = world.get::<PlatformRef>(se).map(|p| rules.platform(p.0))
+        {
+            for sm in &p.sensors {
+                if let Some(r) = rules.db.sensors[sm.sensor.0 as usize].radar.as_ref() {
+                    channels += r.fire_channels;
                 }
             }
         }
@@ -283,21 +283,18 @@ fn has_track(
         return false;
     }
     // If the group is in autonomous transition delay, it cannot track or engage.
-    if let Some(g) = group {
-        if let Some(t) = g.autonomous_after_ms {
-            if now < t {
-                return false;
-            }
-        }
+    if let Some(g) = group
+        && g.autonomous_after_ms.is_some_and(|t| now < t)
+    {
+        return false;
     }
     let is_autonomous = group
         .and_then(|g| g.autonomous_after_ms)
         .is_some_and(|t| now >= t);
 
     let pics = world.resource::<SidePictures>();
-    let is_own_observer = |obs: UnitId| {
-        obs == shooter || group.is_some_and(|g| g.members.contains(&obs))
-    };
+    let is_own_observer =
+        |obs: UnitId| obs == shooter || group.is_some_and(|g| g.members.contains(&obs));
 
     let own_radar = group.map_or_else(
         || {
@@ -422,7 +419,8 @@ fn self_defence(
     let country = ge
         .and_then(|e| world.get::<Allegiance>(e))
         .map(|a| a.country);
-    let doc = country.map(|c| &rules.db.doctrines[rules.db.countries[c.0 as usize].doctrine.0 as usize]);
+    let doc =
+        country.map(|c| &rules.db.doctrines[rules.db.countries[c.0 as usize].doctrine.0 as usize]);
     let reserve_fraction = doc.map_or(0.0, |d| d.missile_reserve_fraction);
 
     // Friendly ships and ground units to defend
@@ -585,10 +583,10 @@ fn self_defence(
                 if d_pip < w.profile.min_range_m || d_pip > reach {
                     continue;
                 }
-                if let Some(env) = &w.envelope {
-                    if e.alt_m < env.min_alt_m || e.alt_m > env.max_alt_m {
-                        continue;
-                    }
+                if let Some(env) = &w.envelope
+                    && (e.alt_m < env.min_alt_m || e.alt_m > env.max_alt_m)
+                {
+                    continue;
                 }
                 candidates.push((*wix, reach, is_ciws, available_rounds));
             }

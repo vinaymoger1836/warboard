@@ -305,17 +305,12 @@ pub fn destroy(world: &mut World, unit: UnitId) {
                     if needs_auto {
                         let (delay_s, delay_ms) = {
                             let rules = world.resource::<Rules>();
-                            let country = world
-                                .get::<Allegiance>(ge)
-                                .map(|a| a.country);
+                            let country = world.get::<Allegiance>(ge).map(|a| a.country);
                             let reaction_time_s = country
                                 .and_then(|c| rules.db.countries.get(c.0 as usize))
                                 .and_then(|c| rules.db.doctrines.get(c.doctrine.0 as usize))
                                 .map_or(2.0, |d| d.reaction_time_s);
-                            let factor = rules
-                                .realism()
-                                .tewa
-                                .iads_autonomous_reaction_factor;
+                            let factor = rules.realism().tewa.iads_autonomous_reaction_factor;
                             let delay_s = reaction_time_s * factor;
                             (delay_s, (delay_s * 1_000.0) as u64)
                         };
