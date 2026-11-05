@@ -26,3 +26,4 @@ station_category: [test_canister, test_vls]
 signature:
   rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+

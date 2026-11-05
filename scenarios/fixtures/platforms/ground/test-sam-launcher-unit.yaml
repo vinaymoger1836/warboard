@@ -10,3 +10,4 @@ stations:
   - { id: tubes, kind: launcher, categories: [test_sam_tube], capacity: 4 }
 durability: { model: ground, damage_points: 50 }
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+

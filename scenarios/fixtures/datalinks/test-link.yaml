@@ -6,3 +6,4 @@ frequency_mhz: 960
 latency_ms: 100
 range_km: 500
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+

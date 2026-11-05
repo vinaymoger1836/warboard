@@ -8,3 +8,4 @@ lon_deg: 17.0
 elevation_m: 0
 ship_berths: 8
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+

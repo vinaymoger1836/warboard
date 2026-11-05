@@ -15,3 +15,4 @@ radar:
   erp_class_dbw: 80
   fire_channels: 4
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+

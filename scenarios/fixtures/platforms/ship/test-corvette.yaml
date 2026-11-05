@@ -15,3 +15,4 @@ countermeasures:
   test-chaff: 12
 durability: { model: ship, damage_points: 120 }
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+

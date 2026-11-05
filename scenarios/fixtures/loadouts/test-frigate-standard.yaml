@@ -7,3 +7,4 @@ items:
   - { station: 1, weapon: test-ciws, count: 2 }
   - { station: 2, weapon: test-asm, count: 8 }
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+

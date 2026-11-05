@@ -26,3 +26,4 @@ mass_kg: 50
 station_category: [test_ciws_mount]
 rounds_per_cell: 1
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+
