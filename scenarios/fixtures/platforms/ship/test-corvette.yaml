@@ -4,7 +4,7 @@ name: Test Corvette
 short_name: Corvette
 category: ship/corvette
 target_class: surface_ship
-mobility: { max_speed_knots: 28, cruise_speed_knots: 16 }
+mobility: { max_speed_kt: 28, cruise_speed_kt: 16 }
 signature: { rcs_m2: { front: 1000, side: 3000, rear: 1000, top: 4000 } }
 stations:
   - { id: ashm_tubes, kind: launcher, categories: [test_canister], capacity: 8 }
@@ -15,4 +15,3 @@ countermeasures:
   test-chaff: 12
 durability: { model: ship, damage_points: 120 }
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
-

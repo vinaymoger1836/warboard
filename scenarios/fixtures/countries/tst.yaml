@@ -1,10 +1,9 @@
 id: tst
 kind: country
 name: Test Country
-iso2: tt
-iso3: tst
+iso2: TT
+iso3: TST
 flag: tt
 doctrine: test-doctrine
 datalinks: [test-link]
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
-

@@ -17,8 +17,8 @@ profile:
 guidance:
   terminal: active_radar
 envelope:
-  min_m: 10
-  max_m: 20000
+  min_alt_m: 10
+  max_alt_m: 20000
 warhead_kg: 20
 warhead: blast_fragmentation
 pk_base:
@@ -31,4 +31,3 @@ rounds_per_cell: 1
 signature:
   rcs_m2: { front: 0.05, side: 0.2, rear: 0.05, top: 0.2 }
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
-

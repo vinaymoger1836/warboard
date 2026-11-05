@@ -247,6 +247,14 @@ fn key(m: &Measure) -> String {
 
 fn run_file(path: &Path, content: &Content) -> anyhow::Result<usize> {
     let scenario = crate::sim::read_scenario(path)?;
+    let scenario_content = match &scenario.content {
+        Some(c) => crate::sim::content(Path::new(c))?,
+        None => Content {
+            db: content.db.clone(),
+            hash: content.hash,
+        },
+    };
+    let content = &scenario_content;
     let spec: Spec = serde_yaml::from_value(
         scenario
             .golden

@@ -117,6 +117,9 @@ pub struct Scenario {
     /// Golden-scenario variants and bands, read by `wb golden` (doc 08 §3).
     #[serde(default)]
     pub golden: Option<serde_yaml::Value>,
+    /// Optional content directory or pack path for this scenario (ADR-035).
+    #[serde(default)]
+    pub content: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
