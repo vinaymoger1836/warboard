@@ -25,7 +25,7 @@ golden:
   id: G10
   description: 12 test anti-ship missiles vs 2 test frigates, 60–95% intercepted or decoyed
   max_ticks: 1600
-  seeds: 5
+  seeds: 20
   expect:
     - { metric: launches, side: 1, weapon: test-asm, min: 12, max: 12 }
     - { metric: outcome_fraction, side: 1, weapon: test-asm, outcomes: [intercepted, decoyed], aggregate: mean, min: 0.60, max: 0.95 }

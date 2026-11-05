@@ -107,6 +107,22 @@ pub struct VisualEffect {
     pub at: LatLon,
     pub alt_m: f32,
     pub kind: u8,
+    /// Bit `s` set: side `s` may see the effect (CLAUDE.md rule 1). A launch
+    /// flash is the shooter's side only; an intercept or a hit also reaches
+    /// the side of the weapon or unit on the other end, which learns of it
+    /// anyway.
+    pub sides: u8,
+}
+
+/// Bit of a side in [`VisualEffect::sides`] (and in `Event::sides`).
+fn side_bit(side: u8) -> u8 {
+    1u8.checked_shl(u32::from(side)).unwrap_or(0)
+}
+
+/// Drops effects older than the view keeps them (`view::effect::RETENTION_MS`).
+fn trim_effects(c: &mut Combat, now_ms: u64) {
+    c.effects
+        .retain(|e| now_ms.saturating_sub(e.time_ms) <= crate::view::effect::RETENTION_MS);
 }
 
 /// Why a weapon was fired: the launch event and the golden checks read it.
@@ -319,6 +335,7 @@ pub fn launch(world: &mut World, l: &Launch) -> Result<UnitId, String> {
             at: sk.pos(),
             alt_m: alt as f32,
             kind: crate::view::effect::LAUNCH,
+            sides: side_bit(alg.side),
         });
         (salvo, c.new_tag(alg.side))
     };
@@ -599,6 +616,16 @@ fn candidates(world: &World, rules: &Rules, now: u64) -> Vec<Candidate> {
 
 /// The weapons stage: every tick, every weapon in `UnitId` order.
 pub fn fly(world: &mut World) {
+    // Effects expire by age even when nothing is in the air.
+    let end_ms = world.resource::<SimClock>().end_ms();
+    if world
+        .resource::<Combat>()
+        .effects
+        .first()
+        .is_some_and(|e| end_ms.saturating_sub(e.time_ms) > crate::view::effect::RETENTION_MS)
+    {
+        trim_effects(&mut world.resource_mut::<Combat>(), end_ms);
+    }
     if world.resource::<Combat>().in_flight == 0 {
         return;
     }
@@ -1184,6 +1211,13 @@ fn terminate(
         }),
         WeaponTarget::Truth(_) => None,
     };
+    // The side on the other end of the weapon sees the burst too.
+    let other_side = match f.target {
+        WeaponTarget::Track { key, .. } | WeaponTarget::Truth(key) => entity(world, key)
+            .and_then(|e| world.get::<Allegiance>(e))
+            .map(|a| a.side),
+        WeaponTarget::Point { .. } => None,
+    };
     if let Some(e) = entity(world, id) {
         world.despawn(e);
     }
@@ -1216,8 +1250,10 @@ fn terminate(
                 ));
             }
         }
+        // An interceptor that fuzes on its target bursts where it fuzed; the
+        // weapon it killed ends as `Intercepted` without a second burst.
         let eff_kind = match outcome {
-            Outcome::Intercepted => Some(crate::view::effect::INTERCEPT),
+            Outcome::Hit if f.intercept => Some(crate::view::effect::INTERCEPT),
             Outcome::Hit => Some(crate::view::effect::HIT),
             _ => None,
         };
@@ -1227,9 +1263,10 @@ fn terminate(
                 at: k.pos(),
                 alt_m: k.alt_m as f32,
                 kind,
+                sides: side_bit(side) | other_side.map_or(0, side_bit),
             });
         }
-        c.effects.retain(|e| clock.end_ms().saturating_sub(e.time_ms) <= 2_000);
+        trim_effects(&mut c, clock.end_ms());
         report
     };
     crate::picture::forget(&mut world.resource_mut::<SidePictures>(), id);

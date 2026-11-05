@@ -144,7 +144,7 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
   }
   if ('WeaponTerminated' in k) {
     const t = k.WeaponTerminated;
-    return { category: 'Weapon', text: `${t.intercept ? 'INT' : 'M'}-${t.tag} ${t.weapon_type}: ${t.outcome.replace(/_/g, ' ')}` };
+    return { category: 'Weapon', text: `${t.intercept ? 'INT' : 'M'}-${t.tag} ${t.weapon_type} ${outcomeText(t)}` };
   }
   if ('SalvoReport' in k) {
     const r = k.SalvoReport;
@@ -163,7 +163,10 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     const a = k.AutonomousMode;
     return {
       category: 'Alert',
-      text: `${n(a.group)} command post destroyed, entering autonomous mode in ${duration(a.delay_s)}`,
+      text:
+        a.delay_s > 0
+          ? `${n(a.group)} command post destroyed, switching to autonomous mode in ${duration(a.delay_s)}`
+          : `${n(a.group)} command post destroyed, now in autonomous mode`,
     };
   }
   if ('IncomingWeapon' in k) {
@@ -201,6 +204,36 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     return { category: 'Contact', text: `${contactName(b.contact, s)} ${b.inbound ? 'entered' : 'left'} our territory` };
   }
   return { category: 'Alert', text: `Auto-slow: ${k.AutoSlow.reason}` };
+}
+
+/** How a weapon's flight ended, in plain words with the numbers behind it (rule 4): the kill
+ *  chance when the weapon fuzed, the miss distance, the countermeasures that drew it off. */
+function outcomeText(t: Extract<Event['kind'], { WeaponTerminated: unknown }>['WeaponTerminated']): string {
+  const f = t.factors;
+  const pk = f.endgame ? `Pk ${Math.round(f.endgame.pk * 100)}%` : null;
+  const miss = f.miss_distance_m == null ? null : `missed by ${Math.round(f.miss_distance_m)} m`;
+  const detail = (...parts: (string | null)[]) => {
+    const text = parts.filter(Boolean).join(', ');
+    return text ? ` (${text})` : '';
+  };
+  switch (t.outcome) {
+    case 'hit':
+      return `${t.intercept ? 'intercepted its target' : 'hit its target'}${detail(pk)}`;
+    case 'miss':
+      return `${t.intercept ? 'missed its target' : 'missed'}${detail(miss, pk)}`;
+    case 'decoyed':
+      return `was decoyed by countermeasures${detail(f.cm_used > 0 ? `${f.cm_used} released` : null, pk)}`;
+    case 'jammed':
+      return `was jammed${detail(pk)}`;
+    case 'intercepted':
+      return 'was shot down by an interceptor';
+    case 'out_of_energy':
+      return 'ran out of energy';
+    case 'lost_track':
+      return 'lost its track and self-destructed';
+    case 'self_destruct':
+      return 'self-destructed';
+  }
 }
 
 /** Why a weapon was fired, after the line (doc 03 §7). */
@@ -243,6 +276,7 @@ export const isAlert = (e: Event) =>
   'IncomingWeapon' in e.kind ||
   'Damage' in e.kind ||
   'UnitDestroyed' in e.kind ||
+  'AutonomousMode' in e.kind ||
   'RoeRequest' in e.kind;
 
 /** The unit an event is about, for click-to-locate. */
@@ -263,6 +297,9 @@ export function subjectOf(e: Event): number | null {
   if ('LoadoutChanged' in k) return k.LoadoutChanged.unit;
   if ('RearmShort' in k) return k.RearmShort.unit;
   if ('WeaponLaunched' in k) return k.WeaponLaunched.shooter;
+  if ('AutonomousMode' in k) return k.AutonomousMode.group;
+  if ('IncomingWeapon' in k) return k.IncomingWeapon.unit;
+  if ('SalvoReport' in k) return k.SalvoReport.shooter;
   if ('Damage' in k) return k.Damage.unit;
   if ('BaseComponentDamaged' in k) return k.BaseComponentDamaged.base;
   if ('BaseComponentRepaired' in k) return k.BaseComponentRepaired.base;

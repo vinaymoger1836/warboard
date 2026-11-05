@@ -141,10 +141,11 @@ export function iconSvg(symbol: number, side: IconSide, opts: IconOptions = {}):
   );
 }
 
-/** Our missile in flight (doc 10 §5): a small amber missile pointing north on a 32 grid;
- *  the map rotates it to the heading. */
-export function missileSvg(): string {
-  const fill = tokens['weapon.offensive'];
+/** A missile in flight (doc 10 §5): a small missile pointing north on a 32 grid; the map
+ *  rotates it to the heading. Amber (`weapon.offensive`) for ours, red (`weapon.enemy`)
+ *  for a hostile weapon in our picture. */
+export function missileSvg(colour: TokenName = 'weapon.offensive'): string {
+  const fill = tokens[colour];
   return (
     '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">' +
     `<path d="M16 2 L18.5 8 V21 L22 25 V28 L18.5 26.5 V29 H13.5 V26.5 L10 28 V25 L13.5 21 V8 Z" fill="${fill}" stroke="${darker(fill)}" stroke-width="1" stroke-linejoin="round"/>` +
@@ -152,8 +153,24 @@ export function missileSvg(): string {
   );
 }
 
-export function missileDataUrl(): string {
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(missileSvg())}`;
+export function missileDataUrl(colour: TokenName = 'weapon.offensive'): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(missileSvg(colour))}`;
+}
+
+/** Eight-spike burst for intercept and hit effects (doc 10 §5), white on a 64 grid. The map
+ *  draws it as a mask icon, so the effect's colour and fade come from the layer, not the SVG. */
+export function burstSvg(): string {
+  const pts: string[] = [];
+  for (let i = 0; i < 16; i++) {
+    const r = i % 2 === 0 ? 30 : 10;
+    const a = (i * Math.PI) / 8;
+    pts.push(`${(32 + r * Math.sin(a)).toFixed(2)} ${(32 - r * Math.cos(a)).toFixed(2)}`);
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><path d="M${pts.join(' L')} Z" fill="#FFFFFF"/></svg>`;
+}
+
+export function burstDataUrl(): string {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(burstSvg())}`;
 }
 
 export function iconDataUrl(symbol: number, side: IconSide, opts: IconOptions = {}): string {

@@ -6,8 +6,8 @@ targets: [surface]
 target_class: anti_ship_missile
 profile:
   kind: air_breathing
-  max_speed_mach: 0.85
-  min_speed_mach: 0.5
+  max_speed_mach: 1.2
+  min_speed_mach: 0.8
   max_range_km: 120
   min_range_km: 5
   max_g: 5

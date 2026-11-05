@@ -14,11 +14,11 @@ use crate::bases::kind_name;
 use crate::clock::SimClock;
 use crate::components::{
     Allegiance, BaseRef, BaseSite, Countermeasures, Fuel, Group, GroupMember, Identity, Kinematics,
-    Magazine, Mode, PlatformRef, Posture, Task,
+    Magazine, Mode, PlatformRef, Posture, Task, WeaponFlight,
 };
 use crate::rules::Rules;
 use crate::view::status;
-use crate::world::entity;
+use crate::world::{UnitIndex, entity};
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
@@ -180,6 +180,15 @@ pub struct StationView {
     pub full: u32,
 }
 
+/// Fire channels of a ship or battery: how many engagements its fire control
+/// can run at once, and how many are taken by weapons in flight (doc 02 §9).
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct FireChannels {
+    pub used: u32,
+    pub total: u32,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 pub struct GroupDetails {
@@ -216,6 +225,9 @@ pub struct GroupDetails {
     pub stations: Vec<StationView>,
     /// Chaff and flares left, lead.
     pub countermeasures: Vec<WeaponCount>,
+    /// Fire channels in use, lead (or the battery); none for aircraft and
+    /// units without weapons.
+    pub fire_channels: Option<FireChannels>,
     /// Provenance confidence of the platform's data.
     pub confidence: String,
     /// Emission control of the lead: `on`, `off` or `blink` (none without radars).
@@ -450,6 +462,28 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
             count: *n,
         })
         .collect();
+    // Channels are taken by every weapon in flight its shooter(s) fired.
+    let fire_channels = g
+        .lead()
+        .filter(|_| !rules.is_air(p) && mag.is_some_and(|m| !m.stations.is_empty()))
+        .map(|lead_id| {
+            let shooters: Vec<UnitId> = if g.system.is_some() {
+                g.members.clone()
+            } else {
+                vec![lead_id]
+            };
+            let used = world
+                .resource::<UnitIndex>()
+                .0
+                .values()
+                .filter_map(|e| world.get::<WeaponFlight>(*e))
+                .filter(|f| shooters.contains(&f.shooter))
+                .count() as u32;
+            FireChannels {
+                used,
+                total: crate::engage::available_fire_channels(world, rules, lead_id, Some(g)),
+            }
+        });
     let home = world.get::<BaseRef>(lead).and_then(|r| r.home);
     let crew = p.crew.map(|c| c * g.members.len() as u32);
     Some(GroupDetails {
@@ -497,6 +531,7 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
             .map(|l| db.str(db.loadouts[l.0 as usize].name).to_owned()),
         stations,
         countermeasures,
+        fire_channels,
         weapons,
         confidence: format!("{:?}", p.provenance.confidence).to_lowercase(),
         emcon: world

@@ -11,7 +11,7 @@ import {
   SYMBOLS,
   type SymbolName,
 } from '@warboard/protocol';
-import { contactLabel, ESTIMATE_LINE, iconDataUrl, type IconSide } from '@warboard/symbols';
+import { contactLabel, cssVar, ESTIMATE_LINE, iconDataUrl, type IconSide } from '@warboard/symbols';
 import { useState } from 'react';
 import type { EngineBridge } from '../bridge';
 import { patrolRadiusKm, sendCommand, sendTask } from '../orders';
@@ -427,16 +427,40 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
         {section(
           'weapons',
           'Weapons',
-          d.weapons.length === 0 ? (
+          d.weapons.length === 0 && d.countermeasures.length === 0 ? (
             <p className="muted">No weapons loaded.</p>
           ) : (
             <dl>
-              <dt>Loadout</dt>
-              <dd>{d.loadout ?? '—'}</dd>
-              {d.weapons.map((w) => (
-                <span key={w.name} className="dl-pair">
-                  <dt>{w.name}</dt>
-                  <dd>{w.count} per aircraft</dd>
+              {d.loadout && (
+                <>
+                  <dt>Loadout</dt>
+                  <dd>{d.loadout}</dd>
+                </>
+              )}
+              {d.weapons.map((w) => {
+                const full = d.stations.filter((s) => s.weapon === w.name).reduce((sum, s) => sum + s.full, 0);
+                return (
+                  <span key={w.name} className="dl-pair">
+                    <dt>{w.name}</dt>
+                    <dd>
+                      {w.count}
+                      {full > 0 ? ` of ${full}` : ''} {air ? 'per aircraft' : d.count > 1 ? 'per ship' : 'left'}
+                    </dd>
+                  </span>
+                );
+              })}
+              {d.fire_channels && (
+                <>
+                  <dt>Fire channels</dt>
+                  <dd style={{ color: d.fire_channels.used >= d.fire_channels.total ? cssVar('state.warn') : undefined }}>
+                    {d.fire_channels.used} of {d.fire_channels.total} in use
+                  </dd>
+                </>
+              )}
+              {d.countermeasures.map((m) => (
+                <span key={m.name} className="dl-pair">
+                  <dt>{m.name}</dt>
+                  <dd>{m.count} left</dd>
                 </span>
               ))}
             </dl>

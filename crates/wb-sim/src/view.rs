@@ -2,8 +2,10 @@
 //! little-endian structure of arrays the UI decodes without copying.
 //!
 //! The side's own platforms, satellites and bases, the contacts of its
-//! picture (P4) and its own weapons in flight (P5; other sides' weapons are
-//! contacts). Effects are not sent yet (count 0). Nothing about other sides'
+//! picture (P4), its own weapons in flight (P5; other sides' weapons are
+//! contacts) and the combat effects it may see (P6a: its own launches, and
+//! the intercepts and hits its weapons or units took part in, each with an
+//! age). Nothing about other sides'
 //! units is written except contact estimates: contact rows carry a
 //! [`ContactId`](wb_core::ContactId), estimated position and type names only,
 //! and a weapon's target is the side's own contact id (CLAUDE.md rule 1,
@@ -34,9 +36,10 @@
 //! ```
 
 use bevy_ecs::prelude::*;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use wb_content::source::PlatformCategory;
 use wb_content::source::realism::{BaseKind, ContactLevel};
+use wb_core::UnitId;
 use wb_core::units::rad_to_deg;
 
 use crate::clock::SimClock;
@@ -74,12 +77,18 @@ pub mod flag {
 
 /// Visual effect kinds.
 pub mod effect {
-    /// Launch flash at the shooter.
+    /// Launch flash at the shooter (the shooter's side only).
     pub const LAUNCH: u8 = 1;
-    /// Intercept burst (cyan).
+    /// Intercept burst (cyan) where an interceptor fuzed on its target.
     pub const INTERCEPT: u8 = 2;
-    /// Hit burst (amber-white).
+    /// Hit burst (amber-white) where a weapon hit its target.
     pub const HIT: u8 = 3;
+    /// How long the engine keeps an effect, sim ms. Views carry its age; the
+    /// client turns that into a short real-time animation at any sim speed
+    /// (at ×60 a view covers 6 s of sim time, so a 2 s window would be missed).
+    pub const RETENTION_MS: u64 = 20_000;
+    /// Most rows one view carries (the newest).
+    pub const MAX_ROWS: usize = 1_024;
 }
 
 /// Contact `flags` bits.
@@ -463,6 +472,24 @@ impl ViewEncoder {
             }
         };
 
+        // Own units a weapon of the side's picture is judged aimed at (the
+        // red halo). Picture only: the weapon must still be a live contact of
+        // this side, so the flag drops as soon as the weapon is gone.
+        let targeted: BTreeSet<UnitId> = {
+            let pic = world
+                .get_resource::<SidePictures>()
+                .and_then(|p| p.sides.get(usize::from(side)));
+            world
+                .resource::<crate::weapons::Combat>()
+                .incoming
+                .iter()
+                .filter(|((s, contact), _)| {
+                    *s == side && pic.is_some_and(|p| p.get(*contact).is_some_and(|c| !c.lost))
+                })
+                .map(|(_, unit)| *unit)
+                .collect()
+        };
+
         for (&uid, &e) in &world.resource::<UnitIndex>().0 {
             if world.get::<Allegiance>(e).map(|a| a.side) != Some(side) {
                 continue;
@@ -578,8 +605,7 @@ impl ViewEncoder {
                 }
                 flags |= (status(g, posture) as u32) << flag::STATUS_SHIFT;
             }
-            let combat = world.resource::<crate::weapons::Combat>();
-            if combat.incoming.iter().any(|((s, _), u)| *s == side && *u == uid) {
+            if targeted.contains(&uid) {
                 flags |= flag::TARGETED;
             }
             rows.push(Row {
@@ -696,18 +722,30 @@ impl ViewEncoder {
             }
         }
 
+        // Effects this side may see (a launch flash is the shooter's alone),
+        // the newest `MAX_ROWS`, with their age.
         let combat = world.resource::<crate::weapons::Combat>();
         let now = clock.sim_time_ms;
         let mut erows: Vec<EffectRow> = Vec::new();
-        for eff in &combat.effects {
-            let age_ms = now.saturating_sub(eff.time_ms) as u32;
+        for eff in combat.effects.iter().filter(|e| {
+            e.sides
+                .checked_shr(u32::from(side))
+                .is_some_and(|b| b & 1 == 1)
+        }) {
+            let age_ms = now.saturating_sub(eff.time_ms);
+            if age_ms > effect::RETENTION_MS {
+                continue;
+            }
             erows.push(EffectRow {
                 lon: eff.at.lon_deg(),
                 lat: eff.at.lat_deg(),
                 alt: eff.alt_m,
-                age_ms,
+                age_ms: age_ms as u32,
                 kind: eff.kind,
             });
+        }
+        if erows.len() > effect::MAX_ROWS {
+            erows.drain(..erows.len() - effect::MAX_ROWS);
         }
 
         let n = rows.len();

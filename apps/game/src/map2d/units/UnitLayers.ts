@@ -3,14 +3,16 @@
 // circle with WP markers, and the drawing-tool preview. P4 adds contacts (dashed frame,
 // uncertainty ellipse and "(our estimate)" when estimated, bearing strobes, threat rings of
 // identified SAM types), satellites (yellow dot, two-line label, dashed ground tracks) and
-// the sensor rings of every own unit. P5 adds our weapons in flight (weaponLayers.ts).
+// the sensor rings of every own unit. P5 adds our weapons in flight (weaponLayers.ts); P6a the
+// red hostile-weapon glyphs, the targeted glow and the launch, intercept and hit effects
+// (effectLayers.ts).
 // Positions are dead-reckoned from the last
 // side view every animation frame (heading × speed × sim time since the view), and the
 // layers go straight to deck.gl, never through React state (doc 06 §1).
 import type { Layer, PickingInfo } from '@deck.gl/core';
 import { PathStyleExtension, type PathStyleExtensionProps } from '@deck.gl/extensions';
 import { IconLayer, PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
-import { CFLAG, contactDomain, EFFECT, FLAG, type GroupDetails, statusOf } from '@warboard/protocol';
+import { CFLAG, contactDomain, FLAG, type GroupDetails, RELATION, statusOf } from '@warboard/protocol';
 import {
   contactLabel,
   ESTIMATE_LINE,
@@ -19,6 +21,7 @@ import {
   iconKey,
   isAircraft,
   markAbove,
+  missileDataUrl,
   rgba,
   type TokenName,
   unitLabel,
@@ -27,6 +30,7 @@ import type { Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
 import type { EngineBridge } from '../../bridge';
 import { type LonLat, type Tool, ui } from '../../store';
 import type { LayerHub } from '../layerHub';
+import { effectLayers, haloLayer } from './effectLayers';
 import { destination, distance, geodesicCircle } from './geo';
 import { WeaponLayers } from './weaponLayers';
 
@@ -66,14 +70,9 @@ interface DrawnContact {
   side: IconSide;
   estimated: boolean;
   position: LonLat;
+  heading: number;
   label: string;
   isWeapon: boolean;
-}
-
-interface DrawnEffect {
-  position: LonLat;
-  radius: number;
-  color: [number, number, number, number];
 }
 
 interface DrawnSatellite {
@@ -138,6 +137,9 @@ interface TextItem {
 }
 
 const dash = new PathStyleExtension({ dash: true });
+/** A hostile weapon in our picture: the missile glyph in `weapon.enemy` (doc 10 §5, ref. 06). */
+const ENEMY_WEAPON_ICON = { url: missileDataUrl('weapon.enemy'), width: 32, height: 32, id: 'enemy-missile', mask: false };
+const ENEMY_WEAPON_PX = 20;
 /** Rough label box per character and line height, px (11 px italic Noto Sans). */
 const LABEL_CHAR_PX = 5.6;
 const LABEL_LINE_PX = 15;
@@ -152,6 +154,8 @@ export class UnitLayers {
   private contacts: DrawnContact[] = [];
   private tracks = new Map<number, { paths: LonLat[][]; at: number; pending: boolean }>();
   private readonly weapons = new WeaponLayers();
+  /** Last non-zero achieved speed (sim s per real s), for the effects' real-time scale. */
+  private effectSpeed = 1;
   private readonly offs: (() => void)[] = [];
 
   constructor(
@@ -209,11 +213,11 @@ export class UnitLayers {
       x,
       y,
       radius: 6,
-      layerIds: ['unit-icons', 'contact-icons', 'satellite-dots'],
+      layerIds: ['unit-icons', 'contact-icons', 'enemy-weapon-icons', 'satellite-dots'],
     }) as PickingInfo<DrawnUnit | DrawnContact | DrawnSatellite> | null;
     const d = info?.object;
     if (!d) return null;
-    if (info?.layer?.id === 'contact-icons') {
+    if (info?.layer?.id === 'contact-icons' || info?.layer?.id === 'enemy-weapon-icons') {
       return { id: d.id, base: false, aircraft: false, contact: true, satellite: false };
     }
     if (info?.layer?.id === 'satellite-dots') {
@@ -349,6 +353,8 @@ export class UnitLayers {
     const drawn: DrawnUnit[] = [];
     const satellites: DrawnSatellite[] = [];
     const groups = new Map<number, { index: number; count: number }>();
+    /** Rows of own units the engine flags as targeted by a weapon of our picture. */
+    const targetedRows: number[] = [];
     const at = (i: number): LonLat => {
       const p: LonLat = [u.lon[i] ?? 0, u.lat[i] ?? 0];
       const v = u.speedMps[i] ?? 0;
@@ -373,6 +379,7 @@ export class UnitLayers {
         });
         continue;
       }
+      if (flags & FLAG.TARGETED) targetedRows.push(i);
       const group = u.group[i] ?? 0;
       if (zoom >= MEMBERS_ZOOM || group === 0) {
         drawn.push({ id: group || id, symbol, position: at(i), label: strings.name(id), mark: markAbove(symbol), base: false });
@@ -419,6 +426,7 @@ export class UnitLayers {
       const estimated = (flags & CFLAG.ESTIMATED) !== 0;
       const symbol = cv.symbol[i] ?? 0;
       const isWeapon = symbol >= 120 && symbol <= 122;
+      // A hostile weapon: type, then speed (doc 10 §4.1, `SL-20` / `(4288 km/h)`).
       let label = isWeapon
         ? `${strings.contactType(id) || 'WEAPON'}\n(${Math.round(v * 3.6)} km/h)`
         : contactLabel({
@@ -429,12 +437,13 @@ export class UnitLayers {
             countMax: cv.countMax[i] ?? 1,
             countKnown: (flags & CFLAG.COUNT_KNOWN) !== 0,
           });
-      if (estimated) label += `\n${ESTIMATE_LINE}`;
-      contacts.push({ id, symbol, side, estimated, position: pos, label, isWeapon });
+      if (estimated && !isWeapon) label += `\n${ESTIMATE_LINE}`;
+      contacts.push({ id, symbol, side, estimated, position: pos, heading: cv.headingDeg[i] ?? 0, label, isWeapon });
       const a = cv.ellipseA[i] ?? 0;
       const b = cv.ellipseB[i] ?? 0;
       if (estimated && a > 50) {
-        ellipses.push({ path: ellipse(pos, a, Math.max(b, 50), cv.ellipseRotDeg[i] ?? 0), color: colour, width: 1, dashed: true });
+        const tint = isWeapon ? c('weapon.enemy', 0.8) : colour;
+        ellipses.push({ path: ellipse(pos, a, Math.max(b, 50), cv.ellipseRotDeg[i] ?? 0), color: tint, width: 1, dashed: true });
       }
       const threat = cv.threatM[i] ?? 0;
       if (state.threatRings && threat > 0) {
@@ -471,50 +480,31 @@ export class UnitLayers {
     if (details && selected) this.selectionOverlays(details, selected.position, paths, texts, waypoints);
     if (state.tool) this.toolOverlays(state.tool, paths, waypoints);
 
-    const targetedUnits = drawn.filter((d) => {
-      const idx = view.index.get(d.id);
-      return idx !== undefined && ((u.flags[idx] ?? 0) & FLAG.TARGETED) !== 0;
-    });
-
-    const effects: DrawnEffect[] = [];
-    const ev = view.effects;
-    for (let k = 0; k < ev.count; k++) {
-      const age = ev.ageMs[k] ?? 0;
-      if (age > 2000) continue;
-      const fade = Math.max(0, 1 - age / 2000);
-      const p: LonLat = [ev.lon[k] ?? 0, ev.lat[k] ?? 0];
-      const kind = ev.kind[k] ?? 0;
-      if (kind === EFFECT.LAUNCH) {
-        effects.push({ position: p, radius: 8 + (age / 2000) * 12, color: [255, 255, 255, Math.round(255 * fade)] });
-      } else if (kind === EFFECT.INTERCEPT) {
-        effects.push({ position: p, radius: 12 + (age / 2000) * 20, color: [78, 205, 196, Math.round(220 * fade)] });
-      } else if (kind === EFFECT.HIT) {
-        effects.push({ position: p, radius: 16 + (age / 2000) * 28, color: [255, 180, 80, Math.round(240 * fade)] });
+    // Targeted glow (doc 10 §5): own units the engine flags (a weapon of our picture is judged
+    // aimed at them), and contacts one of our own offensive weapons is flying at. Both come from
+    // the view; a collapsed group glows at its icon.
+    const halos: LonLat[] = [];
+    if (targetedRows.length > 0) {
+      const drawnAt = new Map(drawn.map((d) => [d.id, d.position]));
+      for (const i of targetedRows) {
+        const group = u.group[i] ?? 0;
+        const collapsed = group !== 0 && zoom < MEMBERS_ZOOM;
+        const p = collapsed ? drawnAt.get(group) : at(i);
+        if (p && !halos.some((h) => h[0] === p[0] && h[1] === p[1])) halos.push(p);
       }
+    }
+    if (view.weapons.count > 0) {
+      const aimedAt = new Set<number>();
+      const w = view.weapons;
+      for (let k = 0; k < w.count; k++) {
+        if ((w.relation[k] ?? 0) === RELATION.OURS && (w.target[k] ?? 0) !== 0) aimedAt.add(w.target[k] ?? 0);
+      }
+      for (const d of contacts) if (aimedAt.has(d.id) && !d.isWeapon) halos.push(d.position);
     }
 
     const size = zoom < SMALL_ZOOM ? 24 : 30;
     const layers: Layer[] = [
-      new ScatterplotLayer<DrawnUnit>({
-        id: 'targeted-halos',
-        data: targetedUnits,
-        getPosition: (d) => d.position,
-        getRadius: 34,
-        radiusUnits: 'pixels',
-        filled: true,
-        stroked: false,
-        getFillColor: [160, 84, 96, Math.round(255 * (0.35 + 0.15 * Math.sin(Date.now() / 300)))],
-      }),
-      new ScatterplotLayer<DrawnEffect>({
-        id: 'combat-effects',
-        data: effects,
-        getPosition: (d) => d.position,
-        getRadius: (d) => d.radius,
-        radiusUnits: 'pixels',
-        filled: true,
-        stroked: false,
-        getFillColor: (d) => d.color,
-      }),
+      haloLayer(halos, performance.now()),
       new PathLayer<Path, PathStyleExtensionProps<Path>>({
         id: 'contact-paths',
         data: [...tracks, ...ellipses],
@@ -556,12 +546,22 @@ export class UnitLayers {
       }),
       new IconLayer<DrawnContact>({
         id: 'contact-icons',
-        data: contacts,
+        data: contacts.filter((d) => !d.isWeapon),
         iconAtlas: this.atlas.image,
         iconMapping: this.atlas.mapping,
         getIcon: (d) => iconKey(d.symbol, d.side, d.estimated),
         getPosition: (d) => d.position,
         getSize: size,
+        sizeUnits: 'pixels',
+        pickable: true,
+      }),
+      new IconLayer<DrawnContact>({
+        id: 'enemy-weapon-icons',
+        data: contacts.filter((d) => d.isWeapon),
+        getIcon: () => ENEMY_WEAPON_ICON,
+        getPosition: (d) => d.position,
+        getAngle: (d) => -d.heading,
+        getSize: ENEMY_WEAPON_PX,
         sizeUnits: 'pixels',
         pickable: true,
       }),
@@ -582,8 +582,8 @@ export class UnitLayers {
         getPosition: (d) => d.position,
         getText: (d) => d.label,
         getSize: 11,
-        getColor: (d) => (d.isWeapon ? c('weapon.enemy') : c('label.unit')),
-        getPixelOffset: [0, size * 0.55 + 7],
+        getColor: (d) => (d.isWeapon ? c('weapon.enemy.label') : c('label.unit')),
+        getPixelOffset: (d) => [0, d.isWeapon ? ENEMY_WEAPON_PX * 0.5 + 6 : size * 0.55 + 7],
         getTextAnchor: 'middle',
         getAlignmentBaseline: 'top',
         fontFamily: 'Noto Sans',
@@ -705,7 +705,7 @@ export class UnitLayers {
         getPosition: (d) => d.position,
         getText: (d) => d.label,
         getSize: 11,
-        getColor: (d) => (d.isWeapon ? c('weapon.enemy') : c('label.unit')),
+        getColor: c('label.unit'),
         getPixelOffset: [0, size * 0.55 + 7],
         fontFamily: 'Noto Sans',
         fontWeight: 'italic',
@@ -740,6 +740,10 @@ export class UnitLayers {
     ];
     const contactAt = new Map(contacts.map((d) => [d.id, d.position]));
     layers.push(...this.weapons.layers(view, frame.receivedAt, strings, dtS, zoom, (id) => contactAt.get(id) ?? null));
+    // Flashes and bursts on top of everything else. While paused the last running speed keeps
+    // an effect at the same size instead of letting it jump.
+    if (simPerReal > 0) this.effectSpeed = simPerReal;
+    layers.push(...effectLayers(view, dtS, this.effectSpeed));
     this.hub.set('units', layers);
   }
 

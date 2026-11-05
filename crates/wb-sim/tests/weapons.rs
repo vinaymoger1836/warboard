@@ -234,6 +234,53 @@ fn calibration_report() {
     }
 }
 
+/// Effects in a side's view (header bytes 36..40).
+fn effect_rows(enc: &mut wb_sim::view::ViewEncoder, sim: &Sim, side: u8) -> u32 {
+    let v = enc.encode(sim.world(), side);
+    u32::from_le_bytes(v[36..40].try_into().expect("header"))
+}
+
+#[test]
+fn effects_reach_only_the_sides_that_may_see_them() {
+    use wb_sim::view::effect;
+    use wb_sim::weapons::Combat;
+    let (db, hash) = content();
+    let wix = WeaponIx(
+        db.weapons
+            .iter()
+            .position(|w| db.str(w.id) == "aim-120d")
+            .expect("AIM-120D") as u32,
+    );
+    let mut sim = setup(&db, hash, wix, 40_000.0);
+    let mut enc = wb_sim::view::ViewEncoder::new();
+    // The launch flash is the shooter's (side 0): the other side's view has none.
+    assert_eq!(effect_rows(&mut enc, &sim, 0), 1, "own launch flash");
+    assert_eq!(
+        effect_rows(&mut enc, &sim, 1),
+        0,
+        "enemy launch flash leaked"
+    );
+    let fx = &sim.world().resource::<Combat>().effects;
+    assert_eq!((fx[0].kind, fx[0].sides), (effect::LAUNCH, 0b01));
+    // Until the flight ends, and after it, each view holds what its mask allows.
+    for _ in 0..6_000 {
+        sim.step();
+        let fx = sim.world().resource::<Combat>().effects.clone();
+        for side in 0..2u8 {
+            let may = fx.iter().filter(|e| e.sides & (1 << side) != 0).count() as u32;
+            assert_eq!(effect_rows(&mut enc, &sim, side), may, "side {side}");
+        }
+        assert!(
+            fx.iter()
+                .all(|e| e.kind != effect::LAUNCH || e.sides == 0b01),
+            "a launch flash must stay with the shooter"
+        );
+    }
+    // Long after the flight the effects have expired by age.
+    assert!(sim.world().resource::<Combat>().effects.is_empty());
+    assert_eq!(effect_rows(&mut enc, &sim, 0), 0);
+}
+
 #[test]
 fn save_in_flight_reloads_to_the_same_hash() {
     let (db, hash) = content();

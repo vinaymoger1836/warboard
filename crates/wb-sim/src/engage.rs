@@ -224,7 +224,7 @@ fn class_of(rules: &Rules, c: &Contact) -> Option<TargetClass> {
 }
 
 /// Available fire channels for a shooter or composite system.
-fn available_fire_channels(
+pub(crate) fn available_fire_channels(
     world: &World,
     rules: &Rules,
     shooter: UnitId,
