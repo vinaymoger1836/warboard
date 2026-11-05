@@ -192,3 +192,9 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Decision.** Jammers carry `jam_strength` 0–10 per mode with coverage and sector; radars carry `jam_resistance` 0–10; seekers `seeker_resistance` 0–1. A realism-profile table maps the advantage to a detection-range multiplier; fixed game rules cover burn-through, sector, seekers, data links, navigation and emitter-homing weapons (doc 02 §9). P6b migrates `eccm_db` and `seeker_eccm` in the schema and seed content.
 **Alternatives.** Keep the formulas with guessed decibel values; drop electronic warfare.
 **Consequences.** + Same gameplay effects; easier data entry and balancing; a plainer, game-level hand-off. − Less physically grounded; effect sizes are set by balance testing.
+
+## ADR-035 Engine golden scenarios use generic test fixtures
+**Status — Accepted, 5 Nov 2026 (before P6a).**
+**Context.** Engine phases only need behaviour (detection, interception, jamming, damage), not real systems. Scenarios that stage strikes on named real units at real places add nothing to an engine test, and the P6 sessions in Claude Code were stopped by safety checks twice.
+**Decision.** From P6a on, golden scenarios use generic fixtures in `scenarios/fixtures/` (test frigate, test corvette, test SAM site with radar, launchers and command post, test fighter, test jammer, test anti-ship missile, test interceptor, test emitter-homing missile) with stats in the range of their class, at a neutral open-sea test area with `test_territory`. Engine-phase sessions do not read `content/` beyond the schema. Real systems and the real map stay in content and packs; the P8 test bench checks them against the same bands. Existing G1–G9 stay as they are.
+**Consequences.** + Engine tests are smaller, faster and independent of content edits; real-system data can change without breaking CI. − Fixtures must be kept in plausible ranges; real-system checks move to P8.

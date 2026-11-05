@@ -66,7 +66,7 @@ Content work (P8) can start in parallel from P4 onwards: YAML entries need only 
 
 ## 3. Golden scenarios
 
-Stored in `scenarios/golden/` with expected bands; Monte Carlo ones run 500 seeds in CI (native). Bands are first estimates; changing one is an explicit decision recorded in the scenario file.
+Stored in `scenarios/golden/` with expected bands. From G10 on they use **generic test fixtures** (ADR-035): units and weapons in `scenarios/fixtures/` at a neutral test sea area, not real systems or places. Real systems are checked against these behaviours with the P8 test bench. Monte Carlo ones run 500 seeds in CI (native). Bands are first estimates; changing one is an explicit decision recorded in the scenario file.
 
 | ID | Scenario | Expected |
 |---|---|---|
@@ -79,10 +79,10 @@ Stored in `scenarios/golden/` with expected bands; Monte Carlo ones run 500 seed
 | G7 | F-35A patrol with and without tanker | Tanker doubles time on station; without, lands with ≥ reserve fuel |
 | G8 | ROE Bravo, hostile flight along the border | Never engaged outside; engaged within 60 s after crossing; return fire allowed |
 | G9 | ROE Charlie under missile attack | Self-defence intercepts without approval; other shots queued |
-| G10 | 12 × JSM vs 2 × FREMM | 60–95% of missiles intercepted or decoyed; each FREMM engages threats to itself first |
-| G11 | Stand-off jammer vs S-400 tracking a Rafale | Detection range reduced 20–50%; burn-through at short range |
-| G12 | AARGM-ER vs S-400 radar that shuts down | Pk drops by ≥ 40% |
-| G13 | Operation Rising Sun | Runs end to end; phases 4 and 5 start on the same tick |
+| G10 | 12 test anti-ship missiles vs 2 test frigates (fixtures) | 60–95% of missiles intercepted or decoyed; each frigate engages threats to itself first |
+| G11 | Test stand-off jammer vs test SAM radar tracking a test fighter (fixtures) | Detection range reduced 20–50%; burn-through at short range |
+| G12 | Test emitter-homing missile vs test SAM radar that shuts down (fixtures) | Pk drops by ≥ 40% |
+| G13 | Six-phase test operation shaped like Rising Sun, on fixtures in the test sea area | Runs end to end; phases 4 and 5 start on the same tick |
 | G14 | G13 native vs WASM | Identical state hash |
 | G15 | 2,000-unit benchmark | ≤ 6 ms average tick |
 
