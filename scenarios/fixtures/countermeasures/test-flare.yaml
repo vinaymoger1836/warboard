@@ -3,7 +3,5 @@ kind: countermeasure
 name: Test Flare
 cm_type: flare
 defeats: [ir]
-duration_s: 8
 effect: 0.7
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
-
