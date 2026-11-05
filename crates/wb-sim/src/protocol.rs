@@ -81,6 +81,13 @@ mod tests {
         }
         lines.push("} as const;".to_owned());
         lines.push(String::new());
+        lines.push("/** Visual effect kinds. */".to_owned());
+        lines.push("export const EFFECT = {".to_owned());
+        for (name, v) in crate::view::EFFECT_NAMES {
+            lines.push(format!("  {name}: {v},"));
+        }
+        lines.push("} as const;".to_owned());
+        lines.push(String::new());
         lines.push("/** Status names by value (bits 8–11 of `flags`). */".to_owned());
         let names: Vec<String> = crate::view::STATUS_NAMES
             .iter()

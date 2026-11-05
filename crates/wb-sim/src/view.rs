@@ -68,6 +68,18 @@ pub mod flag {
     /// Bits 8–11 hold a [`super::Status`].
     pub const STATUS_SHIFT: u32 = 8;
     pub const STATUS_MASK: u32 = 0xF << STATUS_SHIFT;
+    /// Targeted by an incoming hostile weapon (pulsing red halo, doc 10 §5).
+    pub const TARGETED: u32 = 1 << 12;
+}
+
+/// Visual effect kinds.
+pub mod effect {
+    /// Launch flash at the shooter.
+    pub const LAUNCH: u8 = 1;
+    /// Intercept burst (cyan).
+    pub const INTERCEPT: u8 = 2;
+    /// Hit burst (amber-white).
+    pub const HIT: u8 = 3;
 }
 
 /// Contact `flags` bits.
@@ -163,6 +175,14 @@ pub const FLAG_NAMES: &[(&str, u32)] = &[
     ("BINGO", flag::BINGO),
     ("STATUS_SHIFT", flag::STATUS_SHIFT),
     ("STATUS_MASK", flag::STATUS_MASK),
+    ("TARGETED", flag::TARGETED),
+];
+
+/// Visual effect kinds by name, for the generated TS.
+pub const EFFECT_NAMES: &[(&str, u8)] = &[
+    ("LAUNCH", effect::LAUNCH),
+    ("INTERCEPT", effect::INTERCEPT),
+    ("HIT", effect::HIT),
 ];
 
 /// Icon codes, shared with `packages/symbols` (atlas) through the generated
@@ -399,6 +419,15 @@ struct WRow {
     relation: u8,
 }
 
+/// One row of the effects section.
+struct EffectRow {
+    lon: f64,
+    lat: f64,
+    alt: f32,
+    age_ms: u32,
+    kind: u8,
+}
+
 /// Builds side views; remembers which strings each client already has.
 #[derive(Default)]
 pub struct ViewEncoder {
@@ -549,6 +578,10 @@ impl ViewEncoder {
                 }
                 flags |= (status(g, posture) as u32) << flag::STATUS_SHIFT;
             }
+            let combat = world.resource::<crate::weapons::Combat>();
+            if combat.incoming.iter().any(|((s, _), u)| *s == side && *u == uid) {
+                flags |= flag::TARGETED;
+            }
             rows.push(Row {
                 id: uid.0,
                 flags,
@@ -663,6 +696,20 @@ impl ViewEncoder {
             }
         }
 
+        let combat = world.resource::<crate::weapons::Combat>();
+        let now = clock.sim_time_ms;
+        let mut erows: Vec<EffectRow> = Vec::new();
+        for eff in &combat.effects {
+            let age_ms = now.saturating_sub(eff.time_ms) as u32;
+            erows.push(EffectRow {
+                lon: eff.at.lon_deg(),
+                lat: eff.at.lat_deg(),
+                alt: eff.alt_m,
+                age_ms,
+                kind: eff.kind,
+            });
+        }
+
         let n = rows.len();
         let b = &mut self.buf;
         b.clear();
@@ -675,7 +722,7 @@ impl ViewEncoder {
         b.extend_from_slice(&(n as u32).to_le_bytes());
         b.extend_from_slice(&(crows.len() as u32).to_le_bytes());
         b.extend_from_slice(&(wrows.len() as u32).to_le_bytes());
-        b.extend_from_slice(&0u32.to_le_bytes()); // effects (not sent yet)
+        b.extend_from_slice(&(erows.len() as u32).to_le_bytes());
         b.extend_from_slice(&(strings.len() as u32).to_le_bytes());
         let strings_len: usize = strings.iter().map(|s| 7 + s.2.len()).sum();
         b.extend_from_slice(&(strings_len as u32).to_le_bytes());
@@ -773,7 +820,26 @@ impl ViewEncoder {
         wcol!(speed);
         wcol!(symbol);
         wcol!(relation);
-        // Effects: none yet.
+        for e in &erows {
+            b.extend_from_slice(&e.lon.to_le_bytes());
+        }
+        pad(b);
+        for e in &erows {
+            b.extend_from_slice(&e.lat.to_le_bytes());
+        }
+        pad(b);
+        for e in &erows {
+            b.extend_from_slice(&e.alt.to_le_bytes());
+        }
+        pad(b);
+        for e in &erows {
+            b.extend_from_slice(&e.age_ms.to_le_bytes());
+        }
+        pad(b);
+        for e in &erows {
+            b.push(e.kind);
+        }
+        pad(b);
         for (id, kind, s) in &strings {
             b.extend_from_slice(&id.to_le_bytes());
             b.push(*kind);

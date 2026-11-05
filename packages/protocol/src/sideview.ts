@@ -68,6 +68,16 @@ export interface WeaponColumns {
   relation: Uint8Array;
 }
 
+/** Visual combat effects (doc 10 §5: launch flash, intercept burst, hit burst). */
+export interface EffectColumns {
+  count: number;
+  lon: Float64Array;
+  lat: Float64Array;
+  altM: Float32Array;
+  ageMs: Uint32Array;
+  kind: Uint8Array;
+}
+
 export interface SideView {
   buffer: ArrayBuffer;
   side: number;
@@ -76,6 +86,7 @@ export interface SideView {
   units: UnitColumns;
   contacts: ContactColumns;
   weapons: WeaponColumns;
+  effects: EffectColumns;
   /** Index of each unit id in the unit columns. */
   index: Map<number, number>;
   /** Index of each contact id in the contact columns. */
@@ -145,7 +156,6 @@ export function decodeSideView(buffer: ArrayBuffer, strings: StringTable): SideV
   const nWeapons = dv.getUint32(32, true);
   const nEffects = dv.getUint32(36, true);
   const nStrings = dv.getUint32(40, true);
-  if (nEffects !== 0) throw new Error('Effects are not supported yet');
 
   let at = VIEW_HEADER_BYTES;
   const col = <T>(make: (b: ArrayBuffer, off: number, len: number) => T, size: number, len: number): T => {
@@ -209,6 +219,15 @@ export function decodeSideView(buffer: ArrayBuffer, strings: StringTable): SideV
     symbol: u16(nw),
     relation: u8(nw),
   };
+  const ne = nEffects;
+  const effects: EffectColumns = {
+    count: ne,
+    lon: f64(ne),
+    lat: f64(ne),
+    altM: f32(ne),
+    ageMs: u32(ne),
+    kind: u8(ne),
+  };
 
   for (let i = 0; i < nStrings; i++) {
     const id = dv.getUint32(at, true);
@@ -231,6 +250,7 @@ export function decodeSideView(buffer: ArrayBuffer, strings: StringTable): SideV
     units,
     contacts,
     weapons,
+    effects,
     index,
     contactIndex,
   };
