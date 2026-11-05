@@ -28,8 +28,9 @@ use bevy_ecs::prelude::*;
 use std::collections::BTreeMap;
 use wb_content::compiled::{Weapon, WeaponIx};
 use wb_content::source::realism::Subsystem;
+use wb_content::source::weapon::ProfileKind;
 use wb_content::source::world::LaunchDoctrine;
-use wb_content::source::{Domain, StationKind, TargetClass};
+use wb_content::source::{Domain, StationKind, TargetClass, WeaponCategory};
 use wb_core::geo::{LatLon, destination_point, distance_m, initial_bearing};
 use wb_core::math::cos;
 use wb_core::{ContactId, UnitId};
@@ -56,6 +57,8 @@ struct Shooter {
     air: bool,
     /// Weapons with rounds left on usable stations, by weapon.
     rounds: Vec<(WeaponIx, u32)>,
+    /// Full capacity on usable stations, by weapon.
+    capacities: BTreeMap<WeaponIx, u32>,
 }
 
 /// The engage stage.
@@ -71,11 +74,13 @@ pub fn run(world: &mut World) {
     roe::borders(world, &rules);
 
     let mut inflight: BTreeMap<(u8, ContactId), u32> = BTreeMap::new();
+    let mut inflight_by_shooter: BTreeMap<UnitId, u32> = BTreeMap::new();
     for &e in world.resource::<UnitIndex>().0.values() {
-        if let (Some(f), Some(a)) = (world.get::<WeaponFlight>(e), world.get::<Allegiance>(e))
-            && let WeaponTarget::Track { contact, .. } = f.target
-        {
-            *inflight.entry((a.side, contact)).or_default() += 1;
+        if let (Some(f), Some(a)) = (world.get::<WeaponFlight>(e), world.get::<Allegiance>(e)) {
+            *inflight_by_shooter.entry(f.shooter).or_default() += 1;
+            if let WeaponTarget::Track { contact, .. } = f.target {
+                *inflight.entry((a.side, contact)).or_default() += 1;
+            }
         }
     }
     let mut q = world.query::<(&crate::components::Identity, &Group, &Allegiance)>();
@@ -104,6 +109,7 @@ pub fn run(world: &mut World) {
             gid,
             &shooters,
             &mut inflight,
+            &mut inflight_by_shooter,
             &mut incoming,
             now,
         );
@@ -178,10 +184,14 @@ fn shooters(world: &World, rules: &Rules, g: &Group) -> Vec<Shooter> {
             })
         };
         let mut rounds: BTreeMap<WeaponIx, u32> = BTreeMap::new();
+        let mut capacities: BTreeMap<WeaponIx, u32> = BTreeMap::new();
         for s in &mag.stations {
             let kind = p.stations.get(s.station as usize).map(|st| st.kind);
             if s.count > 0 && !kind.is_some_and(out_kind) {
                 *rounds.entry(s.weapon).or_default() += s.count;
+            }
+            if !kind.is_some_and(out_kind) {
+                *capacities.entry(s.weapon).or_default() += s.full;
             }
         }
         if rounds.is_empty() {
@@ -192,6 +202,7 @@ fn shooters(world: &World, rules: &Rules, g: &Group) -> Vec<Shooter> {
             pos: k.pos(),
             air: rules.is_air(p),
             rounds: rounds.into_iter().collect(),
+            capacities,
         });
     }
     out
@@ -212,33 +223,127 @@ fn class_of(rules: &Rules, c: &Contact) -> Option<TargetClass> {
     }
 }
 
+/// Available fire channels for a shooter or composite system.
+fn available_fire_channels(
+    world: &World,
+    rules: &Rules,
+    shooter: UnitId,
+    group: Option<&Group>,
+) -> u32 {
+    let mut channels = 0;
+    if let Some(g) = group
+        && g.system.is_some()
+    {
+        for m in &g.members {
+            if let Some(me) = entity(world, *m) {
+                let health = world.get::<Health>(me);
+                if health.is_some_and(|h| h.has_out(Subsystem::Radar)) {
+                    continue;
+                }
+                if let Some(p) = world.get::<PlatformRef>(me).map(|p| rules.platform(p.0)) {
+                    for sm in &p.sensors {
+                        if let Some(r) = rules.db.sensors[sm.sensor.0 as usize].radar.as_ref() {
+                            channels += r.fire_channels;
+                        }
+                    }
+                }
+            }
+        }
+    } else if let Some(se) = entity(world, shooter) {
+        let health = world.get::<Health>(se);
+        if !health.is_some_and(|h| h.has_out(Subsystem::Radar)) {
+            if let Some(p) = world.get::<PlatformRef>(se).map(|p| rules.platform(p.0)) {
+                for sm in &p.sensors {
+                    if let Some(r) = rules.db.sensors[sm.sensor.0 as usize].radar.as_ref() {
+                        channels += r.fire_channels;
+                    }
+                }
+            }
+        }
+    }
+    if channels == 0 {
+        channels = 2;
+    }
+    channels
+}
+
 /// Whether the shooter may fire at a contact: its own confirmed radar track
 /// on the contact (fire control needs no report to reach the side's
 /// picture), a fresh own detection at track quality, or, for weapons that
 /// engage on remote tracks, the side's track.
-fn has_track(world: &World, c: &Contact, shooter: UnitId, w: &Weapon, now: u64) -> bool {
+fn has_track(
+    world: &World,
+    c: &Contact,
+    group: Option<&Group>,
+    shooter: UnitId,
+    w: &Weapon,
+    now: u64,
+) -> bool {
     if c.lost || c.est.is_none() {
         return false;
     }
+    // If the group is in autonomous transition delay, it cannot track or engage.
+    if let Some(g) = group {
+        if let Some(t) = g.autonomous_after_ms {
+            if now < t {
+                return false;
+            }
+        }
+    }
+    let is_autonomous = group
+        .and_then(|g| g.autonomous_after_ms)
+        .is_some_and(|t| now >= t);
+
     let pics = world.resource::<SidePictures>();
-    let own_radar = pics
-        .tracks
-        .range((shooter, 0, UnitId(0))..=(shooter, u8::MAX, UnitId(u32::MAX)))
-        .any(|((_, _, t), st)| {
-            st.confirmed
-                && (*t == c.truth
-                    || entity(world, *t)
-                        .and_then(|e| world.get::<crate::components::GroupMember>(e))
-                        .is_some_and(|m| m.group == c.truth))
-        });
+    let is_own_observer = |obs: UnitId| {
+        obs == shooter || group.is_some_and(|g| g.members.contains(&obs))
+    };
+
+    let own_radar = group.map_or_else(
+        || {
+            pics.tracks
+                .range((shooter, 0, UnitId(0))..=(shooter, u8::MAX, UnitId(u32::MAX)))
+                .any(|((_, _, t), st)| {
+                    st.confirmed
+                        && (*t == c.truth
+                            || entity(world, *t)
+                                .and_then(|e| world.get::<crate::components::GroupMember>(e))
+                                .is_some_and(|m| m.group == c.truth))
+                })
+        },
+        |g| {
+            g.members.iter().any(|m| {
+                pics.tracks
+                    .range((*m, 0, UnitId(0))..=(*m, u8::MAX, UnitId(u32::MAX)))
+                    .any(|((_, _, t), st)| {
+                        st.confirmed
+                            && (*t == c.truth
+                                || entity(world, *t)
+                                    .and_then(|e| world.get::<crate::components::GroupMember>(e))
+                                    .is_some_and(|mem| mem.group == c.truth))
+                    })
+            })
+        },
+    );
     if own_radar {
         return true;
     }
-    c.quality <= Quality::Track
-        && (w.engage_on_remote
-            || c.sources
-                .iter()
-                .any(|s| s.observer == shooter && now.saturating_sub(s.last_ms) <= TRACK_FRESH_MS))
+
+    let own_source = c
+        .sources
+        .iter()
+        .any(|s| is_own_observer(s.observer) && now.saturating_sub(s.last_ms) <= TRACK_FRESH_MS);
+
+    if own_source {
+        return c.quality <= Quality::Track;
+    }
+
+    // In autonomous mode, the site cannot use remote tracks from external units.
+    if is_autonomous {
+        return false;
+    }
+
+    c.quality <= Quality::Track && w.engage_on_remote
 }
 
 /// A contact's estimate dead-reckoned to now, and its speed toward `from`.
@@ -305,118 +410,248 @@ fn self_defence(
     gid: UnitId,
     shooters: &[Shooter],
     inflight: &mut BTreeMap<(u8, ContactId), u32>,
+    inflight_by_shooter: &mut BTreeMap<UnitId, u32>,
     incoming: &mut BTreeMap<(u8, ContactId), (UnitId, f64)>,
     now: u64,
 ) {
     let rr = &rules.realism().roe;
     let assess_ms = (rules.realism().tewa.kill_assessment_s * 1_000.0) as u64;
-    // Threats to any member, earliest impact first.
-    let mut threats: Vec<(f64, ContactId, UnitId)> = Vec::new();
-    {
-        let pics = world.resource::<SidePictures>();
-        let Some(pic) = pics.sides.get(usize::from(side)) else {
-            return;
-        };
-        let members: Vec<(UnitId, LatLon)> = entity(world, gid)
-            .and_then(|e| world.get::<Group>(e))
-            .map(|g| {
-                g.members
-                    .iter()
-                    .filter_map(|m| {
-                        let k = entity(world, *m).and_then(|e| world.get::<Kinematics>(e))?;
-                        Some((*m, k.pos()))
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-        for c in pic.contacts.values() {
-            if !matches!(c.type_ref, TypeRef::Weapon(_))
-                || c.identity == ContactIdentity::Friendly
-                || c.lost
-            {
-                continue;
-            }
-            for (m, at) in &members {
-                let Some((tp, _, v_close)) = geometry(c, *at, now) else {
-                    continue;
-                };
-                let Some(e) = c.est else { continue };
-                // Closest approach of a straight-line threat.
-                let d = distance_m(tp, *at);
-                let brg = initial_bearing(tp, *at);
-                let across = d * wb_core::math::sin(e.heading - brg).abs();
-                let tti = if v_close > 1.0 {
-                    d / v_close
-                } else {
-                    f64::INFINITY
-                };
-                if across <= rr.threat_cpa_m && tti <= rr.threat_horizon_s {
-                    threats.push((tti, c.id, *m));
-                    break;
+
+    let ge = entity(world, gid);
+    let g = ge.and_then(|e| world.get::<Group>(e).cloned());
+    let country = ge
+        .and_then(|e| world.get::<Allegiance>(e))
+        .map(|a| a.country);
+    let doc = country.map(|c| &rules.db.doctrines[rules.db.countries[c.0 as usize].doctrine.0 as usize]);
+    let reserve_fraction = doc.map_or(0.0, |d| d.missile_reserve_fraction);
+
+    // Friendly ships and ground units to defend
+    let friendlies: Vec<(UnitId, LatLon)> = {
+        let index = world.resource::<UnitIndex>();
+        index
+            .0
+            .iter()
+            .filter_map(|(uid, e)| {
+                let alg = world.get::<Allegiance>(*e)?;
+                if alg.side != side {
+                    return None;
                 }
+                let p = world.get::<PlatformRef>(*e).map(|p| rules.platform(p.0))?;
+                if rules.is_air(p) {
+                    return None;
+                }
+                let k = world.get::<Kinematics>(*e)?;
+                Some((*uid, k.pos()))
+            })
+            .collect()
+    };
+
+    let pics = world.resource::<SidePictures>();
+    let Some(pic) = pics.sides.get(usize::from(side)) else {
+        return;
+    };
+
+    let mut all_threats: Vec<(ContactId, UnitId, f64, f64)> = Vec::new();
+    for c in pic.contacts.values() {
+        if !matches!(c.type_ref, TypeRef::Weapon(_))
+            || c.identity == ContactIdentity::Friendly
+            || c.lost
+        {
+            continue;
+        }
+        let warhead_kg = match c.type_ref {
+            TypeRef::Weapon(wix) => rules.db.weapons[wix.0 as usize].warhead_kg,
+            _ => 100.0,
+        };
+        for (target_uid, target_pos) in &friendlies {
+            let Some((tp, _, v_close)) = geometry(c, *target_pos, now) else {
+                continue;
+            };
+            let Some(e) = c.est else { continue };
+            let d = distance_m(tp, *target_pos);
+            let brg = initial_bearing(tp, *target_pos);
+            let across = d * wb_core::math::sin(e.heading - brg).abs();
+            let tti = if v_close > 1.0 {
+                d / v_close
+            } else {
+                f64::INFINITY
+            };
+            if across <= rr.threat_cpa_m && tti <= rr.threat_horizon_s {
+                all_threats.push((c.id, *target_uid, tti, warhead_kg));
+                incoming.entry((side, c.id)).or_insert((*target_uid, tti));
+                break;
             }
         }
     }
-    threats.sort_by(|a, b| a.0.total_cmp(&b.0).then(a.1.cmp(&b.1)));
-    for (tti, contact, unit) in threats {
-        incoming.entry((side, contact)).or_insert((unit, tti));
-        if inflight.get(&(side, contact)).copied().unwrap_or(0) > 0 {
+
+    if all_threats.is_empty() {
+        return;
+    }
+
+    for s in shooters {
+        if s.air || !roe::effective(world, side, s.uid).2 {
             continue;
         }
-        let last = world
-            .resource::<Combat>()
-            .last_end
-            .get(&(side, contact))
-            .copied();
-        if last.is_some_and(|t| now.saturating_sub(t) < assess_ms) {
-            continue;
+
+        let mut prioritized: Vec<(u8, f64, f64, ContactId, UnitId)> = Vec::new();
+        for (contact, target_uid, tti, warhead_kg) in &all_threats {
+            let bucket = if *target_uid == s.uid { 0u8 } else { 1u8 };
+            prioritized.push((bucket, *tti, *warhead_kg, *contact, *target_uid));
         }
-        let Some(c) = world
-            .resource::<SidePictures>()
-            .sides
-            .get(usize::from(side))
-            .and_then(|p| p.get(contact))
-            .cloned()
-        else {
-            continue;
+        // Threat order: bucket asc (self first), tti asc, lethality desc, contact id asc
+        prioritized.sort_by(|a, b| {
+            a.0.cmp(&b.0)
+                .then(a.1.total_cmp(&b.1))
+                .then(b.2.total_cmp(&a.2))
+                .then(a.3.cmp(&b.3))
+        });
+
+        let total_channels = available_fire_channels(world, rules, s.uid, g.as_ref());
+        let used_channels = if let Some(g) = g.as_ref()
+            && g.system.is_some()
+        {
+            g.members
+                .iter()
+                .map(|m| inflight_by_shooter.get(m).copied().unwrap_or(0))
+                .sum::<u32>()
+        } else {
+            inflight_by_shooter.get(&s.uid).copied().unwrap_or(0)
         };
-        for s in shooters {
-            if s.air || !roe::effective(world, side, s.uid).2 {
+        let mut free_channels = total_channels.saturating_sub(used_channels);
+
+        for (bucket, tti, _, contact, _) in prioritized {
+            let current_inflight = inflight.get(&(side, contact)).copied().unwrap_or(0);
+            if current_inflight >= 2 {
                 continue;
             }
+            let last = world
+                .resource::<Combat>()
+                .last_end
+                .get(&(side, contact))
+                .copied();
+            if last.is_some_and(|t| now.saturating_sub(t) < assess_ms) {
+                continue;
+            }
+            let Some(c) = world
+                .resource::<SidePictures>()
+                .sides
+                .get(usize::from(side))
+                .and_then(|p| p.get(contact))
+                .cloned()
+            else {
+                continue;
+            };
             let Some((at, _, v_close)) = geometry(&c, s.pos, now) else {
                 continue;
             };
             let range = distance_m(s.pos, at);
-            // Layers (doc 02 §12): the longest reach first.
-            let pick = s
-                .rounds
-                .iter()
-                .map(|r| (r.0, rules.flyout(r.0).max_range(v_close)))
-                .filter(|(wix, reach)| {
-                    let w = &rules.db.weapons[wix.0 as usize];
-                    fits(rules, w, &c)
-                        && has_track(world, &c, s.uid, w, now)
-                        && range >= w.profile.min_range_m
-                        && range <= *reach
-                })
-                .max_by(|a, b| a.1.total_cmp(&b.1).then(b.0.cmp(&a.0)))
-                .map(|x| x.0);
-            let Some(wix) = pick else { continue };
-            if launch(
-                world,
-                &Launch {
-                    shooter: s.uid,
-                    weapon: wix,
-                    aim: Aim::Contact(contact),
-                    salvo: None,
-                    reason: LaunchReason::SelfDefence,
-                },
-            )
-            .is_ok()
-            {
-                *inflight.entry((side, contact)).or_default() += 1;
-                break;
+            let Some(e) = c.est else { continue };
+
+            let ciws_max = rules.realism().tewa.ciws_layer_max_m;
+            let in_ciws = range <= ciws_max;
+
+            let mut candidates: Vec<(WeaponIx, f64, bool, u32)> = Vec::new();
+            for (wix, count) in &s.rounds {
+                let w = &rules.db.weapons[wix.0 as usize];
+                if !fits(rules, w, &c) {
+                    continue;
+                }
+                if !has_track(world, &c, g.as_ref(), s.uid, w, now) {
+                    continue;
+                }
+                let is_ciws = matches!(w.category, WeaponCategory::Shell);
+                let full_cap = s.capacities.get(wix).copied().unwrap_or(*count);
+                let reserve = (full_cap as f64 * reserve_fraction).round() as u32;
+                let available_rounds = if bucket == 0 {
+                    *count
+                } else {
+                    count.saturating_sub(reserve)
+                };
+                if available_rounds == 0 {
+                    continue;
+                }
+                if !is_ciws && free_channels == 0 {
+                    continue;
+                }
+                let v_max = w.profile.max_speed_mach * rules.speed_of_sound(e.alt_m);
+                let v_avg = f64::max(0.75 * v_max, 200.0);
+                let t_int = f64::max(range / (v_avg + v_close), 0.1);
+                let pip = destination_point(at, e.heading, e.speed_mps * t_int);
+                let d_pip = distance_m(s.pos, pip);
+                let reach = rules.flyout(*wix).max_range(v_close);
+                if d_pip < w.profile.min_range_m || d_pip > reach {
+                    continue;
+                }
+                if let Some(env) = &w.envelope {
+                    if e.alt_m < env.min_alt_m || e.alt_m > env.max_alt_m {
+                        continue;
+                    }
+                }
+                candidates.push((*wix, reach, is_ciws, available_rounds));
+            }
+
+            if candidates.is_empty() {
+                continue;
+            }
+
+            candidates.sort_by(|a, b| {
+                if in_ciws {
+                    b.2.cmp(&a.2).then(b.1.total_cmp(&a.1))
+                } else {
+                    a.2.cmp(&b.2).then(b.1.total_cmp(&a.1))
+                }
+            });
+
+            let (chosen_wix, _, is_ciws, available_rounds) = candidates[0];
+            let w = &rules.db.weapons[chosen_wix.0 as usize];
+
+            let v_max = w.profile.max_speed_mach * rules.speed_of_sound(e.alt_m);
+            let v_avg = f64::max(0.75 * v_max, 200.0);
+            let t_flight = range / v_avg;
+            let assess_s = rules.realism().tewa.kill_assessment_s;
+            let can_look = tti >= (2.0 * t_flight + assess_s);
+
+            if current_inflight >= 1 && can_look {
+                continue;
+            }
+
+            let desired: u32 = if can_look {
+                1
+            } else if e.speed_mps >= 340.0 || w.profile.kind == ProfileKind::Ballistic {
+                2
+            } else {
+                1
+            };
+            let needed = desired.saturating_sub(current_inflight);
+            let max_possible = if is_ciws {
+                needed.min(available_rounds)
+            } else {
+                needed.min(available_rounds).min(free_channels)
+            };
+
+            let mut fired = 0;
+            for _ in 0..max_possible {
+                if launch(
+                    world,
+                    &Launch {
+                        shooter: s.uid,
+                        weapon: chosen_wix,
+                        aim: Aim::Contact(contact),
+                        salvo: None,
+                        reason: LaunchReason::SelfDefence,
+                    },
+                )
+                .is_ok()
+                {
+                    fired += 1;
+                    if !is_ciws {
+                        free_channels = free_channels.saturating_sub(1);
+                        *inflight_by_shooter.entry(s.uid).or_default() += 1;
+                    }
+                }
+            }
+            if fired > 0 {
+                *inflight.entry((side, contact)).or_default() += fired;
             }
         }
     }
@@ -568,7 +803,7 @@ fn offensive(
                 .filter(|wix| {
                     let w = &rules.db.weapons[wix.0 as usize];
                     fits(rules, w, &c)
-                        && has_track(world, &c, s.uid, w, now)
+                        && has_track(world, &c, Some(g), s.uid, w, now)
                         && range >= w.profile.min_range_m
                         && range <= doctrine_range(rules, *wix, doc, v_close, v_escape)
                 })

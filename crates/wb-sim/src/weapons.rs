@@ -88,7 +88,7 @@ pub struct Combat {
 }
 
 /// Statistics of a salvo in flight.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SalvoStats {
     pub side: u8,
     pub shooter: UnitId,
