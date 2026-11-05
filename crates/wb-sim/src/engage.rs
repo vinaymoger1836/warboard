@@ -452,6 +452,9 @@ fn self_defence(
     };
 
     let mut all_threats: Vec<(ContactId, UnitId, f64, f64)> = Vec::new();
+    if pic.contacts.is_empty() {
+        // eprintln!("DEBUG: pic.contacts is empty on tick {}", world.resource::<SimClock>().tick);
+    }
     for c in pic.contacts.values() {
         if !matches!(c.type_ref, TypeRef::Weapon(_))
             || c.identity == ContactIdentity::Friendly

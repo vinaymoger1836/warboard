@@ -705,7 +705,7 @@ export class UnitLayers {
         getPosition: (d) => d.position,
         getText: (d) => d.label,
         getSize: 11,
-        getColor: c('label.unit'),
+        getColor: (d) => (d.isWeapon ? c('weapon.enemy') : c('label.unit')),
         getPixelOffset: [0, size * 0.55 + 7],
         fontFamily: 'Noto Sans',
         fontWeight: 'italic',

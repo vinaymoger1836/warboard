@@ -7,7 +7,7 @@ target_class: radar_site
 mobility: { road_speed_kmh: 50 }
 signature: { rcs_m2: { front: 30, side: 40, rear: 30, top: 60 } }
 sensors:
-  - { sensor: test-ew-radar }
+  - { sensor: test-ew-radar, height_m: 25 }
 durability: { model: ground, damage_points: 60 }
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
 
