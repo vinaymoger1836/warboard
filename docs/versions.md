@@ -2,7 +2,7 @@
 
 Every tool and dependency is pinned exactly. Upgrade only between phases (doc 08, R10) and update this file in the same change. Licences are checked against the CLAUDE.md rule 7 allowlist; Rust crates (including transitive ones) are enforced by `cargo deny check` (`deny.toml`).
 
-Last updated: 3 Nov 2026 (P5). No new dependency in P4 or P5.
+Last updated: 5 Nov 2026 (P6a). No new dependency in P4, P5 or P6a.
 
 ## Toolchains
 
@@ -122,8 +122,8 @@ Runner image: `ubuntu-24.04`.
 | Format | Version | Defined in |
 |---|---|---|
 | Content pack schema | 4 (P5: weapon flight, guidance, Pk and countermeasure fields; loadouts; realism `weapons`, `endgame` incl. `nominal_speed_fraction`, `countermeasures`, `damage`, `roe` incl. `territory_sigma`) | `crates/wb-content/src/pack.rs` |
-| State hash | 4 (P5: snapshot adds weapons in flight, magazines, health, ROE settings and requests, combat state) | `crates/wb-sim/src/snapshot.rs` |
-| `SideView` | 3 (P5: weapons section with shooter, target contact and tag; `RELATION`; weapon symbols 120–122) | `crates/wb-sim/src/view.rs`, doc 06 §3 |
+| State hash | 4 (P5: snapshot adds weapons in flight, magazines, health, ROE settings and requests, combat state; P6a: the effect struct changed, so P5 saves are refused, number unchanged) | `crates/wb-sim/src/snapshot.rs` |
+| `SideView` | 3 (P5: weapons section with shooter, target contact and tag; `RELATION`; weapon symbols 120–122; P6a: effects section filled and filtered by side, weapon contacts carry a weapon symbol, wire format unchanged) | `crates/wb-sim/src/view.rs`, doc 06 §3 |
 | `.wbsave` | 1 | `crates/wb-sim/src/save.rs`, doc 04 §7.1 |
 | IndexedDB `warboard` | 2 (P3: `saves` store) | `apps/game/src/db.ts` |
 

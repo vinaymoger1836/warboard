@@ -660,7 +660,7 @@ impl CombatLog {
             .iter()
             .filter_map(|e| match &e.kind {
                 EventKind::WeaponLaunched { weapon, target, .. } => {
-                    Some((*weapon, e.sides.trailing_zeros() as u8, target.clone()))
+                    Some((*weapon, e.sides.trailing_zeros() as u8, *target))
                 }
                 _ => None,
             })

@@ -206,3 +206,17 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Alternatives.** A fully fictional world (needs a terrain generator); a historical 1980s setting (still real forces and places); generic weapons on today's map (still today's powers and bases).
 **Consequences.** + The P0–P5 engine carries over unchanged in design; no OSINT research in P8; inventories never go stale; the setting is free to balance. − A migration phase (PF): content, packs, place names, base proposals and golden scenarios; the game no longer shows real countries or systems.
 
+
+## ADR-037 Visual effects go only to the sides that may see them
+**Status — Proposed, 5 Nov 2026 (P6a).** Refines doc 06 §3 (effects section) and rule 1 of CLAUDE.md.
+**Context.** The first effects build kept one global list in `Combat`, so every side's view carried every launch flash at the exact position of the enemy shooter, which is truth the picture does not give.
+**Decision.** Each effect carries a side mask. A launch flash goes to the shooter's side only. An intercept or a hit goes to the weapon's side and to the side of the unit or weapon at the other end. `ViewEncoder` filters by the viewer's side. Effects expire by age (`view::effect::RETENTION_MS`, 20 s of sim time) and at most 1,024 rows go into a view.
+**Alternatives.** Send all effects and let the client filter by what it sees (puts truth in the buffer); send none for the enemy's launches (the player would not see a hit on their own ship from a weapon they have no contact for).
+**Consequences.** + No truth in the effects section; a hit on our ship is always shown to us. − The enemy's launches are not flashed for us even when we hold a contact for the weapon; we see the weapon's own glyph instead. Saves from before the change do not decode (`SAVE_VERSION` unchanged, as in P5).
+
+## ADR-038 Composite sites go autonomous when their command post is lost
+**Status — Proposed, 5 Nov 2026 (P6a).** Implements doc 02 §12 item 7.
+**Context.** Doc 02 §12 says that destroying an IADS node drops sites into autonomous mode but gives no timing or limits.
+**Decision.** When the last member with the `c2` role of a composite site is destroyed, the site gets `autonomous_after_ms = now + reaction_time_s × tewa.iads_autonomous_reaction_factor` (the country's doctrine and the realism profile). Until then the site cannot engage. Afterwards it engages only on tracks of its own radars and ignores remote and networked tracks. An `AutonomousMode` event goes to its side.
+**Alternatives.** Autonomous at once (no gap); keep using the network after losing C2.
+**Consequences.** + The command post becomes a real target and G10 can pin the behaviour (`g10-sam-autonomous`: first launch at 62 s, none at the remote-only track). − A site whose own radar is out of action cannot defend until repaired; there is no re-link to another command post yet.
