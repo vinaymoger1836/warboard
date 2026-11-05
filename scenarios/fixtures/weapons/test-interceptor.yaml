@@ -1,0 +1,33 @@
+id: test-interceptor
+kind: weapon
+name: Test Interceptor
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 3
+  sustain_s: 2
+  max_speed_mach: 4.0
+  min_speed_mach: 1.2
+  coast_tau_s: { sea_level: 20, high_alt: 50 }
+  max_range_km: 50
+  min_range_km: 2
+  max_g: 30
+guidance:
+  terminal: active_radar
+envelope:
+  min_m: 10
+  max_m: 20000
+warhead_kg: 20
+warhead: blast_fragmentation
+pk_base:
+  anti_ship_missile: 0.75
+  cruise_missile: 0.75
+  fighter: 0.8
+mass_kg: 300
+station_category: [test_vls, test_sam_tube]
+rounds_per_cell: 1
+signature:
+  rcs_m2: { front: 0.05, side: 0.2, rear: 0.05, top: 0.2 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

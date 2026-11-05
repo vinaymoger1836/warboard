@@ -1,0 +1,28 @@
+id: test-asm
+kind: weapon
+name: Test Anti-Ship Missile
+category: ashm
+targets: [surface]
+target_class: anti_ship_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.85
+  min_speed_mach: 0.5
+  max_range_km: 120
+  min_range_km: 5
+  max_g: 5
+  cruise_alt_m: 15
+  terminal_alt_m: 5
+guidance:
+  terminal: active_radar
+warhead_kg: 150
+warhead: blast_fragmentation
+pk_base:
+  surface_ship: 0.8
+countermeasure_resistance:
+  chaff: 0.25
+mass_kg: 650
+station_category: [test_canister, test_vls]
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

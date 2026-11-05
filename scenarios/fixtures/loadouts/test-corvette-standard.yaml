@@ -1,0 +1,8 @@
+id: test-corvette-standard
+kind: loadout
+name: Test Corvette Standard Loadout
+platform: test-corvette
+items:
+  - { station: 0, weapon: test-asm, count: 8 }
+  - { station: 1, weapon: test-ciws, count: 1 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

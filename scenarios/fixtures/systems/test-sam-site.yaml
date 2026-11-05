@@ -1,0 +1,12 @@
+id: test-sam-site
+kind: system
+name: Test SAM Site
+deploy_as: site
+setup_min: 5
+components:
+  - { platform: test-sam-cp-unit, count: 1, role: c2, magazine: {} }
+  - { platform: test-sam-radar-unit, count: 1, role: fire_control, magazine: {} }
+  - { platform: test-sam-launcher-unit, count: 2, role: launcher, magazine: { test-interceptor: 8 } }
+emcon_default: on
+iads_capable: true
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

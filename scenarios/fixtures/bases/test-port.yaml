@@ -1,0 +1,10 @@
+id: test-port
+kind: base
+name: Test Naval Port
+base_type: port
+country: tst
+lat_deg: 55.0
+lon_deg: 17.0
+elevation_m: 0
+ship_berths: 8
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

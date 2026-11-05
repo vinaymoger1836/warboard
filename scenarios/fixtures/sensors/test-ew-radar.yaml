@@ -1,0 +1,17 @@
+id: test-ew-radar
+kind: sensor
+name: Test Early Warning radar
+sensor_type: radar
+role: [air_search]
+radar:
+  band: L
+  r_ref_km: 300
+  sigma_ref_m2: 1.0
+  scan_period_s: 6
+  field_of_regard_deg: 360
+  clutter_rejection: 0.7
+  pulse_doppler: true
+  eccm_db: 10
+  erp_class_dbw: 85
+  fire_channels: 0
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

@@ -1,0 +1,19 @@
+id: test-frigate
+kind: platform
+name: Test Frigate
+short_name: Frigate
+category: ship/frigate
+target_class: surface_ship
+mobility: { max_speed_knots: 30, cruise_speed_knots: 18 }
+signature: { rcs_m2: { front: 3000, side: 8000, rear: 3000, top: 10000 } }
+stations:
+  - { id: vls, kind: vls, categories: [test_vls], capacity: 32 }
+  - { id: ciws, kind: launcher, categories: [test_ciws_mount], capacity: 2 }
+  - { id: ashm_canisters, kind: launcher, categories: [test_canister], capacity: 8 }
+sensors:
+  - { sensor: test-frigate-radar }
+countermeasures:
+  test-chaff: 24
+  test-flare: 12
+durability: { model: ship, damage_points: 300 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

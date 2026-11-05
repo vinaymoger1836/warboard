@@ -1,0 +1,13 @@
+id: tst-2026
+kind: inventory
+country: tst
+as_of: "2026-10-27"
+platforms:
+  test-frigate: 4
+  test-corvette: 4
+  test-sam-site: 2
+munitions:
+  test-interceptor: 120
+  test-asm: 64
+  test-ciws: 50
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

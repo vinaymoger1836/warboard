@@ -1,0 +1,28 @@
+id: test-ciws
+kind: weapon
+name: Test CIWS 30mm
+category: shell
+targets: [air]
+profile:
+  kind: rocket
+  boost_s: 0.1
+  max_speed_mach: 3.0
+  min_speed_mach: 1.0
+  coast_tau_s: { sea_level: 3, high_alt: 5 }
+  max_range_km: 3.5
+  min_range_km: 0.2
+  max_g: 0
+guidance:
+  terminal: command
+envelope:
+  min_m: 5
+  max_m: 3000
+warhead_kg: 5
+warhead: blast_fragmentation
+pk_base:
+  anti_ship_missile: 0.65
+  cruise_missile: 0.65
+mass_kg: 50
+station_category: [test_ciws_mount]
+rounds_per_cell: 1
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

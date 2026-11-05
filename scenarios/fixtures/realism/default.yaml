@@ -1,0 +1,335 @@
+# Default realism profile: every tuning constant of the engine (doc 02 §17).
+# Values marked in doc 02 are copied from it; the rest are reasoned values
+# listed under provenance.estimates until golden scenarios pin them.
+id: default
+kind: realism
+name: Default realism
+
+time:                                # doc 02 §3
+  tick_fine_ms: 100
+  tick_coarse_ms: 1000
+  esm_period_s: 2
+  satellite_period_s: 5
+  fusion_period_s: 1
+  tewa_period_s: 1
+  logistics_period_s: 10
+  ground_combat_period_s: 60
+  ai_tactical_period_s: 1
+  ai_operational_period_s: 30
+  ai_strategic_period_s: 300
+  hash_checkpoint_ticks: 600
+
+earth:                               # doc 02 §5, §7.1
+  radius_m: 6371008.8                # IUGG mean radius
+  radio_k_factor: 1.3333333333333333 # 4/3 effective Earth
+  horizon_coefficient: 4.12          # km per √m, 4/3 Earth
+  surface_target_height_m: 10        # superstructure a radar sees
+  ground_target_height_m: 3
+
+radar:                               # doc 02 §7.1
+  pd_steepness_k: 8
+  track_confirm_hits: 2
+  track_confirm_window_scans: 3
+  track_drop_misses: 3
+  clutter_alt_land_m: 300
+  clutter_alt_sea_m: 50
+  doppler_notch_radial_mps: 25
+  doppler_notch_pd_factor: 0.2
+  los_sample_divisor: 64
+  range_sigma_m: 150                 # radar range error, 1 sigma
+  bearing_sigma_default_deg: 0.5     # radar bearing error, 1 sigma
+  group_resolve_fraction: 0.3        # a group's count is resolved inside 30% of R50
+
+passive:                             # doc 02 §7.2
+  esm_bearing_sigma_default_deg: 2   # doc 02 gives 1–3°
+  irst_afterburner_factor: 3
+  irst_aspect_factor: { head_on: 1.0, beam: 1.5, tail: 3.0 }
+  eo_gsd_type_m: 1
+  eo_gsd_class_m: 3
+  visual_range_km: { open: 4, forest: 0.5, urban: 0.3, mountain: 2 }
+  visual_night_factor: 0.3
+  visual_ref_size_m: 10              # visual_range_km applies to a 10 m target
+  visual_max_size_factor: 3
+  irst_range_sigma_fraction: 0.15    # IRST gives angles only
+  eo_detect_pixels: 3                # target spans 3 ground samples to be seen
+  eo_min_sun_elevation_deg: 0        # daylight EO cameras
+  sonar_noise_db_per_doubling: 6
+
+satellites:                          # doc 02 §7.3
+  eo_min_sun_elevation_deg: 10
+  downlink_delay_default_min: 15
+  tasking_horizon_h: 48
+  pass_search_step_s: 20
+
+fusion:                              # doc 02 §8
+  age_out_min: { air: 2, surface: 30, subsurface: 30, ground: 120 }
+  fixed_sites_kept: true
+  ellipse_growth_kt: { air: 1200, surface: 35, subsurface: 30, ground: 40 }
+  datalink_latency_default_s: 2
+  c2_report_delay_s: 60
+  contact_sigma_floor_m: 25          # ADR-026: an estimate never equals the truth
+  class_after_looks: 10
+  identify_at: class
+  report_after_s: 30
+  esm_bearing_window_s: 300
+  esm_fix_min_angle_deg: 5
+  group_count_spread: 2
+
+ew:                                  # doc 02 §9
+  sidelobe_gain_db: -30
+  main_beam_gain_db: 0
+  gps_jam_cep_factor: 5
+  comms_jam_latency_factor: 3
+  seeker_jam_effect: 0.5
+  arm_memory_pk_factor: 0.5
+  emcon_blink_on_s: 10
+  emcon_blink_period_s: 60
+
+weapons:                             # doc 02 §10
+  pn_gain_min: 3
+  pn_gain_max: 4
+  sea_skim_min_alt_m: 5
+  sea_skim_max_alt_m: 15
+  range_calibration_tolerance: 0.1
+  # Launch conditions of the published range, per category (doc 02 §10).
+  calibration:
+    aam:       { launch_alt_m: 12000, launch_speed_mach: 1.2, target_alt_m: 12000, target_speed_mach: 0.9 }
+    sam:       { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 8000,  target_speed_mach: 0.9 }
+    ashm:      { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    lacm:      { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    arm:       { launch_alt_m: 10000, launch_speed_mach: 0.9, target_alt_m: 0,     target_speed_mach: 0 }
+    agm:       { launch_alt_m: 10000, launch_speed_mach: 0.9, target_alt_m: 0,     target_speed_mach: 0 }
+    bomb:      { launch_alt_m: 12000, launch_speed_mach: 0.9, target_alt_m: 0,     target_speed_mach: 0 }
+    ballistic: { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    rocket:    { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    shell:     { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    torpedo:   { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    loitering: { launch_alt_m: 0,     launch_speed_mach: 0,   target_alt_m: 0,     target_speed_mach: 0 }
+    decoy:     { launch_alt_m: 10000, launch_speed_mach: 0.9, target_alt_m: 0,     target_speed_mach: 0 }
+  tau_high_alt_m: 15000
+  manoeuvre_energy_factor: 0.08
+  g_speed_exponent: 2
+  seeker_half_angle_deg: 40
+  datalink_update_s: 2
+  fuze_radius_m: 15
+  lethal_radius_m: { blast: 20, blast_fragmentation: 12, penetrator: 5, hit_to_kill: 1, shaped_charge: 5 }
+  self_destruct_after_lost_s: 10
+  close_fraction: 0.5
+  cruise_alt_default_m: 30
+  max_flight_path_deg: 45
+
+endgame:                             # doc 02 §11
+  maneuver_g_ratio: 3
+  maneuver_floor: 0.2
+  nominal_speed_fraction: 0.25        # V_nom = V_min + 0.25 × (V_max − V_min)
+  pk_min: 0
+  pk_max: 0.99
+  aspect:
+    active_radar:      { head_on: 1.0, beam: 0.8, tail: 0.9 }
+    semi_active_radar: { head_on: 1.0, beam: 0.7, tail: 0.85 }
+    ir:                { head_on: 0.6, beam: 0.8, tail: 1.0 }
+    imaging_ir:        { head_on: 0.85, beam: 0.9, tail: 1.0 }
+    anti_radiation:    { head_on: 1.0, beam: 1.0, tail: 1.0 }
+    command:           { head_on: 1.0, beam: 0.75, tail: 0.85 }
+    laser:             { head_on: 1.0, beam: 1.0, tail: 1.0 }
+    gps_ins:           { head_on: 1.0, beam: 1.0, tail: 1.0 }
+    none:              { head_on: 1.0, beam: 1.0, tail: 1.0 }
+  cep_distribution: rayleigh
+
+countermeasures:                     # doc 02 §9, §11; doc 03 §5
+  release_range_m: 6000
+  rounds_per_threat: 4
+  rwr_seekers: [active_radar, semi_active_radar]
+
+tewa:                                # doc 02 §12
+  ciws_layer_min_km: 2
+  ciws_layer_max_km: 4
+  soft_kill_window_s: 30
+  kill_assessment_s: 5
+  iads_autonomous_reaction_factor: 2
+
+damage:                              # doc 02 §13
+  ship_out_of_action_fraction: 0.25
+  ship_sink_delay_min: 30
+  warhead_multiplier:
+    blast: 1.0
+    blast_fragmentation: 0.8
+    penetrator: 1.4
+    hit_to_kill: 0.6
+    shaped_charge: 1.2
+  points_per_warhead_kg: 10
+  ship_hits: { hull: 0.4, radar: 0.2, vls: 0.15, launcher: 0.1, propulsion: 0.15 }
+  propulsion_speed_factor: 0.5
+  base_radius_km: 2
+  base_components:
+    runway:    { weight: 0.3,  hardness_kg: 200, repair_min_h: 4,  repair_max_h: 12 }
+    shelters:  { weight: 0.2,  hardness_kg: 500, repair_min_h: 6,  repair_max_h: 24 }
+    fuel:      { weight: 0.15, hardness_kg: 100, repair_min_h: 6,  repair_max_h: 12 }
+    munitions: { weight: 0.15, hardness_kg: 300, repair_min_h: 12, repair_max_h: 24 }
+    radar:     { weight: 0.1,  hardness_kg: 50,  repair_min_h: 2,  repair_max_h: 8 }
+    c2:        { weight: 0.1,  hardness_kg: 300, repair_min_h: 4,  repair_max_h: 12 }
+  munitions_store_loss_fraction: 0.5
+
+roe:                                 # doc 03 §7
+  return_fire_memory_s: 600
+  territory_sigma: 3                 # Bravo: the 3-sigma ellipse must be inside
+  approval_window_min_s: 10
+  threat_cpa_m: 2000
+  threat_horizon_s: 300
+
+movement:                            # doc 02 §5
+  isa_sea_level_temp_k: 288.15       # ISA
+  isa_lapse_rate_k_per_m: 0.0065     # ISA troposphere
+  isa_tropopause_m: 11000            # ISA
+  isa_gamma_r: 401.874               # 1.4 × 287.053 J/(kg·K)
+  aircraft_climb_rate_mps: 60
+  aircraft_descent_rate_mps: 30
+  aircraft_accel_mps2: 4
+  aircraft_sustained_g: 2.5
+  aircraft_cruise_alt_m: 9000
+  cruise_alt_by_category_m:
+    aircraft/tanker: 8500
+    aircraft/aew: 9000
+    aircraft/uav: 7500
+    aircraft/maritime_patrol: 6000
+    helicopter/attack: 300
+    helicopter/utility: 300
+  ship_accel_mps2: 0.1
+  formation_spacing_m: 1500
+  waypoint_radius_m: 2000
+
+fuel:                                # doc 02 §6
+  burn_altitude_factor:
+    - { below_m: 1000, factor: 1.6 }
+    - { below_m: 4000, factor: 1.3 }
+    - { below_m: 8000, factor: 1.1 }
+    - { below_m: 20000, factor: 1.0 }
+  ship_burn_speed_exponent: 2
+  descent_burn_fraction: 0.5
+
+logistics:                           # doc 02 §6
+  fuel_reserve_fraction: 0.1
+  tanker_join_km: 1.5
+  landing_radius_km: 4
+  pattern_alt_m: 500
+  berth_radius_km: 3
+  turnaround_default_min: 60
+
+spatial:                             # doc 02 §16, ADR-023
+  bucket_res: 3
+  los_memo_res: 8
+  los_memo_alt_step_m: 2
+  los_memo_alt_ratio: 1.1
+  los_memo_capacity: 200000
+
+bases:                               # doc 03 §3
+  air_base:     { site: real_airfield, match_radius_km: 3, setup_min: 60 }
+  road_strip:   { site: terrain, terrain: [open], own_territory: true, max_slope_deg: 3, setup_min: 360, aircraft_capacity: 6, road_capable_only: true }
+  heliport:     { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, arctic], max_slope_deg: 5.71, setup_min: 120, aircraft_capacity: 8, rotary_only: true }
+  naval_base:   { site: real_port, match_radius_km: 5, setup_min: 60, vls_reload: true }
+  anchorage:    { site: terrain, terrain: [water], own_territory: true, setup_min: 120, ship_berths: 4 }
+  army_base:    { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, arctic], own_territory: true, setup_min: 360 }
+  sam_site:     { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, marsh, arctic], setup_min: 5 }
+  missile_site: { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, marsh, arctic], setup_min: 30 }
+  hq:           { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, marsh, arctic], setup_min: 60 }
+
+ground:                              # doc 02 §14 (Phase 11 placeholders)
+  lanchester_coefficient: 0.05
+  random_variation: 0.2
+  defender_terrain_factor: { open: 1.0, forest: 1.5, urban: 2.0, mountain: 2.0 }
+
+provenance:
+  confidence: estimate
+  notes: >-
+    Design constants from docs/02-simulation-engine.md; the sources cover the
+    physical ones (Earth radius, 4/3-Earth radio horizon, proportional
+    navigation gain, Rayleigh miss distance). Estimates are tuned by the
+    golden scenarios (doc 08 §3).
+  estimates:
+    - passive.irst_aspect_factor
+    - passive.visual_range_km.mountain
+    - fusion.age_out_min.subsurface
+    - fusion.ellipse_growth_kt
+    - ew.gps_jam_cep_factor
+    - ew.comms_jam_latency_factor
+    - ew.seeker_jam_effect
+    - ew.arm_memory_pk_factor
+    - endgame.aspect
+    - endgame.nominal_speed_fraction
+    - tewa.kill_assessment_s
+    - tewa.iads_autonomous_reaction_factor
+    - damage.ship_sink_delay_min
+    - damage.warhead_multiplier
+    - weapons.calibration
+    - weapons.tau_high_alt_m
+    - weapons.manoeuvre_energy_factor
+    - weapons.g_speed_exponent
+    - weapons.seeker_half_angle_deg
+    - weapons.datalink_update_s
+    - weapons.fuze_radius_m
+    - weapons.lethal_radius_m
+    - weapons.self_destruct_after_lost_s
+    - weapons.close_fraction
+    - weapons.cruise_alt_default_m
+    - weapons.max_flight_path_deg
+    - countermeasures
+    - damage.points_per_warhead_kg
+    - damage.ship_hits
+    - damage.propulsion_speed_factor
+    - damage.base_radius_km
+    - damage.base_components
+    - damage.munitions_store_loss_fraction
+    - roe
+    - ground
+    - movement.aircraft_climb_rate_mps
+    - movement.aircraft_descent_rate_mps
+    - movement.aircraft_accel_mps2
+    - movement.aircraft_sustained_g
+    - movement.aircraft_cruise_alt_m
+    - movement.cruise_alt_by_category_m
+    - movement.ship_accel_mps2
+    - movement.formation_spacing_m
+    - movement.waypoint_radius_m
+    - fuel.burn_altitude_factor
+    - fuel.ship_burn_speed_exponent
+    - fuel.descent_burn_fraction
+    - logistics.tanker_join_km
+    - logistics.landing_radius_km
+    - logistics.pattern_alt_m
+    - logistics.berth_radius_km
+    - logistics.turnaround_default_min
+    - bases.road_strip.max_slope_deg
+    - bases.heliport.aircraft_capacity
+    - radar.range_sigma_m
+    - radar.bearing_sigma_default_deg
+    - radar.group_resolve_fraction
+    - passive.visual_ref_size_m
+    - passive.visual_max_size_factor
+    - passive.irst_range_sigma_fraction
+    - passive.eo_detect_pixels
+    - passive.sonar_noise_db_per_doubling
+    - satellites.tasking_horizon_h
+    - satellites.pass_search_step_s
+    - fusion.contact_sigma_floor_m
+    - fusion.class_after_looks
+    - fusion.identify_at
+    - fusion.report_after_s
+    - fusion.esm_bearing_window_s
+    - fusion.esm_fix_min_angle_deg
+    - fusion.group_count_spread
+    - ew.emcon_blink_on_s
+    - ew.emcon_blink_period_s
+    - spatial
+    - earth.surface_target_height_m
+    - earth.ground_target_height_m
+    - bases.anchorage.ship_berths
+    - bases.air_base.match_radius_km
+    - bases.naval_base.match_radius_km
+    - bases.missile_site.setup_min
+  sources:
+    - { title: "Earth radius (IUGG mean radius R1)", url: "https://en.wikipedia.org/wiki/Earth_radius", accessed: 2026-10-27 }
+    - { title: "Radio horizon (4/3 effective Earth radius)", url: "https://en.wikipedia.org/wiki/Radio_horizon", accessed: 2026-10-27 }
+    - { title: "Proportional navigation", url: "https://en.wikipedia.org/wiki/Proportional_navigation", accessed: 2026-10-27 }
+    - { title: "Circular error probable (Rayleigh distribution)", url: "https://en.wikipedia.org/wiki/Circular_error_probable", accessed: 2026-10-27 }
+    - { title: "International Standard Atmosphere", url: "https://en.wikipedia.org/wiki/International_Standard_Atmosphere", accessed: 2026-10-28 }
+    - { title: "Speed of sound (dependence on temperature, γR of air)", url: "https://en.wikipedia.org/wiki/Speed_of_sound", accessed: 2026-10-28 }

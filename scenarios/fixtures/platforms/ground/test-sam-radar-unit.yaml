@@ -1,0 +1,12 @@
+id: test-sam-radar-unit
+kind: platform
+name: Test SAM Radar Vehicle
+short_name: Radar
+category: ground/radar
+target_class: radar_site
+mobility: { road_speed_kmh: 60 }
+signature: { rcs_m2: { front: 25, side: 35, rear: 25, top: 50 } }
+sensors:
+  - { sensor: test-sam-radar }
+durability: { model: ground, damage_points: 50 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
