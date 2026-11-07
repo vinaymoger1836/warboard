@@ -73,6 +73,8 @@ pub mod flag {
     pub const STATUS_MASK: u32 = 0xF << STATUS_SHIFT;
     /// Targeted by an incoming hostile weapon (pulsing red halo, doc 10 §5).
     pub const TARGETED: u32 = 1 << 12;
+    /// Radar under jamming by a hostile jammer.
+    pub const JAMMED: u32 = 1 << 13;
 }
 
 /// Visual effect kinds.
@@ -102,6 +104,8 @@ pub mod cflag {
     /// The count is resolved.
     pub const COUNT_KNOWN: u32 = 1 << 3;
     pub const FIXED: u32 = 1 << 4;
+    /// Under jamming by a friendly or hostile jammer (affected-radar marker, doc 10).
+    pub const JAMMED: u32 = 1 << 5;
     /// Bits 8–10 hold the domain: 0 air, 1 surface, 2 subsurface, 3 ground, 4 space.
     pub const DOMAIN_SHIFT: u32 = 8;
     pub const DOMAIN_MASK: u32 = 0x7 << DOMAIN_SHIFT;
@@ -124,6 +128,7 @@ pub const CONTACT_FLAG_NAMES: &[(&str, u32)] = &[
     ("BEARING_ONLY", cflag::BEARING_ONLY),
     ("COUNT_KNOWN", cflag::COUNT_KNOWN),
     ("FIXED", cflag::FIXED),
+    ("JAMMED", cflag::JAMMED),
     ("DOMAIN_SHIFT", cflag::DOMAIN_SHIFT),
     ("DOMAIN_MASK", cflag::DOMAIN_MASK),
 ];
@@ -185,6 +190,7 @@ pub const FLAG_NAMES: &[(&str, u32)] = &[
     ("STATUS_SHIFT", flag::STATUS_SHIFT),
     ("STATUS_MASK", flag::STATUS_MASK),
     ("TARGETED", flag::TARGETED),
+    ("JAMMED", flag::JAMMED),
 ];
 
 /// Visual effect kinds by name, for the generated TS.
@@ -490,6 +496,8 @@ impl ViewEncoder {
                 .collect()
         };
 
+        let jammers = crate::sensors::active_jammers(world, rules);
+
         for (&uid, &e) in &world.resource::<UnitIndex>().0 {
             if world.get::<Allegiance>(e).map(|a| a.side) != Some(side) {
                 continue;
@@ -608,6 +616,25 @@ impl ViewEncoder {
             if targeted.contains(&uid) {
                 flags |= flag::TARGETED;
             }
+            if world
+                .get::<crate::components::JammerState>(e)
+                .is_some_and(|j| j.active)
+            {
+                flags |= flag::JAMMING;
+            }
+            let has_radar = platform.sensors.iter().any(|m| {
+                rules.db.sensors[m.sensor.0 as usize].radar.is_some()
+            });
+            if has_radar
+                && jammers.iter().any(|j| {
+                    j.side != side
+                        && (j.effects.is_empty()
+                            || j.effects.contains(&wb_content::source::EwEffect::Radar))
+                        && wb_core::geo::distance_m(j.pos, k.pos()) <= j.coverage_m
+                })
+            {
+                flags |= flag::JAMMED;
+            }
             rows.push(Row {
                 id: uid.0,
                 flags,
@@ -655,6 +682,30 @@ impl ViewEncoder {
                 }
                 if c.fixed {
                     flags |= cflag::FIXED;
+                }
+                let is_radar = entity(world, c.truth).is_some_and(|te| {
+                    world.get::<PlatformRef>(te).is_some_and(|p| {
+                        rules.platform(p.0).sensors.iter().any(|m| {
+                            rules.db.sensors[m.sensor.0 as usize].radar.is_some()
+                        })
+                    })
+                });
+                let c_pos = c.est.map(|e| e.at).or_else(|| {
+                    entity(world, c.truth)
+                        .and_then(|te| world.get::<Kinematics>(te))
+                        .map(|k| k.pos())
+                });
+                if is_radar
+                    && c_pos.is_some_and(|pos| {
+                        jammers.iter().any(|j| {
+                            j.side == side
+                                && (j.effects.is_empty()
+                                    || j.effects.contains(&wb_content::source::EwEffect::Radar))
+                                && wb_core::geo::distance_m(j.pos, pos) <= j.coverage_m
+                        })
+                    })
+                {
+                    flags |= cflag::JAMMED;
                 }
                 let age = now.saturating_sub(c.last_ms) as f32 / 1_000.0;
                 let threat = if c.level >= ContactLevel::Type {

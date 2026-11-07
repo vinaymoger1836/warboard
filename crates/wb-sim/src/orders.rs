@@ -1655,6 +1655,8 @@ pub fn assign(world: &mut World, side: u8, ge: Entity, task: Task) {
             g.task = task.clone();
         }
     }
+    let members = g.members.clone();
+    drop(g);
     if was_on {
         emit(
             world,
@@ -1666,7 +1668,6 @@ pub fn assign(world: &mut World, side: u8, ge: Entity, task: Task) {
         );
     }
     if matches!(task, Task::Jam { .. }) {
-        let members = g.members.clone();
         for m in members {
             if let Some(e) = entity(world, m) {
                 if let Some(mut st) = world.get_mut::<JammerState>(e) {

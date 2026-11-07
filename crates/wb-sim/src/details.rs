@@ -232,8 +232,21 @@ pub struct GroupDetails {
     pub confidence: String,
     /// Emission control of the lead: `on`, `off` or `blink` (none without radars).
     pub emcon: Option<String>,
+    /// Electronic warfare / jammer state of the lead (none without EW suites).
+    pub jammer: Option<JammerView>,
     /// Sensor names of the platform.
     pub sensors: Vec<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct JammerView {
+    pub active: bool,
+    pub mode: String,
+    pub jam_strength: f64,
+    pub coverage_km: f64,
+    pub sector_deg: f64,
+    pub available_modes: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -390,14 +403,25 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
             radius_m,
             alt_m,
             ..
+        }
+        | Task::Jam {
+            centre,
+            radius_m,
+            alt_m,
+            ..
         } => (vec![lonlat(*centre)], Some(*radius_m), true, *alt_m, None),
         Task::Strike {
             target: crate::components::StrikeTarget::Point(at),
             ..
-        } => (vec![lonlat(*at)], None, false, None, None),
-        Task::Idle | Task::Intercept { .. } | Task::Strike { .. } => {
-            (Vec::new(), None, false, None, None)
         }
+        | Task::Suppress {
+            target: crate::components::StrikeTarget::Point(at),
+            ..
+        } => (vec![lonlat(*at)], None, false, None, None),
+        Task::Idle
+        | Task::Intercept { .. }
+        | Task::Strike { .. }
+        | Task::Suppress { .. } => (Vec::new(), None, false, None, None),
     };
     let (mode, mode_base) = match g.mode {
         Mode::Task => ("task", None),
@@ -543,6 +567,57 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
                 })
             })
             .map(|e| snake(e.0)),
+        jammer: world
+            .get::<crate::components::JammerState>(lead)
+            .and_then(|st| {
+                let suite_ref = p.ew.first()?;
+                let suite = &db.ew_suites[suite_ref.0 as usize];
+                let mut available_modes = Vec::new();
+                if suite.modes.self_protect.is_some() {
+                    available_modes.push("self_protect".to_owned());
+                }
+                if suite.modes.escort.is_some() {
+                    available_modes.push("escort".to_owned());
+                }
+                if suite.modes.stand_off.is_some() {
+                    available_modes.push("stand_off".to_owned());
+                }
+                let mode_str = match st.mode {
+                    crate::components::JammerMode::SelfProtect => "self_protect",
+                    crate::components::JammerMode::Escort => "escort",
+                    crate::components::JammerMode::StandOff => "stand_off",
+                };
+                let (strength, coverage_km, sector_deg) = match st.mode {
+                    crate::components::JammerMode::SelfProtect => {
+                        let m = suite.modes.self_protect.as_ref();
+                        (m.map_or(0.0, |x| x.jam_strength), 0.0, 360.0)
+                    }
+                    crate::components::JammerMode::Escort => {
+                        let m = suite.modes.escort.as_ref();
+                        (
+                            m.map_or(0.0, |x| x.jam_strength),
+                            m.and_then(|x| x.coverage_km).unwrap_or(0.0),
+                            m.and_then(|x| x.sector_deg).unwrap_or(360.0),
+                        )
+                    }
+                    crate::components::JammerMode::StandOff => {
+                        let m = suite.modes.stand_off.as_ref();
+                        (
+                            m.map_or(0.0, |x| x.jam_strength),
+                            m.and_then(|x| x.coverage_km).unwrap_or(0.0),
+                            m.and_then(|x| x.sector_deg).unwrap_or(360.0),
+                        )
+                    }
+                };
+                Some(JammerView {
+                    active: st.active,
+                    mode: mode_str.to_owned(),
+                    jam_strength: strength,
+                    coverage_km,
+                    sector_deg,
+                    available_modes,
+                })
+            }),
         sensors: p
             .sensors
             .iter()
