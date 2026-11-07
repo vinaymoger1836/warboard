@@ -101,6 +101,15 @@ orders:
     assert!(terminated, "weapon must terminate under jamming");
 }
 
+/// Reads the `flags` column of the units section of a `SideView`.
+fn unit_flags(view: &[u8]) -> Vec<u32> {
+    let pad8 = |n: usize| (n + 7) & !7;
+    let u32_at = |o: usize| u32::from_le_bytes(view[o..o + 4].try_into().unwrap()) as usize;
+    let nu = u32_at(24);
+    let flags = wb_sim::view::HEADER_BYTES + pad8(8 * nu) * 2 + pad8(4 * nu);
+    (0..nu).map(|i| u32_at(flags + 4 * i) as u32).collect()
+}
+
 /// Reads the `flags` column of the contacts section of a `SideView` (layout in
 /// the `wb_sim::view` module doc: columns padded to 8 bytes).
 fn contact_flags(view: &[u8]) -> Vec<u32> {
@@ -144,5 +153,14 @@ orders:
         flags[0] & cflag::JAMMED,
         0,
         "the radar is inside the jammer's coverage, so the contact is flagged"
+    );
+
+    // The jammed side sees its own radar unit marked as jammed.
+    let red = unit_flags(enc.encode(sim.world(), 1));
+    assert_eq!(red.len(), 1, "Red owns one group: the radar");
+    assert_ne!(
+        red[0] & wb_sim::view::flag::JAMMED,
+        0,
+        "own radar unit is flagged"
     );
 }

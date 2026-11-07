@@ -462,10 +462,9 @@ export class UnitLayers {
             countMax: cv.countMax[i] ?? 1,
             countKnown: (flags & CFLAG.COUNT_KNOWN) !== 0,
           });
-      if ((flags & CFLAG.JAMMED) !== 0) {
-        label += '\n[JAMMED]';
-        ellipses.push({ path: geodesicCircle(pos, 6000), color: c('ring.sensor', 0.6), width: 1.5, dashed: true });
-      }
+      // A fixed-size ring would cut through the label at mid zoom and vanish at far zoom, so
+      // the badge alone marks an affected radar.
+      if ((flags & CFLAG.JAMMED) !== 0) label += '\n[JAMMED]';
       if (estimated && !isWeapon) label += `\n${ESTIMATE_LINE}`;
       contacts.push({
         id,
