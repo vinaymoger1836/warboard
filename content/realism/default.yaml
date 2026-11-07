@@ -76,12 +76,22 @@ fusion:                              # doc 02 §8
   group_count_spread: 2
 
 ew:                                  # doc 02 §9
-  sidelobe_gain_db: -30
-  main_beam_gain_db: 0
-  gps_jam_cep_factor: 5
-  comms_jam_latency_factor: 3
-  seeker_jam_effect: 0.5
-  arm_memory_pk_factor: 0.5
+  advantage_table:
+    - { advantage: -4, multiplier: 1.00 }
+    - { advantage: -2, multiplier: 0.90 }
+    - { advantage:  0, multiplier: 0.75 }
+    - { advantage:  2, multiplier: 0.60 }
+    - { advantage:  4, multiplier: 0.45 }
+    - { advantage:  6, multiplier: 0.35 }
+  close_in: 0.35
+  off_axis: 0.3
+  extra_jammer_factor: 0.10
+  max_jammers: 3
+  seeker_jam: 0.25
+  datalink_latency_factor: 3
+  datalink_loss_fraction: 0.30
+  nav_jam_cep_factor: 4
+  arm_memory_pk_factor: 0.45
   emcon_blink_on_s: 10
   emcon_blink_period_s: 60
 
