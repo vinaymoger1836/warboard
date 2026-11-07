@@ -698,6 +698,7 @@ impl ViewEncoder {
                         .and_then(|te| world.get::<Kinematics>(te))
                         .map(|k| k.pos())
                 });
+                eprintln!("PROBE contact {:?} is_radar={is_radar} pos={c_pos:?} jammers={}", c.id, jammers.len()); // TEMP
                 if is_radar
                     && c_pos.is_some_and(|pos| {
                         jammers.iter().any(|j| {
