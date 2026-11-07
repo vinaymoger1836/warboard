@@ -99,6 +99,35 @@ pub fn run(world: &mut World) {
             continue;
         }
         let shooters = shooters(world, &rules, &g);
+        // A strike whose group is all deployed but has no rounds of the ordered weapon
+        // left on working launchers can never fire: end it and say why.
+        if let Task::Strike { weapon, .. } | Task::Suppress { weapon, .. } = g.task
+            && g.members.iter().all(|m| {
+                entity(world, *m)
+                    .and_then(|e| world.get::<Posture>(e))
+                    .is_some_and(|p| matches!(p, Posture::Moving))
+            })
+            && !shooters.iter().any(|s| {
+                s.rounds
+                    .iter()
+                    .any(|(w, n)| *n > 0 && weapon.is_none_or(|x| x == *w))
+            })
+        {
+            let what = weapon.map_or_else(
+                || "weapons".to_owned(),
+                |w| rules.db.str(rules.db.weapons[w.0 as usize].name).to_owned(),
+            );
+            emit(
+                world,
+                side,
+                EventKind::StrikeAborted {
+                    group: gid,
+                    reason: format!("no {what} left on working launchers"),
+                },
+            );
+            end_strike(world, &rules, side, gid);
+            continue;
+        }
         if shooters.is_empty() {
             continue;
         }
@@ -916,34 +945,42 @@ fn strike_fired(world: &mut World, rules: &Rules, side: u8, gid: UnitId, done: u
     if let Task::Strike { fired, .. } | Task::Suppress { fired, .. } = &mut g.task {
         *fired += done;
     }
+    *world.get_mut::<Group>(ge).expect("group") = g;
     if done >= want {
-        let air = g
-            .lead()
-            .and_then(|l| entity(world, l))
-            .and_then(|e| world.get::<PlatformRef>(e))
-            .is_some_and(|p| rules.is_air(rules.platform(p.0)));
-        if air {
-            let list = crate::bases::list(world);
-            crate::tasks::go_home(
-                world,
-                rules,
-                &list,
-                side,
-                gid,
-                &mut g,
-                crate::components::ReturnWhy::Order,
-            );
-        } else {
-            g.task = Task::Idle;
-            emit(
-                world,
-                side,
-                EventKind::TaskChanged {
-                    group: gid,
-                    task: "idle".to_owned(),
-                },
-            );
-        }
+        end_strike(world, rules, side, gid);
+    }
+}
+
+/// Ends a strike: aircraft go home, ships stop.
+fn end_strike(world: &mut World, rules: &Rules, side: u8, gid: UnitId) {
+    let Some(ge) = entity(world, gid) else { return };
+    let mut g = std::mem::take(&mut *world.get_mut::<Group>(ge).expect("group"));
+    let air = g
+        .lead()
+        .and_then(|l| entity(world, l))
+        .and_then(|e| world.get::<PlatformRef>(e))
+        .is_some_and(|p| rules.is_air(rules.platform(p.0)));
+    if air {
+        let list = crate::bases::list(world);
+        crate::tasks::go_home(
+            world,
+            rules,
+            &list,
+            side,
+            gid,
+            &mut g,
+            crate::components::ReturnWhy::Order,
+        );
+    } else {
+        g.task = Task::Idle;
+        emit(
+            world,
+            side,
+            EventKind::TaskChanged {
+                group: gid,
+                task: "idle".to_owned(),
+            },
+        );
     }
     *world.get_mut::<Group>(ge).expect("group") = g;
 }

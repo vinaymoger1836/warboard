@@ -87,6 +87,7 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
   const n = (id: number) => s.name(id) || `unit ${id}`;
   const k = e.kind;
   if ('TaskChanged' in k) return { category: 'Task', text: `${n(k.TaskChanged.group)}: new task, ${k.TaskChanged.task.replace('_', ' ')}` };
+  if ('StrikeAborted' in k) return { category: 'Task', text: `${n(k.StrikeAborted.group)}: strike cancelled, ${k.StrikeAborted.reason}` };
   if ('StationChanged' in k)
     return { category: 'Task', text: `${n(k.StationChanged.group)} ${k.StationChanged.on ? 'on station' : 'left station'}` };
   if ('BingoRtb' in k) {
@@ -287,12 +288,14 @@ export const isAlert = (e: Event) =>
   'Damage' in e.kind ||
   'UnitDestroyed' in e.kind ||
   'AutonomousMode' in e.kind ||
-  'RoeRequest' in e.kind;
+  'RoeRequest' in e.kind ||
+  'StrikeAborted' in e.kind;
 
 /** The unit an event is about, for click-to-locate. */
 export function subjectOf(e: Event): number | null {
   const k = e.kind;
   if ('TaskChanged' in k) return k.TaskChanged.group;
+  if ('StrikeAborted' in k) return k.StrikeAborted.group;
   if ('StationChanged' in k) return k.StationChanged.group;
   if ('BingoRtb' in k) return k.BingoRtb.unit;
   if ('Return' in k) return k.Return.group;

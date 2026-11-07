@@ -21,6 +21,12 @@ pub enum EventKind {
         group: UnitId,
         task: String,
     },
+    /// A strike or suppression ended before all its rounds were away, because
+    /// no member can fire any more; `reason` says why (CLAUDE.md rule 4).
+    StrikeAborted {
+        group: UnitId,
+        reason: String,
+    },
     /// A group arrived on (or left) its station.
     StationChanged {
         group: UnitId,

@@ -450,6 +450,12 @@ function StrikePanel({ d, aim, bridge, toast }: { d: GroupDetails; aim: StrikeAi
           </>
         )}
       </dl>
+      {weapon && aim && 'contact' in aim && !weapon.engage_on_remote && (
+        <p className="muted">
+          {weapon.name} needs a track from this unit&apos;s own sensors: it closes in and fires once it holds one, and the strike is
+          cancelled if its launchers are knocked out.
+        </p>
+      )}
       {usable.length === 0 ? (
         <p className="muted">
           {d.weapons.some((w) => w.count > 0) ? `No weapon left that can engage ${domains.join(' or ')} targets.` : 'No weapons left.'}

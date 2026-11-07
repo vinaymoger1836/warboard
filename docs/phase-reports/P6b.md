@@ -78,7 +78,7 @@ Not checked by eye: the own-unit `[JAMMED]` badge (covered by the engine test on
 
 ## Known gaps
 
-- P5 leftovers are unchanged: the ROE A/B/C buttons and the card's ROE section are disabled, and `STRIKE` and `HOLD FIRE` only show a toast.
+- P5 leftovers: the ROE A/B/C buttons and the card's ROE section are disabled, and `HOLD FIRE` only shows a toast. `STRIKE` was wired after this phase (7 Nov 2026): a strike panel on the unit card picks a contact or point on the map, a weapon that can engage it and 1–64 rounds, and the engine now ends a strike that can never fire with a `StrikeAborted` event and its reason.
 - P6a's gaps carry over (soft-kill window unused, no close-in-gun event wording, visual checks of live salvos).
 - **PF is not started.** G2 and G4–G9 and `scenarios/demo-baltic.yaml` still use real unit and place names, which the denylist will flag; the P6b fixtures are all generic.
 - The `Task::Jam` orbit and `SetJammer` mode picker are tested in the browser only for the stand-off mode.

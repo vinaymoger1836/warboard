@@ -180,6 +180,9 @@ pub struct WeaponRounds {
     pub targets: Vec<Domain>,
     pub min_range_m: f64,
     pub max_range_m: f64,
+    /// May fire on a track another unit shares; otherwise the shooter's own
+    /// sensors must hold the target.
+    pub engage_on_remote: bool,
     pub count: u32,
 }
 
@@ -476,6 +479,7 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
                 targets: c.targets.clone(),
                 min_range_m: c.profile.min_range_m,
                 max_range_m: c.profile.max_range_m,
+                engage_on_remote: c.engage_on_remote,
                 count: *n,
             }
         })
