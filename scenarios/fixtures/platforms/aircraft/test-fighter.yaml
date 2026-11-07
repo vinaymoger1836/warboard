@@ -16,9 +16,12 @@ signature:
 stations:
   - { id: bay, kind: internal, categories: [test_air_bay], capacity: 4 }
   - { id: wing, kind: external, categories: [test_air_wing], capacity: 4 }
+fuel:
+  internal_kg: 6000
+  burn_kg_h: { cruise: 2000, military: 3500, afterburner: 10000 }
 sensors:
   - { sensor: test-fighter-radar, height_m: 0 }
 ew:
   - test-jammer
-durability: { model: aircraft, damage_points: 30 }
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

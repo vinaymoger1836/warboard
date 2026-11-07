@@ -3,7 +3,7 @@ kind: platform
 name: Test Jammer Aircraft (Strength 3)
 short_name: Jammer Str3
 category: aircraft/ew
-target_class: large_support
+target_class: ew_aircraft
 mobility:
   cruise_speed_mach: 0.8
   max_speed_mach: 0.85
@@ -11,9 +11,12 @@ mobility:
   climb_rate_mps: 50
   sustained_g: 3.0
   min_runway_m: 1500
+fuel:
+  internal_kg: 25000
+  burn_kg_h: { cruise: 3000 }
 signature:
   rcs_m2: { front: 20, side: 40, rear: 20, top: 50 }
 ew:
   - test-jammer-str3
-durability: { model: aircraft, damage_points: 60 }
+durability: { model: aircraft, p_kill_on_hit: 0.85 }
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
