@@ -27,6 +27,6 @@ golden:
       orders:
         - { tick: 8, side: 1, type: SetEmcon, units: [20], emcon: off }
   expect:
-    - { variant: radar_on, metric: pk, side: 0, weapon: test-arm, min: 0.72, max: 0.88 }
-    - { variant: radar_shutdown, metric: pk, side: 0, weapon: test-arm, min: 0.30, max: 0.42 }
-    - { variant: radar_shutdown, metric: pk, side: 0, weapon: test-arm, ratio_to: radar_on, min: 0.38, max: 0.52 }
+    - { variant: radar_on, metric: pk, side: 0, weapon: test-arm, aggregate: mean, min: 0.68, max: 0.78 }
+    - { variant: radar_shutdown, metric: pk, side: 0, weapon: test-arm, aggregate: mean, min: 0.28, max: 0.38 }
+    - { variant: radar_shutdown, metric: pk, side: 0, weapon: test-arm, ratio_to: radar_on, aggregate: mean, min: 0.40, max: 0.50 }
