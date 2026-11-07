@@ -2,7 +2,7 @@ id: test-fighter-radar
 kind: sensor
 name: Test Fighter Radar
 sensor_type: radar
-role: [air_search, fire_control]
+role: [air_search, ground_mapping, fire_control]
 radar:
   band: X
   r_ref_km: 100

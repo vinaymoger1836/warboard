@@ -6,6 +6,7 @@
 # a = +4 -> m(a) = 0.45
 name: G11 Stand-off jamming
 seed: 11
+content: scenarios/fixtures
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 sides:
@@ -30,7 +31,7 @@ golden:
     jam_adv_p2: { replace: [{ unit: 30, platform: test-jammer-str7-aircraft }] }
     jam_adv_p4: { replace: [{ unit: 30, platform: test-jammer-str9-aircraft }] }
   expect:
-    - { variant: unjammed, metric: first_detection_range_km, side: 0, target: 20, min: 140, max: 160 }
+    - { variant: unjammed, metric: first_detection_range_km, side: 0, target: 20, min: 175, max: 200 }
     - { variant: jam_adv_m2, metric: first_detection_range_km, side: 0, target: 20, ratio_to: unjammed, min: 0.85, max: 0.95 }
     - { variant: jam_adv_0, metric: first_detection_range_km, side: 0, target: 20, ratio_to: unjammed, min: 0.70, max: 0.80 }
     - { variant: jam_adv_p2, metric: first_detection_range_km, side: 0, target: 20, ratio_to: unjammed, min: 0.55, max: 0.65 }

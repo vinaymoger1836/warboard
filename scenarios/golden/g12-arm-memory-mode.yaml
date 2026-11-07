@@ -1,0 +1,32 @@
+# G12 (doc 02 §9): Emitter-homing weapon with memory mode when radar shuts down.
+# When the targeted radar switches off, the ARM flies on inertial memory to the
+# last known position and Pk drops by arm_memory_pk_factor (0.45):
+# Pk(radar_on) ~ 0.80 -> Pk(radar_shutdown) ~ 0.36 (ratio ~ 0.45).
+name: G12 ARM memory mode
+seed: 12
+content: scenarios/fixtures
+start_utc: 2026-10-27T10:00:00Z
+start_mode: deploy
+sides:
+  - { name: Blue, countries: [tst], roe: alpha }
+  - { name: Red, countries: [opp], roe: alpha }
+units:
+  - { id: 10, name: Fighter, platform: test-fighter, country: tst, lat_deg: 55.0, lon_deg: 10.4, alt_m: 8000, heading_deg: 270, loadout: test-fighter-sead }
+  - { id: 20, name: SAM-Radar, platform: test-sam-radar-unit, country: opp, lat_deg: 55.0, lon_deg: 10.0, alt_m: 0, heading_deg: 90 }
+orders:
+  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: move, waypoints: [[10.0, 55.0]], alt_m: 8000 } }
+  - { tick: 0, side: 0, type: SetDoctrine, units: [10], launch: max_range, shots_per_target: 1 }
+golden:
+  id: G12
+  description: ARM memory mode reduces Pk by memory factor (0.45) when radar shuts down
+  max_ticks: 120
+  seeds: 500
+  variants:
+    radar_on: {}
+    radar_shutdown:
+      orders:
+        - { tick: 8, side: 1, type: SetEmcon, units: [20], emcon: off }
+  expect:
+    - { variant: radar_on, metric: pk, side: 0, weapon: test-arm, min: 0.72, max: 0.88 }
+    - { variant: radar_shutdown, metric: pk, side: 0, weapon: test-arm, min: 0.30, max: 0.42 }
+    - { variant: radar_shutdown, metric: pk, side: 0, weapon: test-arm, ratio_to: radar_on, min: 0.38, max: 0.52 }
