@@ -1,5 +1,5 @@
 // War board (doc 06 §7): top bar, map with forces panel and unit card, bottom dock.
-import type { TickReport } from '@warboard/protocol';
+import type { Roe, TickReport } from '@warboard/protocol';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EngineBridge } from './bridge';
 import type { WarInfo } from './engine/messages';
@@ -10,6 +10,7 @@ import { PackPanel } from './packs/PackPanel';
 import { fileFor, type InstalledPack } from './packs/types';
 import { Dock } from './panels/Dock';
 import { ForcesPanel } from './panels/ForcesPanel';
+import { sendCommand } from './orders';
 import { isAlert, isIntel } from './panels/format';
 import { SavesPanel } from './panels/SavesPanel';
 import { TopBar } from './panels/TopBar';
@@ -34,6 +35,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [speed, setSpeed] = useState(1);
   const [war, setWar] = useState<WarInfo | null>(null);
+  // Side default ROE: from the war when it starts or loads, then from accepted SetRoe orders.
+  const [sideRoe, setSideRoe] = useState<Roe | null>(null);
   const manager = useMemo(() => new PackManager(), []);
   const [packs, setPacks] = useState<PackState>(manager.snapshot);
   const [packsOpen, setPacksOpen] = useState(false);
@@ -62,6 +65,7 @@ export function App() {
     const offWar = bridge.onWar((w) => {
       ui.clearLog();
       setWar(w);
+      setSideRoe(w.sides[w.side]?.roe ?? null);
     });
     const offEvents = bridge.onEvents((events) => {
       ui.addEvents(events, isAlert, isIntel);
@@ -191,6 +195,12 @@ export function App() {
         packsOpen={packsOpen}
         onSaves={() => setSavesOpen((o) => !o)}
         onPacks={() => setPacksOpen((o) => !o)}
+        sideRoe={sideRoe}
+        onRoe={(roe) => {
+          void sendCommand(bridge, { type: 'SetRoe', roe }, show).then((ok) => {
+            if (ok) setSideRoe(roe);
+          });
+        }}
       />
 
       <main className="board">

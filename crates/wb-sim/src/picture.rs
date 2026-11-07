@@ -462,7 +462,10 @@ fn fuse(pics: &mut SidePictures, rules: &Rules, seed: u64, det: Detection, out: 
             c.sources.sort_by_key(|s| (s.kind, s.observer, s.sensor));
         }
     }
-    if c.level > before.0 && before.0 > ContactLevel::Unknown {
+    // A rise is announced, including a first sight that already reaches class or type
+    // (an ESM fix of a known emitter); a bare unknown-to-domain step is not, since the
+    // new-contact line names the domain.
+    if c.level > before.0 && (before.0 > ContactLevel::Unknown || c.level > ContactLevel::Domain) {
         out.push((
             det.side,
             EventKind::ContactClassified {

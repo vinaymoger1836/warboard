@@ -144,6 +144,10 @@ pub enum EventKind {
         shooter: UnitId,
         /// Content weapon id.
         weapon_type: String,
+        /// Display name and category, for the event line (a close-in gun reads
+        /// differently from a missile).
+        weapon_name: String,
+        category: wb_content::source::WeaponCategory,
         salvo: u32,
         tag: u32,
         target: Option<AimRef>,
@@ -156,6 +160,8 @@ pub enum EventKind {
         weapon: UnitId,
         shooter: UnitId,
         weapon_type: String,
+        weapon_name: String,
+        category: wb_content::source::WeaponCategory,
         tag: u32,
         /// The side's contact (or point) the weapon was fired at.
         target: Option<AimRef>,

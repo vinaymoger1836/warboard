@@ -1,12 +1,13 @@
 # The war the hosted build opens until PF and war setup (ADR-040): generic fixtures only
 # (ADR-035), no real nation, force or system. Blue holds two test frigates, a test fighter
 # and a stand-off jammer; Red's two test corvettes fire an anti-ship salvo after 3 minutes.
+# Garrisoned: Blue holds the test port and the test air base, where its aircraft land and refuel.
 # Not a golden scenario.
 name: Test sea skirmish
 seed: 4040
 content: scenarios/fixtures
 start_utc: 2026-10-27T10:00:00Z
-start_mode: deploy
+start_mode: garrisoned
 sides:
   - { name: Blue, countries: [tst], roe: charlie, self_defence: true, player: true }
   - { name: Red, countries: [opp], roe: alpha }

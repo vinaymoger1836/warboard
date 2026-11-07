@@ -150,11 +150,14 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     const l = k.WeaponLaunched;
     const at = l.target && 'Contact' in l.target ? ` at ${contactName(l.target.Contact.contact, s)}` : '';
     const why = LAUNCH_REASON[l.reason] ?? '';
-    return { category: 'Weapon', text: `${n(l.shooter)} fired ${l.intercept ? 'INT' : 'M'}-${l.tag} ${l.weapon_type}${at}${why}` };
+    // A close-in gun fires bursts, not tagged missiles (doc 10 §5).
+    if (l.category === 'shell') return { category: 'Weapon', text: `${n(l.shooter)} opened fire with its close-in gun${at}${why}` };
+    return { category: 'Weapon', text: `${n(l.shooter)} fired ${l.intercept ? 'INT' : 'M'}-${l.tag} ${l.weapon_name}${at}${why}` };
   }
   if ('WeaponTerminated' in k) {
     const t = k.WeaponTerminated;
-    return { category: 'Weapon', text: `${t.intercept ? 'INT' : 'M'}-${t.tag} ${t.weapon_type} ${outcomeText(t)}` };
+    if (t.category === 'shell') return { category: 'Weapon', text: `Close-in gun burst ${outcomeText(t)}` };
+    return { category: 'Weapon', text: `${t.intercept ? 'INT' : 'M'}-${t.tag} ${t.weapon_name} ${outcomeText(t)}` };
   }
   if ('SalvoReport' in k) {
     const r = k.SalvoReport;

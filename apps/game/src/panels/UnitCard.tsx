@@ -8,6 +8,8 @@ import {
   type Emcon,
   type GroupDetails,
   type JammerMode,
+  type Roe,
+  type RoeChoice,
   type SatelliteDetails,
   SYMBOLS,
   type SymbolName,
@@ -357,6 +359,65 @@ function JammerControl({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   );
 }
 
+const ROE_NAMES: Record<Roe, string> = {
+  alpha: 'A — weapons free',
+  bravo: 'B — weapons tight',
+  charlie: 'C — weapons hold',
+};
+
+/**
+ * ROE section (doc 03 §7): the effective ROE and where it comes from, the group's own
+ * ROE (or inherit), and self-defence against incoming weapons.
+ */
+function RoeControl({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
+  const set = (cmd: { roe?: RoeChoice; self_defence?: boolean }) =>
+    void sendCommand(bridge, { type: 'SetRoe', units: [d.id], ...cmd }, toast);
+  const own: RoeChoice = d.roe_override ?? 'inherit';
+  const choices: [RoeChoice, string][] = [
+    ['alpha', 'A'],
+    ['bravo', 'B'],
+    ['charlie', 'C'],
+    ['inherit', 'INHERIT'],
+  ];
+  return (
+    <div className="roe-control">
+      <dl>
+        <dt>Effective</dt>
+        <dd>
+          {ROE_NAMES[d.roe]} <span className="muted-inline">(from the {d.roe_source})</span>
+        </dd>
+        <dt>Self-defence</dt>
+        <dd>
+          {d.self_defence ? 'on' : 'off'}{' '}
+          <span className="muted-inline">({d.self_defence_override == null ? 'inherited' : 'set on this group'})</span>
+        </dd>
+      </dl>
+      <div className="strike-label">Group ROE</div>
+      <div className="segmented" role="group" aria-label="Group rules of engagement">
+        {choices.map(([c, label]) => (
+          <button key={c} type="button" className={own === c ? 'seg active' : 'seg'} aria-pressed={own === c} onClick={() => set({ roe: c })}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="strike-label">Self-defence</div>
+      <div className="segmented" role="group" aria-label="Self-defence">
+        {([true, false] as const).map((v) => (
+          <button
+            key={String(v)}
+            type="button"
+            className={d.self_defence === v ? 'seg active' : 'seg'}
+            aria-pressed={d.self_defence === v}
+            onClick={() => set({ self_defence: v })}
+          >
+            {v ? 'ON' : 'OFF'}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const STRIKE_MAX_ROUNDS = 64; // the engine accepts 1–64 rounds per strike order
 
 /**
@@ -526,7 +587,13 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
     ui.set({ tool: { kind: 'circle', centre: null, radiusKm: patrolRadiusKm(d.domain) } });
     toast('Click the patrol centre, then click again at the radius');
   };
-  const later = (what: string, phase: string) => () => toast(`${what} arrives in ${phase}`);
+  // HOLD FIRE puts the group on Charlie (weapons hold, doc 03 §7); RESUME FIRE drops the
+  // group's own ROE so it inherits the side's again.
+  const holding = d.roe_override === 'charlie';
+  const holdFire = () =>
+    void sendCommand(bridge, { type: 'SetRoe', units: [d.id], roe: holding ? 'inherit' : 'charlie' }, (t) => toast(t)).then(
+      (ok) => ok && toast(holding ? `${d.name}: ROE back to the side's` : `${d.name}: holding fire (ROE C)`),
+    );
   const tool = useUi((s) => s.tool);
   const striking = tool?.kind === 'strike' ? tool : null;
   const strikeTool = () => {
@@ -551,7 +618,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
             ] as [string, () => void][])
           : []),
         ['STRIKE', strikeTool],
-        ['HOLD FIRE', later('Rules of engagement', 'P5')],
+        [holding ? 'RESUME FIRE' : 'HOLD FIRE', holdFire],
       ]
     : [
         ['MOVE', () => routeTool(false)],
@@ -734,7 +801,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
             'Electronic Warfare',
             <JammerControl d={d} bridge={bridge} toast={toast} />,
           )}
-        {section('roe', 'ROE', <p className="muted">Rules of engagement arrive in P5.</p>)}
+        {section('roe', 'ROE', <RoeControl d={d} bridge={bridge} toast={toast} />)}
         {section(
           'specs',
           'Specs',

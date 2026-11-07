@@ -15,7 +15,9 @@ use crate::orders::QueuedOrder;
 use crate::snapshot::Snapshot;
 
 pub const MAGIC: [u8; 4] = *b"WBSG";
-pub const SAVE_VERSION: u16 = 1;
+/// 2 (after P6b): the snapshot gained combat state, effects and the jammer state since 1;
+/// older saves are refused with this reason instead of a decode error.
+pub const SAVE_VERSION: u16 = 2;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]

@@ -78,8 +78,33 @@ Not checked by eye: the own-unit `[JAMMED]` badge (covered by the engine test on
 
 ## Known gaps
 
-- P5 leftovers: the ROE A/B/C buttons and the card's ROE section are disabled, and `HOLD FIRE` only shows a toast. `STRIKE` was wired after this phase (7 Nov 2026): a strike panel on the unit card picks a contact or point on the map, a weapon that can engage it and 1–64 rounds, and the engine now ends a strike that can never fire with a `StrikeAborted` event and its reason.
+- P5 leftovers: done after this phase, see "Leftovers cleared after P6b".
 - P6a's gaps carry over (soft-kill window unused, no close-in-gun event wording, visual checks of live salvos).
 - **PF is not started.** G2 and G4–G9 and `scenarios/demo-baltic.yaml` still use real unit and place names, which the denylist will flag; the P6b fixtures are all generic.
-- The `Task::Jam` orbit and `SetJammer` mode picker are tested in the browser only for the stand-off mode.
-- Saves made before the jammer state was added are not expected to load (layout changed; not tested with an old save).
+- Saves made before the jammer state was added are refused: `SAVE_VERSION` is now 2 (see below).
+
+## Leftovers cleared after P6b (7 Nov 2026)
+
+Checked against the known gaps of the P0–P6b reports. All checks pass afterwards: fmt, clippy, lint canary, 61 tests, 15 golden scenarios (44 bands), native = WASM (18 matches), truth canary, benchmarks (`patrol-2000` 0.97 ms, `sensors-2000` 2.86 ms), `cargo deny`, content check, pnpm typecheck, lint and build.
+
+| Gap (report) | Done |
+|---|---|
+| `STRIKE` only showed a toast (P5, P6a) | Strike panel on the unit card: pick a contact or a point on the map, a weapon that can engage it (`GroupDetails.weapons` now has id, category, targets, ranges, `engage_on_remote`), 1–64 rounds, range warning. The engine ends a strike that can never fire with `StrikeAborted { group, reason }` (alert). Checked in the browser on both target kinds. |
+| ROE A/B/C in the top bar and the card's ROE section disabled; `HOLD FIRE` a toast (P5, P6a) | Top bar sets the side default (`SetRoe`); the card shows the effective ROE and its source, sets the group's ROE (A, B, C, inherit) and self-defence; `HOLD FIRE` puts the group on C and becomes `RESUME FIRE`. `GroupDetails` gains `roe`, `roe_source`, `roe_override`, `self_defence`, `self_defence_override`. Checked in the browser. |
+| No close-in-gun wording (P6a) | `WeaponLaunched` and `WeaponTerminated` carry `weapon_name` and `category`; the log says "opened fire with its close-in gun" and "Close-in gun burst …", and missiles by name instead of content id. |
+| A contact classified on first sight had no "classified" line (P4) | `ContactClassified` is now also emitted when a first sight reaches class or type (a bare unknown → domain step is still silent). |
+| Winchester had no test (P3) | Golden `G7-Winchester` (`scenarios/golden/g7-winchester.yaml`, new metric `winchester_returns`): a test fighter fires its four test anti-radiation missiles and heads home for winchester, no bingo, 5 seeds. |
+| `SAVE_VERSION` stayed 1 while the snapshot changed (P5) | Now 2: older saves are refused as "version 1" instead of failing to decode. |
+| Jammer modes checked in the browser only for stand-off (P6b) | Escort (150 km circle) and self-protect ("Self only", no circle) checked. |
+| Test war had no base (hosting) | Fixture `test-airbase` (Bornholm, away from any real airfield) and the test war is now garrisoned: aircraft bingo, land, turn around and take off again. Goldens deploy, so they are unaffected. |
+
+## Still open after the clean-up
+
+- **Design or content decisions (need you):**
+  - out-of-fuel aircraft keep flying at 0 kg when no base is reachable; doc 02 does not say what happens (flameout and loss?);
+  - the P6a soft-kill window (`tewa.soft_kill_window_s`) and IADS layer templates are unread; wiring them changes G10's engagement timing and needs an ADR;
+  - the open questions of P0–P4 (fonts, YAML crate, JS licence check, landing reserve, garrisoned civil airfields, sensor budget, and so on) are still yours to answer.
+- **Bigger than a leftover:** ship route planning (P3: routes are checked, not planned; H3 pathfinding comes with P11); a sonar golden needs submarine content (P8).
+- **PF or P8 content:** real names in G2, G4–G9 and the Baltic demo; no `road_capable` platforms; the latin-ext italic font (only real place names need it).
+- **Minor UI:** contact labels are not decluttered with unit labels (P4); missile trails restart on page reload (P5); the "world view out of reach" note (P4) was this viewport only, the map allows zoom 1.
+- **Not verified by eye:** a live salvo at ×1–×5 (P6a); the browser session dropped before the 3-minute salvo reached Blue. The engine side is covered by G10.

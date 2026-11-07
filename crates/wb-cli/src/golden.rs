@@ -27,7 +27,9 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use wb_core::UnitId;
 use wb_core::math::pow;
-use wb_sim::components::{Group, GroupMember, Kinematics, PlatformRef, WeaponFlight, WeaponTarget};
+use wb_sim::components::{
+    Group, GroupMember, Kinematics, PlatformRef, ReturnWhy, WeaponFlight, WeaponTarget,
+};
 use wb_sim::events::{AimRef, Outcome};
 use wb_sim::orders::Command;
 use wb_sim::picture::SidePictures;
@@ -181,6 +183,9 @@ enum Metric {
     BingoCalls,
     /// Refuellings completed by members before the first landing.
     Refuels,
+    /// Times the group headed home because its weapons were spent (winchester,
+    /// doc 02 §6), before the first landing.
+    WinchesterReturns,
     /// True range at the side's first detection of the target, km.
     FirstDetectionRangeKm,
     /// Terrain clearance of the exact line of sight observer → target at the
@@ -219,6 +224,7 @@ impl Metric {
                 | Metric::LandedReserveMarginKg
                 | Metric::BingoCalls
                 | Metric::Refuels
+                | Metric::WinchesterReturns
         )
     }
 
@@ -962,6 +968,14 @@ fn flight_value(
             window
                 .iter()
                 .filter(|e| matches!(e.kind, EventKind::Refuelled { unit, .. } if members.contains(&unit)))
+                .count() as f64,
+        ),
+        Metric::WinchesterReturns => Some(
+            window
+                .iter()
+                .filter(|e| {
+                    matches!(e.kind, EventKind::Return { group: g, why: ReturnWhy::Winchester, .. } if g == group)
+                })
                 .count() as f64,
         ),
         _ => None,

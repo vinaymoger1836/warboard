@@ -1,5 +1,5 @@
 // Top bar (doc 10 §8, doc 03 §9): clock, speeds, achieved speed, auto-slow, side ROE.
-import type { TickReport } from '@warboard/protocol';
+import type { Roe, TickReport } from '@warboard/protocol';
 import { ui, useUi } from '../store';
 import { elapsed, utcClock } from './format';
 import { PauseGlyph } from './glyphs';
@@ -15,7 +15,17 @@ interface Props {
   onPacks: () => void;
   savesOpen: boolean;
   packsOpen: boolean;
+  /** The side's default ROE (doc 03 §7); none until the war is loaded. */
+  sideRoe: Roe | null;
+  onRoe: (r: Roe) => void;
 }
+
+/** Side ROE buttons (doc 10 §8): letter, value and what it means (doc 03 §7). */
+export const ROE_LEVELS: [string, Roe, string][] = [
+  ['A', 'alpha', 'Alpha: weapons free'],
+  ['B', 'bravo', 'Bravo: weapons tight (own territory and return fire)'],
+  ['C', 'charlie', 'Charlie: weapons hold (self-defence only; the rest asks for approval)'],
+];
 
 const AUTO_SLOW = [
   ['x1', '×1'],
@@ -23,7 +33,7 @@ const AUTO_SLOW = [
   ['off', 'OFF'],
 ] as const;
 
-export function TopBar({ report, error, speed, onSpeed, onSaves, onPacks, savesOpen, packsOpen }: Props) {
+export function TopBar({ report, error, speed, onSpeed, onSaves, onPacks, savesOpen, packsOpen, sideRoe, onRoe }: Props) {
   const autoSlow = useUi((s) => s.autoSlow);
   const achieved = report
     ? speed === 0
@@ -74,12 +84,20 @@ export function TopBar({ report, error, speed, onSpeed, onSaves, onPacks, savesO
           ))}
         </div>
       </div>
-      <div className="segmented-labelled" title="Rules of engagement arrive in P5">
+      <div className="segmented-labelled">
         <span className="seg-label">ROE</span>
         <div className="speeds" role="group" aria-label="Side rules of engagement">
-          {['A', 'B', 'C'].map((r) => (
-            <button key={r} type="button" className="speed" disabled>
-              {r}
+          {ROE_LEVELS.map(([letter, roe, meaning]) => (
+            <button
+              key={roe}
+              type="button"
+              className={roe === sideRoe ? 'speed active' : 'speed'}
+              aria-pressed={roe === sideRoe}
+              title={`Side default ${meaning}`}
+              disabled={sideRoe === null}
+              onClick={() => onRoe(roe)}
+            >
+              {letter}
             </button>
           ))}
         </div>

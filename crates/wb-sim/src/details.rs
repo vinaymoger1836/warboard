@@ -14,8 +14,9 @@ use crate::bases::kind_name;
 use crate::clock::SimClock;
 use crate::components::{
     Allegiance, BaseRef, BaseSite, Countermeasures, Fuel, Group, GroupMember, Identity, Kinematics,
-    Magazine, Mode, PlatformRef, Posture, Task, WeaponFlight,
+    Magazine, Mode, PlatformRef, Posture, Roe, RoeSetting, Task, WeaponFlight,
 };
+use crate::roe::RoeSource;
 use crate::rules::Rules;
 use crate::view::status;
 use crate::world::{UnitIndex, entity};
@@ -255,6 +256,14 @@ pub struct GroupDetails {
     pub jammer: Option<JammerView>,
     /// Sensor names of the platform.
     pub sensors: Vec<String>,
+    /// Effective ROE of the lead and where it comes from (doc 03 §7).
+    pub roe: Roe,
+    pub roe_source: RoeSource,
+    /// The group's own ROE, none when it inherits the side's.
+    pub roe_override: Option<Roe>,
+    /// Effective self-defence; the group's own setting, none when inherited.
+    pub self_defence: bool,
+    pub self_defence_override: Option<bool>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -338,14 +347,16 @@ pub fn details(world: &World, side: u8, id: u32) -> Result<Details, String> {
         None => UnitId(id),
     };
     let ge = entity(world, gid).ok_or_else(unknown)?;
-    group(world, gid, ge)
+    group(world, side, gid, ge)
         .map(|g| Details::Group(Box::new(g)))
         .ok_or_else(unknown)
 }
 
-fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
+fn group(world: &World, side: u8, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
     let rules = world.resource::<Rules>();
     let g = world.get::<Group>(ge)?;
+    let (roe, roe_source, self_defence) = crate::roe::effective(world, side, g.lead()?);
+    let own_roe = world.get::<RoeSetting>(ge).copied().unwrap_or_default();
     let lead = entity(world, g.lead()?)?;
     let p = rules.platform(world.get::<PlatformRef>(lead)?.0);
     let k = *world.get::<Kinematics>(lead)?;
@@ -650,6 +661,11 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
             .iter()
             .map(|m| db.str(db.sensors[m.sensor.0 as usize].name).to_owned())
             .collect(),
+        roe,
+        roe_source,
+        roe_override: own_roe.roe,
+        self_defence,
+        self_defence_override: own_roe.self_defence,
     })
 }
 
