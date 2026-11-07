@@ -4,11 +4,17 @@ import { createReadStream, existsSync, readdirSync, readFileSync, statSync } fro
 import type { ServerResponse } from 'node:http';
 import { join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { defineConfig, type Connect, type Plugin } from 'vite';
+import { defineConfig, normalizePath, type Connect, type Plugin } from 'vite';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const appRoot = fileURLToPath(new URL('.', import.meta.url));
 const packsDir = resolve(repoRoot, 'build', 'packs');
+
+// The war the engine worker opens, and its content pack (paths from the repo root). The
+// hosted build sets both to the neutral test war on the fixtures (ADR-040); only the chosen
+// scenario is bundled.
+const warScenario = normalizePath(resolve(repoRoot, process.env.WB_SCENARIO ?? 'scenarios/demo-baltic.yaml'));
+const warContent = normalizePath(resolve(repoRoot, process.env.WB_CONTENT_PACK ?? 'build/content.wbpack'));
 
 /**
  * Serves build/packs/ at /packs/ in dev and preview, standing in for the release host
@@ -88,6 +94,13 @@ export default defineConfig({
   base: './',
   plugins: [react(), servePacks(), serviceWorker()],
   worker: { format: 'es' },
+  resolve: {
+    // Regexes, so the `?raw` / `?url` query after the name is kept.
+    alias: [
+      { find: /^@war\/scenario\.yaml/, replacement: warScenario },
+      { find: /^@war\/content\.wbpack/, replacement: warContent },
+    ],
+  },
   // The worker imports scenarios/*.yaml and the wasm package from outside the app folder.
   server: { fs: { allow: [repoRoot] } },
   build: { target: 'es2023', chunkSizeWarningLimit: 2500 },

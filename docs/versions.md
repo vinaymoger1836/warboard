@@ -104,6 +104,8 @@ Pinned in `geodata/sources.lock.yaml`: Protomaps daily build 20261027 (basemap v
 | `actions/download-artifact` | v8.0.2 | `9000827ccba6bdab643e8b6fd33ac0654aef8333` |
 | `Swatinem/rust-cache` | v2.9.3 | `d1527c8f67ef9af357290475d4af4b0fab8f12e0` |
 | `taiki-e/install-action` | v2.87.32 | `5488ac5a951645ce95062214902ac4b6bc1a1037` |
+| `actions/upload-pages-artifact` | v5.0.0 | `fc324d3547104276b827a68afc52ff2a11cc49c9` (MIT; `pages.yml`) |
+| `actions/deploy-pages` | v5.0.1 | `368f82528645a54fb793d4d04e342629a3f51346` (MIT; `pages.yml`) |
 
 Runner image: `ubuntu-24.04`.
 

@@ -133,7 +133,7 @@ Request `navigator.storage.persist()` at first pack install; show quota and usag
 ## 9. Offline app and hosting
 
 - A small hand-written service worker (`apps/game/sw/sw.js`, filled in at build time with the list of built and public files) precaches the app shell; packs are downloaded explicitly from the pack manager with progress and hash checks. (Workbox was the original plan; dropped in P2 to avoid its dependency tree.)
-- Hosting: any free static host (e.g. GitHub Pages or Cloudflare Pages) for the app; packs as release assets. Personal use can also run from a local dev server.
+- Hosting (ADR-040): the app on GitHub Pages, built and published by `.github/workflows/pages.yml` (run by hand); region packs in a public Cloudflare R2 bucket whose CORS rule allows only the Pages origin and `http://localhost:5173`. The build reads `VITE_PACKS_URL` for the pack location (default: the app's own `packs/`, which the dev and preview servers fill from `build/packs/`), and `WB_SCENARIO` / `WB_CONTENT_PACK` for the war the worker opens (default: the Baltic demo on `build/content.wbpack`; the hosted build uses `scenarios/hosted-test.yaml` on the fixtures). GitHub release assets were the first plan, but browsers cannot fetch them (no CORS headers). Personal use can also run from a local dev server.
 - Updates: new app versions install in the background; packs update only when their manifest version changes.
 
 ## 10. Browser support

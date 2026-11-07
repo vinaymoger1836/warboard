@@ -5,8 +5,10 @@
 import type { Event, SaveHeader, TickReport } from '@warboard/protocol';
 import init, { Engine, GeoQuery, save_header } from '@warboard/wb-wasm';
 import wasmUrl from '@warboard/wb-wasm/wb_wasm_bg.wasm?url';
-import contentUrl from '../../../../build/content.wbpack?url';
-import scenarioYaml from '../../../../scenarios/demo-baltic.yaml?raw';
+// The war and its content pack are chosen at build time (vite.config.ts: WB_SCENARIO,
+// WB_CONTENT_PACK); by default the Baltic demo on build/content.wbpack.
+import contentUrl from '@war/content.wbpack?url';
+import scenarioYaml from '@war/scenario.yaml?raw';
 import { AUTOSAVE_SLOT, readSave, writeSave } from '../saves/store';
 import type { FromWorker, PackFiles, ReplyData, ToWorker, WarInfo, WorkerRequest } from './messages';
 
@@ -27,7 +29,7 @@ const contentPack = fetch(contentUrl).then(async (r) => {
 const post = (msg: FromWorker, transfer: Transferable[] = []) => self.postMessage(msg, { transfer });
 
 let engine: Engine | null = null;
-const warName = 'Baltic demo';
+const warName = /^name:\s*(.+?)\s*$/m.exec(scenarioYaml)?.[1] ?? 'War';
 let installed: PackFiles[] = [];
 
 // ---- Region packs -------------------------------------------------------------------

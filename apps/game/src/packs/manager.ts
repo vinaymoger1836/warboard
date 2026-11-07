@@ -22,6 +22,17 @@ type Listener = (s: PackState) => void;
 
 const wasmReady = init({ module_or_path: wasmUrl });
 
+/**
+ * Where the pack list and pack files live (doc 06 §9). `VITE_PACKS_URL` points a hosted
+ * build at the pack bucket (ADR-040); without it the app's own `packs/` folder is used,
+ * which the dev and preview servers fill from build/packs/.
+ */
+function defaultPacksUrl(): string {
+  const configured = (import.meta.env.VITE_PACKS_URL as string | undefined)?.trim();
+  const base = configured ? (configured.endsWith('/') ? configured : `${configured}/`) : 'packs/';
+  return new URL(base, document.baseURI).href;
+}
+
 async function blake3Hex(bytes: Uint8Array): Promise<string> {
   await wasmReady;
   const h = new Blake3Hasher();
@@ -47,7 +58,7 @@ export class PackManager {
   private beforeChange: () => Promise<void> = async () => {};
   private readonly changed = new Set<(usable: InstalledPack[]) => void>();
 
-  constructor(baseUrl = new URL('packs/', document.baseURI).href) {
+  constructor(baseUrl = defaultPacksUrl()) {
     this.baseUrl = baseUrl;
   }
 

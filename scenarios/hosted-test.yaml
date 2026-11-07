@@ -1,0 +1,24 @@
+# The war the hosted build opens until PF and war setup (ADR-040): generic fixtures only
+# (ADR-035), no real nation, force or system. Blue holds two test frigates, a test fighter
+# and a stand-off jammer; Red's two test corvettes fire an anti-ship salvo after 3 minutes.
+# Not a golden scenario.
+name: Test sea skirmish
+seed: 4040
+content: scenarios/fixtures
+start_utc: 2026-10-27T10:00:00Z
+start_mode: deploy
+sides:
+  - { name: Blue, countries: [tst], roe: charlie, self_defence: true, player: true }
+  - { name: Red, countries: [opp], roe: alpha }
+units:
+  - { id: 10, name: Frigate 1, platform: test-frigate, country: tst, lat_deg: 55.50, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
+  - { id: 20, name: Frigate 2, platform: test-frigate, country: tst, lat_deg: 55.55, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
+  - { id: 30, name: Watcher, platform: test-fighter, country: tst, lat_deg: 55.62, lon_deg: 16.7, alt_m: 9000, heading_deg: 90 }
+  - { id: 40, name: Jammer, platform: test-jammer-aircraft, country: tst, lat_deg: 55.45, lon_deg: 16.8, alt_m: 10000, heading_deg: 90, jammer: true, jammer_mode: stand_off }
+  - { id: 50, name: Corvette 1, platform: test-corvette, country: opp, lat_deg: 55.50, lon_deg: 17.65, heading_deg: 270, loadout: test-corvette-standard }
+  - { id: 60, name: Corvette 2, platform: test-corvette, country: opp, lat_deg: 55.56, lon_deg: 17.65, heading_deg: 270, loadout: test-corvette-standard }
+orders:
+  - { tick: 0, side: 0, type: AssignTask, units: [40], task: { kind: jam, centre: [16.8, 55.45], radius_km: 10, alt_m: 10000 } }
+  - { tick: 0, side: 0, type: AssignTask, units: [30], task: { kind: patrol_circle, centre: [16.7, 55.62], radius_km: 15, alt_m: 9000 } }
+  - { tick: 180, side: 1, type: AssignTask, units: [50], task: { kind: strike, point: [17.0, 55.50], count: 4, weapon: test-asm } }
+  - { tick: 180, side: 1, type: AssignTask, units: [60], task: { kind: strike, point: [17.0, 55.55], count: 4, weapon: test-asm } }
