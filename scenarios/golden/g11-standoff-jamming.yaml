@@ -1,0 +1,37 @@
+# G11 (doc 02 §9): Stand-off jamming against a SAM radar at advantages -2, 0, +2, +4.
+# Detection-range multiplier m(a) matches the table:
+# a = -2 -> m(a) = 0.90
+# a =  0 -> m(a) = 0.75
+# a = +2 -> m(a) = 0.60
+# a = +4 -> m(a) = 0.45
+name: G11 Stand-off jamming
+seed: 11
+start_utc: 2026-10-27T10:00:00Z
+start_mode: deploy
+sides:
+  - { name: Blue, countries: [tst] }
+  - { name: Red, countries: [opp] }
+units:
+  - { id: 10, name: SAM-Radar, platform: test-sam-radar-unit, country: tst, lat_deg: 55.0, lon_deg: 10.0, alt_m: 0, heading_deg: 90 }
+  - { id: 20, name: Inbound, platform: test-fighter, country: opp, lat_deg: 55.0, lon_deg: 13.5, alt_m: 9000, heading_deg: 270 }
+  - { id: 30, name: Jammer, platform: test-jammer-aircraft, country: opp, lat_deg: 55.0, lon_deg: 11.5, alt_m: 10000, heading_deg: 90, jammer: true, jammer_mode: stand_off }
+orders:
+  - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[10.0, 55.0]], alt_m: 9000 } }
+  - { tick: 0, side: 1, type: AssignTask, units: [30], task: { kind: jam, centre: [11.5, 55.0], radius_km: 5, alt_m: 10000 } }
+golden:
+  id: G11
+  description: stand-off jamming detection range ratios match table at advantage -2, 0, +2, +4
+  max_ticks: 650
+  seeds: 500
+  variants:
+    unjammed: { drop_units: [30] }
+    jam_adv_m2: { replace: [{ unit: 30, platform: test-jammer-str3-aircraft }] }
+    jam_adv_0: {}
+    jam_adv_p2: { replace: [{ unit: 30, platform: test-jammer-str7-aircraft }] }
+    jam_adv_p4: { replace: [{ unit: 30, platform: test-jammer-str9-aircraft }] }
+  expect:
+    - { variant: unjammed, metric: first_detection_range_km, side: 0, target: 20, min: 140, max: 160 }
+    - { variant: jam_adv_m2, metric: first_detection_range_km, side: 0, target: 20, ratio_to: unjammed, min: 0.85, max: 0.95 }
+    - { variant: jam_adv_0, metric: first_detection_range_km, side: 0, target: 20, ratio_to: unjammed, min: 0.70, max: 0.80 }
+    - { variant: jam_adv_p2, metric: first_detection_range_km, side: 0, target: 20, ratio_to: unjammed, min: 0.55, max: 0.65 }
+    - { variant: jam_adv_p4, metric: first_detection_range_km, side: 0, target: 20, ratio_to: unjammed, min: 0.40, max: 0.50 }

@@ -11,6 +11,9 @@ mobility:
   climb_rate_mps: 50
   sustained_g: 3.0
   min_runway_m: 1500
+fuel:
+  internal_kg: 25000
+  burn_kg_h: { cruise: 3000 }
 signature:
   rcs_m2: { front: 20, side: 40, rear: 20, top: 50 }
 ew:
