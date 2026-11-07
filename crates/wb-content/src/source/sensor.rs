@@ -45,7 +45,6 @@ source_enum! {
     }
 }
 
-
 source_type! {
     /// One sensor type. Exactly the block that matches `sensor_type` is present.
     #[serde(deny_unknown_fields)]
@@ -183,5 +182,3 @@ impl Radar {
         }
     }
 }
-
-

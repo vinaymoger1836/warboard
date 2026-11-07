@@ -1,8 +1,8 @@
 //! Tests for P6b schema migration: eccm_db -> jam_resistance, seeker_eccm -> seeker_resistance.
 
+use wb_content::source::ew::EwSuite;
 use wb_content::source::sensor::Radar;
 use wb_content::source::weapon::Guidance;
-use wb_content::source::ew::EwSuite;
 
 #[test]
 fn radar_eccm_db_migrates_to_jam_resistance() {

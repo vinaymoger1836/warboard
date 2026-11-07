@@ -622,9 +622,10 @@ impl ViewEncoder {
             {
                 flags |= flag::JAMMING;
             }
-            let has_radar = platform.sensors.iter().any(|m| {
-                rules.db.sensors[m.sensor.0 as usize].radar.is_some()
-            });
+            let has_radar = platform
+                .sensors
+                .iter()
+                .any(|m| rules.db.sensors[m.sensor.0 as usize].radar.is_some());
             if has_radar
                 && jammers.iter().any(|j| {
                     j.side != side
@@ -685,9 +686,11 @@ impl ViewEncoder {
                 }
                 let is_radar = entity(world, c.truth).is_some_and(|te| {
                     world.get::<PlatformRef>(te).is_some_and(|p| {
-                        rules.platform(p.0).sensors.iter().any(|m| {
-                            rules.db.sensors[m.sensor.0 as usize].radar.is_some()
-                        })
+                        rules
+                            .platform(p.0)
+                            .sensors
+                            .iter()
+                            .any(|m| rules.db.sensors[m.sensor.0 as usize].radar.is_some())
                     })
                 });
                 let c_pos = c.est.map(|e| e.at).or_else(|| {

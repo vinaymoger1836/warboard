@@ -216,7 +216,8 @@ pub fn resolve(
             && jammers.iter().any(|j| {
                 j.side != shooter_side
                     && (j.effects.is_empty()
-                        || j.effects.contains(&wb_content::source::EwEffect::Navigation))
+                        || j.effects
+                            .contains(&wb_content::source::EwEffect::Navigation))
                     && distance_m(j.pos, wk.pos()) <= j.coverage_m
             });
         let effective_cep = if nav_jammed {

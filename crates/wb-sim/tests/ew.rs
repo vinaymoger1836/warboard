@@ -1,8 +1,8 @@
 //! Tests for electronic warfare (P6b, doc 02 §9).
 
 use std::sync::Arc;
-use wb_sim::events::EventKind;
 use wb_sim::Sim;
+use wb_sim::events::EventKind;
 
 fn fixtures() -> (Arc<wb_content::ContentDb>, [u8; 32]) {
     let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../../scenarios/fixtures");
@@ -85,7 +85,11 @@ orders:
                 // seeker_jam is 0.25 in realism.
                 // f_ew = 1.0 - 0.25 * (1.0 - 0.5) = 0.875.
                 assert!(eg.f_ew < 1.0, "f_ew must be < 1.0 under jamming");
-                assert!((eg.f_ew - 0.875).abs() < 1e-4, "f_ew must match 0.875, got {}", eg.f_ew);
+                assert!(
+                    (eg.f_ew - 0.875).abs() < 1e-4,
+                    "f_ew must match 0.875, got {}",
+                    eg.f_ew
+                );
                 terminated = true;
                 break;
             }

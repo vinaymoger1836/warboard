@@ -22,6 +22,7 @@ source_enum! {
 
 source_type! {
     /// 0–10 game stats per mode (doc 02 §9, doc 04 §3.4).
+    #[derive(Default)]
     #[serde(deny_unknown_fields)]
     pub struct EwModes {
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -100,38 +101,35 @@ source_type! {
     }
 }
 
-impl Default for EwModes {
-    fn default() -> Self {
-        Self {
-            self_protect: None,
-            escort: None,
-            stand_off: None,
-        }
-    }
-}
-
 impl EwSuite {
     /// Modes with fallback to legacy `ew_type`, `j_db`, `max_range_km`.
     pub fn resolved_modes(&self) -> EwModes {
         let mut modes = self.modes.clone();
-        if modes.self_protect.is_none() && modes.escort.is_none() && modes.stand_off.is_none() {
-            if let Some(ew_type) = &self.ew_type {
-                let strength = self.j_db.map(|j| (j * 0.3).round().clamp(0.0, 10.0)).unwrap_or(5.0);
-                let mode = JamMode {
-                    jam_strength: strength,
-                    coverage_km: self.max_range_km,
-                    sector_deg: self.field_of_regard_deg,
-                };
-                match ew_type {
-                    EwType::SelfProtection => modes.self_protect = Some(JamMode {
+        if modes.self_protect.is_none()
+            && modes.escort.is_none()
+            && modes.stand_off.is_none()
+            && let Some(ew_type) = &self.ew_type
+        {
+            let strength = self
+                .j_db
+                .map(|j| (j * 0.3).round().clamp(0.0, 10.0))
+                .unwrap_or(5.0);
+            let mode = JamMode {
+                jam_strength: strength,
+                coverage_km: self.max_range_km,
+                sector_deg: self.field_of_regard_deg,
+            };
+            match ew_type {
+                EwType::SelfProtection => {
+                    modes.self_protect = Some(JamMode {
                         jam_strength: strength,
                         coverage_km: None,
                         sector_deg: None,
-                    }),
-                    EwType::Escort => modes.escort = Some(mode),
-                    EwType::StandOff => modes.stand_off = Some(mode),
-                    _ => modes.stand_off = Some(mode),
+                    })
                 }
+                EwType::Escort => modes.escort = Some(mode),
+                EwType::StandOff => modes.stand_off = Some(mode),
+                _ => modes.stand_off = Some(mode),
             }
         }
         modes
@@ -146,4 +144,3 @@ impl EwSuite {
         }
     }
 }
-

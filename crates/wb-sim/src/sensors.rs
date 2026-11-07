@@ -460,16 +460,24 @@ pub(crate) struct ActiveJammer {
 pub(crate) fn active_jammers(world: &World, rules: &Rules) -> Vec<ActiveJammer> {
     let mut out = Vec::new();
     for (&uid, &e) in &world.resource::<UnitIndex>().0 {
-        let Some(st) = world.get::<JammerState>(e) else { continue };
+        let Some(st) = world.get::<JammerState>(e) else {
+            continue;
+        };
         if !st.active {
             continue;
         }
         if matches!(world.get::<Posture>(e), Some(Posture::AtBase { .. })) {
             continue;
         }
-        let Some(a) = world.get::<Allegiance>(e) else { continue };
-        let Some(k) = world.get::<Kinematics>(e) else { continue };
-        let Some(p_ref) = world.get::<PlatformRef>(e) else { continue };
+        let Some(a) = world.get::<Allegiance>(e) else {
+            continue;
+        };
+        let Some(k) = world.get::<Kinematics>(e) else {
+            continue;
+        };
+        let Some(p_ref) = world.get::<PlatformRef>(e) else {
+            continue;
+        };
         let p = rules.platform(p_ref.0);
         for ew_ix in &p.ew {
             let suite = &rules.db.ew_suites[ew_ix.0 as usize];
@@ -544,7 +552,7 @@ fn radar_f_jam(
     }
     reductions.sort_by(|a, b| b.total_cmp(a));
     let mut net_reduction = reductions[0];
-    let max_extra = (real.ew.max_jammers as usize).saturating_sub(1);
+    let max_extra = real.ew.max_jammers.saturating_sub(1);
     for _ in reductions.iter().skip(1).take(max_extra) {
         let remaining = 1.0 - net_reduction;
         net_reduction += remaining * real.ew.extra_jammer_factor;

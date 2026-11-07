@@ -418,10 +418,9 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
             target: crate::components::StrikeTarget::Point(at),
             ..
         } => (vec![lonlat(*at)], None, false, None, None),
-        Task::Idle
-        | Task::Intercept { .. }
-        | Task::Strike { .. }
-        | Task::Suppress { .. } => (Vec::new(), None, false, None, None),
+        Task::Idle | Task::Intercept { .. } | Task::Strike { .. } | Task::Suppress { .. } => {
+            (Vec::new(), None, false, None, None)
+        }
     };
     let (mode, mode_base) = match g.mode {
         Mode::Task => ("task", None),

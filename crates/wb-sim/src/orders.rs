@@ -1154,7 +1154,11 @@ fn resolve_task(
                         .or_else(|_| carried_for(world, &rules, picks, Domain::Surface, weapon))?;
                     StrikeTarget::Point(point(*p)?)
                 }
-                _ => return Err("Air-defence suppression needs a contact or a point, not both".to_owned()),
+                _ => {
+                    return Err(
+                        "Air-defence suppression needs a contact or a point, not both".to_owned(),
+                    );
+                }
             };
             Task::Suppress {
                 target,
@@ -1391,12 +1395,12 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
         Resolved::Jammer { groups, on, mode } => {
             for pick in groups {
                 for m in &pick.members {
-                    if let Some(e) = entity(world, *m) {
-                        if let Some(mut st) = world.get_mut::<JammerState>(e) {
-                            st.active = on;
-                            if let Some(md) = mode {
-                                st.mode = md;
-                            }
+                    if let Some(e) = entity(world, *m)
+                        && let Some(mut st) = world.get_mut::<JammerState>(e)
+                    {
+                        st.active = on;
+                        if let Some(md) = mode {
+                            st.mode = md;
                         }
                     }
                 }
@@ -1656,7 +1660,6 @@ pub fn assign(world: &mut World, side: u8, ge: Entity, task: Task) {
         }
     }
     let members = g.members.clone();
-    drop(g);
     if was_on {
         emit(
             world,
@@ -1669,11 +1672,11 @@ pub fn assign(world: &mut World, side: u8, ge: Entity, task: Task) {
     }
     if matches!(task, Task::Jam { .. }) {
         for m in members {
-            if let Some(e) = entity(world, m) {
-                if let Some(mut st) = world.get_mut::<JammerState>(e) {
-                    st.active = true;
-                    st.mode = JammerMode::StandOff;
-                }
+            if let Some(e) = entity(world, m)
+                && let Some(mut st) = world.get_mut::<JammerState>(e)
+            {
+                st.active = true;
+                st.mode = JammerMode::StandOff;
             }
         }
         emit(

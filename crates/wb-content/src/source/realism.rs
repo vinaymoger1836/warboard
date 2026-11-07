@@ -570,22 +570,56 @@ source_type! {
 
 fn default_advantage_table() -> Vec<AdvantageMultiplier> {
     vec![
-        AdvantageMultiplier { advantage: -4.0, multiplier: 1.00 },
-        AdvantageMultiplier { advantage: -2.0, multiplier: 0.90 },
-        AdvantageMultiplier { advantage:  0.0, multiplier: 0.75 },
-        AdvantageMultiplier { advantage:  2.0, multiplier: 0.60 },
-        AdvantageMultiplier { advantage:  4.0, multiplier: 0.45 },
-        AdvantageMultiplier { advantage:  6.0, multiplier: 0.35 },
+        AdvantageMultiplier {
+            advantage: -4.0,
+            multiplier: 1.00,
+        },
+        AdvantageMultiplier {
+            advantage: -2.0,
+            multiplier: 0.90,
+        },
+        AdvantageMultiplier {
+            advantage: 0.0,
+            multiplier: 0.75,
+        },
+        AdvantageMultiplier {
+            advantage: 2.0,
+            multiplier: 0.60,
+        },
+        AdvantageMultiplier {
+            advantage: 4.0,
+            multiplier: 0.45,
+        },
+        AdvantageMultiplier {
+            advantage: 6.0,
+            multiplier: 0.35,
+        },
     ]
 }
-fn default_close_in() -> f64 { 0.35 }
-fn default_off_axis() -> f64 { 0.3 }
-fn default_extra_jammer_factor() -> f64 { 0.10 }
-fn default_max_jammers() -> usize { 3 }
-fn default_seeker_jam() -> f64 { 0.25 }
-fn default_datalink_latency_factor() -> f64 { 3.0 }
-fn default_datalink_loss_fraction() -> f64 { 0.30 }
-fn default_nav_jam_cep_factor() -> f64 { 4.0 }
+fn default_close_in() -> f64 {
+    0.35
+}
+fn default_off_axis() -> f64 {
+    0.3
+}
+fn default_extra_jammer_factor() -> f64 {
+    0.10
+}
+fn default_max_jammers() -> usize {
+    3
+}
+fn default_seeker_jam() -> f64 {
+    0.25
+}
+fn default_datalink_latency_factor() -> f64 {
+    3.0
+}
+fn default_datalink_loss_fraction() -> f64 {
+    0.30
+}
+fn default_nav_jam_cep_factor() -> f64 {
+    4.0
+}
 
 impl EwRealism {
     /// Maps advantage `a = jam_strength - jam_resistance` (clamped to -10..10)
@@ -617,4 +651,3 @@ impl EwRealism {
         1.0
     }
 }
-

@@ -77,14 +77,23 @@ pub(crate) fn validate(set: &ContentSet) -> Vec<ContentError> {
             Entry::Weapon(w) => cx.weapon(w),
             Entry::EwSuite(w) => {
                 let modes = w.resolved_modes();
-                let has_any_mode = modes.self_protect.is_some() || modes.escort.is_some() || modes.stand_off.is_some();
+                let has_any_mode = modes.self_protect.is_some()
+                    || modes.escort.is_some()
+                    || modes.stand_off.is_some();
                 if !has_any_mode {
                     cx.err("modes", "at least one mode must be configured".into());
                 }
-                for (name, mode) in [("self_protect", &modes.self_protect), ("escort", &modes.escort), ("stand_off", &modes.stand_off)] {
+                for (name, mode) in [
+                    ("self_protect", &modes.self_protect),
+                    ("escort", &modes.escort),
+                    ("stand_off", &modes.stand_off),
+                ] {
                     if let Some(m) = mode {
                         if m.jam_strength < 0.0 || m.jam_strength > 10.0 {
-                            cx.err(&format!("modes.{name}.jam_strength"), "must be in 0..=10".into());
+                            cx.err(
+                                &format!("modes.{name}.jam_strength"),
+                                "must be in 0..=10".into(),
+                            );
                         }
                         if let Some(c) = m.coverage_km {
                             cx.positive(&format!("modes.{name}.coverage_km"), c);
@@ -518,10 +527,10 @@ impl<'a> Cx<'a, '_> {
             if r.jam_resistance.is_none() && r.eccm_db.is_none() {
                 self.err("radar.jam_resistance", "is required".into());
             }
-            if let Some(jr) = r.jam_resistance {
-                if !(0.0..=10.0).contains(&jr) {
-                    self.err("radar.jam_resistance", "must be in 0..=10".into());
-                }
+            if let Some(jr) = r.jam_resistance
+                && !(0.0..=10.0).contains(&jr)
+            {
+                self.err("radar.jam_resistance", "must be in 0..=10".into());
             }
         }
         if let Some(e) = &s.esm {

@@ -190,4 +190,3 @@ impl Guidance {
         self.seeker_resistance.or(self.seeker_eccm)
     }
 }
-

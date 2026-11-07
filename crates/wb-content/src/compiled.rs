@@ -10,9 +10,8 @@
 use crate::source::platform::{PlatformCategory, RcsByAspect, StationKind};
 use crate::source::realism::{
     AspectFactors, BaseComponentKind, BaseKind, CellClass, ContactLevel, CountermeasureRealism,
-    EarthRealism, EndgameRealism, FuelRealism, GroundRealism, MovementRealism,
-    RadarRealism, RoeRealism, SiteRule, SpatialRealism, Subsystem, TerrainClass, TimeRealism,
-    WeaponRealism,
+    EarthRealism, EndgameRealism, FuelRealism, GroundRealism, MovementRealism, RadarRealism,
+    RoeRealism, SiteRule, SpatialRealism, Subsystem, TerrainClass, TimeRealism, WeaponRealism,
 };
 use crate::source::sensor::{PayloadKind, SensorRole, SensorType};
 use crate::source::system::{ComponentRole, DeployAs};

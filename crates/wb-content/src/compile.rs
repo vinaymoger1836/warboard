@@ -403,7 +403,10 @@ impl Compiler<'_> {
             m.as_ref().map(|jm| c::CompiledJamMode {
                 jam_strength: jm.jam_strength,
                 coverage_m: jm.coverage_km.map(km_to_m).unwrap_or(0.0),
-                sector_rad: jm.sector_deg.map(deg_to_rad).unwrap_or(2.0 * std::f64::consts::PI),
+                sector_rad: jm
+                    .sector_deg
+                    .map(deg_to_rad)
+                    .unwrap_or(2.0 * std::f64::consts::PI),
             })
         };
         c::EwSuite {
@@ -623,10 +626,15 @@ impl Compiler<'_> {
                 group_count_spread: f.group_count_spread,
             },
             ew: c::EwRealism {
-                advantage_table: x.ew.advantage_table.iter().map(|a| c::AdvantageMultiplier {
-                    advantage: a.advantage,
-                    multiplier: a.multiplier,
-                }).collect(),
+                advantage_table: x
+                    .ew
+                    .advantage_table
+                    .iter()
+                    .map(|a| c::AdvantageMultiplier {
+                        advantage: a.advantage,
+                        multiplier: a.multiplier,
+                    })
+                    .collect(),
                 close_in: x.ew.close_in,
                 off_axis: x.ew.off_axis,
                 extra_jammer_factor: x.ew.extra_jammer_factor,
