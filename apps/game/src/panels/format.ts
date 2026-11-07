@@ -49,7 +49,7 @@ export function fuelColour(pct: number | null | undefined, bingo = false): strin
   return cssVar('state.ok');
 }
 
-export type EventCategory = 'Task' | 'Fuel' | 'Air' | 'Base' | 'Alert' | 'Contact' | 'Intel' | 'EMCON' | 'Weapon' | 'ROE';
+export type EventCategory = 'Task' | 'Fuel' | 'Air' | 'Base' | 'Alert' | 'Contact' | 'Intel' | 'EMCON' | 'EW' | 'Weapon' | 'ROE';
 
 export const CATEGORY_COLOUR: Record<EventCategory, string> = {
   Task: cssVar('text.secondary'),
@@ -60,6 +60,7 @@ export const CATEGORY_COLOUR: Record<EventCategory, string> = {
   Contact: cssVar('side.enemy'),
   Intel: cssVar('sat.label'),
   EMCON: cssVar('ring.sensor'),
+  EW: cssVar('ring.sensor'),
   Weapon: cssVar('weapon.offensive'),
   ROE: cssVar('state.warn'),
 };
@@ -128,6 +129,14 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     const m = k.EmconChanged;
     return { category: 'EMCON', text: `${n(m.group)} emission control ${m.emcon === 'on' ? 'ACTIVE' : m.emcon === 'off' ? 'SILENT' : 'BLINK'}` };
   }
+  if ('JammerChanged' in k) {
+    const m = k.JammerChanged;
+    const mode = m.mode === 'self_protect' ? 'SELF-PROTECT' : m.mode === 'escort' ? 'ESCORT' : 'STAND-OFF';
+    return {
+      category: 'EW',
+      text: `${n(m.group)} jammer ${m.active ? `ACTIVE (${mode})` : 'OFF'}`,
+    };
+  }
   if ('LoadoutChanged' in k) {
     const l = k.LoadoutChanged;
     return { category: 'Base', text: `${n(l.unit)} loadout changed at ${n(l.base)}${l.loadout ? ` (${l.loadout})` : ' (custom)'}` };
@@ -151,6 +160,7 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     const parts = [];
     if (r.intercepted > 0) parts.push(`${r.intercepted} intercepted`);
     if (r.decoyed > 0) parts.push(`${r.decoyed} decoyed`);
+    if (r.jammed > 0) parts.push(`${r.jammed} jammed`);
     if (r.hits > 0) parts.push(`${r.hits} ${r.hits === 1 ? 'hit' : 'hits'}`);
     if (r.misses > 0) parts.push(`${r.misses} ${r.misses === 1 ? 'miss' : 'misses'}`);
     const summary = parts.length > 0 ? parts.join(', ') : 'no effect';
@@ -293,6 +303,7 @@ export function subjectOf(e: Event): number | null {
   if ('TurnaroundDone' in k) return k.TurnaroundDone.unit;
   if ('BaseActivated' in k) return k.BaseActivated.base;
   if ('EmconChanged' in k) return k.EmconChanged.group;
+  if ('JammerChanged' in k) return k.JammerChanged.group;
   if ('SatelliteTasked' in k) return k.SatelliteTasked.satellite;
   if ('LoadoutChanged' in k) return k.LoadoutChanged.unit;
   if ('RearmShort' in k) return k.RearmShort.unit;

@@ -424,6 +424,7 @@ export class UnitLayers {
         const fuel = u.fuelPct[i] ?? 255;
         label += ` [${statusOf(u.flags[i] ?? 0)}]${fuel <= 100 ? ` ${fuel}%` : ''}`;
       }
+      if ((u.flags[i] ?? 0) & FLAG.JAMMED) label += ' [JAMMED]';
       drawn.push({ id: group, symbol, position: at(i), label, mark: markAbove(symbol), base: false });
     }
     this.drawn = drawn;
@@ -461,6 +462,10 @@ export class UnitLayers {
             countMax: cv.countMax[i] ?? 1,
             countKnown: (flags & CFLAG.COUNT_KNOWN) !== 0,
           });
+      if ((flags & CFLAG.JAMMED) !== 0) {
+        label += '\n[JAMMED]';
+        ellipses.push({ path: geodesicCircle(pos, 6000), color: c('ring.sensor', 0.6), width: 1.5, dashed: true });
+      }
       if (estimated && !isWeapon) label += `\n${ESTIMATE_LINE}`;
       contacts.push({
         id,
@@ -820,12 +825,33 @@ export class UnitLayers {
         color: c('ring.radius.text'),
       });
     }
+    if (d.jammer && d.jammer.coverage_km > 0) {
+      const jamR = d.jammer.coverage_km * 1000;
+      if (d.jammer.sector_deg >= 360) {
+        paths.push({ path: geodesicCircle(pos, jamR), color: c('ring.sensor', 0.6), width: 1.5, dashed: true });
+      } else {
+        const half = d.jammer.sector_deg / 2;
+        const hdg = d.heading_deg;
+        const pts: LonLat[] = [pos];
+        const step = Math.max(1, Math.round(d.jammer.sector_deg / 24));
+        for (let a = -half; a <= half; a += step) {
+          pts.push(destination(pos, hdg + a, jamR));
+        }
+        pts.push(destination(pos, hdg + half, jamR));
+        pts.push(pos);
+        paths.push({ path: pts, color: c('ring.sensor', 0.6), width: 1.5, dashed: true });
+      }
+    }
 
     const t = d.task;
     const wps = t.waypoints as LonLat[];
-    if (t.kind === 'patrol_circle' && wps[0] && t.radius_m) {
-      paths.push({ path: geodesicCircle(wps[0], t.radius_m), color: c('waypoint'), width: 1.5, dashed: true });
+    if ((t.kind === 'patrol_circle' || t.kind === 'jam') && wps[0] && t.radius_m) {
+      paths.push({ path: geodesicCircle(wps[0], t.radius_m), color: t.kind === 'jam' ? c('ring.sensor', 0.8) : c('waypoint'), width: 1.5, dashed: true });
       return;
+    }
+    if (t.kind === 'suppress' && wps[0]) {
+      paths.push({ path: [pos, wps[0]], color: c('weapon.offensive'), width: 2, dashed: false });
+      waypoints.push({ position: wps[0], text: 'SEAD' });
     }
     if (t.kind === 'move' || t.kind === 'patrol_route' || t.kind === 'tanker_track') {
       const next = Math.min(t.wp, wps.length);

@@ -7,6 +7,7 @@ import {
   type ContactDetails,
   type Emcon,
   type GroupDetails,
+  type JammerMode,
   type SatelliteDetails,
   SYMBOLS,
   type SymbolName,
@@ -295,6 +296,81 @@ function EmconControl({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   );
 }
 
+const JAMMER_MODES: [JammerMode, string][] = [
+  ['self_protect', 'SELF-PROTECT'],
+  ['escort', 'ESCORT'],
+  ['stand_off', 'STAND-OFF'],
+];
+
+function JammerControl({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
+  if (!d.jammer) return null;
+  const j = d.jammer;
+  const availableModes = JAMMER_MODES.filter(([m]) => j.available_modes.includes(m));
+
+  return (
+    <div className="jammer-control">
+      <div className="card-row" style={{ marginBottom: 6 }}>
+        <span>
+          <span className="label">State: </span>
+          <b style={{ color: j.active ? cssVar('ring.sensor') : undefined }}>
+            {j.active ? 'ACTIVE' : 'STANDBY'}
+          </b>
+        </span>
+        <span>
+          <span className="label">Strength: </span>
+          <b>{j.jam_strength}</b>
+        </span>
+      </div>
+      <div className="card-row" style={{ marginBottom: 8 }}>
+        <span>
+          <span className="label">Coverage: </span>
+          <b>{j.coverage_km > 0 ? `${Math.round(j.coverage_km)} km` : 'Self only'}</b>
+        </span>
+        <span>
+          <span className="label">Sector: </span>
+          <b>{j.sector_deg < 360 ? `${Math.round(j.sector_deg)}°` : 'Omni (360°)'}</b>
+        </span>
+      </div>
+      <div className="card-buttons" style={{ marginTop: 4, marginBottom: availableModes.length > 1 ? 8 : 0 }}>
+        <button
+          type="button"
+          className="cmd"
+          onClick={() =>
+            void sendCommand(
+              bridge,
+              { type: 'SetJammer', units: [d.id], on: !j.active },
+              toast,
+            )
+          }
+        >
+          {j.active ? 'STANDBY JAMMER' : 'ACTIVATE JAMMER'}
+        </button>
+      </div>
+      {availableModes.length > 1 && (
+        <div className="segmented" role="group" aria-label="Jammer mode">
+          {availableModes.map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              className={j.mode === mode ? 'seg active' : 'seg'}
+              aria-pressed={j.mode === mode}
+              onClick={() =>
+                void sendCommand(
+                  bridge,
+                  { type: 'SetJammer', units: [d.id], on: true, mode },
+                  toast,
+                )
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   const rings = useUi((s) => s.rings);
   const [open, setOpen] = useState<string | null>(null);
@@ -317,12 +393,38 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
     ? [
         ['ORDER RTB', rtb],
         ['RETASK PATROL', () => routeTool(true)],
+        ...(d.jammer
+          ? ([
+              [
+                d.jammer.active ? 'STANDBY JAMMER' : 'ACTIVATE JAMMER',
+                () =>
+                  void sendCommand(
+                    bridge,
+                    { type: 'SetJammer', units: [d.id], on: !d.jammer?.active },
+                    toast,
+                  ),
+              ],
+            ] as [string, () => void][])
+          : []),
         ['STRIKE', later('Strike', 'P5')],
         ['HOLD FIRE', later('Rules of engagement', 'P5')],
       ]
     : [
         ['MOVE', () => routeTool(false)],
         ['PATROL', circleTool],
+        ...(d.jammer
+          ? ([
+              [
+                d.jammer.active ? 'STANDBY JAMMER' : 'ACTIVATE JAMMER',
+                () =>
+                  void sendCommand(
+                    bridge,
+                    { type: 'SetJammer', units: [d.id], on: !d.jammer?.active },
+                    toast,
+                  ),
+              ],
+            ] as [string, () => void][])
+          : []),
         ['STRIKE', later('Strike', 'P5')],
         [
           'EMCON',
@@ -482,6 +584,12 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
             )}
           </>,
         )}
+        {d.jammer &&
+          section(
+            'ew',
+            'Electronic Warfare',
+            <JammerControl d={d} bridge={bridge} toast={toast} />,
+          )}
         {section('roe', 'ROE', <p className="muted">Rules of engagement arrive in P5.</p>)}
         {section(
           'specs',
