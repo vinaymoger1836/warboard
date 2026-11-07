@@ -76,11 +76,23 @@ pub(crate) fn validate(set: &ContentSet) -> Vec<ContentError> {
             Entry::Sensor(s) => cx.sensor(s),
             Entry::Weapon(w) => cx.weapon(w),
             Entry::EwSuite(w) => {
-                cx.non_empty("bands", w.bands.len());
-                cx.positive("max_range_km", w.max_range_km);
-                cx.angle("field_of_regard_deg", w.field_of_regard_deg);
-                if w.simultaneous_targets == 0 {
-                    cx.err("simultaneous_targets", "must be at least 1".into());
+                let modes = w.resolved_modes();
+                let has_any_mode = modes.self_protect.is_some() || modes.escort.is_some() || modes.stand_off.is_some();
+                if !has_any_mode {
+                    cx.err("modes", "at least one mode must be configured".into());
+                }
+                for (name, mode) in [("self_protect", &modes.self_protect), ("escort", &modes.escort), ("stand_off", &modes.stand_off)] {
+                    if let Some(m) = mode {
+                        if m.jam_strength < 0.0 || m.jam_strength > 10.0 {
+                            cx.err(&format!("modes.{name}.jam_strength"), "must be in 0..=10".into());
+                        }
+                        if let Some(c) = m.coverage_km {
+                            cx.positive(&format!("modes.{name}.coverage_km"), c);
+                        }
+                        if let Some(sec) = m.sector_deg {
+                            cx.angle(&format!("modes.{name}.sector_deg"), sec);
+                        }
+                    }
                 }
             }
             Entry::Countermeasure(c) => {
@@ -503,6 +515,14 @@ impl<'a> Cx<'a, '_> {
             self.positive("radar.scan_period_s", r.scan_period_s);
             self.angle("radar.field_of_regard_deg", r.field_of_regard_deg);
             self.probability("radar.clutter_rejection", r.clutter_rejection);
+            if r.jam_resistance.is_none() && r.eccm_db.is_none() {
+                self.err("radar.jam_resistance", "is required".into());
+            }
+            if let Some(jr) = r.jam_resistance {
+                if !(0.0..=10.0).contains(&jr) {
+                    self.err("radar.jam_resistance", "must be in 0..=10".into());
+                }
+            }
         }
         if let Some(e) = &s.esm {
             self.non_empty("esm.bands", e.bands.len());
@@ -594,8 +614,8 @@ impl<'a> Cx<'a, '_> {
         for (cm, r) in &w.countermeasure_resistance {
             self.probability(&format!("countermeasure_resistance.{}", key(cm)), *r);
         }
-        if let Some(e) = w.guidance.seeker_eccm {
-            self.probability("guidance.seeker_eccm", e);
+        if let Some(e) = w.guidance.seeker_resistance() {
+            self.probability("guidance.seeker_resistance", e);
         }
         let unguided = matches!(w.guidance.terminal, Seeker::GpsIns | Seeker::None);
         if unguided && w.cep_m.is_none() {

@@ -259,24 +259,46 @@ source_type! {
         pub group_count_spread: u32,
     }
 
+    pub struct AdvantageMultiplier {
+        pub advantage: f64,
+        pub multiplier: f64,
+    }
+
     /// Electronic warfare (doc 02 §9).
     #[serde(deny_unknown_fields)]
     pub struct EwRealism {
-        /// Default sidelobe gain `G_sl` for stand-off jamming.
-        pub sidelobe_gain_db: f64,
-        /// Gain in the main beam.
-        pub main_beam_gain_db: f64,
-        /// CEP multiplier for GPS weapons in a GPS-jammed area (no anti-jam).
-        pub gps_jam_cep_factor: f64,
-        /// Network latency multiplier in a comms-jammed area.
-        pub comms_jam_latency_factor: f64,
-        /// `jam_effect` in the seeker-jamming endgame factor.
-        pub seeker_jam_effect: f64,
-        /// Pk multiplier for anti-radiation weapons in memory mode.
+        #[serde(default = "default_advantage_table")]
+        pub advantage_table: Vec<AdvantageMultiplier>,
+        #[serde(default = "default_close_in")]
+        pub close_in: f64,
+        #[serde(default = "default_off_axis")]
+        pub off_axis: f64,
+        #[serde(default = "default_extra_jammer_factor")]
+        pub extra_jammer_factor: f64,
+        #[serde(default = "default_max_jammers")]
+        pub max_jammers: usize,
+        #[serde(default = "default_seeker_jam")]
+        pub seeker_jam: f64,
+        #[serde(default = "default_datalink_latency_factor")]
+        pub datalink_latency_factor: f64,
+        #[serde(default = "default_datalink_loss_fraction")]
+        pub datalink_loss_fraction: f64,
+        #[serde(default = "default_nav_jam_cep_factor")]
+        pub nav_jam_cep_factor: f64,
         pub arm_memory_pk_factor: f64,
-        /// EMCON *blink*: emitters on for `on` seconds every `period` seconds.
         pub emcon_blink_on_s: f64,
         pub emcon_blink_period_s: f64,
+        // Legacy fields for backwards compatibility:
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub sidelobe_gain_db: Option<f64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub main_beam_gain_db: Option<f64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub gps_jam_cep_factor: Option<f64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub comms_jam_latency_factor: Option<f64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub seeker_jam_effect: Option<f64>,
     }
 
     /// Weapons in flight (doc 02 §10).
@@ -545,3 +567,54 @@ source_type! {
         pub defender_terrain_factor: BTreeMap<TerrainClass, f64>,
     }
 }
+
+fn default_advantage_table() -> Vec<AdvantageMultiplier> {
+    vec![
+        AdvantageMultiplier { advantage: -4.0, multiplier: 1.00 },
+        AdvantageMultiplier { advantage: -2.0, multiplier: 0.90 },
+        AdvantageMultiplier { advantage:  0.0, multiplier: 0.75 },
+        AdvantageMultiplier { advantage:  2.0, multiplier: 0.60 },
+        AdvantageMultiplier { advantage:  4.0, multiplier: 0.45 },
+        AdvantageMultiplier { advantage:  6.0, multiplier: 0.35 },
+    ]
+}
+fn default_close_in() -> f64 { 0.35 }
+fn default_off_axis() -> f64 { 0.3 }
+fn default_extra_jammer_factor() -> f64 { 0.10 }
+fn default_max_jammers() -> usize { 3 }
+fn default_seeker_jam() -> f64 { 0.25 }
+fn default_datalink_latency_factor() -> f64 { 3.0 }
+fn default_datalink_loss_fraction() -> f64 { 0.30 }
+fn default_nav_jam_cep_factor() -> f64 { 4.0 }
+
+impl EwRealism {
+    /// Maps advantage `a = jam_strength - jam_resistance` (clamped to -10..10)
+    /// to detection range multiplier m(a) using linear interpolation (doc 02 §9).
+    pub fn m_advantage(&self, advantage: f64) -> f64 {
+        let a = advantage.clamp(-10.0, 10.0);
+        let table = if self.advantage_table.is_empty() {
+            default_advantage_table()
+        } else {
+            self.advantage_table.clone()
+        };
+        if a <= table[0].advantage {
+            return table[0].multiplier;
+        }
+        if a >= table[table.len() - 1].advantage {
+            return table[table.len() - 1].multiplier;
+        }
+        for w in table.windows(2) {
+            let (p0, p1) = (&w[0], &w[1]);
+            if a >= p0.advantage && a <= p1.advantage {
+                let span = p1.advantage - p0.advantage;
+                if span <= 1e-9 {
+                    return p0.multiplier;
+                }
+                let t = (a - p0.advantage) / span;
+                return p0.multiplier + t * (p1.multiplier - p0.multiplier);
+            }
+        }
+        1.0
+    }
+}
+

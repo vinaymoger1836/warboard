@@ -306,7 +306,7 @@ impl Compiler<'_> {
                 field_of_regard_rad: deg_to_rad(r.field_of_regard_deg),
                 clutter_rejection: r.clutter_rejection,
                 pulse_doppler: r.pulse_doppler,
-                eccm_db: r.eccm_db,
+                jam_resistance: r.jam_resistance(),
                 erp_class_dbw: r.erp_class_dbw,
                 fire_channels: r.fire_channels,
                 bearing_sigma_rad: r.bearing_sigma_deg.map(deg_to_rad),
@@ -377,7 +377,7 @@ impl Compiler<'_> {
                 terminal: x.guidance.terminal,
                 terminal_secondary: x.guidance.terminal_secondary.clone(),
                 seeker_range_m: x.guidance.seeker_range_km.map(km_to_m),
-                seeker_eccm: x.guidance.seeker_eccm,
+                seeker_resistance: x.guidance.seeker_resistance(),
             },
             warhead_kg: x.warhead_kg,
             warhead: x.warhead,
@@ -390,6 +390,7 @@ impl Compiler<'_> {
             internal_carriage: x.internal_carriage,
             rounds_per_cell: x.rounds_per_cell,
             engage_on_remote: x.engage_on_remote,
+            nav_resistant: x.nav_resistant,
             envelope: x.envelope.clone(),
             signature: x.signature.as_ref().map(Self::signature),
             provenance: self.provenance(&x.provenance, custom),
@@ -397,15 +398,23 @@ impl Compiler<'_> {
     }
 
     fn ew_suite(&mut self, x: &s::EwSuite, custom: bool) -> c::EwSuite {
+        let modes = x.resolved_modes();
+        let compile_mode = |m: &Option<s::JamMode>| {
+            m.as_ref().map(|jm| c::CompiledJamMode {
+                jam_strength: jm.jam_strength,
+                coverage_m: jm.coverage_km.map(km_to_m).unwrap_or(0.0),
+                sector_rad: jm.sector_deg.map(deg_to_rad).unwrap_or(2.0 * std::f64::consts::PI),
+            })
+        };
         c::EwSuite {
             id: self.st.id(&x.id),
             name: self.st.id(&x.name),
-            ew_type: x.ew_type,
-            bands: x.bands.clone(),
-            j_db: x.j_db,
-            max_range_m: km_to_m(x.max_range_km),
-            simultaneous_targets: x.simultaneous_targets,
-            field_of_regard_rad: deg_to_rad(x.field_of_regard_deg),
+            modes: c::CompiledEwModes {
+                self_protect: compile_mode(&modes.self_protect),
+                escort: compile_mode(&modes.escort),
+                stand_off: compile_mode(&modes.stand_off),
+            },
+            effects: x.resolved_effects(),
             provenance: self.provenance(&x.provenance, custom),
         }
     }

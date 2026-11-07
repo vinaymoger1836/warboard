@@ -19,7 +19,7 @@ pub use common::{
     AarSystem, Band, Confidence, CountermeasureType, Domain, Emcon, Provenance, Seeker, Source,
     TargetClass,
 };
-pub use ew::{Countermeasure, Datalink, EwSuite, EwType};
+pub use ew::{Countermeasure, Datalink, EwEffect, EwModes, EwSuite, EwType, JamMode};
 pub use platform::{Orbit, Platform, PlatformCategory, SensorMount, Station, StationKind};
 pub use realism::Realism;
 pub use sensor::{PayloadKind, Sensor, SensorRole, SensorType};

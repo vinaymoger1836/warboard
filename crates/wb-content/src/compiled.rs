@@ -21,7 +21,7 @@ use crate::source::weapon::{
 };
 use crate::source::world::{BaseType, LaunchDoctrine};
 use crate::source::{
-    AarSystem, Band, Confidence, CountermeasureType, Domain, Emcon, EwType, Seeker, TargetClass,
+    AarSystem, Band, Confidence, CountermeasureType, Domain, Emcon, EwEffect, Seeker, TargetClass,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -257,7 +257,7 @@ pub struct Radar {
     pub field_of_regard_rad: f64,
     pub clutter_rejection: f64,
     pub pulse_doppler: bool,
-    pub eccm_db: f64,
+    pub jam_resistance: f64,
     pub erp_class_dbw: f64,
     pub fire_channels: u32,
     pub bearing_sigma_rad: Option<f64>,
@@ -330,6 +330,7 @@ pub struct Weapon {
     pub internal_carriage: bool,
     pub rounds_per_cell: u32,
     pub engage_on_remote: bool,
+    pub nav_resistant: bool,
     pub envelope: Option<AltitudeEnvelope>,
     pub signature: Option<Signature>,
     pub provenance: Provenance,
@@ -357,20 +358,30 @@ pub struct Guidance {
     pub terminal: Seeker,
     pub terminal_secondary: Vec<Seeker>,
     pub seeker_range_m: Option<f64>,
-    pub seeker_eccm: Option<f64>,
+    pub seeker_resistance: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EwSuite {
     pub id: StrId,
     pub name: StrId,
-    pub ew_type: EwType,
-    pub bands: Vec<Band>,
-    pub j_db: f64,
-    pub max_range_m: f64,
-    pub simultaneous_targets: u32,
-    pub field_of_regard_rad: f64,
+    pub modes: CompiledEwModes,
+    pub effects: Vec<EwEffect>,
     pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct CompiledEwModes {
+    pub self_protect: Option<CompiledJamMode>,
+    pub escort: Option<CompiledJamMode>,
+    pub stand_off: Option<CompiledJamMode>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CompiledJamMode {
+    pub jam_strength: f64,
+    pub coverage_m: f64,
+    pub sector_rad: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

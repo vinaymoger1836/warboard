@@ -20,29 +20,27 @@ source_enum! {
     }
 }
 
-/// 0–10 game stats per mode (doc 02 §9, doc 04 §3.4).
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct EwModes {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub self_protect: Option<JamMode>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub escort: Option<JamMode>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub stand_off: Option<JamMode>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct JamMode {
-    pub jam_strength: f64,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub coverage_km: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub sector_deg: Option<f64>,
-}
-
 source_type! {
+    /// 0–10 game stats per mode (doc 02 §9, doc 04 §3.4).
+    #[serde(deny_unknown_fields)]
+    pub struct EwModes {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub self_protect: Option<JamMode>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub escort: Option<JamMode>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub stand_off: Option<JamMode>,
+    }
+
+    #[serde(deny_unknown_fields)]
+    pub struct JamMode {
+        pub jam_strength: f64,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub coverage_km: Option<f64>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub sector_deg: Option<f64>,
+    }
+
     /// A jammer (doc 02 §9, doc 04 §3.4).
     #[serde(deny_unknown_fields)]
     pub struct EwSuite {
@@ -99,6 +97,16 @@ source_type! {
         /// 0..1 resistance to comms jamming.
         pub jam_resistance: f64,
         pub provenance: Provenance,
+    }
+}
+
+impl Default for EwModes {
+    fn default() -> Self {
+        Self {
+            self_protect: None,
+            escort: None,
+            stand_off: None,
+        }
     }
 }
 
