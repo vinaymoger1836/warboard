@@ -1,0 +1,10 @@
+id: test-jammer-str3
+kind: ew_suite
+name: Test Jammer (Strength 3)
+modes:
+  stand_off:
+    jam_strength: 3
+    coverage_km: 200
+    sector_deg: 60
+effects: [radar, datalink, navigation]
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

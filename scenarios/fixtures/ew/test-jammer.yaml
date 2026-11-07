@@ -1,0 +1,16 @@
+id: test-jammer
+kind: ew_suite
+name: Test Jammer
+modes:
+  self_protect:
+    jam_strength: 5
+  escort:
+    jam_strength: 5
+    coverage_km: 150
+    sector_deg: 60
+  stand_off:
+    jam_strength: 5
+    coverage_km: 200
+    sector_deg: 60
+effects: [radar, datalink, navigation]
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

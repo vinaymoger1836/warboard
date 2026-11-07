@@ -1,0 +1,24 @@
+id: test-fighter
+kind: platform
+name: Test Fighter
+short_name: Fighter
+category: aircraft/fighter
+target_class: fighter
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 1.8
+  ceiling_m: 16000
+  climb_rate_mps: 200
+  sustained_g: 7.0
+  min_runway_m: 1000
+signature:
+  rcs_m2: { front: 1.0, side: 3.0, rear: 1.2, top: 4.0 }
+stations:
+  - { id: bay, kind: internal, categories: [test_air_bay], capacity: 4 }
+  - { id: wing, kind: external, categories: [test_air_wing], capacity: 4 }
+sensors:
+  - { sensor: test-fighter-radar, height_m: 0 }
+ew:
+  - test-jammer
+durability: { model: aircraft, damage_points: 30 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

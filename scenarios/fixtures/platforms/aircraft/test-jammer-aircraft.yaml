@@ -1,0 +1,19 @@
+id: test-jammer-aircraft
+kind: platform
+name: Test Jammer Aircraft
+short_name: Jammer
+category: aircraft/ew
+target_class: large_support
+mobility:
+  cruise_speed_mach: 0.8
+  max_speed_mach: 0.85
+  ceiling_m: 14000
+  climb_rate_mps: 50
+  sustained_g: 3.0
+  min_runway_m: 1500
+signature:
+  rcs_m2: { front: 20, side: 40, rear: 20, top: 50 }
+ew:
+  - test-jammer
+durability: { model: aircraft, damage_points: 60 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

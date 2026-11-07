@@ -1,0 +1,32 @@
+id: test-arm
+kind: weapon
+name: Test Anti-Radiation Missile
+category: arm
+targets: [ground, surface]
+target_class: anti_radiation_missile
+profile:
+  kind: rocket
+  boost_s: 3
+  sustain_s: 15
+  max_speed_mach: 3.0
+  min_speed_mach: 0.8
+  coast_tau_s: { sea_level: 20, high_alt: 45 }
+  max_range_km: 80
+  min_range_km: 5
+  max_g: 15
+guidance:
+  midcourse: [inertial]
+  terminal: anti_radiation
+  seeker_range_km: 60
+  seeker_resistance: 0.5
+nav_resistant: true
+warhead_kg: 70
+warhead: blast_fragmentation
+pk_base:
+  radar_site: 0.8
+  surface_ship: 0.8
+mass_kg: 350
+station_category: [test_air_wing, test_air_bay]
+signature:
+  rcs_m2: { front: 0.05, side: 0.2, rear: 0.05, top: 0.2 }
+provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
