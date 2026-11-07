@@ -1,6 +1,6 @@
 # P6a — Naval combat and layered air defence: phase report
 
-Date: 5 Nov 2026. Status: **done locally; CI not yet run** (all checks below ran on the working tree on 5 Nov 2026). P6b (electronic warfare) is not started; see "Not in this phase".
+Date: 5 Nov 2026. Status: **done locally; CI not yet run** (all checks below ran on the working tree on 5 Nov 2026). P6b (electronic warfare) followed on 7 Nov 2026; see `P6b.md`.
 
 ## What was built
 
@@ -74,4 +74,4 @@ The UI work was checked against G10 with the engine worker pointed at it tempora
 
 ## Not in this phase
 
-**P6b (electronic warfare: game stats)** has not started: no jammer content, no jamming effects, no data link or navigation disruption, no emitter-homing weapons, no air-defence suppression task, no G11 or G12. The schema still has `eccm_db`, `seeker_eccm` and `j_db` (ADR-034 migrates them in P6b), and seeker jamming (`f_ew`) is still 1. The first attempt to run P6b in this session was stopped by a safety check before it changed anything.
+**P6b (electronic warfare: game stats)** was not part of this phase and is reported in `P6b.md`. At the end of P6a it had no jammer content, no jamming effects, no data link or navigation disruption, no emitter-homing weapons, no air-defence suppression task, no G11 or G12. The schema still has `eccm_db`, `seeker_eccm` and `j_db` (ADR-034 migrates them in P6b), and seeker jamming (`f_ew`) is still 1. The first attempt to run P6b in this session was stopped by a safety check before it changed anything.

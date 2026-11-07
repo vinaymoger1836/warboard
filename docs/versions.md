@@ -121,9 +121,9 @@ Runner image: `ubuntu-24.04`.
 
 | Format | Version | Defined in |
 |---|---|---|
-| Content pack schema | 4 (P5: weapon flight, guidance, Pk and countermeasure fields; loadouts; realism `weapons`, `endgame` incl. `nominal_speed_fraction`, `countermeasures`, `damage`, `roe` incl. `territory_sigma`) | `crates/wb-content/src/pack.rs` |
-| State hash | 4 (P5: snapshot adds weapons in flight, magazines, health, ROE settings and requests, combat state; P6a: the effect struct changed, so P5 saves are refused, number unchanged) | `crates/wb-sim/src/snapshot.rs` |
-| `SideView` | 3 (P5: weapons section with shooter, target contact and tag; `RELATION`; weapon symbols 120–122; P6a: effects section filled and filtered by side, weapon contacts carry a weapon symbol, wire format unchanged) | `crates/wb-sim/src/view.rs`, doc 06 §3 |
+| Content pack schema | 4 (P5: weapon flight, guidance, Pk and countermeasure fields; loadouts; realism `weapons`, `endgame` incl. `nominal_speed_fraction`, `countermeasures`, `damage`, `roe` incl. `territory_sigma`; P6b: radar `jam_resistance`, `ew_suite` modes with `jam_strength`, `coverage_km`, `sector_deg` and `effects`, weapon `seeker_resistance` and `nav_resistant`, realism `ew` constants; the legacy `eccm_db`, `seeker_eccm` and `j_db` are still read and migrated, number unchanged) | `crates/wb-content/src/pack.rs` |
+| State hash | 4 (P5: snapshot adds weapons in flight, magazines, health, ROE settings and requests, combat state; P6a: the effect struct changed, so P5 saves are refused, number unchanged; P6b: the unit record gains the jammer state (on or off, mode), so older saves are not expected to load, number unchanged) | `crates/wb-sim/src/snapshot.rs` |
+| `SideView` | 3 (P5: weapons section with shooter, target contact and tag; `RELATION`; weapon symbols 120–122; P6a: effects section filled and filtered by side, weapon contacts carry a weapon symbol, wire format unchanged; P6b: unit flag `JAMMING` and `JAMMED`, contact flag `JAMMED`, wire format unchanged) | `crates/wb-sim/src/view.rs`, doc 06 §3 |
 | `.wbsave` | 1 | `crates/wb-sim/src/save.rs`, doc 04 §7.1 |
 | IndexedDB `warboard` | 2 (P3: `saves` store) | `apps/game/src/db.ts` |
 

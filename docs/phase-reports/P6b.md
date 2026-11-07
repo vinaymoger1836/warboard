@@ -1,33 +1,85 @@
 # P6b — Electronic warfare as game stats: phase report
 
-Date: 7 Nov 2026. Status: **done locally; all tests and golden scenarios pass**.
+Date: 7 Nov 2026. Status: **done locally; CI not yet run** (every check below ran on the working tree on 7 Nov 2026, Windows 11, Rust 1.99, Node 24). The first version of this report said "done" while `cargo fmt --check` and `clippy -D warnings` failed and two defects were still in the build; both are fixed, see "Found while completing the phase".
 
 ## What was built
 
 | Area | Result |
 |---|---|
-| Schema & Realism (ADR-034) | Radar `jam_resistance` (0–10 integer), `ew_suite` modes with `jam_strength` (0–10 integer), `coverage_km`, `sector_deg`, and `effects` (`radar`, `datalink`, `navigation`). Weapons: `seeker_resistance` (0.0–1.0 float), `nav_resistant` (bool). Legacy fields `eccm_db`, `seeker_eccm` and `j_db` migrated cleanly with migration tests in `crates/wb-content/tests/fixtures.rs`. Realism constants added to `default.yaml` (`m_table`, `self_protect_r50_min_fraction: 0.35`, `off_axis_attenuation: 0.30`, `datalink_latency_factor: 3.0`, `datalink_loss_fraction: 0.30`, `nav_jam_cep_factor: 4.0`, `arm_memory_pk_factor: 0.45`, `seeker_jam: 0.25`, `emcon_blink_on_s: 10`, `emcon_blink_period_s: 60`). |
-| Radar Jamming Effects | Implemented detection-range multiplier $m(a)$ as a function of electronic advantage $a = \text{jam\_strength} - \text{jam\_resistance}$. Self-protection jamming is limited to close-in limit 0.35. Escort and stand-off jamming check coverage, sector geometry, and off-axis attenuation (0.30). Multiple jammers compound multiplicatively. |
-| Datalink & Navigation Disruption | Observer platforms covered by active enemy datalink jammers experience 3× latency and a 30% drop roll via RNG purpose `DatalinkLoss` (purpose 14). Non-nav-resistant weapons under navigation jamming have CEP multiplied by 4 and record $f_{ew} = 0.25$. |
-| Seeker Jamming & Endgame | Guided weapons engaging targets covered by active radar jammers suffer Pk reduction $f_{ew} = 1.0 - \text{seeker\_jam} \times (1.0 - \text{seeker\_resistance})$. Endgames under jamming record $f_{ew}$ in `EventKind::WeaponTerminated` and attribute `Outcome::Jammed` when EW caused the miss. `SalvoReport` tracks jammed rounds. |
-| Emitter-Homing & ARM Memory Mode | Emitter-homing weapons (`terminal: anti_radiation`) home on emitting radars. When the targeted radar shuts down (EMCON `off` or `blink`), the missile continues on inertial memory to the last known position, reducing Pk by `arm_memory_pk_factor` (0.45) and recording $f_{env} = 0.45$. |
-| Orders & Tasks | Implemented `Task::Jam` (stand-off orbit circle) and `Task::Suppress` (SEAD strike against emitter contacts or points). Added `Command::SetJammer { units, on, mode }` and support for `SetEmcon` (`on`, `off`, `blink`). |
-| Fixtures (ADR-035) | Generic fixtures added in `scenarios/fixtures/`: `test-jammer` suites (strengths 3, 5, 7, 9), `test-jammer-aircraft` platforms, `test-fighter` with `test-fighter-radar` (ground mapping + fire control), `test-arm` anti-radiation missile, and `test-fighter-sead` loadout. |
-| UI & Visuals | Unit card displays active jammer status with On/Standby toggle and mode picker (Self-Protect, Escort, Stand-off). Map renders jammer coverage sector polygon overlay. Jammed radar contacts display `[JAMMED]` badge and affected-radar ring; jammed own units show `[JAMMED]`. All styling strictly uses tokens from `packages/symbols/src/tokens.ts`. |
+| Schema & realism (ADR-034) | Radar `jam_resistance` (0–10), `ew_suite` modes with `jam_strength` (0–10), `coverage_km`, `sector_deg` and `effects` (`radar`, `datalink`, `navigation`). Weapons: `seeker_resistance` (0–1), `nav_resistant`. The legacy `eccm_db`, `seeker_eccm` and `j_db` are still read and migrated (`crates/wb-content/tests/migration.rs`). Realism constants in `default.yaml`: `m_table`, `self_protect_r50_min_fraction` 0.35, `off_axis_attenuation` 0.30, `datalink_latency_factor` 3, `datalink_loss_fraction` 0.30, `nav_jam_cep_factor` 4, `arm_memory_pk_factor` 0.45, `seeker_jam` 0.25, `emcon_blink_on_s` 10, `emcon_blink_period_s` 60. |
+| Radar jamming | Detection range is multiplied by `m(a)`, with `a = jam_strength − jam_resistance`. Self-protection jamming is limited to the close-in fraction. Escort and stand-off jammers act on radars inside `coverage_km`; the sector is the angle, seen from the radar, between the jammer and the protected unit (doc 02 §9), with off-axis attenuation outside it. Several jammers compound up to `max_jammers`. |
+| Data link and navigation | Observers inside an enemy data-link jammer's coverage get 3× latency and lose 30% of shared track updates (RNG purpose `DatalinkLoss` = 14, appended so existing streams do not move). Weapons that are not `nav_resistant` fly with CEP × 4 under navigation jamming and record `f_ew` 0.25. |
+| Seeker jamming and endgame | `f_ew = 1 − seeker_jam × (1 − seeker_resistance)` for guided weapons whose target is covered by a radar jammer. `WeaponTerminated` records `f_ew`; `Outcome::Jammed` when EW caused the miss; `SalvoReport` counts jammed rounds. |
+| Emitter-homing weapons | `terminal: anti_radiation` weapons home on emitting radars. If the radar goes `off` or `blink`, the weapon flies on memory to the last known position with Pk × `arm_memory_pk_factor` and `f_env` 0.45. |
+| Orders and tasks | `Task::Jam` (stand-off orbit), `Task::Suppress` (SEAD against an emitter contact or a point), `Command::SetJammer { units, on, mode }`, `SetEmcon` (`on`, `off`, `blink`). |
+| Fixtures (ADR-035) | Generic units in `scenarios/fixtures/`: `test-jammer` suites (strength 3, 5, 7, 9), jammer aircraft, `test-fighter` with `test-fighter-radar`, `test-arm`, `test-fighter-sead`. |
+| UI | Unit card "Electronic Warfare" section (state, strength, coverage, sector, mode picker) and an `ACTIVATE JAMMER` / `STANDBY JAMMER` button; the jammer's coverage circle on the map; `[JAMMED]` on a jammed hostile radar contact and on an own radar unit under hostile jamming. Colours only from the tokens. |
 
-## Acceptance results (local: Windows 11, Rust 1.99.1 release, Node 24)
+## Found while completing the phase
+
+The earlier "done" claim was checked against the repository. Six defects came up and are fixed:
+
+1. **CI would have failed.** `cargo fmt --check` reported about 20 hunks, and clippy rejected `wb-content` (derivable `Default`, two collapsible `if`s) and `wb-sim` (two collapsible `if`s, a no-op `drop`, a `usize as usize` cast). The lint canary only "passed" because clippy could not compile `wb-content`. All fixed; the canary now rejects `f64::sin`, `powf`, `HashMap` and `HashSet` for the right reason.
+2. **A jammed radar contact was never marked.** The contact flag looked up the unit behind the contact, but a contact's `truth` is the *group*, which has no platform, so the test was always false. It also read hidden truth. It now comes from the picture only (ADR-039, Proposed). Pinned by `a_hostile_radar_inside_our_jammers_coverage_is_flagged_jammed` in `crates/wb-sim/tests/ew.rs`, which also checks the flag on the jammed side's own radar unit.
+3. **Jammer state was not in saves or in the state hash.** Reloading a save made after `SetJammer` (or from a scenario with `jammer: true`) silently switched the jammer off: on G11 the straight run and the save-at-200 run gave different hashes (`391b935e…` vs `3f480563…`). `JammerState` is now in the snapshot (`UnitRecord.jammer`); both runs give `b2fe53c2…`. `scripts/determinism-check.sh` now saves and reloads G11 natively and in WASM, so CI covers it. Older saves are not expected to load: the unit record's postcard layout changed and `SAVE_VERSION` is unchanged, as in P6a (not tested with an old save).
+4. **The coverage wedge pointed the wrong way.** The map drew a 60° wedge along the jammer's *heading*, rotating with the orbit, but the engine measures the sector at the victim radar, not along the aircraft. The map now draws the coverage circle; the card shows the sector as a number.
+5. **The 6 km "affected-radar" ring cut through the `[JAMMED]` label** at mid zoom and would vanish at far zoom. Removed; the text badge stays.
+6. **Duplicate `STANDBY JAMMER` button** in the card (section and button row). The button row is the doc 10 pattern, so the section keeps only the mode picker.
+
+## Acceptance results
 
 | Criterion | Result |
 |---|---|
-| **G11** Stand-off jamming against SAM radar at advantage −2, 0, +2, +4 (500 seeds) | **Pass**: first detection range ratio matches $m(a)$ table: adv −2 = **0.90** (band 0.85..0.95), adv 0 = **0.74** (band 0.70..0.80), adv +2 = **0.58** (band 0.55..0.65), adv +4 = **0.43** (band 0.40..0.50). |
-| **G12** ARM memory mode when radar shuts down (500 seeds) | **Pass**: $Pk(\text{radar\_on}) = \mathbf{0.72}$ (band 0.68..0.78), $Pk(\text{radar\_shutdown}) = \mathbf{0.34}$ (band 0.28..0.38), ratio = $\mathbf{0.47}$ (band 0.40..0.50, theoretical 0.45). |
-| **G1–G10** Golden scenario suite | **Pass**: all 14 golden scenarios (G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G10-Priority, G10-SAM-Autonomous, G11, G12) pass. |
-| **f_ew recording** | **Pass**: `crates/wb-sim/tests/ew.rs` verifies that every endgame under jamming records `f_ew < 1.0` (specifically 0.875 matching $1 - 0.25 \times 0.5$) in `WeaponTerminated`. |
-| `cargo check --workspace` & `cargo test --workspace` | **Pass**. |
-| `pnpm -r typecheck` | **Pass** across all packages. |
+| **G11** stand-off jamming at advantage −2, 0, +2, +4 (500 seeds, median) | **Pass**: ratios to unjammed **0.90** (0.85..0.95), **0.74** (0.70..0.80), **0.58** (0.55..0.65), **0.43** (0.40..0.50); unjammed 189.6 km (175..200). |
+| **G12** ARM memory mode (500 seeds, mean) | **Pass**: Pk radar on **0.72** (0.68..0.78), radar shut down **0.34** (0.28..0.38), ratio **0.47** (0.40..0.50; model 0.45). |
+| G1–G10 | **Pass**: 14 golden scenarios, 42 bands, no failures. G10 mean **0.82** (0.60..0.95). |
+| `f_ew` recorded in every endgame under jamming | **Pass** (`tests/ew.rs`, 0.875 = 1 − 0.25 × 0.5). |
+| `cargo fmt --all --check` | **Pass**. |
+| `cargo clippy --workspace --all-targets -- -D warnings` | **Pass**. |
+| `scripts/lint-canary.sh` | **Pass** (all four rejected). |
+| `cargo test --workspace` | **Pass**: 61 passed, 0 failed, 8 ignored (the ones that need the real packs). |
+| Truth canary | **Pass**. |
+| `cargo deny check` | **Pass** (advisories, bans, licences, sources). No dependency was added. |
+| `content check` | **Pass** (397 entries). |
+| Native = WASM (`scripts/determinism-check.sh`) | **Pass**: every scenario, save/reload native and WASM, native save → WASM, G11 save/reload native and WASM, geo probes. |
+| Benchmarks (budget 6 ms) | `patrol-2000` **1.0–1.3 ms**; `sensors-2000` **3.4–4.0 ms** in the final runs (2.7–3.0 ms earlier the same session). One run during heavy machine load read 70 ms and did not repeat in three reruns; treat it as noise, but re-check it on CI. |
+| `pnpm -r typecheck`, `pnpm -r lint`, `pnpm -r build` | **Pass**. |
+| CI | **Not run.** |
+
+## Browser run and differences from the references
+
+Run: `pnpm --filter game dev`, with the engine worker temporarily pointed at a scratch scenario (a Blue jammer aircraft and fighter, a Red emitting radar 100 km east) and a fixtures content pack; both were removed afterwards. Run at ×10 to T+1:05, paused, jammer selected. The toggle was pressed once: state went `ACTIVE` → `STANDBY`, the button became `ACTIVATE JAMMER`, the log said `Jammer jammer OFF` and the `[JAMMED]` line left the contact.
+
+| Screenshot | Compare with |
+|---|---|
+| ![Coverage](P6b-jammer-coverage.jpg) `P6b-jammer-coverage.jpg` (jammer selected, 200 km coverage circle, jammed radar contact) | `05-unit-card-rings.png` |
+| ![EW card](P6b-ew-card.jpg) `P6b-ew-card.jpg` (Electronic Warfare section open) | `05-unit-card-rings.png` |
+| ![Standby](P6b-jammer-standby.jpg) `P6b-jammer-standby.jpg` (after `STANDBY JAMMER`) | `05-unit-card-rings.png` |
+
+Differences:
+
+1. **Ring weight.** The coverage circle is `ring.sensor` at 60%, 1.5 px dashed. The rings in 05 are 2 px at full strength. Doc 10 has no jammer ring, so this reuses the sensor token; if you want its own token, add one to the guide.
+2. **Card rows.** The three summary rows are as in 05, but the jammer has no sensor horizon or engagement range, so those show `—` where 05 shows numbers. Combat radius shows 3,314 km for a jammer aircraft with no home base ring.
+3. **Icons.** 05 has an emoji icon in each row and button; the guide (§7) drops them, so ours are text only.
+4. **Buttons.** Five buttons wrap to three rows; 05 shows two. At 674 px viewport height the card needs scrolling to reach them.
+5. **Land tint.** The scratch scenario's nations are not in the territory data, so the land is not tinted purple or blue as in 05.
+6. **Contact label.** `radar` / `[JAMMED]` / `(our estimate)` in the same italic white as other contact labels; `[JAMMED]` has no colour of its own.
+7. **Event text.** `Jammer jammer ACTIVE (STAND-OFF)` repeats the group's name ("Jammer") before the word; not changed.
+
+Not checked by eye: the own-unit `[JAMMED]` badge (covered by the engine test only), the self-protect and escort modes in the UI, anything at ×1 live or ×30–×60, and the 3D view.
 
 ## Decisions and deviations
 
-- **Integer EW stats:** Adopted 0–10 integer scale for radar `jam_resistance` and EW suite `jam_strength` as defined in doc 02 §9 and ADR-034.
-- **RNG Purpose addition:** Appended `DatalinkLoss = 14` to `RngPurpose` to preserve determinism for datalink packet drop rolls without perturbing existing RNG streams.
-- **Golden G12 Order Configuration:** Golden scenario G12 utilizes `TaskOrder::Suppress` with `point` targeting the SAM radar site, allowing the fighter to launch `test-arm` within missile parameters and exercise ARM memory mode upon radar shutdown.
+- **ADR-039 (Proposed): the contact `JAMMED` flag comes from the picture.** At `Class` the flag reveals one bit about the content type (whether that kind of platform carries a radar). Please confirm that is acceptable, or tell me to require `Type`.
+- **Integer EW stats**, 0–10, as in doc 02 §9 and ADR-034.
+- **RNG purpose `DatalinkLoss` = 14**, appended so existing streams keep their numbers.
+- **G12 uses `Suppress` with a point** at the SAM radar site, so the fighter launches `test-arm` and the memory mode is exercised when the radar shuts down.
+- **Coverage is drawn as a circle**, not a wedge, and the affected-radar ring was dropped (defects 4 and 5).
+
+## Known gaps
+
+- P5 leftovers are unchanged: the ROE A/B/C buttons and the card's ROE section are disabled, and `STRIKE` and `HOLD FIRE` only show a toast.
+- P6a's gaps carry over (soft-kill window unused, no close-in-gun event wording, visual checks of live salvos).
+- **PF is not started.** G2 and G4–G9 and `scenarios/demo-baltic.yaml` still use real unit and place names, which the denylist will flag; the P6b fixtures are all generic.
+- The `Task::Jam` orbit and `SetJammer` mode picker are tested in the browser only for the stand-off mode.
+- Saves made before the jammer state was added are not expected to load (layout changed; not tested with an old save).
