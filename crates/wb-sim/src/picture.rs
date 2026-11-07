@@ -618,7 +618,7 @@ impl TypeRef {
     }
 
     /// Whether the type carries a radar (any component of a system). Read from the
-    /// content type, so a client may only learn it once the contact is known to `Type`.
+    /// content type, so a view may show it only for contacts known to `Class` or better.
     pub fn has_radar(&self, rules: &Rules) -> bool {
         let has = |p: PlatformIx| {
             rules

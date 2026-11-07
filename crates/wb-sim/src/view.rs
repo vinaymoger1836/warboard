@@ -686,7 +686,9 @@ impl ViewEncoder {
                 }
                 // From the picture only (CLAUDE.md rule 1): the type the side has identified
                 // and the position it estimates, never the hidden unit behind the contact.
-                let is_radar = c.level >= ContactLevel::Type && c.type_ref.has_radar(rules);
+                // `Class` already shows the platform category (`radar`, `frigate`), so it
+                // may also show whether that kind of platform carries a radar.
+                let is_radar = c.level >= ContactLevel::Class && c.type_ref.has_radar(rules);
                 let c_pos = c.est.map(|e| e.at);
                 if is_radar
                     && c_pos.is_some_and(|pos| {
