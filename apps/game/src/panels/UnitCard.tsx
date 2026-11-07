@@ -331,21 +331,6 @@ function JammerControl({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
           <b>{j.sector_deg < 360 ? `${Math.round(j.sector_deg)}°` : 'Omni (360°)'}</b>
         </span>
       </div>
-      <div className="card-buttons" style={{ marginTop: 4, marginBottom: availableModes.length > 1 ? 8 : 0 }}>
-        <button
-          type="button"
-          className="cmd"
-          onClick={() =>
-            void sendCommand(
-              bridge,
-              { type: 'SetJammer', units: [d.id], on: !j.active },
-              toast,
-            )
-          }
-        >
-          {j.active ? 'STANDBY JAMMER' : 'ACTIVATE JAMMER'}
-        </button>
-      </div>
       {availableModes.length > 1 && (
         <div className="segmented" role="group" aria-label="Jammer mode">
           {availableModes.map(([mode, label]) => (
