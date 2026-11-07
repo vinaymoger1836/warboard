@@ -617,6 +617,26 @@ impl TypeRef {
         }
     }
 
+    /// Whether the type carries a radar (any component of a system). Read from the
+    /// content type, so a client may only learn it once the contact is known to `Type`.
+    pub fn has_radar(&self, rules: &Rules) -> bool {
+        let has = |p: PlatformIx| {
+            rules
+                .platform(p)
+                .sensors
+                .iter()
+                .any(|m| rules.db.sensors[m.sensor.0 as usize].radar.is_some())
+        };
+        match *self {
+            TypeRef::Platform(p) => has(p),
+            TypeRef::System(s) => rules.db.systems[s.0 as usize]
+                .components
+                .iter()
+                .any(|c| has(c.platform)),
+            TypeRef::Weapon(_) => false,
+        }
+    }
+
     /// What `Class` reveals: `fighter`, `corvette`, `SAM site`, `anti-ship missile`.
     pub fn class_name(&self, rules: &Rules) -> String {
         match *self {

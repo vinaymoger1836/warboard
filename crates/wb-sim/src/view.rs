@@ -684,21 +684,10 @@ impl ViewEncoder {
                 if c.fixed {
                     flags |= cflag::FIXED;
                 }
-                let is_radar = entity(world, c.truth).is_some_and(|te| {
-                    world.get::<PlatformRef>(te).is_some_and(|p| {
-                        rules
-                            .platform(p.0)
-                            .sensors
-                            .iter()
-                            .any(|m| rules.db.sensors[m.sensor.0 as usize].radar.is_some())
-                    })
-                });
-                let c_pos = c.est.map(|e| e.at).or_else(|| {
-                    entity(world, c.truth)
-                        .and_then(|te| world.get::<Kinematics>(te))
-                        .map(|k| k.pos())
-                });
-                eprintln!("PROBE contact {:?} is_radar={is_radar} pos={c_pos:?} jammers={}", c.id, jammers.len()); // TEMP
+                // From the picture only (CLAUDE.md rule 1): the type the side has identified
+                // and the position it estimates, never the hidden unit behind the contact.
+                let is_radar = c.level >= ContactLevel::Type && c.type_ref.has_radar(rules);
+                let c_pos = c.est.map(|e| e.at);
                 if is_radar
                     && c_pos.is_some_and(|pos| {
                         jammers.iter().any(|j| {
