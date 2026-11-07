@@ -286,5 +286,3 @@ impl Sim {
         &mut self.world
     }
 }
-
-pub fn __lint_canary_set() -> usize { let s: std::collections::HashSet<u32> = Default::default(); s.len() }
