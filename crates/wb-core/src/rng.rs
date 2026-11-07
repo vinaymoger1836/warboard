@@ -35,6 +35,8 @@ pub enum RngPurpose {
     HitLocation = 12,
     /// Countermeasure release (reserved; releases are deterministic in P5).
     Countermeasure = 13,
+    /// Datalink packet loss under communications jamming (doc 02 §9).
+    DatalinkLoss = 14,
 }
 
 const GOLDEN: u64 = 0x9E37_79B9_7F4A_7C15;
