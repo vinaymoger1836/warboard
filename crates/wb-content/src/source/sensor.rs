@@ -45,6 +45,7 @@ source_enum! {
     }
 }
 
+
 source_type! {
     /// One sensor type. Exactly the block that matches `sensor_type` is present.
     #[serde(deny_unknown_fields)]
@@ -86,7 +87,12 @@ source_type! {
         /// 0 = none, 1 = perfect look-down / clutter rejection.
         pub clutter_rejection: f64,
         pub pulse_doppler: bool,
-        pub eccm_db: f64,
+        /// 0..10 jamming resistance (doc 02 §9, replaces eccm_db in P6b).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub jam_resistance: Option<f64>,
+        /// Legacy field migrated to jam_resistance: jam_resistance = round(eccm_db * 0.3).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub eccm_db: Option<f64>,
         /// Effective radiated power class, seen by enemy ESM.
         pub erp_class_dbw: f64,
         /// Simultaneous guided engagements (0 = search only).
@@ -164,3 +170,18 @@ source_type! {
         pub downlink_delay_min: Option<f64>,
     }
 }
+
+impl Radar {
+    /// 0..10 jamming resistance, resolving `eccm_db` migration if absent.
+    pub fn jam_resistance(&self) -> f64 {
+        if let Some(jr) = self.jam_resistance {
+            jr
+        } else if let Some(db) = self.eccm_db {
+            (db * 0.3).round().clamp(0.0, 10.0)
+        } else {
+            0.0
+        }
+    }
+}
+
+

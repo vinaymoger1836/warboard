@@ -99,6 +99,9 @@ source_type! {
         /// May fire on a networked track without its own fire-control track.
         #[serde(default)]
         pub engage_on_remote: bool,
+        /// Resists satellite navigation / GPS jamming (doc 02 §9).
+        #[serde(default)]
+        pub nav_resistant: bool,
         /// Target altitude limits (surface-to-air and air-to-air).
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub envelope: Option<AltitudeEnvelope>,
@@ -166,7 +169,10 @@ source_type! {
         pub terminal_secondary: Vec<Seeker>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub seeker_range_km: Option<f64>,
-        /// 0..1 resistance of the seeker to jamming.
+        /// 0..1 resistance of the seeker to jamming (doc 02 §9, replaces seeker_eccm in P6b).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub seeker_resistance: Option<f64>,
+        /// Legacy field migrated to seeker_resistance.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub seeker_eccm: Option<f64>,
     }
@@ -177,3 +183,11 @@ source_type! {
         pub max_alt_m: f64,
     }
 }
+
+impl Guidance {
+    /// 0..1 seeker resistance to jamming, falling back to legacy `seeker_eccm`.
+    pub fn seeker_resistance(&self) -> Option<f64> {
+        self.seeker_resistance.or(self.seeker_eccm)
+    }
+}
+
