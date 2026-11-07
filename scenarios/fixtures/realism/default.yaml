@@ -260,9 +260,9 @@ provenance:
     - passive.visual_range_km.mountain
     - fusion.age_out_min.subsurface
     - fusion.ellipse_growth_kt
-    - ew.gps_jam_cep_factor
-    - ew.comms_jam_latency_factor
-    - ew.seeker_jam_effect
+    - ew.nav_jam_cep_factor
+    - ew.datalink_latency_factor
+    - ew.seeker_jam
     - ew.arm_memory_pk_factor
     - endgame.aspect
     - endgame.nominal_speed_fraction

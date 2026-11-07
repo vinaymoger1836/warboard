@@ -10,7 +10,7 @@
 use crate::source::platform::{PlatformCategory, RcsByAspect, StationKind};
 use crate::source::realism::{
     AspectFactors, BaseComponentKind, BaseKind, CellClass, ContactLevel, CountermeasureRealism,
-    EarthRealism, EndgameRealism, EwRealism, FuelRealism, GroundRealism, MovementRealism,
+    EarthRealism, EndgameRealism, FuelRealism, GroundRealism, MovementRealism,
     RadarRealism, RoeRealism, SiteRule, SpatialRealism, Subsystem, TerrainClass, TimeRealism,
     WeaponRealism,
 };
@@ -485,6 +485,56 @@ pub struct Doctrine {
     pub iads_layers: Vec<StrId>,
     pub strike_package: Vec<StrId>,
     pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AdvantageMultiplier {
+    pub advantage: f64,
+    pub multiplier: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EwRealism {
+    pub advantage_table: Vec<AdvantageMultiplier>,
+    pub close_in: f64,
+    pub off_axis: f64,
+    pub extra_jammer_factor: f64,
+    pub max_jammers: usize,
+    pub seeker_jam: f64,
+    pub datalink_latency_factor: f64,
+    pub datalink_loss_fraction: f64,
+    pub nav_jam_cep_factor: f64,
+    pub arm_memory_pk_factor: f64,
+    pub emcon_blink_on_s: f64,
+    pub emcon_blink_period_s: f64,
+}
+
+impl EwRealism {
+    pub fn m_advantage(&self, advantage: f64) -> f64 {
+        let a = advantage.clamp(-10.0, 10.0);
+        let table = &self.advantage_table;
+        if table.is_empty() {
+            return 1.0;
+        }
+        if a <= table[0].advantage {
+            return table[0].multiplier;
+        }
+        if a >= table[table.len() - 1].advantage {
+            return table[table.len() - 1].multiplier;
+        }
+        for w in table.windows(2) {
+            let (p0, p1) = (&w[0], &w[1]);
+            if a >= p0.advantage && a <= p1.advantage {
+                let span = p1.advantage - p0.advantage;
+                if span <= 1e-9 {
+                    return p0.multiplier;
+                }
+                let t = (a - p0.advantage) / span;
+                return p0.multiplier + t * (p1.multiplier - p0.multiplier);
+            }
+        }
+        1.0
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
