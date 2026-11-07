@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::clock::{EngagementState, RngSeed, SimClock};
 use crate::components::{
     Allegiance, BaseRef, BaseSite, Countermeasures, EmconState, Fuel, Group, GroupMember, Health,
-    Identity, Kinematics, Magazine, PlatformRef, Posture, RoeSetting, SatelliteState,
+    Identity, JammerState, Kinematics, Magazine, PlatformRef, Posture, RoeSetting, SatelliteState,
     ScriptedTarget, Steer, TankerState, WeaponFlight,
 };
 use crate::events::EventLog;
@@ -49,6 +49,7 @@ pub struct UnitRecord {
     pub weapon: Option<WeaponFlight>,
     pub health: Option<Health>,
     pub roe: Option<RoeSetting>,
+    pub jammer: Option<JammerState>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -95,6 +96,7 @@ pub fn capture(world: &World) -> Snapshot {
                 weapon: world.get::<WeaponFlight>(e).cloned(),
                 health: world.get::<Health>(e).cloned(),
                 roe: world.get::<RoeSetting>(e).copied(),
+                jammer: world.get::<JammerState>(e).copied(),
             })
         })
         .collect();
@@ -207,6 +209,9 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
             e.insert(c);
         }
         if let Some(c) = u.roe {
+            e.insert(c);
+        }
+        if let Some(c) = u.jammer {
             e.insert(c);
         }
         let ent = e.id();

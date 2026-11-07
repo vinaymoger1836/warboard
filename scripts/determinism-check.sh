@@ -5,7 +5,7 @@
 # natively and continued in WASM. With region packs built, it also compares geo
 # queries (territory, terrain, elevation, line of sight; P2). P4 adds the
 # sensor goldens G1–G5 and a save/reload of the demo war with contacts in the
-# pictures.
+# pictures. P6b adds a save/reload of G11 with an active jammer.
 # Needs crates/wb-wasm/pkg built first: pnpm --filter @warboard/wb-wasm build:wasm
 set -euo pipefail
 
@@ -63,6 +63,18 @@ native=$($wb run --content "$pack" --scenario "$s" --ticks 3600 --save-at 1800 -
 compare "save/reload native ($s, save at 1800)" "$whole" "$native"
 wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$pack" --scenario "$s" --ticks 3600 --save-at 1800)
 compare "save/reload wasm   ($s, save at 1800)" "$whole" "$wasm"
+
+# P6b: an active jammer and its mode are part of a save. G11 uses the generic fixtures
+# (ADR-035), so it gets its own content pack. Saved mid-run and continued, in both.
+fixpack=$(mktemp --suffix=.wbpack)
+$wb content build --dir scenarios/fixtures --out "$fixpack" > /dev/null
+s=scenarios/golden/g11-standoff-jamming.yaml
+whole=$($wb run --content "$fixpack" --scenario "$s" --ticks 400 --print-hash)
+native=$($wb run --content "$fixpack" --scenario "$s" --ticks 400 --save-at 200 --print-hash)
+compare "save/reload native ($s, save at 200)" "$whole" "$native"
+wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$fixpack" --scenario "$s" --ticks 400 --save-at 200)
+compare "save/reload wasm   ($s, save at 200)" "$whole" "$wasm"
+rm -f "$fixpack"
 
 # Geo queries (P2): only when the region packs have been built (they are not in git).
 packs=${WB_PACKS:-build/packs}
