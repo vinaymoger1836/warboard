@@ -244,6 +244,12 @@ export class UnitLayers {
       return;
     }
     const p = this.pick(e.point.x, e.point.y);
+    if (tool?.kind === 'strike') {
+      // A contact under the cursor is the target; anywhere else is a point. Nothing fires
+      // until the card's LAUNCH STRIKE.
+      ui.set({ tool: { kind: 'strike', aim: p?.contact ? { contact: p.id } : { point: at } } });
+      return;
+    }
     if (p?.contact) ui.selectContact(p.id);
     else ui.select(p?.id ?? null);
   }
@@ -865,9 +871,17 @@ export class UnitLayers {
       const pts = cursor ? [...tool.points, cursor] : tool.points;
       if (pts.length > 1) paths.push({ path: pts, color: c('weapon.offensive'), width: 2, dashed: false });
       tool.points.forEach((p, i) => waypoints.push({ position: p, text: `WP ${i + 1}` }));
-    } else if (tool.centre) {
+    } else if (tool.kind === 'circle' && tool.centre) {
       const radius = cursor ? distance(tool.centre, cursor) : tool.radiusKm * 1000;
       paths.push({ path: geodesicCircle(tool.centre, Math.max(radius, 1000)), color: c('waypoint'), width: 1.5, dashed: true });
+    } else if (tool.kind === 'strike') {
+      // Dashed amber aim line from the shooter to the target (or to the cursor while picking).
+      const selected = ui.get().selected;
+      const from = selected == null ? null : this.find(selected);
+      const aim = tool.aim;
+      const to = aim ? ('contact' in aim ? this.findContact(aim.contact) : aim.point) : cursor;
+      if (from && to) paths.push({ path: [from, to], color: c('weapon.offensive'), width: 2, dashed: true });
+      if (aim && to) waypoints.push({ position: to, text: 'TARGET' });
     }
   }
 }

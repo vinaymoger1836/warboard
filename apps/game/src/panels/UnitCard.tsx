@@ -13,10 +13,11 @@ import {
   type SymbolName,
 } from '@warboard/protocol';
 import { contactLabel, cssVar, ESTIMATE_LINE, iconDataUrl, type IconSide } from '@warboard/symbols';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { EngineBridge } from '../bridge';
 import { patrolRadiusKm, sendCommand, sendTask } from '../orders';
-import { ui, useUi } from '../store';
+import { distance } from '../map2d/units/geo';
+import { type LonLat, type StrikeAim, ui, useUi } from '../store';
 import { duration, fuelColour, statusColour } from './format';
 import { CloseGlyph, EngageGlyph, RadiusGlyph, SensorGlyph } from './glyphs';
 
@@ -356,6 +357,152 @@ function JammerControl({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   );
 }
 
+const STRIKE_MAX_ROUNDS = 64; // the engine accepts 1–64 rounds per strike order
+
+/**
+ * Strike panel (doc 03 §6, ADR-029): pick a target on the map (one of our contacts, or a
+ * point), a weapon that can engage it and how many rounds, then LAUNCH STRIKE. The engine
+ * validates the order and its reason is shown if it refuses (CLAUDE.md rule 5).
+ */
+function StrikePanel({ d, aim, bridge, toast }: { d: GroupDetails; aim: StrikeAim | null } & CardProps) {
+  const contactId = aim && 'contact' in aim ? aim.contact : null;
+  const [loaded, setTarget] = useState<ContactDetails | null>(null);
+  // Only the details of the contact aimed at now (a previous aim's answer may still be held).
+  const target = loaded && loaded.contact_id === contactId ? loaded : null;
+  const [weaponId, setWeaponId] = useState<string | null>(null);
+  const [count, setCount] = useState(2);
+  const [busy, setBusy] = useState(false);
+
+  // The aimed contact's estimate (label, domain, position), refreshed while aiming.
+  useEffect(() => {
+    if (contactId === null) return;
+    let live = true;
+    const load = () =>
+      bridge
+        .request({ type: 'contactDetails', id: contactId })
+        .then((c) => live && setTarget(c))
+        .catch(() => live && setTarget(null));
+    load();
+    const t = setInterval(load, 1000);
+    return () => {
+      live = false;
+      clearInterval(t);
+    };
+  }, [bridge, contactId]);
+
+  // Weapons with rounds left that can engage what is aimed at (a point: surface or ground).
+  const domains: string[] = aim === null ? [] : 'point' in aim ? ['surface', 'ground'] : target ? [target.domain] : [];
+  const usable = d.weapons.filter((w) => w.count > 0 && (domains.length === 0 || w.targets.some((t) => domains.includes(t))));
+  const weapon = usable.find((w) => w.id === weaponId) ?? usable[0] ?? null;
+  const maxRounds = weapon ? Math.min(STRIKE_MAX_ROUNDS, weapon.count * Math.max(1, d.count)) : 1;
+  const rounds = Math.min(Math.max(1, count), maxRounds);
+
+  const at: LonLat | null =
+    aim === null ? null : 'point' in aim ? aim.point : target?.lon_deg != null && target.lat_deg != null ? [target.lon_deg, target.lat_deg] : null;
+  const rangeM = at ? distance([d.lon_deg, d.lat_deg], at) : null;
+  const rangeNote =
+    weapon && rangeM != null
+      ? rangeM > weapon.max_range_m
+        ? `Beyond ${weapon.name} max range (${km(weapon.max_range_m)})`
+        : rangeM < weapon.min_range_m
+          ? `Inside ${weapon.name} minimum range (${km(weapon.min_range_m)})`
+          : null
+      : null;
+
+  const targetText =
+    aim === null
+      ? null
+      : 'point' in aim
+        ? `Point ${aim.point[1].toFixed(2)}°N ${aim.point[0].toFixed(2)}°E`
+        : target
+          ? `${target.label || target.class_name || 'Contact'} (C${target.contact_id}, ${target.domain})${target.estimated ? ` ${ESTIMATE_LINE}` : ''}`
+          : `Contact C${aim.contact}`;
+
+  const launch = async () => {
+    if (!aim || !weapon) return;
+    setBusy(true);
+    const ok = await sendTask(
+      bridge,
+      [d.id],
+      { kind: 'strike', ...('contact' in aim ? { contact: aim.contact } : { point: aim.point }), weapon: weapon.id, count: rounds },
+      toast,
+    );
+    setBusy(false);
+    if (ok) {
+      toast(`Strike ordered: ${rounds} × ${weapon.name}`);
+      ui.set({ tool: null });
+    }
+  };
+
+  return (
+    <div className="strike-panel">
+      <div className="strike-title">Strike</div>
+      <dl>
+        <dt>Target</dt>
+        <dd>{targetText ?? <span className="muted-inline">Click an enemy contact on the map, or open sea for a point. Esc cancels.</span>}</dd>
+        {rangeM != null && (
+          <>
+            <dt>Range</dt>
+            <dd style={{ color: rangeNote ? cssVar('state.warn') : undefined }}>
+              {km(rangeM)}
+              {rangeNote ? ` · ${rangeNote}` : ''}
+            </dd>
+          </>
+        )}
+      </dl>
+      {usable.length === 0 ? (
+        <p className="muted">
+          {d.weapons.some((w) => w.count > 0) ? `No weapon left that can engage ${domains.join(' or ')} targets.` : 'No weapons left.'}
+        </p>
+      ) : (
+        <>
+          <div className="strike-label">Weapon</div>
+          <div className="segmented strike-weapons" role="group" aria-label="Weapon">
+            {usable.map((w) => (
+              <button
+                key={w.id}
+                type="button"
+                className={weapon?.id === w.id ? 'seg active' : 'seg'}
+                aria-pressed={weapon?.id === w.id}
+                onClick={() => setWeaponId(w.id)}
+                title={`${w.category.toUpperCase()} · ${km(w.max_range_m)} · ${w.targets.join(', ')}`}
+              >
+                {w.name} ({w.count})
+              </button>
+            ))}
+          </div>
+          <div className="strike-label">Rounds</div>
+          <div className="strike-count">
+            <button type="button" className="seg" aria-label="Fewer rounds" onClick={() => setCount(Math.max(1, rounds - 1))} disabled={rounds <= 1}>
+              −
+            </button>
+            <input
+              type="number"
+              min={1}
+              max={maxRounds}
+              value={rounds}
+              aria-label="Rounds"
+              onChange={(e) => setCount(Number(e.target.value) || 1)}
+            />
+            <button type="button" className="seg" aria-label="More rounds" onClick={() => setCount(Math.min(maxRounds, rounds + 1))} disabled={rounds >= maxRounds}>
+              +
+            </button>
+            <span className="muted-inline">of {maxRounds}</span>
+          </div>
+        </>
+      )}
+      <div className="card-buttons">
+        <button type="button" className="cmd" disabled={!aim || !weapon || busy} onClick={() => void launch()}>
+          LAUNCH STRIKE
+        </button>
+        <button type="button" className="cmd" onClick={() => ui.set({ tool: null })}>
+          CANCEL
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   const rings = useUi((s) => s.rings);
   const [open, setOpen] = useState<string | null>(null);
@@ -374,6 +521,12 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
     toast('Click the patrol centre, then click again at the radius');
   };
   const later = (what: string, phase: string) => () => toast(`${what} arrives in ${phase}`);
+  const tool = useUi((s) => s.tool);
+  const striking = tool?.kind === 'strike' ? tool : null;
+  const strikeTool = () => {
+    ui.set({ tool: { kind: 'strike', aim: null } });
+    toast('Click an enemy contact on the map, or open sea for a point');
+  };
   const buttons: [string, () => void][] = air
     ? [
         ['ORDER RTB', rtb],
@@ -391,7 +544,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
               ],
             ] as [string, () => void][])
           : []),
-        ['STRIKE', later('Strike', 'P5')],
+        ['STRIKE', strikeTool],
         ['HOLD FIRE', later('Rules of engagement', 'P5')],
       ]
     : [
@@ -410,7 +563,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
               ],
             ] as [string, () => void][])
           : []),
-        ['STRIKE', later('Strike', 'P5')],
+        ['STRIKE', strikeTool],
         [
           'EMCON',
           () => {
@@ -600,13 +753,17 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
             ))}
           </dl>,
         )}
-        <div className="card-buttons">
-          {buttons.map(([label, run]) => (
-            <button key={label} type="button" className="cmd" onClick={run}>
-              {label}
-            </button>
-          ))}
-        </div>
+        {striking ? (
+          <StrikePanel d={d} aim={striking.aim} bridge={bridge} toast={toast} />
+        ) : (
+          <div className="card-buttons">
+            {buttons.map(([label, run]) => (
+              <button key={label} type="button" className="cmd" onClick={run}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </>
   );

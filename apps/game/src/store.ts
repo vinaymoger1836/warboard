@@ -6,10 +6,17 @@ import { useSyncExternalStore } from 'react';
 
 export type LonLat = [number, number];
 
-/** Drawing tools (doc 06 §4): a waypoint route or a patrol circle for the selection. */
+/** What a strike is aimed at: one of our contacts, or a point (open sea or ground). */
+export type StrikeAim = { contact: number } | { point: LonLat };
+
+/**
+ * Drawing tools (doc 06 §4): a waypoint route or a patrol circle for the selection, or
+ * picking a strike target (the card's strike panel fires it).
+ */
 export type Tool =
   | { kind: 'route'; patrol: boolean; points: LonLat[] }
-  | { kind: 'circle'; centre: LonLat | null; radiusKm: number };
+  | { kind: 'circle'; centre: LonLat | null; radiusKm: number }
+  | { kind: 'strike'; aim: StrikeAim | null };
 
 export interface EventLine {
   key: number;

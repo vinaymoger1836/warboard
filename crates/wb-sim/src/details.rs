@@ -5,7 +5,7 @@
 use bevy_ecs::prelude::*;
 use serde::Serialize;
 use wb_content::compiled::WeaponIx;
-use wb_content::source::{SensorType, StationKind};
+use wb_content::source::{Domain, SensorType, StationKind, WeaponCategory};
 use wb_core::UnitId;
 use wb_core::geo::LatLon;
 use wb_core::units::rad_to_deg;
@@ -167,6 +167,22 @@ pub struct WeaponCount {
     pub count: u32,
 }
 
+/// Rounds left of one of the lead's weapons, with what the strike panel needs to offer it
+/// (doc 03 §6). Own weapons only, so nothing here is hidden from the side.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+pub struct WeaponRounds {
+    /// Content id, as a strike order names it.
+    pub id: String,
+    pub name: String,
+    pub category: WeaponCategory,
+    /// Domains it can engage.
+    pub targets: Vec<Domain>,
+    pub min_range_m: f64,
+    pub max_range_m: f64,
+    pub count: u32,
+}
+
 /// One weapon on one station of the lead (doc 03 §6).
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
@@ -219,8 +235,8 @@ pub struct GroupDetails {
     pub members: Vec<MemberView>,
     /// Template name; none for a custom or system magazine.
     pub loadout: Option<String>,
-    /// Rounds left per weapon, lead.
-    pub weapons: Vec<WeaponCount>,
+    /// Rounds left per weapon, lead, with what a strike order needs.
+    pub weapons: Vec<WeaponRounds>,
     /// Lead's stations.
     pub stations: Vec<StationView>,
     /// Chaff and flares left, lead.
@@ -451,9 +467,17 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
     let weapon_name = |w: WeaponIx| db.str(db.weapons[w.0 as usize].name).to_owned();
     let weapons = rounds
         .iter()
-        .map(|(w, n)| WeaponCount {
-            name: weapon_name(*w),
-            count: *n,
+        .map(|(w, n)| {
+            let c = &db.weapons[w.0 as usize];
+            WeaponRounds {
+                id: db.str(c.id).to_owned(),
+                name: weapon_name(*w),
+                category: c.category,
+                targets: c.targets.clone(),
+                min_range_m: c.profile.min_range_m,
+                max_range_m: c.profile.max_range_m,
+                count: *n,
+            }
         })
         .collect();
     let stations = mag

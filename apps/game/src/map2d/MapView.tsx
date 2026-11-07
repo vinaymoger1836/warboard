@@ -138,7 +138,7 @@ export function MapView({ packs, bridge, coalition, geoReady, terrainOverlay, on
           tool.patrol ? { kind: 'patrol_route', waypoints: tool.points, loop: true } : { kind: 'move', waypoints: tool.points },
           onToast,
         );
-      } else if (tool.centre) {
+      } else if (tool.kind === 'circle' && tool.centre) {
         void sendTask(
           bridge,
           [d.id],

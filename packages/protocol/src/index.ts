@@ -25,6 +25,7 @@ export type { Speed } from './generated/Speed';
 export type { StationedView } from './generated/StationedView';
 export type { TaskOrder } from './generated/TaskOrder';
 export type { TaskView } from './generated/TaskView';
+export type { WeaponRounds } from './generated/WeaponRounds';
 export { CFLAG, EFFECT, FLAG, RELATION, STATUS, STRING_KIND, SYMBOLS, type SymbolName } from './generated/symbols';
 export {
   contactDomain,
