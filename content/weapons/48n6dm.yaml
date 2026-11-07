@@ -16,7 +16,7 @@ profile:
 guidance:
   midcourse: [inertial, command]
   terminal: semi_active_radar
-  seeker_eccm: 0.5
+  seeker_resistance: 0.5
 warhead_kg: 180
 warhead: blast_fragmentation
 pk_base: { fighter: 0.75, bomber: 0.85, aew: 0.85, tanker: 0.85, ballistic_missile: 0.5, cruise_missile: 0.5 }
@@ -37,7 +37,7 @@ provenance:
     - profile.min_speed_mach
     - profile.min_range_km
     - profile.max_g
-    - guidance.seeker_eccm
+    - guidance.seeker_resistance
     - pk_base
     - countermeasure_resistance
     - envelope.min_alt_m

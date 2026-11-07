@@ -12,7 +12,7 @@ radar:
   field_of_regard_deg: 360
   clutter_rejection: 0.85
   pulse_doppler: true
-  eccm_db: 15
+  jam_resistance: 4
   erp_class_dbw: 80
   fire_channels: 0
 provenance:
@@ -26,7 +26,7 @@ provenance:
     - radar.max_range_km
     - radar.scan_period_s
     - radar.clutter_rejection
-    - radar.eccm_db
+    - radar.jam_resistance
     - radar.erp_class_dbw
   sources:
     - { title: "Steregushchiy-class corvette", url: "https://en.wikipedia.org/wiki/Steregushchiy-class_corvette", accessed: 2026-10-29 }

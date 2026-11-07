@@ -12,7 +12,7 @@ radar:
   field_of_regard_deg: 360
   clutter_rejection: 0.9
   pulse_doppler: true
-  eccm_db: 20
+  jam_resistance: 6
   erp_class_dbw: 90
   fire_channels: 0
 provenance:
@@ -24,7 +24,7 @@ provenance:
     - radar.r_ref_km
     - radar.max_range_km
     - radar.clutter_rejection
-    - radar.eccm_db
+    - radar.jam_resistance
     - radar.erp_class_dbw
   sources:
     - { title: "Boeing E-3 Sentry (radar)", url: "https://en.wikipedia.org/wiki/Boeing_E-3_Sentry", accessed: 2026-10-29 }

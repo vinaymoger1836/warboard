@@ -15,7 +15,7 @@ guidance:
   midcourse: [inertial, gps, datalink]
   terminal: active_radar
   seeker_range_km: 20
-  seeker_eccm: 0.5
+  seeker_resistance: 0.5
 warhead_kg: 210
 warhead: blast
 pk_base: { surface_ship: 0.85 }
@@ -34,7 +34,7 @@ provenance:
     - profile.cruise_alt_m
     - profile.terminal_alt_m
     - guidance.seeker_range_km
-    - guidance.seeker_eccm
+    - guidance.seeker_resistance
     - pk_base
     - countermeasure_resistance
   sources:

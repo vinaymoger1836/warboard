@@ -11,7 +11,7 @@ radar:
   field_of_regard_deg: 360
   clutter_rejection: 0.7
   pulse_doppler: true
-  eccm_db: 10
+  jam_resistance: 3
   erp_class_dbw: 85
   fire_channels: 0
 provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }

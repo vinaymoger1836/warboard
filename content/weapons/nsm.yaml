@@ -15,7 +15,7 @@ guidance:
   midcourse: [inertial, gps, terrain_matching]
   terminal: imaging_ir
   seeker_range_km: 15
-  seeker_eccm: 0.9
+  seeker_resistance: 0.9
 warhead_kg: 120
 warhead: penetrator
 pk_base: { surface_ship: 0.85 }
@@ -34,7 +34,7 @@ provenance:
     - profile.cruise_alt_m
     - profile.terminal_alt_m
     - guidance.seeker_range_km
-    - guidance.seeker_eccm
+    - guidance.seeker_resistance
     - pk_base
     - countermeasure_resistance
   sources:

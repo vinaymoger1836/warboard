@@ -17,7 +17,7 @@ guidance:
   midcourse: [inertial, datalink]
   terminal: active_radar
   seeker_range_km: 18
-  seeker_eccm: 0.6
+  seeker_resistance: 0.6
 warhead_kg: 20
 warhead: blast_fragmentation
 pk_base: { fighter: 0.8, bomber: 0.85, helicopter: 0.8, cruise_missile: 0.5, uav: 0.85 }
@@ -40,7 +40,7 @@ provenance:
     - profile.min_range_km
     - profile.max_g
     - guidance.seeker_range_km
-    - guidance.seeker_eccm
+    - guidance.seeker_resistance
     - pk_base
     - countermeasure_resistance
   sources:

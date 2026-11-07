@@ -11,7 +11,7 @@ radar:
   field_of_regard_deg: 120
   clutter_rejection: 0.85
   pulse_doppler: true
-  eccm_db: 20
+  jam_resistance: 6
   erp_class_dbw: 75
   fire_channels: 8
 provenance:
@@ -22,7 +22,7 @@ provenance:
     - radar.r_ref_km
     - radar.scan_period_s
     - radar.clutter_rejection
-    - radar.eccm_db
+    - radar.jam_resistance
     - radar.erp_class_dbw
     - radar.fire_channels
   sources:

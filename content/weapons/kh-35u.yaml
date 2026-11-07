@@ -14,7 +14,7 @@ provenance:
   estimates:
     - profile.min_range_km
     - guidance.seeker_range_km
-    - guidance.seeker_eccm
+    - guidance.seeker_resistance
     - pk_base
     - countermeasure_resistance
   sources:

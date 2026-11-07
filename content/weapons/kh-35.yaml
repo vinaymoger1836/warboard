@@ -15,7 +15,7 @@ guidance:
   midcourse: [inertial]
   terminal: active_radar
   seeker_range_km: 20
-  seeker_eccm: 0.4
+  seeker_resistance: 0.4
 warhead_kg: 145
 warhead: shaped_charge
 pk_base: { surface_ship: 0.8 }
@@ -32,7 +32,7 @@ provenance:
     - signature
     - profile.min_range_km
     - guidance.seeker_range_km
-    - guidance.seeker_eccm
+    - guidance.seeker_resistance
     - pk_base
     - countermeasure_resistance
   sources:

@@ -17,7 +17,7 @@ guidance:
   midcourse: [inertial, gps]
   terminal: anti_radiation
   terminal_secondary: [active_radar]
-  seeker_eccm: 0.8
+  seeker_resistance: 0.8
 warhead_kg: 68
 warhead: blast_fragmentation
 pk_base: { radar_site: 0.8, launcher: 0.6, c2_node: 0.5 }
@@ -40,7 +40,7 @@ provenance:
     - profile.max_range_km
     - profile.min_range_km
     - profile.max_g
-    - guidance.seeker_eccm
+    - guidance.seeker_resistance
     - pk_base
   sources:
     - { title: "AGM-88 HARM (AGM-88G AARGM-ER)", url: "https://en.wikipedia.org/wiki/AGM-88_HARM", accessed: 2026-10-27 }
