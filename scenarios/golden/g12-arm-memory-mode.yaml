@@ -14,12 +14,12 @@ units:
   - { id: 10, name: Fighter, platform: test-fighter, country: tst, lat_deg: 55.0, lon_deg: 10.4, alt_m: 8000, heading_deg: 270, loadout: test-fighter-sead }
   - { id: 20, name: SAM-Radar, platform: test-sam-radar-unit, country: opp, lat_deg: 55.0, lon_deg: 10.0, alt_m: 0, heading_deg: 90 }
 orders:
-  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: move, waypoints: [[10.0, 55.0]], alt_m: 8000 } }
+  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: suppress, point: [10.0, 55.0], weapon: test-arm, count: 1 } }
   - { tick: 0, side: 0, type: SetDoctrine, units: [10], launch: max_range, shots_per_target: 1 }
 golden:
   id: G12
   description: ARM memory mode reduces Pk by memory factor (0.45) when radar shuts down
-  max_ticks: 120
+  max_ticks: 450
   seeds: 500
   variants:
     radar_on: {}

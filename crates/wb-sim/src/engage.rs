@@ -682,6 +682,12 @@ fn offensive(
         weapon,
         count,
         fired,
+    }
+    | Task::Suppress {
+        target: StrikeTarget::Point(p),
+        weapon,
+        count,
+        fired,
     } = g.task
     {
         let want = count.unwrap_or(shots).saturating_sub(fired);
