@@ -13,6 +13,8 @@ export type { Details } from './generated/Details';
 export type { Event } from './generated/Event';
 export type { EventKind } from './generated/EventKind';
 export type { GroupDetails } from './generated/GroupDetails';
+export type { JammerMode } from './generated/JammerMode';
+export type { JammerView } from './generated/JammerView';
 export type { MemberView } from './generated/MemberView';
 export type { Order } from './generated/Order';
 export type { OrderAck } from './generated/OrderAck';
