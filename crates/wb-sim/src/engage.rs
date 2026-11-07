@@ -730,11 +730,21 @@ fn offensive(
         Task::Strike {
             target: StrikeTarget::Contact(c),
             ..
+        }
+        | Task::Suppress {
+            target: StrikeTarget::Contact(c),
+            ..
         } => Some(c),
         _ => None,
     };
     let (strike_weapon, strike_left) = match g.task {
         Task::Strike {
+            weapon,
+            count,
+            fired,
+            ..
+        }
+        | Task::Suppress {
             weapon,
             count,
             fired,
@@ -897,7 +907,7 @@ fn offensive(
 fn strike_fired(world: &mut World, rules: &Rules, side: u8, gid: UnitId, done: u32, want: u32) {
     let Some(ge) = entity(world, gid) else { return };
     let mut g = std::mem::take(&mut *world.get_mut::<Group>(ge).expect("group"));
-    if let Task::Strike { fired, .. } = &mut g.task {
+    if let Task::Strike { fired, .. } | Task::Suppress { fired, .. } = &mut g.task {
         *fired += done;
     }
     if done >= want {

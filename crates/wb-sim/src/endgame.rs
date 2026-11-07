@@ -208,8 +208,29 @@ pub fn resolve(
     let tk = te.and_then(|e| world.get::<Kinematics>(e).copied());
 
     if let Some(cep) = w.cep_m {
+        let jammers = crate::sensors::active_jammers(world, rules);
+        let shooter_side = entity(world, f.shooter)
+            .and_then(|e| world.get::<crate::components::Allegiance>(e))
+            .map_or(0, |a| a.side);
+        let nav_jammed = !w.nav_resistant
+            && jammers.iter().any(|j| {
+                j.side != shooter_side
+                    && (j.effects.is_empty()
+                        || j.effects.contains(&wb_content::source::EwEffect::Navigation))
+                    && distance_m(j.pos, wk.pos()) <= j.coverage_m
+            });
+        let effective_cep = if nav_jammed {
+            cep * rules.realism().ew.nav_jam_cep_factor
+        } else {
+            cep
+        };
+        let f_ew = if nav_jammed {
+            1.0 / rules.realism().ew.nav_jam_cep_factor
+        } else {
+            1.0
+        };
         // Rayleigh: σ = CEP / √(2 ln 2).
-        let sigma = cep / sqrt(2.0 * ln(2.0));
+        let sigma = effective_cep / sqrt(2.0 * ln(2.0));
         let u = rng(seed, RngPurpose::Cep, u64::from(id.0), tick, 0);
         let r = sigma * sqrt(-2.0 * ln((1.0 - u).max(1e-12)));
         let dir = rng(seed, RngPurpose::Cep, u64::from(id.0), tick, 1) * 2.0 * PI;
@@ -221,13 +242,13 @@ pub fn resolve(
             f_aspect: 1.0,
             f_maneuver: 1.0,
             f_cm: 1.0,
-            f_ew: 1.0,
+            f_ew,
             f_env: 1.0,
             pk,
             roll: u,
             aspect_deg: 0.0,
             target_g: 0.0,
-            cep_m: Some(cep),
+            cep_m: Some(effective_cep),
             radial_miss_m: Some(r),
         };
         let hit = r <= lethal;
@@ -292,7 +313,38 @@ pub fn resolve(
             .unwrap_or(0.0);
         f_cm *= 1.0 - c.effect * (1.0 - resist);
     }
-    let f_ew = 1.0;
+    let jammers = crate::sensors::active_jammers(world, rules);
+    let target_side = te
+        .and_then(|e| world.get::<crate::components::Allegiance>(e))
+        .map(|a| a.side);
+    let is_rf_seeker = matches!(
+        w.guidance.terminal,
+        Seeker::ActiveRadar | Seeker::SemiActiveRadar | Seeker::AntiRadiation
+    );
+    let jammer_covers_target = is_rf_seeker
+        && target_side.is_some_and(|ts| {
+            let tpos = tk.map(|k| k.pos()).unwrap_or(wk.pos());
+            jammers.iter().any(|j| {
+                j.side == ts
+                    && (j.effects.is_empty()
+                        || j.effects.contains(&wb_content::source::EwEffect::Radar))
+                    && match j.mode {
+                        crate::components::JammerMode::SelfProtect => {
+                            target.is_some_and(|tgt| j.uid == tgt)
+                        }
+                        crate::components::JammerMode::Escort
+                        | crate::components::JammerMode::StandOff => {
+                            distance_m(j.pos, tpos) <= j.coverage_m
+                        }
+                    }
+            })
+        });
+    let s_res = w.guidance.seeker_resistance.unwrap_or(0.0);
+    let f_ew = if jammer_covers_target {
+        (1.0 - rules.realism().ew.seeker_jam * (1.0 - s_res)).clamp(0.0, 1.0)
+    } else {
+        1.0
+    };
     let f_env = if matches!(f.seeker, SeekerState::Locked { memory: true, .. }) {
         rules.realism().ew.arm_memory_pk_factor
     } else {
@@ -301,11 +353,15 @@ pub fn resolve(
     let raw = pk_base * f_energy * f_asp * f_maneuver * f_ew * f_env;
     let pk = (raw * f_cm).clamp(er.pk_min, er.pk_max);
     let pk_no_cm = raw.clamp(er.pk_min, er.pk_max);
+    let raw_no_ew = pk_base * f_energy * f_asp * f_maneuver * f_env;
+    let pk_no_ew = (raw_no_ew * f_cm).clamp(er.pk_min, er.pk_max);
     let roll = rng(seed, RngPurpose::Endgame, u64::from(id.0), tick, 0);
     let outcome = if roll < pk {
         Outcome::Hit
     } else if roll < pk_no_cm {
         Outcome::Decoyed
+    } else if f_ew < 1.0 && roll < pk_no_ew {
+        Outcome::Jammed
     } else {
         Outcome::Miss
     };

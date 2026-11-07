@@ -593,6 +593,31 @@ fn task_steer(
                 None => hold(rules, p, k, k.pos(), None, Speed::Cruise),
             }
         }
+        Task::Jam {
+            centre,
+            radius_m,
+            alt_m,
+            speed,
+        } => {
+            let alt = alt_m.unwrap_or(cruise_alt);
+            let on = distance_m(centre, k.pos()) <= radius_m * 1.25;
+            set_station(world, side, gid, g, on);
+            Steer {
+                heading: circle_heading(k.pos(), centre, radius_m),
+                speed_mps: speed_for(rules, p, speed, alt),
+                alt_m: if rules.is_air(p) { alt } else { 0.0 },
+            }
+        }
+        Task::Suppress { target, .. } => {
+            let at = match target {
+                StrikeTarget::Point(at) => Some(at),
+                StrikeTarget::Contact(c) => estimate(world, side, c).map(|e| e.0),
+            };
+            match at {
+                Some(at) => to_point(rules, p, k, at, cruise_alt, Speed::Cruise),
+                None => hold(rules, p, k, k.pos(), None, Speed::Cruise),
+            }
+        }
         Task::Idle | Task::Rtb { .. } | Task::Land { .. } | Task::Transfer { .. } => {
             hold(rules, p, k, k.pos(), None, Speed::Cruise)
         }

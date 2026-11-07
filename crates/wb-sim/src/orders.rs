@@ -20,9 +20,9 @@ use wb_geo::{Geo, TerrainClass};
 use crate::bases::{self, BaseInfo};
 use crate::clock::SimClock;
 use crate::components::{
-    Allegiance, BaseSite, Behaviour, EmconState, Group, GroupMember, Identity, Kinematics,
-    Magazine, Mode, PlatformRef, Posture, ReturnWhy, Roe, RoeSetting, SatelliteState, Speed,
-    StrikeTarget, Task, Tasking, ThreatReaction,
+    Allegiance, BaseSite, Behaviour, EmconState, Group, GroupMember, Identity, JammerMode,
+    JammerState, Kinematics, Magazine, Mode, PlatformRef, Posture, ReturnWhy, Roe, RoeSetting,
+    SatelliteState, Speed, StrikeTarget, Task, Tasking, ThreatReaction,
 };
 use crate::events::{EventKind, emit};
 use crate::placement;
@@ -117,6 +117,32 @@ pub enum TaskOrder {
     /// Attack a contact or a point (pre-approved, ADR-029); `weapon` and
     /// `count` narrow the shot.
     Strike {
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        contact: Option<u32>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        point: Option<LonLat>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        weapon: Option<String>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        count: Option<u32>,
+    },
+    /// Stand-off jamming orbit (circle).
+    Jam {
+        centre: LonLat,
+        radius_km: f64,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        alt_m: Option<f64>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        speed: Option<Speed>,
+    },
+    /// Air-defence suppression (SEAD, doc 03 §5).
+    Suppress {
         #[serde(default)]
         #[cfg_attr(feature = "ts", ts(optional))]
         contact: Option<u32>,
@@ -227,6 +253,14 @@ pub enum Command {
         units: Vec<u32>,
         emcon: Emcon,
     },
+    /// Electronic warfare jammer control (doc 02 §9).
+    SetJammer {
+        units: Vec<u32>,
+        on: bool,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        mode: Option<JammerMode>,
+    },
     /// Image an area on the satellite's next pass (doc 03 §5 space tasks).
     TaskSatellite {
         satellite: u32,
@@ -314,6 +348,11 @@ pub enum Resolved {
     Emcon {
         groups: Vec<GroupPick>,
         emcon: Emcon,
+    },
+    Jammer {
+        groups: Vec<GroupPick>,
+        on: bool,
+        mode: Option<JammerMode>,
     },
     TaskSatellite {
         satellite: UnitId,
@@ -579,6 +618,11 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
         Command::SetEmcon { units, emcon } => Ok(Resolved::Emcon {
             groups: pick_groups(world, side, units)?,
             emcon: *emcon,
+        }),
+        Command::SetJammer { units, on, mode } => Ok(Resolved::Jammer {
+            groups: pick_groups(world, side, units)?,
+            on: *on,
+            mode: *mode,
         }),
         Command::TaskSatellite {
             satellite,
@@ -1061,6 +1105,64 @@ fn resolve_task(
                 fired: 0,
             }
         }
+        TaskOrder::Jam {
+            centre,
+            radius_km,
+            alt_m,
+            speed,
+        } => {
+            if *radius_km < 1.0 {
+                return Err("Orbit radius must be at least 1 km".to_owned());
+            }
+            Task::Jam {
+                centre: point(*centre)?,
+                radius_m: km_to_m(*radius_km),
+                alt_m: check_alt(*alt_m)?,
+                speed: speed.unwrap_or(Speed::Cruise),
+            }
+        }
+        TaskOrder::Suppress {
+            contact,
+            point: at,
+            weapon,
+            count,
+        } => {
+            let weapon = match weapon {
+                Some(name) => {
+                    let wix = rules
+                        .db
+                        .weapons
+                        .iter()
+                        .position(|w| rules.db.str(w.id) == *name)
+                        .map(|i| WeaponIx(i as u32))
+                        .ok_or_else(|| format!("Unknown weapon `{name}`"))?;
+                    Some(wix)
+                }
+                None => None,
+            };
+            if count.is_some_and(|n| !(1..=64).contains(&n)) {
+                return Err("A suppression fires 1–64 rounds".to_owned());
+            }
+            let target = match (contact, at) {
+                (Some(c), None) => {
+                    let (id, domain) = own_contact(world, side, *c)?;
+                    carried_for(world, &rules, picks, domain, weapon)?;
+                    StrikeTarget::Contact(id)
+                }
+                (None, Some(p)) => {
+                    carried_for(world, &rules, picks, Domain::Ground, weapon)
+                        .or_else(|_| carried_for(world, &rules, picks, Domain::Surface, weapon))?;
+                    StrikeTarget::Point(point(*p)?)
+                }
+                _ => return Err("Air-defence suppression needs a contact or a point, not both".to_owned()),
+            };
+            Task::Suppress {
+                target,
+                weapon,
+                count: *count,
+                fired: 0,
+            }
+        }
     };
 
     if surface && let Some(geo) = geo {
@@ -1282,6 +1384,35 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
                     EventKind::EmconChanged {
                         group: pick.group,
                         emcon,
+                    },
+                );
+            }
+        }
+        Resolved::Jammer { groups, on, mode } => {
+            for pick in groups {
+                for m in &pick.members {
+                    if let Some(e) = entity(world, *m) {
+                        if let Some(mut st) = world.get_mut::<JammerState>(e) {
+                            st.active = on;
+                            if let Some(md) = mode {
+                                st.mode = md;
+                            }
+                        }
+                    }
+                }
+                let current_mode = pick
+                    .members
+                    .first()
+                    .and_then(|m| entity(world, *m))
+                    .and_then(|e| world.get::<JammerState>(e))
+                    .map_or(mode.unwrap_or_default(), |st| st.mode);
+                emit(
+                    world,
+                    side,
+                    EventKind::JammerChanged {
+                        group: pick.group,
+                        active: on,
+                        mode: current_mode,
                     },
                 );
             }
@@ -1531,6 +1662,26 @@ pub fn assign(world: &mut World, side: u8, ge: Entity, task: Task) {
             EventKind::StationChanged {
                 group: gid,
                 on: false,
+            },
+        );
+    }
+    if matches!(task, Task::Jam { .. }) {
+        let members = g.members.clone();
+        for m in members {
+            if let Some(e) = entity(world, m) {
+                if let Some(mut st) = world.get_mut::<JammerState>(e) {
+                    st.active = true;
+                    st.mode = JammerMode::StandOff;
+                }
+            }
+        }
+        emit(
+            world,
+            side,
+            EventKind::JammerChanged {
+                group: gid,
+                active: true,
+                mode: JammerMode::StandOff,
             },
         );
     }

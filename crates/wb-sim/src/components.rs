@@ -279,6 +279,21 @@ pub enum Task {
         /// Rounds fired so far.
         fired: u32,
     },
+    /// Stand-off jamming orbit (circle).
+    Jam {
+        centre: LatLon,
+        radius_m: f64,
+        alt_m: Option<f64>,
+        speed: Speed,
+    },
+    /// Air-defence suppression (SEAD, doc 03 §5): pre-approved engagement of
+    /// a radar site or contact with emitter-homing or precision weapons.
+    Suppress {
+        target: StrikeTarget,
+        weapon: Option<WeaponIx>,
+        count: Option<u32>,
+        fired: u32,
+    },
 }
 
 /// What a strike is aimed at.
@@ -300,6 +315,8 @@ impl Task {
                 | Task::Intercept { .. }
                 | Task::Cap { .. }
                 | Task::Strike { .. }
+                | Task::Jam { .. }
+                | Task::Suppress { .. }
         )
     }
 
@@ -316,6 +333,8 @@ impl Task {
             Task::Intercept { .. } => "intercept",
             Task::Cap { .. } => "cap",
             Task::Strike { .. } => "strike",
+            Task::Jam { .. } => "jam",
+            Task::Suppress { .. } => "suppress",
         }
     }
 }
@@ -508,6 +527,25 @@ impl Health {
 /// emits `emcon_blink_on_s` of every `emcon_blink_period_s`.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EmconState(pub Emcon);
+
+/// Operating mode of an electronic warfare jammer (doc 02 §9).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(rename_all = "snake_case")]
+pub enum JammerMode {
+    #[default]
+    SelfProtect,
+    Escort,
+    StandOff,
+}
+
+/// Jammer state of a platform (doc 02 §9): `active` whether emitting jamming,
+/// and the active `mode`.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct JammerState {
+    pub active: bool,
+    pub mode: JammerMode,
+}
 
 /// An imaging request on a satellite (doc 02 §7.3): the pass is found when
 /// the order is accepted.

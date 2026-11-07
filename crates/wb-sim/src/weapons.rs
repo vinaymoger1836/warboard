@@ -98,6 +98,7 @@ pub struct SalvoStats {
     pub misses: u32,
     pub intercepted: u32,
     pub decoyed: u32,
+    pub jammed: u32,
 }
 
 /// A visual combat effect (launch flash, intercept burst, hit burst).
@@ -328,6 +329,7 @@ pub fn launch(world: &mut World, l: &Launch) -> Result<UnitId, String> {
             misses: 0,
             intercepted: 0,
             decoyed: 0,
+            jammed: 0,
         });
         s.total += 1;
         c.effects.push(VisualEffect {
@@ -1241,6 +1243,7 @@ fn terminate(
                 Outcome::Miss => s.misses += 1,
                 Outcome::Intercepted => s.intercepted += 1,
                 Outcome::Decoyed => s.decoyed += 1,
+                Outcome::Jammed => s.jammed += 1,
                 _ => {}
             }
             if s.terminated >= s.total {
@@ -1254,6 +1257,7 @@ fn terminate(
                         misses: s.misses,
                         intercepted: s.intercepted,
                         decoyed: s.decoyed,
+                        jammed: s.jammed,
                     },
                 ));
             }

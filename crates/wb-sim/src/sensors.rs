@@ -26,8 +26,8 @@ use wb_geo::{Geo, LosParams};
 
 use crate::clock::{RngSeed, SimClock};
 use crate::components::{
-    Allegiance, EmconState, Group, GroupMember, Kinematics, Magazine, PlatformRef, Posture,
-    SatelliteState, ScriptedTarget, WeaponFlight,
+    Allegiance, EmconState, Group, GroupMember, JammerMode, JammerState, Kinematics, Magazine,
+    PlatformRef, Posture, SatelliteState, ScriptedTarget, WeaponFlight,
 };
 use crate::movement::angle_diff;
 use crate::picture::{Bearing, Detection, Measured, Quality, SidePictures, SourceKind, TypeRef};
@@ -444,6 +444,114 @@ impl Los<'_> {
     }
 }
 
+/// An active electronic warfare jammer in the simulation.
+#[derive(Clone, Debug)]
+pub(crate) struct ActiveJammer {
+    pub(crate) uid: UnitId,
+    pub(crate) side: u8,
+    pub(crate) pos: LatLon,
+    pub(crate) mode: JammerMode,
+    pub(crate) strength: f64,
+    pub(crate) coverage_m: f64,
+    pub(crate) sector_rad: f64,
+    pub(crate) effects: Vec<wb_content::source::EwEffect>,
+}
+
+pub(crate) fn active_jammers(world: &World, rules: &Rules) -> Vec<ActiveJammer> {
+    let mut out = Vec::new();
+    for (&uid, &e) in &world.resource::<UnitIndex>().0 {
+        let Some(st) = world.get::<JammerState>(e) else { continue };
+        if !st.active {
+            continue;
+        }
+        if matches!(world.get::<Posture>(e), Some(Posture::AtBase { .. })) {
+            continue;
+        }
+        let Some(a) = world.get::<Allegiance>(e) else { continue };
+        let Some(k) = world.get::<Kinematics>(e) else { continue };
+        let Some(p_ref) = world.get::<PlatformRef>(e) else { continue };
+        let p = rules.platform(p_ref.0);
+        for ew_ix in &p.ew {
+            let suite = &rules.db.ew_suites[ew_ix.0 as usize];
+            let cfg = match st.mode {
+                JammerMode::SelfProtect => suite.modes.self_protect.as_ref(),
+                JammerMode::Escort => suite.modes.escort.as_ref(),
+                JammerMode::StandOff => suite.modes.stand_off.as_ref(),
+            };
+            if let Some(cfg) = cfg {
+                out.push(ActiveJammer {
+                    uid,
+                    side: a.side,
+                    pos: k.pos(),
+                    mode: st.mode,
+                    strength: cfg.jam_strength,
+                    coverage_m: cfg.coverage_m,
+                    sector_rad: cfg.sector_rad,
+                    effects: suite.effects.clone(),
+                });
+            }
+        }
+    }
+    out.sort_by_key(|j| j.uid);
+    out
+}
+
+fn radar_f_jam(
+    real: &wb_content::compiled::Realism,
+    r: &wb_content::compiled::Radar,
+    obs: &Body,
+    tgt: &Body,
+    jammers: &[ActiveJammer],
+) -> f64 {
+    let mut reductions = Vec::new();
+    for j in jammers {
+        if j.side != tgt.side {
+            continue;
+        }
+        if !j.effects.is_empty() && !j.effects.contains(&wb_content::source::EwEffect::Radar) {
+            continue;
+        }
+        match j.mode {
+            JammerMode::SelfProtect => {
+                if j.uid != tgt.uid {
+                    continue;
+                }
+                let a = (j.strength - r.jam_resistance).clamp(-10.0, 10.0);
+                let m_a = real.ew.m_advantage(a);
+                reductions.push(1.0 - m_a);
+            }
+            JammerMode::Escort | JammerMode::StandOff => {
+                let d_rad = distance_m(j.pos, obs.pos);
+                if d_rad > j.coverage_m {
+                    continue;
+                }
+                let a = (j.strength - r.jam_resistance).clamp(-10.0, 10.0);
+                let m_a = real.ew.m_advantage(a);
+                let brg_j = initial_bearing(obs.pos, j.pos);
+                let brg_t = initial_bearing(obs.pos, tgt.pos);
+                let angle = angle_diff(brg_j, brg_t).abs();
+                let mult = if angle <= j.sector_rad / 2.0 {
+                    m_a
+                } else {
+                    1.0 - (1.0 - m_a) * real.ew.off_axis
+                };
+                reductions.push((1.0 - mult).clamp(0.0, 1.0));
+            }
+        }
+    }
+    if reductions.is_empty() {
+        return 1.0;
+    }
+    reductions.sort_by(|a, b| b.total_cmp(a));
+    let mut net_reduction = reductions[0];
+    let max_extra = (real.ew.max_jammers as usize).saturating_sub(1);
+    for _ in reductions.iter().skip(1).take(max_extra) {
+        let remaining = 1.0 - net_reduction;
+        net_reduction += remaining * real.ew.extra_jammer_factor;
+    }
+    (1.0 - net_reduction).max(real.ew.close_in)
+}
+
 /// Everything a scan needs besides the bodies.
 struct Scan<'a> {
     rules: &'a Rules,
@@ -451,6 +559,7 @@ struct Scan<'a> {
     tick: u64,
     now_ms: u64,
     utc_ms: f64,
+    jammers: &'a [ActiveJammer],
 }
 
 /// One sensor of an observer, with its mounting.
@@ -684,6 +793,8 @@ fn evaluate(sc: &Scan, los: &mut Los, obs: &Body, m: &Mounted, tgt: &Body, d: f6
             if low {
                 r50 *= r.clutter_rejection;
             }
+            let f_jam = radar_f_jam(real, r, obs, tgt, sc.jammers);
+            r50 *= f_jam;
             if !los.clear(obs.pos, h_s, obs.ground_m, tgt.pos, tgt.h_m) {
                 return None;
             }
@@ -1049,12 +1160,14 @@ pub fn scan(world: &mut World) {
     }
     let bodies = bodies(world, &rules, geo.as_deref());
     let index = Index::new(&bodies, rules.realism().spatial.bucket_res);
+    let jammers = active_jammers(world, &rules);
     let sc = Scan {
         rules: &rules,
         seed,
         tick: clock.tick,
         now_ms: clock.sim_time_ms,
         utc_ms: clock.start_utc_ms as f64 + clock.sim_time_ms as f64,
+        jammers: &jammers,
     };
     let radar = &rules.realism().radar;
     let window_mask: u8 = if radar.track_confirm_window_scans >= 8 {
@@ -1178,7 +1291,32 @@ pub fn scan(world: &mut World) {
                         network,
                         fixed: tgt.fixed,
                     };
-                    pics.deliver(clock.sim_time_ms + (delay_s * 1_000.0) as u64, det);
+                    let mut delay = delay_s;
+                    let mut drop = false;
+                    let datalink_jammed = network.is_some()
+                        && sc.jammers.iter().any(|j| {
+                            j.side != obs.side
+                                && (j.effects.is_empty()
+                                    || j.effects.contains(&wb_content::source::EwEffect::Datalink))
+                                && distance_m(j.pos, obs.pos) <= j.coverage_m
+                        });
+                    if datalink_jammed {
+                        delay *= sc.rules.realism().ew.datalink_latency_factor;
+                        let ent = (u64::from(obs.uid.0) << 32) | u64::from(tgt.uid.0);
+                        let loss_roll = rng(
+                            seed,
+                            RngPurpose::DatalinkLoss,
+                            ent,
+                            clock.tick,
+                            u32::from(m.slot),
+                        );
+                        if loss_roll < sc.rules.realism().ew.datalink_loss_fraction {
+                            drop = true;
+                        }
+                    }
+                    if !drop {
+                        pics.deliver(clock.sim_time_ms + (delay * 1_000.0) as u64, det);
+                    }
                 }
                 if kind == SourceKind::Radar {
                     // Misses for every track of this sensor not hit this scan.

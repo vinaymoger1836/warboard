@@ -27,8 +27,8 @@ use crate::bases::{self, content_kind};
 use crate::clock::{RngSeed, SimClock, TickLen};
 use crate::components::{
     Allegiance, BaseRef, BaseSite, Countermeasures, EmconState, Fuel, Group, GroupMember, Identity,
-    Kinematics, Mode, PlatformRef, Posture, Roe, SatelliteState, ScriptedTarget, Speed, Steer,
-    SystemMemberRole, TankerState, Task,
+    JammerMode, JammerState, Kinematics, Mode, PlatformRef, Posture, Roe, SatelliteState,
+    ScriptedTarget, Speed, Steer, SystemMemberRole, TankerState, Task,
 };
 use crate::orders::{Order, OrderQueue};
 use crate::picture::SidePictures;
@@ -189,6 +189,12 @@ pub struct ScenarioUnit {
     /// Emission control at start; the system's or doctrine's default otherwise.
     #[serde(default)]
     pub emcon: Option<Emcon>,
+    /// Jammer active at start.
+    #[serde(default)]
+    pub jammer: Option<bool>,
+    /// Jammer mode at start.
+    #[serde(default)]
+    pub jammer_mode: Option<JammerMode>,
 }
 
 fn one() -> u32 {
@@ -620,10 +626,34 @@ impl Scenario {
                 world
                     .entity_mut(e)
                     .insert(EmconState(emcon.unwrap_or(default)));
+                if let Some(mut st) = world.get_mut::<JammerState>(e) {
+                    if let Some(active) = u.jammer {
+                        st.active = active;
+                    }
+                    if let Some(mode) = u.jammer_mode {
+                        st.mode = mode;
+                    }
+                }
             }
         }
         Ok(())
     }
+}
+
+fn default_jammer_mode(rules: &Rules, p: &wb_content::compiled::Platform) -> JammerMode {
+    for ew_ix in &p.ew {
+        let suite = &rules.db.ew_suites[ew_ix.0 as usize];
+        if suite.modes.stand_off.is_some() {
+            return JammerMode::StandOff;
+        }
+        if suite.modes.escort.is_some() {
+            return JammerMode::Escort;
+        }
+        if suite.modes.self_protect.is_some() {
+            return JammerMode::SelfProtect;
+        }
+    }
+    JammerMode::SelfProtect
 }
 
 /// Starting emission control: the system's default, else the country
@@ -718,6 +748,13 @@ fn spawn_system(
                     SystemMemberRole(c.role),
                 ),
             );
+            if !p.ew.is_empty() {
+                let default_mode = default_jammer_mode(rules, p);
+                world.entity_mut(e).insert(JammerState {
+                    active: u.jammer.unwrap_or(false),
+                    mode: u.jammer_mode.unwrap_or(default_mode),
+                });
+            }
             if let Some(c) = Countermeasures::full(p) {
                 world.entity_mut(e).insert(c);
             }
@@ -1001,6 +1038,13 @@ fn spawn_group(
         if let Some(t) = &p.tanker {
             world.entity_mut(e).insert(TankerState {
                 offload_left_kg: t.offload_kg,
+            });
+        }
+        if !p.ew.is_empty() {
+            let default_mode = default_jammer_mode(rules, p);
+            world.entity_mut(e).insert(JammerState {
+                active: false,
+                mode: default_mode,
             });
         }
     }

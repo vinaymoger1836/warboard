@@ -8,7 +8,7 @@ use wb_content::source::{Domain, Emcon};
 use wb_core::{ContactId, UnitId};
 
 use crate::clock::SimClock;
-use crate::components::ReturnWhy;
+use crate::components::{JammerMode, ReturnWhy};
 use crate::picture::SourceKind;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -109,6 +109,12 @@ pub enum EventKind {
     EmconChanged {
         group: UnitId,
         emcon: Emcon,
+    },
+    /// A group's jammer state changed (doc 02 §9).
+    JammerChanged {
+        group: UnitId,
+        active: bool,
+        mode: JammerMode,
     },
     /// A unit's loadout was changed at a base (`SetLoadout`); `loadout` is
     /// the template id, none for a custom one. A turnaround follows.
@@ -214,7 +220,7 @@ pub enum EventKind {
         group: UnitId,
         delay_s: f64,
     },
-    /// A salvo finished: counts of hits, misses, intercepts and decoys.
+    /// A salvo finished: counts of hits, misses, intercepts, decoys and jammed.
     SalvoReport {
         salvo: u32,
         shooter: UnitId,
@@ -223,6 +229,7 @@ pub enum EventKind {
         misses: u32,
         intercepted: u32,
         decoyed: u32,
+        jammed: u32,
     },
 }
 
