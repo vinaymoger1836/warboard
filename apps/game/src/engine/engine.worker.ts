@@ -5,8 +5,8 @@
 import type { Event, SaveHeader, TickReport } from '@warboard/protocol';
 import init, { Engine, GeoQuery, save_header } from '@warboard/wb-wasm';
 import wasmUrl from '@warboard/wb-wasm/wb_wasm_bg.wasm?url';
-import contentUrl from '../../../../build/content.wbpack?url';
-import scenarioYaml from '../../../../scenarios/demo-baltic.yaml?raw';
+import contentUrl from '../../../../build/fixtures.wbpack?url'; // TEMP P6b UI check
+import scenarioYaml from '../../../../scenarios/_p6b-ui-scratch.yaml?raw'; // TEMP P6b UI check
 import { AUTOSAVE_SLOT, readSave, writeSave } from '../saves/store';
 import type { FromWorker, PackFiles, ReplyData, ToWorker, WarInfo, WorkerRequest } from './messages';
 

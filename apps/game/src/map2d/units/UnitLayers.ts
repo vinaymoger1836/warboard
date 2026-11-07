@@ -826,21 +826,15 @@ export class UnitLayers {
       });
     }
     if (d.jammer && d.jammer.coverage_km > 0) {
-      const jamR = d.jammer.coverage_km * 1000;
-      if (d.jammer.sector_deg >= 360) {
-        paths.push({ path: geodesicCircle(pos, jamR), color: c('ring.sensor', 0.6), width: 1.5, dashed: true });
-      } else {
-        const half = d.jammer.sector_deg / 2;
-        const hdg = d.heading_deg;
-        const pts: LonLat[] = [pos];
-        const step = Math.max(1, Math.round(d.jammer.sector_deg / 24));
-        for (let a = -half; a <= half; a += step) {
-          pts.push(destination(pos, hdg + a, jamR));
-        }
-        pts.push(destination(pos, hdg + half, jamR));
-        pts.push(pos);
-        paths.push({ path: pts, color: c('ring.sensor', 0.6), width: 1.5, dashed: true });
-      }
+      // Coverage is a circle around the jammer (doc 02 §9): every radar inside it is affected.
+      // The sector is an angle measured at the victim radar between the jammer and the
+      // protected unit, not a direction the aircraft points, so it is not drawn as a wedge.
+      paths.push({
+        path: geodesicCircle(pos, d.jammer.coverage_km * 1000),
+        color: c('ring.sensor', 0.6),
+        width: 1.5,
+        dashed: true,
+      });
     }
 
     const t = d.task;
