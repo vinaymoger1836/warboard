@@ -596,16 +596,20 @@ fn group(world: &World, gid: UnitId, ge: Entity) -> Option<GroupDetails> {
                         let m = suite.modes.escort.as_ref();
                         (
                             m.map_or(0.0, |x| x.jam_strength),
-                            m.and_then(|x| x.coverage_km).unwrap_or(0.0),
-                            m.and_then(|x| x.sector_deg).unwrap_or(360.0),
+                            m.and_then(|x| x.coverage_m)
+                                .map(|m| m / 1000.0)
+                                .unwrap_or(0.0),
+                            m.and_then(|x| x.sector_rad).map(rad_to_deg).unwrap_or(360.0),
                         )
                     }
                     crate::components::JammerMode::StandOff => {
                         let m = suite.modes.stand_off.as_ref();
                         (
                             m.map_or(0.0, |x| x.jam_strength),
-                            m.and_then(|x| x.coverage_km).unwrap_or(0.0),
-                            m.and_then(|x| x.sector_deg).unwrap_or(360.0),
+                            m.and_then(|x| x.coverage_m)
+                                .map(|m| m / 1000.0)
+                                .unwrap_or(0.0),
+                            m.and_then(|x| x.sector_rad).map(rad_to_deg).unwrap_or(360.0),
                         )
                     }
                 };
