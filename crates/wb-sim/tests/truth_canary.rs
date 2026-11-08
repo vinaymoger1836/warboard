@@ -18,22 +18,23 @@ use wb_sim::world::{UnitIdAlloc, entity};
 use wb_sim::{Sim, details, satellites};
 
 /// The canaries: one that sails into radar range, one that stays hidden
-/// far away, one inside a group, all Russian. Our side is 0.
+/// far away, one inside a group, all on the other side. Our side is 0. Runs
+/// on the generic fixtures (ADR-035).
 const SCENARIO: &str = "
 name: truth canary
 seed: 77
 start_utc: 2026-10-27T20:00:00Z
 start_mode: deploy
 sides:
-  - { name: NATO, nations: [ita, usa] }
-  - { name: Russia, nations: [rus] }
+  - { name: Blue, nations: [tst] }
+  - { name: Red, nations: [opp] }
 units:
-  - { id: 10, name: Bergamini, platform: fremm-bergamini, nation: ita, lat_deg: 55.2, lon_deg: 17.0, heading_deg: 90 }
-  - { id: 12, name: Growler, platform: ea-18g, nation: usa, lat_deg: 55.0, lon_deg: 15.0, alt_m: 8000, heading_deg: 90 }
-  - { id: 14, name: CSG-1, platform: csg-1, nation: ita }
-  - { id: 500, name: CANARY-7f3a9c-SHIP, platform: steregushchiy, nation: rus, lat_deg: 55.234567, lon_deg: 18.123457, heading_deg: 270 }
-  - { id: 600, name: CANARY-7f3a9c-HIDDEN, platform: steregushchiy, nation: rus, lat_deg: 40.765432, lon_deg: 3.987654 }
-  - { id: 700, name: CANARY-7f3a9c-FLIGHT, platform: su-35s, nation: rus, count: 2, lat_deg: 55.876543, lon_deg: 19.345679, alt_m: 7000, heading_deg: 250 }
+  - { id: 10, name: Frigate, platform: test-frigate, nation: tst, lat_deg: 55.2, lon_deg: 17.0, heading_deg: 90 }
+  - { id: 12, name: Listener, platform: test-esm-aircraft, nation: tst, lat_deg: 55.0, lon_deg: 15.0, alt_m: 8000, heading_deg: 90 }
+  - { id: 14, name: SAR sat, platform: test-sar-satellite, nation: tst }
+  - { id: 500, name: CANARY-7f3a9c-SHIP, platform: test-corvette, nation: opp, lat_deg: 55.234567, lon_deg: 18.123457, heading_deg: 270 }
+  - { id: 600, name: CANARY-7f3a9c-HIDDEN, platform: test-corvette, nation: opp, lat_deg: 40.765432, lon_deg: 3.987654 }
+  - { id: 700, name: CANARY-7f3a9c-FLIGHT, platform: test-fighter, nation: opp, count: 2, lat_deg: 55.876543, lon_deg: 19.345679, alt_m: 7000, heading_deg: 250 }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: move, waypoints: [[18.5, 55.2]], speed: max } }
   - { tick: 0, side: 0, type: AssignTask, units: [12], task: { kind: patrol_circle, centre: [16.0, 55.0], radius_km: 30 } }
@@ -46,7 +47,7 @@ const NAME: &str = "CANARY-7f3a9c";
 const CANARIES: [u32; 5] = [500, 501, 600, 601, 700];
 
 fn content() -> (Arc<wb_content::ContentDb>, [u8; 32]) {
-    let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../../content");
+    let dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../../scenarios/fixtures");
     let set = wb_content::load_dir(std::path::Path::new(dir)).expect("content loads");
     let db = wb_content::compile(&set);
     let (header, _) = wb_content::encode(&db, &set.manifest.content_version);

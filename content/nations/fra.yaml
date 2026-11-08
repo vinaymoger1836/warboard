@@ -1,8 +1,0 @@
-id: fra
-kind: nation
-name: France
-colour: "#8A6F4E"
-flag: { pattern: horizontal, colours: ["#8A6F4E", "#E6E8EB"] }
-doctrine: nato-default
-datalinks: [link-16]
-design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

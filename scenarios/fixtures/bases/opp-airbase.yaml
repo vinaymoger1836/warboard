@@ -1,0 +1,11 @@
+id: opp-airbase
+kind: base
+name: Opposing Air Base
+base_type: air_base
+nation: opp
+lat_deg: 55.6
+lon_deg: 20.9
+elevation_m: 20
+runway_length_m: 2500
+aircraft_capacity: 12
+design: { note: "Generic test fixture (ADR-035)" }

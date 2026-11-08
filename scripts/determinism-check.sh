@@ -5,7 +5,9 @@
 # natively and continued in WASM. With region packs built, it also compares geo
 # queries (territory, terrain, elevation, line of sight; P2). P4 adds the
 # sensor goldens G1–G5 and a save/reload of the demo war with contacts in the
-# pictures. P6b adds a save/reload of G11 with an active jammer.
+# pictures. P6b adds a save/reload of G11 with an active jammer. Since PF the
+# goldens run on the generic fixtures (ADR-035): each scenario gets the pack of
+# its `content:` folder, and the quick start stands in for the demo war.
 # Needs crates/wb-wasm/pkg built first: pnpm --filter @warboard/wb-wasm build:wasm
 set -euo pipefail
 
@@ -14,9 +16,10 @@ ticks=${TICKS:-10000}
 scenarios=("$@")
 if [ ${#scenarios[@]} -eq 0 ]; then
   scenarios=(scenarios/empty.yaml scenarios/determinism-probe.yaml
-             scenarios/golden/g7-f35a-patrol.yaml scenarios/save-load.yaml scenarios/demo-baltic.yaml
+             scenarios/golden/g7-patrol-tanker.yaml scenarios/save-load.yaml
+             scenarios/quickstart-north-straits.yaml scenarios/quickstart-north-islands.yaml
              scenarios/golden/g1-frigate-vs-sea-skimmer.yaml scenarios/golden/g2-rcs-ratio.yaml
-             scenarios/golden/g3-ridge-masking.yaml scenarios/golden/g4-esm-vs-s400.yaml
+             scenarios/golden/g3-ridge-masking.yaml scenarios/golden/g4-esm-vs-sam-radar.yaml
              scenarios/golden/g5-satellite-night.yaml)
 fi
 
@@ -24,6 +27,12 @@ cargo build -q --release -p wb-cli
 wb=./target/release/wb
 pack=build/content.wbpack
 $wb content build --out "$pack" > /dev/null
+fixpack=$(mktemp --suffix=.wbpack)
+$wb content build --dir scenarios/fixtures --out "$fixpack" > /dev/null
+trap 'rm -f "$fixpack"' EXIT
+pack_for() { # the pack of a scenario's `content:` folder
+  if grep -q '^content: scenarios/fixtures' "$1"; then echo "$fixpack"; else echo "$pack"; fi
+}
 status=0
 compare() { # label native wasm
   if [ "$2" = "$3" ]; then
@@ -36,28 +45,30 @@ compare() { # label native wasm
   fi
 }
 for s in "${scenarios[@]}"; do
-  native=$($wb run --content "$pack" --scenario "$s" --ticks "$ticks" --print-hash)
-  wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$pack" --scenario "$s" --ticks "$ticks")
+  p=$(pack_for "$s")
+  native=$($wb run --content "$p" --scenario "$s" --ticks "$ticks" --print-hash)
+  wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$p" --scenario "$s" --ticks "$ticks")
   compare "$s ($ticks ticks)" "$native" "$wasm"
 done
 
 # P3: save mid-flight, reload, run to 1 sim hour; equal to an uninterrupted run,
 # natively, in WASM, and from a native save continued in WASM.
 s=scenarios/save-load.yaml
-whole=$($wb run --content "$pack" --scenario "$s" --ticks 3600 --print-hash)
-native=$($wb run --content "$pack" --scenario "$s" --ticks 3600 --save-at 900 --print-hash)
+p=$(pack_for "$s")
+whole=$($wb run --content "$p" --scenario "$s" --ticks 3600 --print-hash)
+native=$($wb run --content "$p" --scenario "$s" --ticks 3600 --save-at 900 --print-hash)
 compare "save/reload native ($s, save at 900)" "$whole" "$native"
-wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$pack" --scenario "$s" --ticks 3600 --save-at 900)
+wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$p" --scenario "$s" --ticks 3600 --save-at 900)
 compare "save/reload wasm   ($s, save at 900)" "$whole" "$wasm"
 save=$(mktemp)
-$wb run --content "$pack" --scenario "$s" --ticks 900 --save-out "$save" > /dev/null
-cross=$(node crates/wb-wasm/node/run-scenario.mjs --content "$pack" --load "$save" --ticks 3600)
+$wb run --content "$p" --scenario "$s" --ticks 900 --save-out "$save" > /dev/null
+cross=$(node crates/wb-wasm/node/run-scenario.mjs --content "$p" --load "$save" --ticks 3600)
 rm -f "$save"
 compare "native save → wasm ($s, save at 900)" "$whole" "$cross"
 
 # P4: the demo war with sensors, contacts and satellites, saved after contacts
 # exist and continued (pictures, tracks and pending reports are in the save).
-s=scenarios/demo-baltic.yaml
+s=scenarios/quickstart-north-straits.yaml
 whole=$($wb run --content "$pack" --scenario "$s" --ticks 3600 --print-hash)
 native=$($wb run --content "$pack" --scenario "$s" --ticks 3600 --save-at 1800 --print-hash)
 compare "save/reload native ($s, save at 1800)" "$whole" "$native"
@@ -65,16 +76,13 @@ wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$pack" --scenario "$
 compare "save/reload wasm   ($s, save at 1800)" "$whole" "$wasm"
 
 # P6b: an active jammer and its mode are part of a save. G11 uses the generic fixtures
-# (ADR-035), so it gets its own content pack. Saved mid-run and continued, in both.
-fixpack=$(mktemp --suffix=.wbpack)
-$wb content build --dir scenarios/fixtures --out "$fixpack" > /dev/null
+# (ADR-035), so it runs on the fixtures pack. Saved mid-run and continued, in both.
 s=scenarios/golden/g11-standoff-jamming.yaml
 whole=$($wb run --content "$fixpack" --scenario "$s" --ticks 400 --print-hash)
 native=$($wb run --content "$fixpack" --scenario "$s" --ticks 400 --save-at 200 --print-hash)
 compare "save/reload native ($s, save at 200)" "$whole" "$native"
 wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$fixpack" --scenario "$s" --ticks 400 --save-at 200)
 compare "save/reload wasm   ($s, save at 200)" "$whole" "$wasm"
-rm -f "$fixpack"
 
 # Geo queries (P2): only when the region packs have been built (they are not in git).
 packs=${WB_PACKS:-build/packs}

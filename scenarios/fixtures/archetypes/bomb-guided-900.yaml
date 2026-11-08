@@ -1,0 +1,7 @@
+id: bomb-guided-900
+kind: archetype
+name: 900 kg satellite-guided bomb
+bands:
+  profile.max_range_km: [10, 40]
+  warhead_kg: [350, 500]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

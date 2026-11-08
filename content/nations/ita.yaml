@@ -1,8 +1,0 @@
-id: ita
-kind: nation
-name: Italy
-colour: "#6E8F6A"
-flag: { pattern: horizontal, colours: ["#6E8F6A", "#E6E8EB"] }
-doctrine: nato-default
-datalinks: [link-16]
-design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

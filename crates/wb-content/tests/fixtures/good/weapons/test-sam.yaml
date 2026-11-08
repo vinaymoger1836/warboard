@@ -12,4 +12,4 @@ station_category: [test_tube]
 rounds_per_cell: 4
 signature:
   rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

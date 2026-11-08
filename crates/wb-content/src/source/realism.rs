@@ -87,10 +87,9 @@ source_enum! {
     /// What a base must be placed on.
     #[serde(rename_all = "snake_case")]
     pub enum SiteRule {
-        /// A real airfield (content `base` with an air base) nearby.
-        RealAirfield,
-        /// A real port (content `base` with a port) nearby.
-        RealPort,
+        /// A base authored in content (`content/bases/`) nearby: an air base
+        /// for aircraft kinds, a port for naval kinds (doc 11 §2.5, ADR-041).
+        Preset,
         /// Any cell that meets the terrain, territory and slope rules.
         Terrain,
     }
@@ -524,8 +523,7 @@ source_type! {
     #[serde(deny_unknown_fields)]
     pub struct BaseRule {
         pub site: SiteRule,
-        /// For `real_airfield` and `real_port`: the real base must lie within
-        /// this distance.
+        /// For `preset`: the authored base must lie within this distance.
         #[serde(default)]
         pub match_radius_km: f64,
         /// Allowed terrain classes; empty means any.

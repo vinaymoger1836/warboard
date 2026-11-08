@@ -1,8 +1,0 @@
-id: rus
-kind: nation
-name: Russia
-colour: "#5E8C8C"
-flag: { pattern: horizontal, colours: ["#5E8C8C", "#E6E8EB"] }
-doctrine: ru-default
-datalinks: []
-design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

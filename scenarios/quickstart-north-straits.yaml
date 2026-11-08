@@ -1,0 +1,39 @@
+# Quick start (doc 11 §2.1): Theatre North, the straits war. Aldmark, Halvast
+# and Morvel against Vessmar and Kaldoria, for the browser app until war setup
+# arrives in P9. A suggestion only: the nations have no fixed blocs. Units
+# start deployed; they move to garrisoned bases when the PF bases exist.
+# Not a golden scenario.
+name: Theatre North, the straits
+seed: 2026
+start_utc: 2026-10-27T06:00:00Z
+start_mode: deploy
+sides:
+  - { name: Straits League, nations: [ald, hlv, mrv], player: true }
+  - { name: Eastern Pact, nations: [vsm, kld] }
+units:
+  - { id: 10, name: Hollin Flight, platform: mf-4, nation: ald, count: 2, lat_deg: 55.8, lon_deg: 15.2, alt_m: 9000, heading_deg: 90, loadout: mf-4-air }
+  - { id: 20, name: Vantor Flight, platform: vf-5, nation: mrv, count: 2, lat_deg: 55.3, lon_deg: 15.8, alt_m: 11000, heading_deg: 90, loadout: vf-5-air }
+  - { id: 30, name: Ferrin, platform: tk-3, nation: ald, lat_deg: 55.6, lon_deg: 14.0, alt_m: 8000, heading_deg: 90 }
+  - { id: 40, name: Longwatch, platform: ud-9, nation: hlv, lat_deg: 56.0, lon_deg: 17.5, alt_m: 6000, heading_deg: 90 }
+  - { id: 50, name: Halvard, platform: halvard, nation: hlv, lat_deg: 55.6, lon_deg: 16.4, heading_deg: 90, loadout: halvard-standard }
+  - { id: 60, name: Lantern, platform: aw-1, nation: ald, lat_deg: 55.9, lon_deg: 14.6, alt_m: 9000, heading_deg: 90 }
+  - { id: 70, name: Wren, platform: ej-2, nation: mrv, count: 2, lat_deg: 55.4, lon_deg: 16.2, alt_m: 9000, heading_deg: 90, loadout: ej-2-escort }
+  - { id: 80, name: SAR-1, platform: orbit-sar-1, nation: ald }
+  - { id: 82, name: EO-2, platform: orbit-eo-2, nation: hlv }
+  - { id: 200, name: Bastra Battalion, system: lr-sam-bastra, nation: vsm, lat_deg: 56.4, lon_deg: 21.4, heading_deg: 270 }
+  - { id: 210, name: Tolven Battery, system: mr-sam-tolven, nation: kld, lat_deg: 55.9, lon_deg: 21.2, heading_deg: 270 }
+  - { id: 230, name: Kest, platform: kest, nation: vsm, lat_deg: 55.9, lon_deg: 19.8, heading_deg: 300 }
+  - { id: 240, name: Corvan Flight, platform: hf-4, nation: kld, count: 2, lat_deg: 56.2, lon_deg: 20.4, alt_m: 10000, heading_deg: 270, loadout: hf-4-air }
+  - { id: 250, name: Sellis Flight, platform: mf-4, nation: vsm, count: 2, lat_deg: 56.6, lon_deg: 20.8, alt_m: 9000, heading_deg: 270, loadout: mf-4-anti-ship }
+orders:
+  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: patrol_route, waypoints: [[17.5, 55.6], [18.6, 56.1], [18.8, 55.5]], loop: true } }
+  - { tick: 0, side: 0, type: SetDoctrine, units: [10], launch: max_range }
+  - { tick: 0, side: 0, type: AssignTask, units: [20], task: { kind: patrol_circle, centre: [17.8, 55.2], radius_km: 35, alt_m: 11000 } }
+  - { tick: 0, side: 0, type: AssignTask, units: [30], task: { kind: tanker_track, a: [15.0, 55.9], b: [15.2, 55.2] } }
+  - { tick: 0, side: 0, type: AssignTask, units: [40], task: { kind: patrol_circle, centre: [18.4, 56.2], radius_km: 25 } }
+  - { tick: 0, side: 0, type: AssignTask, units: [50], task: { kind: move, waypoints: [[17.4, 55.6], [18.2, 55.8]] } }
+  - { tick: 0, side: 0, type: AssignTask, units: [60], task: { kind: patrol_route, waypoints: [[14.6, 55.9], [15.6, 56.3]], loop: true } }
+  - { tick: 0, side: 0, type: AssignTask, units: [70], task: { kind: patrol_route, waypoints: [[16.2, 55.4], [17.4, 56.0]], loop: true } }
+  - { tick: 0, side: 1, type: AssignTask, units: [230], task: { kind: patrol_circle, centre: [19.6, 56.0], radius_km: 20 } }
+  - { tick: 0, side: 1, type: AssignTask, units: [240], task: { kind: patrol_circle, centre: [20.0, 56.3], radius_km: 30 } }
+  - { tick: 0, side: 1, type: AssignTask, units: [250], task: { kind: patrol_circle, centre: [20.4, 56.8], radius_km: 30 } }

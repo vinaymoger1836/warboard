@@ -4,4 +4,4 @@ name: Test chaff
 cm_type: chaff
 effect: 0.2
 defeats: [active_radar, semi_active_radar]
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

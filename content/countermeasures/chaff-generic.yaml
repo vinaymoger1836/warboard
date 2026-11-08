@@ -1,8 +1,0 @@
-id: chaff-generic
-kind: countermeasure
-name: Chaff cartridge
-cm_type: chaff
-effect: 0.3
-defeats: [active_radar, semi_active_radar]
-mass_kg: 0.2
-design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

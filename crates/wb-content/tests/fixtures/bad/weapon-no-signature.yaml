@@ -11,4 +11,4 @@ warhead_kg: 24
 pk_base: { fighter: 0.7 }
 mass_kg: 420
 station_category: [test_tube]
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

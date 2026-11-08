@@ -6,12 +6,12 @@ seed: 15
 start_utc: 2026-10-27T06:00:00Z
 force_fine_tick: true
 sides:
-  - { name: NATO, nations: [pol, deu, fra, ita, usa], player: true }
-  - { name: Russia, nations: [rus] }
+  - { name: West, nations: [ald, tlv, hlv, mrv, cnd], player: true }
+  - { name: East, nations: [vsm, kld, ost] }
 generated_units:
   count: 2000
   group_size: 4
-  platforms: [f-35a, eurofighter-typhoon, rafale-c, mq-9a, a330-mrtt, fremm-bergamini]
-  nation: pol
+  platforms: [vf-5, mf-4, hf-4, ud-9, tk-3, halvard]
+  nation: ald
   area: [50.0, 12.0, 58.0, 26.0]
   patrol_radius_km: [20, 80]

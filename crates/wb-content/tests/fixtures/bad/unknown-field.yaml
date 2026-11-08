@@ -11,4 +11,4 @@ pk_base: { fighter: 0.7 }
 mass_kg: 150
 station_category: [aam_medium]
 profile: { kind: rocket, boost_s: 6, max_speed_mach: 4, coast_tau_s: { sea_level: 18, high_alt: 60 }, min_speed_mach: 1.1, max_range_kms: 100 }
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

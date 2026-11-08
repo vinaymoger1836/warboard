@@ -1,0 +1,26 @@
+id: test-heavy-fighter
+kind: platform
+name: Test Heavy Fighter
+short_name: Heavy fighter
+category: aircraft/fighter
+target_class: fighter
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 2.2
+  ceiling_m: 18000
+  climb_rate_mps: 250
+  sustained_g: 8.0
+  min_runway_m: 2000
+signature:
+  rcs_m2: { front: 8, side: 20, rear: 10, top: 30 }
+stations:
+  - { id: wing, kind: external, categories: [test_air_wing], capacity: 6 }
+fuel:
+  internal_kg: 11000
+  burn_kg_h: { cruise: 3200, military: 6500, afterburner: 18000 }
+  aar: probe
+sensors:
+  - { sensor: test-fighter-radar, height_m: 0 }
+datalinks: [test-link]
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+design: { archetype: fighter-heavy, note: "Generic test fixture (ADR-035); stats in the range of its class" }

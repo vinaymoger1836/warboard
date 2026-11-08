@@ -8,4 +8,4 @@ signature: { rcs_m2: { front: 20, side: 30, rear: 20, top: 40 } }
 stations:
   - { id: tubes, kind: launcher, categories: [test_tube], capacity: 4 }
 durability: { model: ground, damage_points: 100 }
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

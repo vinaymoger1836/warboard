@@ -5,4 +5,4 @@ kind: platform
 custom: true
 extends: f-99
 name: Bad
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

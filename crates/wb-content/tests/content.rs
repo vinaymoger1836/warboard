@@ -1,4 +1,4 @@
-//! The real `content/` folder: validates, builds deterministically, decodes
+//! The `content/` folder: validates, builds deterministically, decodes
 //! to the same database, converts units correctly, carries design notes.
 
 use std::path::Path;
@@ -49,24 +49,21 @@ fn builds_twice_with_the_same_hash_and_round_trips() {
 #[test]
 fn units_are_converted_to_si() {
     let db = compile(&content());
-    let w = by_id(&db, &db.weapons, |w| w.id, "aim-120d");
-    assert_eq!(w.profile.max_range_m, 160_000.0);
+    let w = by_id(&db, &db.weapons, |w| w.id, "ar-7");
+    assert_eq!(w.profile.max_range_m, 130_000.0);
 
-    let p = by_id(&db, &db.platforms, |p| p.id, "f-35a");
-    assert_eq!(p.turnaround_s, Some(3_600.0));
+    let p = by_id(&db, &db.platforms, |p| p.id, "mf-4");
+    assert_eq!(p.turnaround_s, Some(2_700.0));
     let burn = p.fuel.as_ref().unwrap().burn_kg_s.as_ref().unwrap();
-    assert!((burn.cruise - 2_600.0 / 3_600.0).abs() < 1e-12);
+    assert!((burn.cruise - 1_800.0 / 3_600.0).abs() < 1e-12);
 
-    let s = by_id(&db, &db.sensors, |s| s.id, "an-apg-81");
+    let s = by_id(&db, &db.sensors, |s| s.id, "vr-81");
     let radar = s.radar.as_ref().unwrap();
     assert!((radar.field_of_regard_rad - 120f64.to_radians()).abs() < 1e-12);
 
-    let ship = by_id(&db, &db.platforms, |p| p.id, "fremm-bergamini");
+    let ship = by_id(&db, &db.platforms, |p| p.id, "halvard");
     let kt = 1_852.0 / 3_600.0;
-    assert!((ship.mobility.max_speed_mps.unwrap() - 30.0 * kt).abs() < 1e-9);
-
-    let base = by_id(&db, &db.bases, |b| b.id, "taranto");
-    assert!(base.lat_rad > 0.70 && base.lat_rad < 0.72);
+    assert!((ship.mobility.max_speed_mps.unwrap() - 29.0 * kt).abs() < 1e-9);
 
     let r = &db.realism[0];
     assert_eq!(r.fusion.age_out_s[&wb_content::source::Domain::Air], 120.0);

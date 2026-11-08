@@ -52,13 +52,13 @@ fn setup(db: &Arc<wb_content::ContentDb>, hash: [u8; 32], wix: WeaponIx, range_m
     let air_launch = cal.launch_alt_m > 0.0 || cal.launch_speed_mach > 0.0;
     let shooter = if air_launch {
         format!(
-            "{{ id: {SHOOTER}, name: Shooter, platform: f-35a, nation: ita, lat_deg: 55.0, lon_deg: 10.0, alt_m: {}, heading_deg: 90, speed_mps: {} }}",
+            "{{ id: {SHOOTER}, name: Shooter, platform: mf-4, nation: ald, lat_deg: 55.0, lon_deg: 10.0, alt_m: {}, heading_deg: 90, speed_mps: {} }}",
             cal.launch_alt_m,
             cal.launch_speed_mach * rules.speed_of_sound(cal.launch_alt_m)
         )
     } else {
         format!(
-            "{{ id: {SHOOTER}, name: Shooter, platform: fremm-bergamini, nation: ita, lat_deg: 55.0, lon_deg: 10.0, heading_deg: 90 }}"
+            "{{ id: {SHOOTER}, name: Shooter, platform: halvard, nation: ald, lat_deg: 55.0, lon_deg: 10.0, heading_deg: 90 }}"
         )
     };
     let air_target = w.targets.contains(&Domain::Air);
@@ -66,7 +66,7 @@ fn setup(db: &Arc<wb_content::ContentDb>, hash: [u8; 32], wix: WeaponIx, range_m
         (
             String::new(),
             format!(
-                "scripted_targets:\n  - {{ id: {TARGET}, name: Target, weapon: {wid}, nation: rus, lat_deg: {}, lon_deg: {}, alt_m: {}, heading_deg: 270, speed_mps: {} }}\n",
+                "scripted_targets:\n  - {{ id: {TARGET}, name: Target, weapon: {wid}, nation: vsm, lat_deg: {}, lon_deg: {}, alt_m: {}, heading_deg: 270, speed_mps: {} }}\n",
                 to.lat_deg(),
                 to.lon_deg(),
                 cal.target_alt_m,
@@ -76,7 +76,7 @@ fn setup(db: &Arc<wb_content::ContentDb>, hash: [u8; 32], wix: WeaponIx, range_m
     } else {
         (
             format!(
-                "  - {{ id: {TARGET}, name: Target, platform: steregushchiy, nation: rus, lat_deg: {}, lon_deg: {}, heading_deg: 270, speed_mps: 0, emcon: on }}\n",
+                "  - {{ id: {TARGET}, name: Target, platform: kest, nation: vsm, lat_deg: {}, lon_deg: {}, heading_deg: 270, speed_mps: 0, emcon: on }}\n",
                 to.lat_deg(),
                 to.lon_deg()
             ),
@@ -84,7 +84,7 @@ fn setup(db: &Arc<wb_content::ContentDb>, hash: [u8; 32], wix: WeaponIx, range_m
         )
     };
     let yaml = format!(
-        "name: calibration\nseed: 1\nstart_utc: 2026-10-27T12:00:00Z\nstart_mode: deploy\nsides:\n  - {{ name: NATO, nations: [ita] }}\n  - {{ name: Russia, nations: [rus] }}\nunits:\n  - {shooter}\n{units}{scripted}"
+        "name: calibration\nseed: 1\nstart_utc: 2026-10-27T12:00:00Z\nstart_mode: deploy\nsides:\n  - {{ name: West, nations: [ald] }}\n  - {{ name: East, nations: [vsm] }}\nunits:\n  - {shooter}\n{units}{scripted}"
     );
     let mut sim = Sim::from_yaml(&yaml, db.clone(), hash, None).expect("calibration scenario");
     // Scenario ids name groups; the platforms are their members.
@@ -255,8 +255,8 @@ fn effects_reach_only_the_sides_that_may_see_them() {
     let wix = WeaponIx(
         db.weapons
             .iter()
-            .position(|w| db.str(w.id) == "aim-120d")
-            .expect("AIM-120D") as u32,
+            .position(|w| db.str(w.id) == "ar-7")
+            .expect("AR-7") as u32,
     );
     let mut sim = setup(&db, hash, wix, 40_000.0);
     let mut enc = wb_sim::view::ViewEncoder::new();
@@ -294,8 +294,8 @@ fn save_in_flight_reloads_to_the_same_hash() {
     let wix = WeaponIx(
         db.weapons
             .iter()
-            .position(|w| db.str(w.id) == "aim-120d")
-            .expect("AIM-120D") as u32,
+            .position(|w| db.str(w.id) == "ar-7")
+            .expect("AR-7") as u32,
     );
     let mut a = setup(&db, hash, wix, 60_000.0);
     a.run_ticks(40);

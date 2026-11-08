@@ -22,6 +22,7 @@ fuel:
   aar: probe
 sensors:
   - { sensor: test-fighter-radar, height_m: 0 }
+datalinks: [test-link]
 ew:
   - test-jammer
 durability: { model: aircraft, p_kill_on_hit: 0.9 }

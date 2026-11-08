@@ -6,4 +6,4 @@ modes:
   escort:       { jam_strength: 6, coverage_km: 100, sector_deg: 60 }
   stand_off:    { jam_strength: 7, coverage_km: 150, sector_deg: 60 }
 effects: [radar, datalink]
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

@@ -7,4 +7,4 @@ components:
   - { platform: test-launcher, count: 4, role: launcher, magazine: { test-sam: 16 } }
 emcon_default: blink
 iads_capable: true
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

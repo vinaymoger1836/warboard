@@ -1,8 +1,0 @@
-id: an-alq-99
-kind: ew_suite
-name: AN/ALQ-99 tactical jamming pod
-modes:
-  escort:       { jam_strength: 6, coverage_km: 150, sector_deg: 120 }
-  stand_off:    { jam_strength: 7, coverage_km: 200, sector_deg: 120 }
-effects: [radar, datalink]
-design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

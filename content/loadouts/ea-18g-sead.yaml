@@ -1,9 +1,0 @@
-id: ea-18g-sead
-kind: loadout
-name: SEAD
-platform: ea-18g
-roles: [sead, escort_jamming]
-items:
-  - { station: wing_mid, weapon: agm-88g, count: 2 }
-  - { station: fuselage, weapon: aim-120d, count: 2 }
-design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

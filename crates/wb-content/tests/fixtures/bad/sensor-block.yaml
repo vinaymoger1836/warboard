@@ -5,4 +5,4 @@ kind: sensor
 name: Bad
 sensor_type: esm
 role: [esm]
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

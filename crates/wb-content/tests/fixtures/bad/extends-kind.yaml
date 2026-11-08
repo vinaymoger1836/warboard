@@ -5,4 +5,4 @@ kind: platform
 custom: true
 extends: test-aam
 name: Bad
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

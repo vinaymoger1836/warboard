@@ -169,10 +169,10 @@ spatial:                             # doc 02 §16, ADR-023
   los_memo_capacity: 200000
 
 bases:                               # doc 03 §3
-  air_base:     { site: real_airfield, match_radius_km: 3, setup_min: 60 }
+  air_base:     { site: preset, match_radius_km: 3, setup_min: 60 }
   road_strip:   { site: terrain, terrain: [open], own_territory: true, max_slope_deg: 3, setup_min: 360, aircraft_capacity: 6, road_capable_only: true }
   heliport:     { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, arctic], max_slope_deg: 5.71, setup_min: 120, aircraft_capacity: 8, rotary_only: true }
-  naval_base:   { site: real_port, match_radius_km: 5, setup_min: 60, vls_reload: true }
+  naval_base:   { site: preset, match_radius_km: 5, setup_min: 60, vls_reload: true }
   anchorage:    { site: terrain, terrain: [water], own_territory: true, setup_min: 120, ship_berths: 4 }
   army_base:    { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, arctic], own_territory: true, setup_min: 360 }
   sam_site:     { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, marsh, arctic], setup_min: 5 }

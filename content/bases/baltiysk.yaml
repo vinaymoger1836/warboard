@@ -1,9 +1,0 @@
-id: baltiysk
-kind: base
-name: Baltiysk naval base
-base_type: port
-nation: rus
-lat_deg: 54.65
-lon_deg: 19.9167
-ship_berths: 30
-design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

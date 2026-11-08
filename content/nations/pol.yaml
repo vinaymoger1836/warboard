@@ -1,8 +1,0 @@
-id: pol
-kind: nation
-name: Poland
-colour: "#9A5C6B"
-flag: { pattern: horizontal, colours: ["#9A5C6B", "#E6E8EB"] }
-doctrine: nato-default
-datalinks: [link-16]
-design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

@@ -1,9 +1,0 @@
-id: steregushchiy-standard
-kind: loadout
-name: Standard
-platform: steregushchiy
-roles: [air_defence, anti_ship]
-items:
-  - { station: redut, weapon: 9m96, count: 12 }
-  - { station: uran, weapon: kh-35, count: 8 }
-design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

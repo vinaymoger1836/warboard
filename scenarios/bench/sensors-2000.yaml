@@ -1,5 +1,5 @@
-# Sensor benchmark (doc 02 §16): 2,000 units on two sides across a European
-# theatre, NATO west and Russia east with a 600 km wide contact zone, every
+# Sensor benchmark (doc 02 §16): 2,000 units on two sides across the europe
+# terrain pack, one coalition west and one east with a 600 km wide contact zone, every
 # tick forced to 100 ms, so `wb bench` measures the sensor budget (2.5 ms of
 # the 6 ms tick) with radars, ESM, IRST and lookouts all scanning.
 # Not gameplay: force_fine_tick and generated_units exist for benchmarks only.
@@ -9,18 +9,18 @@ start_utc: 2026-10-27T10:00:00Z
 force_fine_tick: true
 start_mode: deploy
 sides:
-  - { name: NATO, nations: [pol, deu, fra, ita, usa], player: true }
-  - { name: Russia, nations: [rus] }
+  - { name: West, nations: [ald, tlv, hlv, mrv, cnd], player: true }
+  - { name: East, nations: [vsm, kld, ost] }
 generated_units:
   - count: 1000
     group_size: 4
-    platforms: [f-35a, ea-18g, e-3a, fremm-bergamini, mq-9a]
-    nation: pol
+    platforms: [mf-4, ej-2, aw-1, halvard, ud-9]
+    nation: ald
     area: [44.0, -2.0, 60.0, 26.0]
     patrol_radius_km: [20, 80]
   - count: 1000
     group_size: 4
-    platforms: [su-35s, steregushchiy, su-57]
-    nation: rus
+    platforms: [hf-4, kest, mf-4]
+    nation: vsm
     area: [44.0, 18.0, 62.0, 45.0]
     patrol_radius_km: [20, 80]

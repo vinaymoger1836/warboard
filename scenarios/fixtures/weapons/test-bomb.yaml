@@ -1,0 +1,21 @@
+id: test-bomb
+kind: weapon
+name: Test Guided Bomb
+category: bomb
+targets: [ground, surface]
+profile:
+  kind: glide
+  max_speed_mach: 0.9
+  max_range_km: 25
+guidance:
+  midcourse: [inertial, gps]
+  terminal: gps_ins
+warhead_kg: 430
+warhead: blast
+cep_m: 10
+lethal_radius_m: 30
+mass_kg: 920
+station_category: [test_air_wing]
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
+design: { archetype: bomb-guided-900, note: "Generic test fixture (ADR-035); stats in the range of its class" }

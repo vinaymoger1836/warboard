@@ -14,7 +14,7 @@ sides:
   - { name: Red, nations: [opp], roe: charlie, self_defence: false }
 units:
   - { id: 10, name: Patrol, platform: test-fighter, nation: tst, count: 2, lat_deg: 54.6, lon_deg: 17.0, alt_m: 10000, heading_deg: 90, loadout: test-fighter-a2a }
-  - { id: 20, name: Intruder, platform: test-fighter, nation: opp, count: 2, lat_deg: 55.15, lon_deg: 20.3, alt_m: 9000, heading_deg: 270, loadout: test-fighter-a2a }
+  - { id: 20, name: Intruder, platform: test-heavy-fighter, nation: opp, count: 2, lat_deg: 55.15, lon_deg: 20.3, alt_m: 9000, heading_deg: 270, loadout: test-heavy-fighter-a2a }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: patrol_circle, centre: [17.0, 54.6], radius_km: 20, alt_m: 10000 } }
 golden:

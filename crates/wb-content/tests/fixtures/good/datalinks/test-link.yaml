@@ -6,4 +6,4 @@ capacity_tracks: 100
 range_km: 300
 engage_on_remote: true
 jam_resistance: 0.5
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

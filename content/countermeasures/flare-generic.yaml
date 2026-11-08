@@ -1,8 +1,0 @@
-id: flare-generic
-kind: countermeasure
-name: Decoy flare
-cm_type: flare
-effect: 0.35
-defeats: [ir]
-mass_kg: 0.5
-design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

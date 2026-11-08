@@ -1,0 +1,7 @@
+id: test-heavy-fighter-a2a
+kind: loadout
+name: Test Heavy Fighter Air-to-Air Loadout
+platform: test-heavy-fighter
+items:
+  - { station: wing, weapon: test-aam, count: 6 }
+design: { note: "Generic test fixture (ADR-035)" }

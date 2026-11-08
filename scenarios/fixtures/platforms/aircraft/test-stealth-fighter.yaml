@@ -20,5 +20,6 @@ fuel:
   burn_kg_h: { cruise: 2500, military: 5000, afterburner: 13000 }
 sensors:
   - { sensor: test-fighter-radar, height_m: 0 }
+datalinks: [test-link]
 durability: { model: aircraft, p_kill_on_hit: 0.8 }
 design: { archetype: fighter-stealth, note: "Generic test fixture (ADR-035); stats in the range of its class" }

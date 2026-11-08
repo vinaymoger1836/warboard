@@ -61,8 +61,8 @@ pub fn validate(
     let setup_ms = (rule.setup_s * 1_000.0) as u64;
 
     match rule.site {
-        SiteRule::RealAirfield | SiteRule::RealPort => {
-            let want_air = rule.site == SiteRule::RealAirfield;
+        SiteRule::Preset => {
+            let want_air = !matches!(kind, BaseKind::NavalBase | BaseKind::Anchorage);
             let db = &rules.db;
             let nearest = db
                 .bases
@@ -77,9 +77,9 @@ pub fn validate(
                 .min_by(|x, y| x.0.total_cmp(&y.0).then(x.1.cmp(&y.1)));
             let Some((_, i, b)) = nearest else {
                 let what = if want_air {
-                    "a real airfield"
+                    "a preset air base"
                 } else {
-                    "a port"
+                    "a preset naval base"
                 };
                 return Err(format!(
                     "{name} must be at {what} (none within {:.0} km)",

@@ -5,11 +5,11 @@ kind: platform
 custom: true
 extends: bad-cycle-b
 name: Bad A
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }
 # file: platforms/aircraft/bad-cycle-b.yaml
 id: bad-cycle-b
 kind: platform
 custom: true
 extends: bad-cycle-a
 name: Bad B
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

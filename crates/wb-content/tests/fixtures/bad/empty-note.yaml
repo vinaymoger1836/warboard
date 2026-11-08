@@ -6,4 +6,4 @@ name: Bad
 cm_type: flare
 effect: 0.3
 defeats: [ir]
-design: { archetype: legacy, note: " " }
+design: { archetype: test-class, note: " " }

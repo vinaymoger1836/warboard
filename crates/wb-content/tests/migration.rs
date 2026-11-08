@@ -69,7 +69,7 @@ j_db: 30
 max_range_km: 200
 simultaneous_targets: 4
 field_of_regard_deg: 120
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }
 "#;
     let ew: EwSuite = serde_yaml::from_str(yaml).expect("parse legacy ew suite");
     let modes = ew.resolved_modes();

@@ -1,9 +1,0 @@
-id: link-16
-kind: datalink
-name: Link 16
-latency_s: 2
-capacity_tracks: 2000
-range_km: 555          # line of sight, ~300 nmi with relay
-engage_on_remote: true
-jam_resistance: 0.8
-design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

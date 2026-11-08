@@ -1,0 +1,4 @@
+id: test-class
+kind: archetype
+name: Test class
+note: "Archetype of the content crate test fixtures."

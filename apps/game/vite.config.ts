@@ -13,7 +13,7 @@ const packsDir = resolve(repoRoot, 'build', 'packs');
 // The war the engine worker opens, and its content pack (paths from the repo root). The
 // hosted build sets both to the neutral test war on the fixtures (ADR-040); only the chosen
 // scenario is bundled.
-const warScenario = normalizePath(resolve(repoRoot, process.env.WB_SCENARIO ?? 'scenarios/demo-baltic.yaml'));
+const warScenario = normalizePath(resolve(repoRoot, process.env.WB_SCENARIO ?? 'scenarios/quickstart-north-straits.yaml'));
 const warContent = normalizePath(resolve(repoRoot, process.env.WB_CONTENT_PACK ?? 'build/content.wbpack'));
 
 /**

@@ -8,4 +8,4 @@ setup_min: 5
 components:
   - { platform: test-launcher, count: 1, role: launcher, magazine: { test-sam: 17 } }
 emcon_default: on
-design: { archetype: legacy, note: "Test entry." }
+design: { archetype: test-class, note: "Test entry." }

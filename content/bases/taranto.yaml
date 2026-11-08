@@ -1,9 +1,0 @@
-id: taranto
-kind: base
-name: Taranto naval base
-base_type: port
-nation: ita
-lat_deg: 40.4711
-lon_deg: 17.2431
-ship_berths: 20
-design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }
