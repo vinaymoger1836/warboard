@@ -132,6 +132,10 @@ pub struct Ranges {
     pub sensor_m: Option<f64>,
     /// Longest weapon range in the magazine.
     pub engage_m: Option<f64>,
+    /// Horizon of the highest radar against a surface target (doc 02 §7), when
+    /// it is shorter than `sensor_m`: ships and ground units beyond it are hidden
+    /// by Earth's curvature whatever the radar's range.
+    pub surface_horizon_m: Option<f64>,
     /// Out and back on a full load with the bingo reserve, from home base.
     pub combat_radius_m: Option<f64>,
 }
@@ -258,6 +262,8 @@ pub struct GroupDetails {
     pub home_base: Option<BaseBrief>,
     pub ranges: Ranges,
     pub members: Vec<MemberView>,
+    /// Why an ordered strike has not fired yet (`engage::strike_status`).
+    pub strike_note: Option<String>,
     /// Template name; none for a custom or system magazine.
     pub loadout: Option<String>,
     /// Rounds left per weapon, lead, with what a strike order needs.
@@ -492,6 +498,26 @@ fn group(world: &World, side: u8, gid: UnitId, ge: Entity) -> Option<GroupDetail
             }
         })
         .max_by(|a, b| a.total_cmp(b));
+    // Earth's curvature limits what the highest radar sees of ships and ground units.
+    let surface_horizon_m = p
+        .sensors
+        .iter()
+        .filter(|m| db.sensors[m.sensor.0 as usize].radar.is_some())
+        .map(|m| m.height_m)
+        .max_by(f64::total_cmp)
+        .map(|h| {
+            let base = if rules.is_air(p) {
+                k.alt_m.max(0.0)
+            } else {
+                0.0
+            };
+            crate::sensors::horizon_m(
+                rules,
+                base + h,
+                rules.realism().earth.surface_target_height_m,
+            )
+        })
+        .filter(|hz| sensor_m.is_some_and(|s| *hz < s));
     let mag = world.get::<Magazine>(lead);
     let rounds = mag.map(Magazine::rounds).unwrap_or_default();
     let engage_m = rounds
@@ -619,8 +645,10 @@ fn group(world: &World, side: u8, gid: UnitId, ge: Entity) -> Option<GroupDetail
         ranges: Ranges {
             sensor_m,
             engage_m,
+            surface_horizon_m,
             combat_radius_m: rules.combat_radius_m(p),
         },
+        strike_note: crate::engage::strike_status(world, rules, side, g, &g.task),
         members,
         loadout: mag
             .and_then(|m| m.loadout)

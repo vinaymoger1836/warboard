@@ -17,7 +17,7 @@ import {
 import { contactLabel, cssVar, ESTIMATE_LINE, iconDataUrl, type IconSide } from '@warboard/symbols';
 import { useEffect, useState } from 'react';
 import type { EngineBridge } from '../bridge';
-import { patrolRadiusKm, sendCommand, sendTask } from '../orders';
+import { patrolRadiusKm, sendCommand, sendCommandAck, sendTask } from '../orders';
 import { distance } from '../map2d/units/geo';
 import { type LonLat, type StrikeAim, ui, useUi } from '../store';
 import { duration, fuelColour, statusColour, weaponSpecLines } from './format';
@@ -482,15 +482,19 @@ function StrikePanel({ d, aim, bridge, toast }: { d: GroupDetails; aim: StrikeAi
   const launch = async () => {
     if (!aim || !weapon) return;
     setBusy(true);
-    const ok = await sendTask(
+    const note = await sendCommandAck(
       bridge,
-      [d.id],
-      { kind: 'strike', ...('contact' in aim ? { contact: aim.contact } : { point: aim.point }), weapon: weapon.id, count: rounds },
+      {
+        type: 'AssignTask',
+        units: [d.id],
+        task: { kind: 'strike', ...('contact' in aim ? { contact: aim.contact } : { point: aim.point }), weapon: weapon.id, count: rounds },
+      },
       toast,
     );
     setBusy(false);
-    if (ok) {
-      toast(`Strike ordered: ${rounds} × ${weapon.name}`);
+    if (note !== null) {
+      // The engine says why the strike cannot fire at once (out of range, no own track).
+      toast(`Strike ordered: ${rounds} × ${weapon.name}${note ? `. ${note}` : ''}`);
       ui.set({ tool: null });
     }
   };
@@ -658,6 +662,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
     <>
       <Header symbol={CATEGORY_SYMBOL[d.category] ?? 'unknown'} title={title} subtitle={subtitle} />
       <div className="card-body">
+        {d.strike_note && <p className="card-note">{d.strike_note}</p>}
         <div className="card-row">
           <span>
             <span className="label">Status: </span>
@@ -691,7 +696,10 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
           <button type="button" className={`range-row sensor${rings.sensor ? '' : ' off'}`} aria-pressed={rings.sensor} onClick={() => toggle('sensor')}>
             <SensorGlyph />
             <span>Radar / Sensor Horizon:</span>
-            <b>{km(d.ranges.sensor_m)}</b>
+            <b>
+              {km(d.ranges.sensor_m)}
+              {d.ranges.surface_horizon_m != null && <span className="range-sub"> · {km(d.ranges.surface_horizon_m)} vs ships</span>}
+            </b>
           </button>
           <button type="button" className={`range-row engage${rings.engage ? '' : ' off'}`} aria-pressed={rings.engage} onClick={() => toggle('engage')}>
             <EngageGlyph />

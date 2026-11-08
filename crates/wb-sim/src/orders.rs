@@ -437,6 +437,12 @@ pub fn submit(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Ord
                 fmt_utc(start + *report_ms as i64)
             ))
         }
+        // A strike that cannot fire at once says why (CLAUDE.md rule 4).
+        Resolved::Assign { groups, task } => groups.first().and_then(|pick| {
+            let rules = world.resource::<Rules>().clone();
+            let g = world.get::<Group>(entity(world, pick.group)?)?;
+            crate::engage::strike_status(world, &rules, order.side, g, task)
+        }),
         _ => None,
     };
     let mut q = world.resource_mut::<OrderQueue>();

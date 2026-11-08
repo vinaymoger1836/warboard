@@ -889,22 +889,38 @@ export class UnitLayers {
   ): void {
     const { rings } = ui.get();
     const r = d.ranges;
-    if (rings.sensor && r.sensor_m)
+    if (rings.sensor && r.sensor_m) {
       paths.push({
         path: geodesicCircle(pos, r.sensor_m),
         color: c('ring.sensor'),
         width: 2,
         dashed: true,
-        tip: `Radar / sensor horizon: ${km(r.sensor_m)} · how far ${d.name} can see a typical target`,
+        tip:
+          r.surface_horizon_m != null
+            ? `Radar range: ${km(r.sensor_m)} · against aircraft; ships and ground units are hidden beyond ${km(r.surface_horizon_m)} (inner ring)`
+            : `Radar / sensor horizon: ${km(r.sensor_m)} · how far ${d.name} can see a typical target`,
       });
+      // Earth's curvature: low targets drop below the radar horizon long before the radar's range.
+      if (r.surface_horizon_m != null)
+        paths.push({
+          path: geodesicCircle(pos, r.surface_horizon_m),
+          color: c('ring.sensor', 0.6),
+          width: 1,
+          dashed: true,
+          tip: `Radar horizon vs ships: ${km(r.surface_horizon_m)} · beyond it Earth's curvature hides ships and ground units from ${d.name}'s own radar`,
+        });
+    }
     if (rings.engage && r.engage_m) {
       const longest = d.weapons.find((w) => w.max_range_m === r.engage_m);
+      const ownTrack = longest && !longest.engage_on_remote;
       paths.push({
         path: geodesicCircle(pos, r.engage_m),
         color: c('ring.engage'),
         width: 2,
         dashed: true,
-        tip: `Max engagement range: ${km(r.engage_m)}${longest ? ` · ${longest.name}` : ''}`,
+        tip: `Max engagement range: ${km(r.engage_m)}${longest ? ` · ${longest.name}` : ''}${
+          ownTrack ? ' · fires only on our own track, so the target must also be inside our own sensor coverage' : ''
+        }`,
       });
     }
     if (rings.radius && r.combat_radius_m && d.home_base) {

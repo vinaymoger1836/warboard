@@ -983,3 +983,102 @@ fn end_strike(world: &mut World, rules: &Rules, side: u8, gid: UnitId) {
     }
     *world.get_mut::<Group>(ge).expect("group") = g;
 }
+
+/// Why a strike has not fired yet, in plain English, or `None` when nothing
+/// holds it back (CLAUDE.md rule 4). Read-only: the card shows it live and a
+/// strike order's acknowledgement carries it. `g` gives the members; `task` is
+/// the strike (it may not be the group's task yet).
+pub fn strike_status(
+    world: &World,
+    rules: &Rules,
+    side: u8,
+    g: &Group,
+    task: &Task,
+) -> Option<String> {
+    let (target, weapon) = match task {
+        Task::Strike { target, weapon, .. } | Task::Suppress { target, weapon, .. } => {
+            (*target, *weapon)
+        }
+        _ => return None,
+    };
+    let now = world.resource::<SimClock>().sim_time_ms;
+    let contact = match target {
+        StrikeTarget::Contact(id) => {
+            let pics = world.resource::<SidePictures>();
+            Some(pics.sides.get(usize::from(side))?.get(id)?.clone())
+        }
+        StrikeTarget::Point(_) => None,
+    };
+    let (at, domain) = match (&contact, target) {
+        (Some(c), _) => (geometry(c, LatLon::from_deg(0.0, 0.0), now)?.0, c.domain),
+        (None, StrikeTarget::Point(p)) => (p, Domain::Surface),
+        _ => return None,
+    };
+    // The lead's position, platform and rounds stand for the group.
+    let lead = *g.members.first()?;
+    let e = entity(world, lead)?;
+    let k = world.get::<Kinematics>(e)?;
+    let p = rules.platform(world.get::<PlatformRef>(e)?.0);
+    let mag = world.get::<Magazine>(e)?;
+    let range = distance_m(k.pos(), at);
+    let (wix, w) = mag
+        .rounds()
+        .into_iter()
+        .filter(|(_, n)| *n > 0)
+        .map(|(wix, _)| (wix, &rules.db.weapons[wix.0 as usize]))
+        .filter(|(wix, w)| weapon.is_none_or(|x| x == *wix) && w.targets.contains(&domain))
+        .max_by(|a, b| {
+            a.1.profile
+                .max_range_m
+                .total_cmp(&b.1.profile.max_range_m)
+                .then(b.0.cmp(&a.0))
+        })?;
+    let name = rules.db.str(w.name);
+    let reach = rules.flyout(wix).max_range(0.0);
+    let km = |m: f64| (m / 1_000.0).round();
+    if range > reach {
+        return Some(format!(
+            "Closing to weapon range: {name} reaches {} km, target {} km away",
+            km(reach),
+            km(range)
+        ));
+    }
+    let c = contact?;
+    if has_track(world, &c, Some(g), lead, w, now) {
+        return None;
+    }
+    if w.engage_on_remote {
+        return Some(format!(
+            "In range; waiting for a firm track on the target before firing {name}"
+        ));
+    }
+    // Our own radar horizon against this kind of target (doc 02 §7).
+    let earth = &rules.realism().earth;
+    let h_target = match domain {
+        Domain::Air | Domain::Space => c.est.map_or(0.0, |e| e.alt_m),
+        Domain::Ground => earth.ground_target_height_m,
+        _ => earth.surface_target_height_m,
+    };
+    let base = if rules.is_air(p) {
+        k.alt_m.max(0.0)
+    } else {
+        0.0
+    };
+    let mast = p
+        .sensors
+        .iter()
+        .filter(|m| rules.db.sensors[m.sensor.0 as usize].radar.is_some())
+        .map(|m| m.height_m)
+        .max_by(f64::total_cmp);
+    let horizon = mast.map(|h| crate::sensors::horizon_m(rules, base + h, h_target));
+    Some(match horizon {
+        Some(hz) if hz < range => format!(
+            "Closing to own radar range: {name} fires only on our own track, and the target ({} km) is beyond our radar horizon (about {} km)",
+            km(range),
+            km(hz)
+        ),
+        _ => format!(
+            "Closing: {name} fires only on our own track, and our own sensors do not hold the target yet"
+        ),
+    })
+}

@@ -149,6 +149,8 @@ At low zoom, groups collapse into one icon with the count in the label. Labels a
 - **Range rings** for the selected unit, all dashed 2 px: sensor `ring.sensor`, engagement `ring.engage`, combat radius `ring.radius` (1.5 px). The combat radius ring carries a label with a small purple dot icon: `<Base> Combat Radius (1390 km)`.
 - **Threat rings** of identified enemy SAMs: dashed `ring.threat`, label `(est.)`.
 - Rings are true geodesic circles (a 1,390 km ring is not a screen circle on Mercator).
+- **Radar horizon ring:** when the highest radar's horizon against a surface target (doc 02 §7) is shorter than the sensor ring, a thinner `ring.sensor` ring at 60 % marks it, toggled with the sensor ring; the card's sensor row adds `· 36 km vs ships`.
+- **Strike note:** while an ordered strike cannot fire, the card shows why above the status row (`state.warn` bar on `panel.inset`), e.g. out of weapon range or no own track; the strike order's toast carries the same text.
 - **Ring tooltip:** resting the cursor on a ring, ellipse, bearing strobe or ground track shows what it is and its size (`Max engagement range: 130 km · AR-7`), in the toast style (`toast.bg`, `toast.text`, 1 px `panel.border`, radius 6 px, 12 px). Units and contacts under the cursor take precedence.
 
 ## 7. Unit card (from 05)

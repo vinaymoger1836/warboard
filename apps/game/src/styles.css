@@ -752,6 +752,22 @@ button:focus-visible {
   display: contents;
 }
 
+/* Why an ordered strike has not fired yet (engine `strike_status`). */
+.card-note {
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--state-warn);
+  background: var(--panel-inset);
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.range-sub {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
 /* Spec lines under a weapon in the unit card's Weapons section. */
 .section-body dd.weapon-spec {
   grid-column: 1 / -1;
