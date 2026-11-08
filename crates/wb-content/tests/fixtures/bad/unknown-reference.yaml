@@ -1,5 +1,5 @@
 # file: platforms/aircraft/bad-ref.yaml
-# expect: content/platforms/aircraft/bad-ref.yaml: sensors[0]: unknown sensor `an-apg-999`
+# expect: content/platforms/aircraft/bad-ref.yaml: sensors[0]: unknown sensor `radar-999`
 id: bad-ref
 kind: platform
 name: Bad
@@ -9,5 +9,5 @@ signature: { rcs_m2: { front: 1, side: 1, rear: 1, top: 1 } }
 fuel: { internal_kg: 1000, burn_kg_h: { cruise: 1000 } }
 durability: { model: aircraft, p_kill_on_hit: 0.8 }
 mobility: { cruise_speed_mach: 0.9, max_speed_mach: 1.6, ceiling_m: 15000 }
-sensors: [an-apg-999]
+sensors: [radar-999]
 design: { archetype: test-class, note: "Test entry." }

@@ -50,8 +50,8 @@ impl GeoError {
     }
 }
 
-/// Nation code as used in content (`pol`, `rus`): lower-case ISO 3166-1 alpha-3, or the
-/// Natural Earth code for units without one (`kos`). At most four ASCII bytes.
+/// Nation code as used in content (`ald`, `vsm`): the nation id, three lower-case letters
+/// (doc 11 §2.1). The pack format allows up to four ASCII bytes.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NationCode([u8; 4]);
 

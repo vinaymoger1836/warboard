@@ -35,7 +35,7 @@ Date: 5 Nov 2026. Status: **done locally; CI not yet run** (all checks below ran
 | `pnpm gen`, `pnpm -r typecheck`, `pnpm -r lint`, `pnpm -r build` | Pass. |
 | `cargo deny check` | Not run in this session; no dependency was added. |
 
-### Browser run (headless Edge driven over DevTools, G10 scenario and the Baltic demo)
+### Browser run (headless Edge driven over DevTools, G10 scenario and the demo war)
 
 The UI work was checked against G10 with the engine worker pointed at it temporarily (reverted, `git status` clean). Frozen frames of a live salvo showed: launch discs at the shooters, cyan intercept bursts where interceptors fuzed, an amber hit burst (first frames only), the red halo on a targeted ship, cyan dashed interceptor trails with `INT-n` tags, group labels `SHIP Test Frigate (4× interceptors, …)`, and red enemy-missile glyphs with merged labels.
 
@@ -69,7 +69,7 @@ The UI work was checked against G10 with the engine worker pointed at it tempora
 - **CIWS wording.** Event lines have no close-in-gun wording; events carry the content weapon id, not its category. A `weapon_category` field on `WeaponLaunched` would fix it.
 - **Visual checks not done.** Sea-skimming and gun scenes were not reviewed by eye; the launch flash was seen only in frozen frames; the halo was seen only against the dark test-sea tint, not the territory tints; nothing at ×30 or ×60. Please watch a live salvo at ×1 to ×5.
 - **P5 UI leftovers.** The ROE A/B/C buttons in the top bar and the card's ROE section are still disabled with the P5 tooltip; STRIKE and HOLD FIRE on the card only show a toast.
-- **Baltic demo.** `scenarios/demo-baltic.yaml` still uses real place and unit names (PF is not started). The content denylist will flag it.
+- **Demo war.** The demo war still used real place and unit names (PF was not started). PF replaced it with the Theatre North quick starts.
 - **Old saves.** Saves made before this phase's effect struct change are refused.
 
 ## Not in this phase

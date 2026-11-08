@@ -15,7 +15,7 @@ pub const FIRST_ENGINE_ID: u32 = 1_000_000;
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 pub struct SideInfo {
     pub name: String,
-    /// Content nation ids, e.g. `pol`.
+    /// Content nation ids, e.g. `ald`.
     pub nations: Vec<String>,
     pub player: bool,
     /// Side default ROE and self-defence (doc 03 §7).

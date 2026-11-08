@@ -50,11 +50,7 @@ The earlier "done" claim was checked against the repository. Six defects came up
 
 Run: `pnpm --filter game dev`, with the engine worker temporarily pointed at a scratch scenario (a Blue jammer aircraft and fighter, a Red emitting radar 100 km east) and a fixtures content pack; both were removed afterwards. Run at ×10 to T+1:05, paused, jammer selected. The toggle was pressed once: state went `ACTIVE` → `STANDBY`, the button became `ACTIVATE JAMMER`, the log said `Jammer jammer OFF` and the `[JAMMED]` line left the contact.
 
-| Screenshot | Compare with |
-|---|---|
-| ![Coverage](P6b-jammer-coverage.jpg) `P6b-jammer-coverage.jpg` (jammer selected, 200 km coverage circle, jammed radar contact) | `05-unit-card-rings.png` |
-| ![EW card](P6b-ew-card.jpg) `P6b-ew-card.jpg` (Electronic Warfare section open) | `05-unit-card-rings.png` |
-| ![Standby](P6b-jammer-standby.jpg) `P6b-jammer-standby.jpg` (after `STANDBY JAMMER`) | `05-unit-card-rings.png` |
+Three screenshots (jammer selected with its 200 km coverage circle and a jammed radar contact; the Electronic Warfare section open; after `STANDBY JAMMER`), all compared with `05-unit-card-rings.png`, were removed in PF: the units were generic fixtures, but the basemap still showed real place labels. The notes below are as recorded.
 
 Differences:
 
@@ -80,7 +76,7 @@ Not checked by eye: the own-unit `[JAMMED]` badge (covered by the engine test on
 
 - P5 leftovers: done after this phase, see "Leftovers cleared after P6b".
 - P6a's gaps carry over (soft-kill window unused, no close-in-gun event wording, visual checks of live salvos).
-- **PF is not started.** G2 and G4–G9 and `scenarios/demo-baltic.yaml` still use real unit and place names, which the denylist will flag; the P6b fixtures are all generic.
+- **PF is not started.** G2, G4–G9 and the demo war still used real unit and place names; the P6b fixtures are all generic. PF rebuilt them on fixtures and the Theatre North quick starts.
 - Saves made before the jammer state was added are refused: `SAVE_VERSION` is now 2 (see below).
 
 ## Leftovers cleared after P6b (7 Nov 2026)
@@ -96,7 +92,7 @@ Checked against the known gaps of the P0–P6b reports. All checks pass afterwar
 | Winchester had no test (P3) | Golden `G7-Winchester` (`scenarios/golden/g7-winchester.yaml`, new metric `winchester_returns`): a test fighter fires its four test anti-radiation missiles and heads home for winchester, no bingo, 5 seeds. |
 | `SAVE_VERSION` stayed 1 while the snapshot changed (P5) | Now 2: older saves are refused as "version 1" instead of failing to decode. |
 | Jammer modes checked in the browser only for stand-off (P6b) | Escort (150 km circle) and self-protect ("Self only", no circle) checked. |
-| Test war had no base (hosting) | Fixture `test-airbase` (Bornholm, away from any real airfield) and the test war is now garrisoned: aircraft bingo, land, turn around and take off again. Goldens deploy, so they are unaffected. |
+| Test war had no base (hosting) | Fixture `test-airbase` (on an island in the test sea area, away from any real airfield) and the test war is now garrisoned: aircraft bingo, land, turn around and take off again. Goldens deploy, so they are unaffected. |
 
 ## Still open after the clean-up
 
@@ -105,6 +101,6 @@ Checked against the known gaps of the P0–P6b reports. All checks pass afterwar
   - the P6a soft-kill window (`tewa.soft_kill_window_s`) and IADS layer templates are unread; wiring them changes G10's engagement timing and needs an ADR;
   - the open questions of P0–P4 (fonts, YAML crate, JS licence check, landing reserve, garrisoned civil airfields, sensor budget, and so on) are still yours to answer.
 - **Bigger than a leftover:** ship route planning (P3: routes are checked, not planned; H3 pathfinding comes with P11); a sonar golden needs submarine content (P8).
-- **PF or P8 content:** real names in G2, G4–G9 and the Baltic demo; no `road_capable` platforms; the latin-ext italic font (only real place names need it).
+- **PF or P8 content:** real names in G2, G4–G9 and the demo war (done in PF); no `road_capable` platforms; the latin-ext italic font (only real place names need it).
 - **Minor UI:** contact labels are not decluttered with unit labels (P4); missile trails restart on page reload (P5); the "world view out of reach" note (P4) was this viewport only, the map allows zoom 1.
 - **Not verified by eye:** a live salvo at ×1–×5 (P6a); the browser session dropped before the 3-minute salvo reached Blue. The engine side is covered by G10.

@@ -82,8 +82,8 @@ fn cell_at(lat: f64, lon: f64) -> u64 {
     u64::from(h3o::LatLng::new(lat, lon).unwrap().to_cell(res))
 }
 
-/// Interior cell owned by `pol` (nation 1) and a border cell split at `SPLIT_LON` between
-/// `pol` (west) and `rus` (east).
+/// Interior cell owned by `ald` (nation 1) and a border cell split at `SPLIT_LON` between
+/// `ald` (west) and `vsm` (east).
 const INTERIOR: (f64, f64) = (54.2, 20.2);
 const BORDER: (f64, f64) = (54.6, 20.7);
 
@@ -109,9 +109,9 @@ fn terrain_and_territory() -> (Vec<u8>, Vec<u8>, f64) {
         block.extend_from_slice(&c.5.to_le_bytes());
     }
     let ids: Vec<u64> = cells.iter().map(|c| c.0).collect();
-    let terrain = blocked(b"WBH3", &["pol", "rus"], &ids, block);
+    let terrain = blocked(b"WBH3", &["ald", "vsm"], &ids, block);
 
-    // The border cell: west of SPLIT_LON is pol, east is rus (rectangles around the cell).
+    // The border cell: west of SPLIT_LON is ald, east is vsm (rectangles around the cell).
     let split = BORDER.1;
     let e7 = |v: f64| (v * 1e7).round() as i32;
     let rect = |x0: f64, x1: f64| -> Vec<u8> {
@@ -134,7 +134,7 @@ fn terrain_and_territory() -> (Vec<u8>, Vec<u8>, f64) {
     let mut tblock = border.to_le_bytes().to_vec();
     tblock.extend_from_slice(&0u32.to_le_bytes());
     tblock.extend_from_slice(&record);
-    let territory = blocked(b"WBTR", &["pol", "rus"], &[border], tblock);
+    let territory = blocked(b"WBTR", &["ald", "vsm"], &[border], tblock);
     (terrain, territory, split)
 }
 
@@ -216,19 +216,19 @@ fn territory_uses_cell_owner_or_exact_rings() {
     assert_eq!(
         g.territory_owner(LatLon::from_deg(INTERIOR.0, INTERIOR.1))
             .unwrap(),
-        Some(code("pol"))
+        Some(code("ald"))
     );
     let west = LatLon::from_deg(BORDER.0, split - 0.001);
     let east = LatLon::from_deg(BORDER.0, split + 0.001);
-    assert_eq!(g.territory_owner(west).unwrap(), Some(code("pol")));
-    assert_eq!(g.territory_owner(east).unwrap(), Some(code("rus")));
+    assert_eq!(g.territory_owner(west).unwrap(), Some(code("ald")));
+    assert_eq!(g.territory_owner(east).unwrap(), Some(code("vsm")));
     // A cell the file does not hold is open sea.
     assert_eq!(
         g.territory_owner(LatLon::from_deg(54.9, 20.9)).unwrap(),
         None
     );
 
-    let coalition: BTreeSet<_> = [code("pol"), code("ltu")].into();
+    let coalition: BTreeSet<_> = [code("ald"), code("hlv")].into();
     assert!(g.is_friendly(west, &coalition).unwrap());
     assert!(!g.is_friendly(east, &coalition).unwrap());
 }
