@@ -3,7 +3,7 @@
 
 use crate::source::{
     Archetype, Base, Countermeasure, Datalink, Doctrine, Entry, EntryMeta, EwSuite, Inventory,
-    Kind, Loadout, Manifest, Nation, Platform, Realism, Sensor, System, Weapon, World,
+    Kind, Loadout, Manifest, Nation, Places, Platform, Realism, Sensor, System, Weapon, World,
 };
 use serde::de::DeserializeOwned;
 use serde_yaml::{Mapping, Value};
@@ -193,7 +193,7 @@ pub fn load_files(
                 continue;
             }
         };
-        if meta.kind != folder_kind {
+        if meta.kind.folder() != folder_kind.folder() {
             errors.push(err(
                 "kind",
                 format!(
@@ -231,7 +231,10 @@ pub fn load_files(
             continue;
         }
         if !map.contains_key("design")
-            && !matches!(meta.kind, Kind::Archetype | Kind::World | Kind::Realism)
+            && !matches!(
+                meta.kind,
+                Kind::Archetype | Kind::World | Kind::Places | Kind::Realism
+            )
         {
             errors.push(err(
                 "design",
@@ -411,6 +414,7 @@ fn typed(kind: Kind, v: Value) -> Result<Entry, (String, String)> {
     Ok(match kind {
         Kind::Nation => Entry::Nation(from_value::<Nation>(v)?),
         Kind::World => Entry::World(from_value::<World>(v)?),
+        Kind::Places => Entry::Places(from_value::<Places>(v)?),
         Kind::Archetype => Entry::Archetype(from_value::<Archetype>(v)?),
         Kind::Platform => Entry::Platform(from_value::<Platform>(v)?),
         Kind::System => Entry::System(from_value::<System>(v)?),

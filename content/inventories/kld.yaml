@@ -17,4 +17,23 @@ munitions:
   eh-2: 40
   sl-40: 150
   sl-20: 120
-design: { note: "Industrial state; long-range missiles, heavy fighters; basing follows with the PF bases" }
+basing:
+  - { platform: hf-4, base: kld-scheltwerk-air, count: 6 }
+  - { platform: hf-4, base: kld-bramheim-air, count: 6 }
+  - { platform: hf-4, base: kld-brenumitz-air, count: 6 }
+  - { platform: hf-4, base: kld-kargow-air, count: 6 }
+  - { platform: hf-4, base: kld-kurkau-air, count: 6 }
+  - { platform: hf-4, base: kld-zemheim-air, count: 6 }
+  - { platform: mf-4, base: kld-scheltwerk-air, count: 4 }
+  - { platform: mf-4, base: kld-bramheim-air, count: 4 }
+  - { platform: mf-4, base: kld-brenumitz-air, count: 4 }
+  - { platform: mf-4, base: kld-kargow-air, count: 4 }
+  - { platform: mf-4, base: kld-kurkau-air, count: 4 }
+  - { platform: mf-4, base: kld-zemheim-air, count: 4 }
+  - { platform: tk-3, base: kld-scheltwerk-air, count: 1 }
+  - { platform: tk-3, base: kld-bramheim-air, count: 1 }
+  - { platform: tk-3, base: kld-brenumitz-air, count: 1 }
+  - { platform: tk-3, base: kld-kargow-air, count: 1 }
+  - { platform: aw-1, base: kld-scheltwerk-air, count: 1 }
+  - { platform: aw-1, base: kld-kurkau-air, count: 1 }
+design: { note: "Industrial state; long-range missiles, heavy fighters" }

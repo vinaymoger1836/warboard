@@ -22,4 +22,21 @@ munitions:
   sl-12: 120
   sl-20: 120
   cg-30: 40
-design: { note: "Maritime trading state; strong navy, small air force; basing follows with the PF bases" }
+basing:
+  - { platform: mf-4, base: ald-lovwick-air, count: 12 }
+  - { platform: mf-4, base: ald-kodvik-air, count: 12 }
+  - { platform: mf-4, base: ald-skaermere-air, count: 12 }
+  - { platform: halvard, base: ald-lovwick-naval, count: 3 }
+  - { platform: halvard, base: ald-tadvik-naval, count: 3 }
+  - { platform: ud-9, base: ald-lovwick-air, count: 2 }
+  - { platform: ud-9, base: ald-kodvik-air, count: 2 }
+  - { platform: ud-9, base: ald-skaermere-air, count: 2 }
+  - { platform: ej-2, base: ald-lovwick-air, count: 2 }
+  - { platform: ej-2, base: ald-kodvik-air, count: 2 }
+  - { platform: kest, base: ald-lovwick-naval, count: 2 }
+  - { platform: kest, base: ald-tadvik-naval, count: 2 }
+  - { platform: aw-1, base: ald-lovwick-air, count: 1 }
+  - { platform: aw-1, base: ald-skaermere-air, count: 1 }
+  - { platform: tk-3, base: ald-lovwick-air, count: 1 }
+  - { platform: tk-3, base: ald-skaermere-air, count: 1 }
+design: { note: "Maritime trading state; strong navy, small air force" }

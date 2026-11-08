@@ -4,11 +4,13 @@
 
 packs:
   world:
-    version: 1.0.0
+    version: 2.0.0
     name: World
     extent: [-180, -90, 180, 90]
     basemap: { minzoom: 0, maxzoom: 6 }
     territory_tiles: { minzoom: 0, maxzoom: 6 }
+    # The theatre's generated borders at this pack's resolution (doc 11 §2.2).
+    territory: { from_pack: europe }
     dem:
       res_arcsec: 120          # 2′ ≈ 3.7 km
     terrain:
@@ -20,12 +22,14 @@ packs:
       urban_fraction: 0.30     # built-up share that makes a cell urban
       water_fraction: 0.50     # water share that makes a cell water
   europe:
-    version: 1.0.0
+    version: 2.0.0
     name: Europe
     # Atlantic to the Urals, Barents to the Mediterranean, incl. Iceland and the GIUK gap.
     extent: [-25, 34, 62, 75]
     basemap: { minzoom: 7, maxzoom: 9 }
     territory_tiles: { minzoom: 7, maxzoom: 9 }
+    # Theatre North: borders grown from content/world/theatre-north.yaml (doc 11 §2.2).
+    territory: { world: theatre-north }
     dem:
       res_arcsec: 15           # 15″ ≈ 460 m
     terrain:
@@ -37,12 +41,3 @@ packs:
       urban_fraction: 0.30
       water_fraction: 0.50
 
-territory:
-  # Coastal countries with no territorial sea in Marine Regions v4: a 12 nm belt is
-  # derived from their Natural Earth coast and flagged as an estimate in the manifest.
-  # Reviewed in P2 from the "no Marine Regions sea" list the territory step prints
-  # (the rest of that list is landlocked, Antarctica, or tiny disputed reefs).
-  derived_territorial_sea: [esh, flk, iot, ukr]
-  # Derived belts that take precedence over another state's Marine Regions sea:
-  # Marine Regions v4 has no Taiwanese territorial sea and codes those waters as Chinese.
-  derived_territorial_sea_first: [twn]

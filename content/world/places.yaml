@@ -1,0 +1,64 @@
+# Map labels of Theatre North (doc 11 §2.4), drawn by the map's label layer.
+# Seas, gulfs, straits and islands are authored here. `geodata places` proposes the
+# nation labels, capitals and cities (marked `generated: true`) and replaces only those
+# on a re-run; remove the flag from an entry to keep an edit. `at` is [lon, lat].
+id: theatre-north-places
+kind: places
+world: theatre-north
+places:
+  - { name: Kessan Sea, kind: sea, at: [19.300, 56.000] }
+  - { name: Western Sea, kind: sea, at: [4.500, 55.500] }
+  - { name: Grey Ocean, kind: sea, at: [6.000, 66.500] }
+  - { name: Gulf of Ardel, kind: gulf, at: [19.800, 62.000] }
+  - { name: Ardel Deep, kind: gulf, at: [22.600, 64.600] }
+  - { name: Gulf of Senn, kind: gulf, at: [25.200, 59.750] }
+  - { name: Lammer Gulf, kind: gulf, at: [23.400, 57.600] }
+  - { name: Corran Strait, kind: strait, at: [12.750, 55.750] }
+  - { name: Wide Sound, kind: strait, at: [10.950, 55.350] }
+  - { name: Vasker Channel, kind: strait, at: [11.600, 56.900] }
+  - { name: Hesk Passage, kind: strait, at: [9.000, 57.900] }
+  - { name: Isle of Teskar, kind: islands, at: [18.500, 57.300] }
+  - { name: Myrr Islands, kind: islands, at: [20.000, 60.200] }
+  - { name: Kellin Isle, kind: islands, at: [14.920, 55.120] }
+  - { name: Sallow Isle, kind: islands, at: [16.650, 56.700] }
+  - { name: Orve Isle, kind: islands, at: [22.500, 58.400] }
+  - { name: Iron Spine, kind: region, at: [13.800, 64.500] }
+  - { name: Great Plain, kind: region, at: [23.500, 52.400] }
+  - { name: Aldmark, kind: nation, nation: ald, at: [13.993, 57.071], generated: true }
+  - { name: Lovwick, kind: capital, nation: ald, at: [12.460, 55.674], generated: true }
+  - { name: Hedvik, kind: city, nation: ald, at: [11.955, 57.710], generated: true }
+  - { name: Vessmar, kind: nation, nation: vsm, at: [31.264, 55.441], generated: true }
+  - { name: Mivov, kind: capital, nation: vsm, at: [24.141, 56.962], generated: true }
+  - { name: Sedograd, kind: city, nation: vsm, at: [37.625, 55.723], generated: true }
+  - { name: Donost, kind: city, nation: vsm, at: [30.350, 59.936], generated: true }
+  - { name: Kruzhar, kind: city, nation: vsm, at: [27.576, 53.894] }
+  - { name: Velkar, kind: city, nation: vsm, at: [35.890, 56.841] }
+  - { name: Kretanets, kind: city, nation: vsm, at: [30.948, 52.446], generated: true }
+  - { name: Talvenor, kind: nation, nation: tlv, at: [13.833, 61.559], generated: true }
+  - { name: Gaknes, kind: capital, nation: tlv, at: [20.283, 63.831], generated: true }
+  - { name: Hoknes, kind: city, nation: tlv, at: [17.961, 59.352], generated: true }
+  - { name: Gonakvann, kind: city, nation: tlv, at: [10.875, 59.939], generated: true }
+  - { name: Hønøkvann, kind: city, nation: tlv, at: [10.447, 63.421], generated: true }
+  - { name: Bondal, kind: city, nation: tlv, at: [15.194, 59.260], generated: true }
+  - { name: Handal, kind: city, nation: tlv, at: [16.184, 58.592], generated: true }
+  - { name: Halvast, kind: nation, nation: hlv, at: [18.446, 57.438], generated: true }
+  - { name: Visard, kind: capital, nation: hlv, at: [18.290, 57.618], generated: true }
+  - { name: Kaldoria, kind: nation, nation: kld, at: [16.225, 51.033], generated: true }
+  - { name: Scheltwerk, kind: capital, nation: kld, at: [13.393, 52.507], generated: true }
+  - { name: Scholtwerk, kind: city, nation: kld, at: [18.978, 50.306], generated: true }
+  - { name: Riergow, kind: city, nation: kld, at: [16.380, 48.195], generated: true }
+  - { name: Durgow, kind: city, nation: kld, at: [6.964, 50.942], generated: true }
+  - { name: Brenumitz, kind: city, nation: kld, at: [11.564, 48.147], generated: true }
+  - { name: Granamitz, kind: city, nation: kld, at: [14.463, 50.071], generated: true }
+  - { name: Ostrevia, kind: nation, nation: ost, at: [23.131, 51.660], generated: true }
+  - { name: Sirice, kind: capital, nation: ost, at: [20.982, 52.240], generated: true }
+  - { name: Pririce, kind: city, nation: ost, at: [19.984, 50.064], generated: true }
+  - { name: Doszets, kind: city, nation: ost, at: [23.914, 54.906], generated: true }
+  - { name: Zowyrary, kind: city, nation: ost, at: [23.829, 53.678], generated: true }
+  - { name: Syvino, kind: city, nation: ost, at: [23.723, 52.112], generated: true }
+  - { name: Morvel, kind: nation, nation: mrv, at: [9.042, 55.920], generated: true }
+  - { name: Raront, kind: capital, nation: mrv, at: [10.165, 56.148], generated: true }
+  - { name: Balier, kind: city, nation: mrv, at: [9.941, 57.044], generated: true }
+  - { name: Cindria, kind: nation, nation: cnd, at: [23.628, 61.350], generated: true }
+  - { name: Sätsaari, kind: capital, nation: cnd, at: [25.003, 60.280], generated: true }
+  - { name: Nusla, kind: city, nation: cnd, at: [23.786, 61.488], generated: true }

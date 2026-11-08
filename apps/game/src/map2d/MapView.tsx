@@ -9,6 +9,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { FileSource, PMTiles, Protocol } from 'pmtiles';
 import { useEffect, useRef, useState } from 'react';
 import type { EngineBridge } from '../bridge';
+import type { PlaceLabel } from '../engine/messages';
 import { patrolRadiusKm, sendTask } from '../orders';
 import { packFile } from '../packs/opfs';
 import { fileFor, type InstalledPack } from '../packs/types';
@@ -59,19 +60,22 @@ export interface MapViewProps {
   packs: InstalledPack[];
   bridge: EngineBridge;
   coalition: Coalition;
+  /** Map labels of the war's content (doc 11 §2.4). */
+  places: PlaceLabel[];
   geoReady: boolean;
   terrainOverlay: boolean;
   onTerrainOverlay: (on: boolean) => void;
   onToast: (text: string) => void;
 }
 
-export function MapView({ packs, bridge, coalition, geoReady, terrainOverlay, onTerrainOverlay, onToast }: MapViewProps) {
+export function MapView({ packs, bridge, coalition, places, geoReady, terrainOverlay, onTerrainOverlay, onToast }: MapViewProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
   const [hub, setHub] = useState<LayerHub | null>(null);
   const [menu, setMenu] = useState<ContextRequest | null>(null);
   const packKey = packs.map((p) => `${p.id}@${p.version}`).join();
   const coalitionKey = `${coalition.own.join()}|${coalition.enemy.join()}`;
+  const placesKey = places.map((p) => `${p.name}@${p.lon},${p.lat}`).join(';');
 
   useEffect(() => {
     const el = container.current;
@@ -84,7 +88,7 @@ export function MapView({ packs, bridge, coalition, geoReady, terrainOverlay, on
         const glyphs = new URL('fonts/glyphs/', document.baseURI).href;
         created = new MapLibreMap({
           container: el,
-          style: buildStyle(mapPacks, coalition, glyphs),
+          style: buildStyle(mapPacks, coalition, glyphs, places),
           center: [18.5, 54.0],
           zoom: 6,
           minZoom: 1,
@@ -111,9 +115,9 @@ export function MapView({ packs, bridge, coalition, geoReady, terrainOverlay, on
       setMap(null);
       created?.remove();
     };
-    // packKey and coalitionKey stand for packs and coalition; onToast is stable.
+    // packKey, coalitionKey and placesKey stand for packs, coalition and places; onToast is stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packKey, coalitionKey]);
+  }, [packKey, coalitionKey, placesKey]);
 
   useTerrainOverlay(map, hub, bridge, geoReady && terrainOverlay, onToast);
 

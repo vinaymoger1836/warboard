@@ -20,4 +20,27 @@ munitions:
   sl-20: 400
   sl-12: 120
   cg-30: 20
-design: { note: "Large continental power; deep air-defence network, many fighters; basing follows with the PF bases" }
+basing:
+  - { platform: mf-4, base: vsm-mivov-air, count: 12 }
+  - { platform: mf-4, base: vsm-donost-air, count: 12 }
+  - { platform: mf-4, base: vsm-dovov-air, count: 12 }
+  - { platform: mf-4, base: vsm-sadograd-air, count: 12 }
+  - { platform: mf-4, base: vsm-sezhudyar-air, count: 12 }
+  - { platform: mf-4, base: vsm-tesleteva-air, count: 12 }
+  - { platform: hf-4, base: vsm-mivov-air, count: 8 }
+  - { platform: hf-4, base: vsm-donost-air, count: 8 }
+  - { platform: hf-4, base: vsm-dovov-air, count: 8 }
+  - { platform: hf-4, base: vsm-sadograd-air, count: 8 }
+  - { platform: hf-4, base: vsm-sezhudyar-air, count: 8 }
+  - { platform: hf-4, base: vsm-tesleteva-air, count: 8 }
+  - { platform: kest, base: vsm-mivov-naval, count: 3 }
+  - { platform: kest, base: vsm-donost-naval, count: 3 }
+  - { platform: aw-1, base: vsm-mivov-air, count: 1 }
+  - { platform: aw-1, base: vsm-donost-air, count: 1 }
+  - { platform: aw-1, base: vsm-dovov-air, count: 1 }
+  - { platform: aw-1, base: vsm-sadograd-air, count: 1 }
+  - { platform: tk-3, base: vsm-mivov-air, count: 1 }
+  - { platform: tk-3, base: vsm-sezhudyar-air, count: 1 }
+  - { platform: tk-3, base: vsm-tesleteva-air, count: 1 }
+  - { platform: tk-3, base: vsm-donost-air, count: 1 }
+design: { note: "Large continental power; deep air-defence network, many fighters" }

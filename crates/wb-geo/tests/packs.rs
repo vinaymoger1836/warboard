@@ -1,10 +1,14 @@
-//! P2 acceptance tests against the real packs in `build/packs/` (doc 08, P2).
+//! Acceptance tests against the region packs in `build/packs/` (doc 08 P2, doc 11 §2).
 //! Packs are build output and not in git (CLAUDE.md rule 9), so these are ignored by
-//! default. Build the packs (`bash geodata/run.sh build world`, `… build europe`), then:
+//! default. Build the packs (`bash geodata/run.sh build europe`, then `… build world`):
 //!
 //!     cargo test -p wb-geo --test packs -- --ignored
 //!
 //! `WB_PACKS` overrides the folder holding `world/` and `europe/`.
+//!
+//! The points belong to Theatre North as grown from `content/world/theatre-north.yaml`
+//! (world seed 7301). Moving a seed or changing a weight moves the borders: rebuild the
+//! packs and pick new points with `wb geo query --at lat,lon`.
 
 use std::collections::BTreeSet;
 use std::path::PathBuf;
@@ -41,100 +45,120 @@ fn assert_owner(geo: &Geo, what: &str, lat: f64, lon: f64, expected: Option<&str
     );
 }
 
+/// Every nation holds the land around its seed point (`seed_at` in the world file).
 #[test]
 #[ignore = "needs build/packs"]
-fn kaliningrad_is_russian() {
+fn each_seed_lies_in_its_nation() {
     let g = geo();
-    assert_owner(&g, "Kaliningrad city", 54.7104, 20.4522, Some("rus"));
-    assert_owner(&g, "Chkalovsk air base", 54.7667, 20.4, Some("rus"));
-    // Vistula Spit, both sides of the Poland–Russia border (19.63°E).
-    assert_owner(&g, "Vistula Spit, Polish side", 54.42, 19.58, Some("pol"));
-    assert_owner(&g, "Vistula Spit, Russian side", 54.47, 19.72, Some("rus"));
+    for (code, lon, lat) in [
+        ("ald", 13.6, 56.0),
+        ("vsm", 27.5, 57.2),
+        ("tlv", 15.2, 63.4),
+        ("hlv", 18.5, 57.45),
+        ("kld", 16.0, 53.4),
+        ("ost", 22.2, 53.7),
+        ("mrv", 9.4, 56.0),
+        ("cnd", 22.3, 60.4),
+    ] {
+        assert_owner(&g, &format!("seed of {code}"), lat, lon, Some(code));
+    }
 }
 
+/// The island republic keeps its whole island, coast included.
 #[test]
 #[ignore = "needs build/packs"]
-fn gotland_is_swedish() {
+fn island_republic_holds_its_island() {
     let g = geo();
-    assert_owner(&g, "Visby", 57.6348, 18.2948, Some("swe"));
-    assert_owner(&g, "inland Gotland", 57.45, 18.55, Some("swe"));
+    assert_owner(&g, "south of the island", 57.2, 18.3, Some("hlv"));
+    assert_owner(&g, "west coast of the island", 57.64, 18.29, Some("hlv"));
 }
 
-/// Due north of a straight stretch of the Polish coast west of Łeba. Measured against
-/// the Natural Earth coastline in P2: 9.98 nm and 13.94 nm (the Polish baseline here is
-/// the low-water line, so the 12 nm limit follows the coast).
+/// Due north of a straight stretch of Kaldoria's coast at 17.30°E, where the coast lies at
+/// about 54.743°N: 17.5 km (9.4 nm) out is Kaldorian, 26.4 km (14.2 nm) out is open sea.
+/// The belt is computed from the generated coastline cells (doc 11 §2.3).
 #[test]
 #[ignore = "needs build/packs"]
-fn polish_territorial_sea_ends_at_12_nm() {
+fn territorial_sea_ends_at_12_nm() {
     let g = geo();
+    assert_owner(&g, "9.4 nm off the coast", 54.90, 17.30, Some("kld"));
+    assert_owner(&g, "14.2 nm off the coast", 54.98, 17.30, None);
+    // The world pack has the same belt at its coarser cells.
+    let mut world = Geo::new();
+    let root = std::env::var_os("WB_PACKS")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../build/packs"));
+    world
+        .add_pack(Pack::open_dir(&root.join("world")).unwrap())
+        .unwrap();
     assert_owner(
-        &g,
-        "10 nm off the Polish coast",
-        POLISH_10NM.0,
-        POLISH_10NM.1,
-        Some("pol"),
-    );
-    assert_owner(
-        &g,
-        "14 nm off the Polish coast",
-        POLISH_14NM.0,
-        POLISH_14NM.1,
-        None,
+        &world,
+        "9.4 nm off the coast (world pack)",
+        54.90,
+        17.30,
+        Some("kld"),
     );
 }
 
-const POLISH_10NM: (f64, f64) = (54.914, 17.30);
-const POLISH_14NM: (f64, f64) = (54.981, 17.30);
-
+/// About 1 km either side of the Kaldoria–Ostrevia land border at 52.5°N.
 #[test]
 #[ignore = "needs build/packs"]
-fn finland_russia_border() {
+fn land_border_between_two_nations() {
     let g = geo();
-    // 1 km either side of the land border north of Vyborg, perpendicular to the border
-    // at its Natural Earth vertex 60.8594°N 28.3359°E.
-    assert_owner(&g, "Finnish side", FIN_SIDE.0, FIN_SIDE.1, Some("fin"));
-    assert_owner(&g, "Russian side", RUS_SIDE.0, RUS_SIDE.1, Some("rus"));
-    let nato: BTreeSet<NationCode> = ["fin", "pol", "swe"]
+    assert_owner(&g, "Kaldorian side", KLD_SIDE.0, KLD_SIDE.1, Some("kld"));
+    assert_owner(&g, "Ostrevian side", OST_SIDE.0, OST_SIDE.1, Some("ost"));
+    let coalition: BTreeSet<NationCode> = ["kld", "mrv"]
         .into_iter()
         .map(|c| NationCode::new(c).unwrap())
         .collect();
     assert!(
-        g.is_friendly(LatLon::from_deg(FIN_SIDE.0, FIN_SIDE.1), &nato)
+        g.is_friendly(LatLon::from_deg(KLD_SIDE.0, KLD_SIDE.1), &coalition)
             .unwrap()
     );
     assert!(
-        !g.is_friendly(LatLon::from_deg(RUS_SIDE.0, RUS_SIDE.1), &nato)
+        !g.is_friendly(LatLon::from_deg(OST_SIDE.0, OST_SIDE.1), &coalition)
             .unwrap()
     );
 }
 
-const FIN_SIDE: (f64, f64) = (60.8643, 28.3205);
-const RUS_SIDE: (f64, f64) = (60.8544, 28.3513);
+const KLD_SIDE: (f64, f64) = (52.5, 19.475);
+const OST_SIDE: (f64, f64) = (52.5, 19.505);
 
-/// The High Tatras (Gerlachovský štít, 2,655 m) between Zakopane and Poprad. At 1,500 m
-/// above sea level both ends clear the foothills (Zakopane's slopes reach about 1,100 m),
-/// so what blocks the path must be the main ridge; at 4,000 m the path is clear.
+/// Land the eight nations do not reach is unclaimed (doc 11 §2.2), inside and outside
+/// the theatre pack.
 #[test]
 #[ignore = "needs build/packs"]
-fn tatra_ridge_blocks_a_low_path_but_not_a_high_one() {
+fn land_beyond_the_nations_is_unclaimed() {
+    let g = geo();
+    assert_owner(&g, "far north-east", 66.5, 27.0, None);
+    assert_owner(&g, "far south-west", 51.0, 4.0, None);
+    assert_owner(&g, "outside the theatre window", 45.0, 34.0, None);
+    assert_owner(&g, "another continent (world pack)", 38.9, -77.0, None);
+}
+
+/// A high ridge in the southern mountains, crest about 2,650 m. At 1,500 m above sea
+/// level both ends clear the foothills (the northern slopes reach about 1,100 m), so what
+/// blocks the path must be the main ridge; at 4,000 m the path is clear.
+#[test]
+#[ignore = "needs build/packs"]
+fn ridge_blocks_a_low_path_but_not_a_high_one() {
     let g = geo();
     let params = LosParams {
         k_factor: 4.0 / 3.0,
         step_m: 100.0,
     };
-    let zakopane = LatLon::from_deg(49.30, 20.10);
-    let poprad = LatLon::from_deg(49.06, 20.30);
+    let north = LatLon::from_deg(49.30, 20.10);
+    let south = LatLon::from_deg(49.06, 20.30);
     let low = g
-        .line_of_sight(zakopane, 1_500.0, poprad, 1_500.0, &params)
+        .line_of_sight(north, 1_500.0, south, 1_500.0, &params)
         .unwrap();
     assert!(!low.clear, "{low:?}");
     // The path first meets terrain on the ridge's north slope, and the crest stands far
-    // above the ray (only the High Tatras rise over 2,000 m here).
+    // above the ray (only this ridge rises over 2,000 m here).
     let ridge = low.obstruction.unwrap();
     assert!((49.12..49.25).contains(&ridge.at.lat_deg()), "{ridge:?}");
     assert!(low.min_clearance_m < -500.0, "{low:?}");
     let high = g
-        .line_of_sight(zakopane, 4_000.0, poprad, 4_000.0, &params)
+        .line_of_sight(north, 4_000.0, south, 4_000.0, &params)
         .unwrap();
     assert!(high.clear, "{high:?}");
 }

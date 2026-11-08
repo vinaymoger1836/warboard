@@ -10,21 +10,13 @@ basemap:
   accessed: 2026-10-28
   note: Daily builds are removed after a few weeks; the extracted packs are the durable copy.
 
+# Read only by the border overlap check (doc 11 §2.2); not part of any pack.
 natural_earth:
   name: Natural Earth admin-0 countries 1:10m
   version: "5.1.1"
   url: https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_0_countries.zip
   licence: Public domain
   attribution: "Made with Natural Earth"
-  accessed: 2026-10-28
-
-marine_regions:
-  name: Marine Regions Maritime Boundaries (12 nm territorial seas, internal and archipelagic waters)
-  version: Territorial Seas (12 NM) v4 (2023) and companion layers, via the VLIZ WFS
-  url: https://geo.vliz.be/geoserver/MarineRegions/wfs
-  layers: [MarineRegions:eez_12nm, MarineRegions:eez_internal_waters, MarineRegions:eez_archipelagic_waters]
-  licence: CC-BY-4.0
-  attribution: "Flanders Marine Institute, Maritime Boundaries Geodatabase (marineregions.org)"
   accessed: 2026-10-28
 
 copernicus_dem:
@@ -43,10 +35,3 @@ worldcover:
   attribution: "© ESA WorldCover project / contains modified Copernicus Sentinel data"
   accessed: 2026-10-28
 
-ourairports:
-  name: OurAirports
-  version: snapshot 2026-10-28
-  url: https://davidmegginson.github.io/ourairports-data/
-  licence: Public domain
-  attribution: "OurAirports (ourairports.com)"
-  accessed: 2026-10-28

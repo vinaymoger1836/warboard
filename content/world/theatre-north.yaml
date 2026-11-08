@@ -1,0 +1,29 @@
+# Theatre North (doc 11 §2): real terrain of the `europe` pack, generated borders.
+# `geodata/run.sh build europe` grows the nations from these seeds over the H3
+# land cells; mountains, lakes and sea cost more to cross, so borders settle on
+# terrain. Weights scale how far a nation grows. Change a seed, weight or the
+# seed number and rebuild to get a different map.
+id: theatre-north
+kind: world
+name: Theatre North
+terrain_pack: europe
+seed: 7301
+extent: [2.0, 47.5, 42.0, 71.5]
+reach_km: 520
+nations:
+  # Maritime trading state on the straits.
+  - { nation: ald, seed_at: [13.6, 56.0], weight: 1.0 }
+  # Large continental power to the east.
+  - { nation: vsm, seed_at: [27.5, 57.2], weight: 1.5 }
+  # Northern and mountainous.
+  - { nation: tlv, seed_at: [15.2, 63.4], weight: 1.4 }
+  # Island republic in the middle of the sea.
+  - { nation: hlv, seed_at: [18.5, 57.45], weight: 0.45 }
+  # Industrial state on the southern coast.
+  - { nation: kld, seed_at: [16.0, 53.4], weight: 1.2 }
+  # Agrarian plains in the south-east.
+  - { nation: ost, seed_at: [22.2, 53.7], weight: 1.1 }
+  # Small and wealthy, on the western peninsula.
+  - { nation: mrv, seed_at: [9.4, 56.0], weight: 0.7 }
+  # Archipelago state at the mouth of the northern gulfs.
+  - { nation: cnd, seed_at: [22.3, 60.4], weight: 0.9 }

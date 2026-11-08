@@ -28,6 +28,22 @@ source_enum! {
         Chevron,
     }
 
+    /// What a label in `places` names (doc 11 §2.4).
+    #[serde(rename_all = "snake_case")]
+    pub enum PlaceKind {
+        /// A nation's name, drawn over its land.
+        Nation,
+        Capital,
+        City,
+        Sea,
+        Gulf,
+        Strait,
+        /// An island or island group.
+        Islands,
+        /// A land region (peninsula, plain, mountain range).
+        Region,
+    }
+
     /// When a unit fires by default (doc 03 §5).
     #[serde(rename_all = "snake_case")]
     pub enum LaunchDoctrine {
@@ -73,8 +89,14 @@ source_type! {
         pub name: String,
         /// Region pack whose terrain the theatre uses, e.g. `europe`.
         pub terrain_pack: String,
-        /// Fixes the border growth.
+        /// Fixes the border growth and the generated names.
         pub seed: u64,
+        /// `[west, south, east, north]` in degrees: the window borders grow in.
+        /// Land outside it is unclaimed.
+        pub extent: [f64; 4],
+        /// How far a nation of weight 1 grows, in km of open flat land; rougher
+        /// terrain and sea count for more. Land no nation reaches is unclaimed.
+        pub reach_km: f64,
         pub nations: Vec<NationSeed>,
         /// Hand-edits after growth: cells given to a nation (or unclaimed).
         /// Not `overrides`, which is the meta key for `extends` (doc 04 §3.6).
@@ -98,6 +120,30 @@ source_type! {
         pub nation: Option<String>,
         /// H3 cell indexes as hex strings.
         pub cells: Vec<String>,
+    }
+
+    /// Map labels of a world (doc 11 §2.4): `content/world/places.yaml`.
+    #[serde(deny_unknown_fields)]
+    pub struct Places {
+        pub id: String,
+        /// The world these labels belong to.
+        pub world: String,
+        pub places: Vec<Place>,
+    }
+
+    #[serde(deny_unknown_fields)]
+    pub struct Place {
+        pub name: String,
+        pub kind: PlaceKind,
+        /// Owner nation for nation, capital and city labels.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub nation: Option<String>,
+        /// `[lon, lat]` in degrees.
+        pub at: [f64; 2],
+        /// Proposed by `geodata places`; a re-run replaces generated entries
+        /// and keeps the rest. Remove the flag to keep an edited entry.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        pub generated: bool,
     }
 
     /// Class bands for the stats that decide engagements (doc 04 §4).

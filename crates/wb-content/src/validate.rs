@@ -4,7 +4,7 @@
 
 use crate::load::{ContentError, ContentSet, LoadedEntry, get_path};
 use crate::source::platform::{Durability, StationKind};
-use crate::source::world::BaseType;
+use crate::source::world::{BaseType, PlaceKind};
 use crate::source::{Design, Domain, Entry, Kind, Platform, Seeker, SensorType, Station, Weapon};
 use serde_yaml::Value;
 use std::collections::{BTreeMap, BTreeSet};
@@ -51,6 +51,21 @@ pub(crate) fn validate(set: &ContentSet) -> Vec<ContentError> {
             }
             Entry::World(w) => {
                 cx.non_empty("nations", w.nations.len());
+                let [west, south, east, north] = w.extent;
+                if !(-180.0..=180.0).contains(&west)
+                    || !(-180.0..=180.0).contains(&east)
+                    || !(-90.0..=90.0).contains(&south)
+                    || !(-90.0..=90.0).contains(&north)
+                    || west >= east
+                    || south >= north
+                {
+                    cx.err(
+                        "extent",
+                        "must be [west, south, east, north] in degrees with west < east and south < north"
+                            .into(),
+                    );
+                }
+                cx.positive("reach_km", w.reach_km);
                 let mut seen = BTreeSet::new();
                 for (i, n) in w.nations.iter().enumerate() {
                     let path = format!("nations[{i}]");
@@ -81,6 +96,47 @@ pub(crate) fn validate(set: &ContentSet) -> Vec<ContentError> {
                                 format!("`{c}` is not an H3 cell index in hex"),
                             );
                         }
+                    }
+                }
+            }
+            Entry::Places(p) => {
+                cx.reference("world", &p.world, &[Kind::World]);
+                cx.non_empty("places", p.places.len());
+                let mut capitals = BTreeSet::new();
+                for (i, place) in p.places.iter().enumerate() {
+                    let path = format!("places[{i}]");
+                    if place.name.trim().is_empty() {
+                        cx.err(&format!("{path}.name"), "must not be empty".into());
+                    }
+                    let [lon, lat] = place.at;
+                    if !(-180.0..=180.0).contains(&lon) || !(-90.0..=90.0).contains(&lat) {
+                        cx.err(
+                            &format!("{path}.at"),
+                            "must be [lon, lat] in degrees".into(),
+                        );
+                    }
+                    let owned = matches!(
+                        place.kind,
+                        PlaceKind::Nation | PlaceKind::Capital | PlaceKind::City
+                    );
+                    match (&place.nation, owned) {
+                        (Some(n), _) => {
+                            cx.reference(&format!("{path}.nation"), n, &[Kind::Nation]);
+                        }
+                        (None, true) => cx.err(
+                            &format!("{path}.nation"),
+                            "is required for nation, capital and city labels".into(),
+                        ),
+                        (None, false) => {}
+                    }
+                    if place.kind == PlaceKind::Capital
+                        && let Some(n) = &place.nation
+                        && !capitals.insert(n.as_str())
+                    {
+                        cx.err(
+                            &format!("{path}.kind"),
+                            format!("`{n}` already has a capital"),
+                        );
                     }
                 }
             }

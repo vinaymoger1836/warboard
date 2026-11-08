@@ -6,7 +6,7 @@
 
 use crate::source::{
     Archetype, Base, Countermeasure, Datalink, Doctrine, EntryMeta, EwSuite, Inventory, Kind,
-    Loadout, Manifest, Nation, Platform, Realism, Sensor, System, Weapon, World,
+    Loadout, Manifest, Nation, Places, Platform, Realism, Sensor, System, Weapon, World,
 };
 use schemars::{JsonSchema, schema_for};
 use serde_json::{Map, Value, json};
@@ -37,6 +37,7 @@ pub fn content_schema() -> Value {
         let s = match kind {
             Kind::Nation => kind_schema::<Nation>(kind, &meta),
             Kind::World => kind_schema::<World>(kind, &meta),
+            Kind::Places => kind_schema::<Places>(kind, &meta),
             Kind::Archetype => kind_schema::<Archetype>(kind, &meta),
             Kind::Platform => kind_schema::<Platform>(kind, &meta),
             Kind::System => kind_schema::<System>(kind, &meta),

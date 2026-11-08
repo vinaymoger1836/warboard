@@ -2,11 +2,14 @@
 # expect: content/world/bad-world.yaml: nations[0].nation: unknown
 # expect: content/world/bad-world.yaml: nations[1].seed_at: must be [lon, lat] in degrees
 # expect: content/world/bad-world.yaml: border_overrides[0].cells[0]: `zz` is not an H3 cell index in hex
+# expect: content/world/bad-world.yaml: extent: must be [west, south, east, north] in degrees with west < east and south < north
 id: bad-world
 kind: world
 name: Bad world
 terrain_pack: europe
 seed: 1
+extent: [20.0, 50.0, 10.0, 60.0]
+reach_km: 400
 nations:
   - { nation: nowhere, seed_at: [10.0, 55.0], weight: 1.0 }
   - { nation: tst, seed_at: [200.0, 55.0], weight: 1.0 }

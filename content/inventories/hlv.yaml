@@ -17,4 +17,13 @@ munitions:
   sl-12: 40
   sl-20: 60
   cg-30: 40
-design: { note: "Island republic; frigates, maritime patrol, drones; basing follows with the PF bases" }
+basing:
+  - { platform: mf-4, base: hlv-visard-air, count: 12 }
+  - { platform: mf-4, base: hlv-tamirorn-air, count: 12 }
+  - { platform: ud-9, base: hlv-visard-air, count: 6 }
+  - { platform: ud-9, base: hlv-tamirorn-air, count: 6 }
+  - { platform: halvard, base: hlv-visard-naval, count: 8 }
+  - { platform: aw-1, base: hlv-visard-air, count: 1 }
+  - { platform: aw-1, base: hlv-tamirorn-air, count: 1 }
+  - { platform: kest, base: hlv-visard-naval, count: 2 }
+design: { note: "Island republic; frigates, maritime patrol, drones" }

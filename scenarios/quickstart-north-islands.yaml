@@ -1,26 +1,26 @@
 # Quick start (doc 11 §2.1): Theatre North, the island war. Talvenor and
-# Cindria hold the islands and the gulf against Kaldoria and Ostrevia. A
-# suggestion only: the nations have no fixed blocs. Units start deployed; they
-# move to garrisoned bases when the PF bases exist. Not a golden scenario.
+# Cindria hold the islands and the northern gulfs against Kaldoria and
+# Ostrevia. A suggestion only: the nations have no fixed blocs. Garrisoned:
+# each side's preset bases are open, aircraft and ships start on them, air
+# defence is deployed on home soil. Not a golden scenario.
 name: Theatre North, the islands
 seed: 2027
 start_utc: 2026-10-27T08:00:00Z
-start_mode: deploy
 sides:
   - { name: Island Accord, nations: [tlv, cnd], player: true }
   - { name: Southern Front, nations: [kld, ost] }
 units:
-  - { id: 10, name: Fjord Flight, platform: mf-4, nation: tlv, count: 2, lat_deg: 58.2, lon_deg: 17.6, alt_m: 9000, heading_deg: 180, loadout: mf-4-air }
-  - { id: 20, name: Strand Battery, system: cb-2-strand, nation: cnd, lat_deg: 57.7, lon_deg: 18.6, heading_deg: 180 }
-  - { id: 30, name: Kest Pair, platform: kest, nation: cnd, count: 2, lat_deg: 57.4, lon_deg: 18.0, heading_deg: 180, loadout: kest-standard }
-  - { id: 40, name: Longwatch, platform: ud-9, nation: cnd, lat_deg: 57.2, lon_deg: 19.2, alt_m: 6000, heading_deg: 180 }
-  - { id: 50, name: Tolven North, system: mr-sam-tolven, nation: tlv, lat_deg: 57.9, lon_deg: 18.3, heading_deg: 180 }
-  - { id: 200, name: Corvan Flight, platform: hf-4, nation: kld, count: 2, lat_deg: 55.4, lon_deg: 18.6, alt_m: 10000, heading_deg: 0, loadout: hf-4-anti-ship }
-  - { id: 210, name: Plains Flight, platform: mf-4, nation: ost, count: 2, lat_deg: 55.2, lon_deg: 19.6, alt_m: 8000, heading_deg: 0, loadout: mf-4-strike }
-  - { id: 220, name: Tolven South, system: mr-sam-tolven, nation: ost, lat_deg: 54.9, lon_deg: 20.4, heading_deg: 0 }
+  - { id: 10, name: Fjord Flight, platform: mf-4, nation: tlv, count: 2, base: tlv-handal-air, loadout: mf-4-air }
+  - { id: 20, name: Strand Battery, system: cb-2-strand, nation: tlv, lat_deg: 58.5, lon_deg: 16.9, heading_deg: 120 }
+  - { id: 30, name: Kest Pair, platform: kest, nation: cnd, count: 2, base: cnd-satsaari-naval, loadout: kest-standard }
+  - { id: 40, name: Longwatch, platform: ud-9, nation: cnd, base: cnd-vitlahti-air }
+  - { id: 50, name: Tolven North, system: mr-sam-tolven, nation: tlv, lat_deg: 58.3, lon_deg: 16.4, heading_deg: 160 }
+  - { id: 200, name: Corvan Flight, platform: hf-4, nation: kld, count: 2, base: kld-zemheim-air, loadout: hf-4-anti-ship }
+  - { id: 210, name: Plains Flight, platform: mf-4, nation: ost, count: 2, base: ost-sirice-air, loadout: mf-4-strike }
+  - { id: 220, name: Tolven South, system: mr-sam-tolven, nation: ost, lat_deg: 54.3, lon_deg: 20.2, heading_deg: 0 }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: patrol_circle, centre: [18.0, 57.0], radius_km: 40 } }
-  - { tick: 0, side: 0, type: AssignTask, units: [30], task: { kind: patrol_circle, centre: [18.4, 57.0], radius_km: 20 } }
-  - { tick: 0, side: 0, type: AssignTask, units: [40], task: { kind: patrol_circle, centre: [18.8, 56.4], radius_km: 30 } }
+  - { tick: 0, side: 0, type: AssignTask, units: [30], task: { kind: move, waypoints: [[24.7, 59.85], [23.0, 59.6], [21.5, 59.4], [20.0, 58.6]] } }
+  - { tick: 0, side: 0, type: AssignTask, units: [40], task: { kind: patrol_circle, centre: [19.6, 58.4], radius_km: 30 } }
   - { tick: 0, side: 1, type: AssignTask, units: [200], task: { kind: patrol_circle, centre: [18.6, 55.8], radius_km: 30 } }
   - { tick: 0, side: 1, type: AssignTask, units: [210], task: { kind: patrol_circle, centre: [19.6, 55.6], radius_km: 30 } }

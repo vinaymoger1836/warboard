@@ -3,14 +3,14 @@
 // It also owns the region packs' engine files, read synchronously from OPFS (doc 05 §4,
 // ADR-019), and writes save slots (autosave every 5 sim minutes, doc 03 §13).
 import type { Event, SaveHeader, TickReport } from '@warboard/protocol';
-import init, { Engine, GeoQuery, save_header } from '@warboard/wb-wasm';
+import init, { Engine, GeoQuery, map_labels, save_header } from '@warboard/wb-wasm';
 import wasmUrl from '@warboard/wb-wasm/wb_wasm_bg.wasm?url';
 // The war and its content pack are chosen at build time (vite.config.ts: WB_SCENARIO,
 // WB_CONTENT_PACK); by default the Theatre North straits quick start on build/content.wbpack.
 import contentUrl from '@war/content.wbpack?url';
 import scenarioYaml from '@war/scenario.yaml?raw';
 import { AUTOSAVE_SLOT, readSave, writeSave } from '../saves/store';
-import type { FromWorker, PackFiles, ReplyData, ToWorker, WarInfo, WorkerRequest } from './messages';
+import type { FromWorker, PackFiles, PlaceLabel, ReplyData, ToWorker, WarInfo, WorkerRequest } from './messages';
 
 const FRAME_MS = 16;
 const VIEW_MS = 100;
@@ -161,7 +161,8 @@ async function handle(req: WorkerRequest): Promise<{ data: ReplyData[WorkerReque
       return { data: await saveTo(req.slot) };
     case 'load': {
       const bytes = await readSave(req.slot);
-      start(Engine.load(bytes, await contentPack));
+      const pack = await contentPack;
+      start(Engine.load(bytes, pack), pack);
       return { data: null };
     }
     case 'exportSave': {
@@ -214,8 +215,8 @@ function postView(e: Engine, memory: WebAssembly.Memory): void {
   post({ type: 'view', buffer }, [buffer]);
 }
 
-/** Runs `next` as the war; replaces any war running. */
-function start(next: Engine): void {
+/** Runs `next` as the war; replaces any war running. `pack` is its content pack. */
+function start(next: Engine, pack: Uint8Array): void {
   if (loopTimer !== null) clearTimeout(loopTimer);
   engine?.free();
   engine = next;
@@ -238,8 +239,9 @@ function start(next: Engine): void {
     };
   };
 
-  const war = JSON.parse(engine.sides()) as Omit<WarInfo, 'warName'>;
-  post({ type: 'ready', report: report(engine), war: { ...war, warName } });
+  const war = JSON.parse(engine.sides()) as Omit<WarInfo, 'warName' | 'places'>;
+  const places = JSON.parse(map_labels(pack)) as PlaceLabel[];
+  post({ type: 'ready', report: report(engine), war: { ...war, warName, places } });
 
   let lastFrame = performance.now();
   let lastView = -Infinity;
@@ -277,7 +279,8 @@ let wasmMemory: WebAssembly.Memory | null = null;
 async function boot(): Promise<void> {
   const exports = await wasm;
   wasmMemory = exports.memory;
-  start(Engine.create(scenarioYaml, await contentPack));
+  const pack = await contentPack;
+  start(Engine.create(scenarioYaml, pack), pack);
 }
 
 boot().catch((err: unknown) => {

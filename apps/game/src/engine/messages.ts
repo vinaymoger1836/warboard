@@ -5,6 +5,7 @@ import type {
   Event,
   Order,
   OrderAck,
+  PlaceKind,
   SaveHeader,
   SideInfo,
   TickReport,
@@ -68,11 +69,22 @@ export interface ReplyData {
   importSave: SaveHeader;
 }
 
-/** Who plays what, sent whenever a war starts or loads. */
+/** A map label from the content pack (doc 11 §2.4): geography only. */
+export interface PlaceLabel {
+  name: string;
+  kind: PlaceKind;
+  /** Nation id for nation, capital and city labels. */
+  nation: string | null;
+  lat: number;
+  lon: number;
+}
+
+/** Who plays what, sent whenever a war starts or loads, with the map labels of its content. */
 export interface WarInfo {
   side: number;
   sides: SideInfo[];
   warName: string;
+  places: PlaceLabel[];
 }
 
 /** Engine worker → UI thread. */

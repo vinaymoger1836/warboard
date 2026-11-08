@@ -211,3 +211,26 @@ pub fn save_header(bytes: &[u8]) -> Result<String, JsError> {
         .map(|(h, _)| json(&h))
         .map_err(|e| JsError::new(&e.to_string()))
 }
+
+/// Map labels of a content pack (doc 11 §2.4) as JSON:
+/// `[{ name, kind, nation, lat, lon }]`, degrees; `nation` is a nation id or
+/// null. Geography only: no unit, contact or base ever appears here.
+#[wasm_bindgen]
+pub fn map_labels(content_pack: &[u8]) -> Result<String, JsError> {
+    let (db, _) = content(content_pack)?;
+    let deg = 180.0 / std::f64::consts::PI;
+    let labels: Vec<_> = db
+        .places
+        .iter()
+        .map(|p| {
+            serde_json::json!({
+                "name": db.str(p.name),
+                "kind": p.kind,
+                "nation": p.nation.map(|n| db.str(db.nations[n.0 as usize].id)),
+                "lat": p.lat_rad * deg,
+                "lon": p.lon_rad * deg,
+            })
+        })
+        .collect();
+    Ok(json(&labels))
+}

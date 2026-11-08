@@ -1,16 +1,22 @@
-"""Territory bake (doc 05 §5).
+"""Territory bake (doc 05 §5, doc 11 §2.2–2.3).
 
-Country territory = Natural Earth admin-0 land ∪ Marine Regions 12 nm sea, internal
-and archipelagic waters. Land wins where the two overlap. Narrow gaps between the two
-coastlines go to the country whose land is next to them, and countries listed under
-`derived_territorial_sea` (absent from Marine Regions) get a 12 nm belt from their
-Natural Earth coast, marked as an estimate in the manifest.
+Nation territory is generated, not traced: a theatre pack (`territory: { world: … }`
+in packs.yaml) grows its nations from the seeds in `content/world/<world>.yaml`
+over its own H3 terrain cells, with 12 nm belts around the coasts (geodata/borders.py).
+The world pack reuses the theatre's polygons (`territory: { from_pack: … }`), so the
+two never disagree. Natural Earth admin-0 is read only for the overlap check below; it
+is not part of any pack.
+
+Runs after the terrain step, whose cells it needs, and finishes the terrain file with
+the nation and border fields.
 
 Outputs:
-- `territory-<pack>.pmtiles`: country polygons for the map tint (layer `territory`, field `code`).
+- `territory-<pack>.pmtiles`: layer `territory` (nation polygons, field `code`) and layer
+  `borders` (outlines, field `kind`: `land` or `sea`) for the map.
 - `territory-<pack>.bin`: exact rings for H3 cells that a territory boundary crosses.
-- work/territory_cells.npz: owner at the centre of every territory cell, and the border cells,
-  for the terrain step.
+- `terrain-<pack>.wbh3`: the terrain step's cells plus nation and border flag per cell.
+- work/territory.json: codes and the overlap check result; work/nations.npz: owner of
+  every cell in the theatre window (for `geodata places` and `geodata bases`).
 """
 
 from __future__ import annotations
@@ -25,22 +31,22 @@ from pathlib import Path
 import h3.api.basic_int as h3
 import numpy as np
 import shapely
-import yaml
-from osgeo import gdal, ogr, osr
+from osgeo import ogr, osr
 from shapely.geometry import box
 
-from . import formats, sources
-from .common import pool, GEODATA, Pack, jobs, log, run
+from . import borders, formats, sources, terrain
+from .common import WORK, Pack, jobs, log, pool, run
 
 ogr.UseExceptions()
 osr.UseExceptions()
-# Marine Regions coastlines are single features of tens of MB.
-gdal.SetConfigOption("OGR_GEOJSON_MAX_OBJ_SIZE", "0")
 
-TERRITORIAL_SEA_M = 22_224.0  # 12 nm
-GAP_FILL_DEG = 0.03
 CELL_MARGIN = 0.15  # border test and ring clip use the cell grown by 15 % around its centre
 COORD_SCALE = 1e7
+# Doc 11 §2.2: generated land borders may run within OVERLAP_M of a real admin-0
+# border for at most OVERLAP_MAX of their length.
+OVERLAP_M = 5_000.0
+OVERLAP_MAX = 0.15
+OVERLAP_STEP_M = 1_000.0
 
 # Filled in the parent before forking the workers.
 _TILE_PIECES: dict[tuple[int, int], list[tuple[int, bytes]]] = {}
@@ -49,11 +55,7 @@ _RES = 0
 _SAMPLE = 0.0
 
 
-def _settings() -> dict:
-    return yaml.safe_load((GEODATA / "packs.yaml").read_text(encoding="utf-8")).get("territory", {})
-
-
-def _read(path, clip: tuple[float, float, float, float] | None, fields: list[str]):
+def _read(path, clip: tuple[float, float, float, float] | None):
     ds = ogr.Open(str(path))
     layer = ds.GetLayer(0)
     if clip is not None:
@@ -66,121 +68,71 @@ def _read(path, clip: tuple[float, float, float, float] | None, fields: list[str
         if clip is not None:
             geom = shapely.clip_by_rect(geom, *clip)
         if not geom.is_empty:
-            yield {k: f.GetField(k) for k in fields}, geom
+            yield geom
 
 
-def _ne_code(row: dict, main: dict[str, dict]) -> str:
-    def own(r: dict) -> str:
-        iso = (r["ISO_A3_EH"] or "").strip()
-        return (iso if len(iso) == 3 and iso.isalpha() else r["ADM0_A3"]).lower()
-
-    if row["TYPE"] in ("Disputed", "Indeterminate") or row["SOVEREIGNT"] not in main:
-        return own(row)
-    return own(main[row["SOVEREIGNT"]])
-
-
-def load_land(clip) -> dict[str, shapely.Geometry]:
-    fields = ["ADMIN", "SOVEREIGNT", "TYPE", "ISO_A3_EH", "ADM0_A3"]
-    rows = list(_read(sources.natural_earth(), None, fields))
-    main = {r["SOVEREIGNT"]: r for r, _ in rows if r["ADMIN"] == r["SOVEREIGNT"]}
-    parts: dict[str, list] = defaultdict(list)
-    for r, g in rows:
-        if clip is not None:
-            g = shapely.clip_by_rect(g, *clip)
-            if g.is_empty:
-                continue
-        parts[_ne_code(r, main)].append(g)
-    return {c: shapely.union_all(gs) for c, gs in sorted(parts.items())}
+def _read_layer(path, layer: str, field: str) -> dict[str, shapely.Geometry]:
+    ds = ogr.Open(str(path))
+    out = {}
+    for f in ds.GetLayerByName(layer):
+        g = f.GetGeometryRef()
+        if g is not None:
+            out[f.GetField(field)] = shapely.from_wkb(bytes(g.ExportToIsoWkb()))
+    return dict(sorted(out.items()))
 
 
-def load_seas(clip) -> dict[str, shapely.Geometry]:
-    parts: dict[str, list] = defaultdict(list)
-    for shp in sources.marine_regions():
-        for r, g in _read(shp, clip, ["iso_sov1"]):
-            code = (r["iso_sov1"] or "").strip().lower()
-            if len(code) == 3:
-                parts[code].append(g)
-    return {c: shapely.union_all(gs) for c, gs in sorted(parts.items())}
-
-
-def geodesic_buffer(geom: shapely.Geometry, metres: float) -> shapely.Geometry:
-    """Buffer in metres through an azimuthal equidistant projection centred on the shape."""
-    c = geom.centroid
+def _project(center_lon: float, center_lat: float):
+    """Transforms (lon, lat) geometry into metres around a centre (azimuthal equidistant)."""
     wgs = osr.SpatialReference()
     wgs.ImportFromEPSG(4326)
     wgs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
     aeqd = osr.SpatialReference()
-    aeqd.ImportFromProj4(f"+proj=aeqd +lat_0={c.y:.6f} +lon_0={c.x:.6f} +datum=WGS84 +units=m")
+    aeqd.ImportFromProj4(f"+proj=aeqd +lat_0={center_lat:.6f} +lon_0={center_lon:.6f} +datum=WGS84 +units=m")
     fwd = osr.CoordinateTransformation(wgs, aeqd)
-    back = osr.CoordinateTransformation(aeqd, wgs)
-    g = ogr.CreateGeometryFromWkb(shapely.to_wkb(geom))
-    g.Transform(fwd)
-    buffered = shapely.from_wkb(bytes(g.ExportToIsoWkb())).buffer(metres, quad_segs=8)
-    g2 = ogr.CreateGeometryFromWkb(shapely.to_wkb(buffered))
-    g2.Transform(back)
-    return shapely.make_valid(shapely.from_wkb(bytes(g2.ExportToIsoWkb())))
+
+    def go(geom: shapely.Geometry) -> shapely.Geometry:
+        if geom.is_empty:
+            return geom
+        g = ogr.CreateGeometryFromWkb(shapely.to_wkb(geom))
+        g.Transform(fwd)
+        return shapely.from_wkb(bytes(g.ExportToIsoWkb()))
+
+    return go
 
 
-def _minus(geom: shapely.Geometry, others: list[shapely.Geometry]) -> shapely.Geometry:
-    """`geom` minus every geometry in `others` that touches its bounding box."""
-    if geom.is_empty or not others:
-        return geom
-    tree = shapely.STRtree(others)
-    hits = tree.query(geom, predicate="intersects")
-    if len(hits) == 0:
-        return geom
-    return shapely.make_valid(shapely.difference(geom, shapely.union_all([others[i] for i in sorted(hits)])))
-
-
-def combine(land, seas, derived_codes, clip, first_codes=()) -> tuple[dict[str, shapely.Geometry], list[str]]:
-    land_parts = [p for g in land.values() for p in shapely.get_parts(g)]
-    assigned: list[shapely.Geometry] = list(land_parts)
-    sea_out: dict[str, shapely.Geometry] = {}
-    estimated: list[str] = []
-    # Belts that take precedence over another state's Marine Regions sea (e.g. Taiwan,
-    # whose waters Marine Regions v4 codes as Chinese).
-    for code in sorted(first_codes):
-        if code not in land:
+def overlap_check(land_lines: shapely.Geometry, extent) -> dict:
+    """Share of generated land-border length within OVERLAP_M of a Natural Earth admin-0
+    land border (doc 11 §2.2). Natural Earth is read here and nowhere else."""
+    w, s, e, n = extent
+    clip = (w - 1, s - 1, e + 1, n + 1)
+    polys = list(_read(sources.natural_earth(), clip))
+    lines = shapely.union_all([shapely.boundary(g) for g in polys])
+    coast = shapely.boundary(shapely.union_all(polys))
+    real = shapely.difference(lines, shapely.buffer(coast, 0.01, quad_segs=2))
+    proj = _project((w + e) / 2, (s + n) / 2)
+    real_m = proj(real)
+    ours_m = proj(land_lines)
+    points = []
+    for part in shapely.get_parts(ours_m):
+        length = part.length
+        if length <= OVERLAP_STEP_M / 2:
             continue
-        belt = geodesic_buffer(land[code], TERRITORIAL_SEA_M)
-        if clip is not None:
-            belt = shapely.clip_by_rect(belt, *clip)
-        belt = _minus(belt, land_parts)
-        if not belt.is_empty:
-            estimated.append(code)
-            sea_out[code] = belt
-            assigned.extend(shapely.get_parts(belt))
-    for code, g in seas.items():
-        g = _minus(g, assigned)
-        sea_out[code] = shapely.union_all([sea_out[code], g]) if code in sea_out else g
-        assigned.extend(shapely.get_parts(g))
-    for code in sorted(derived_codes):
-        if code not in land or code in seas:
-            continue
-        belt = geodesic_buffer(land[code], TERRITORIAL_SEA_M)
-        if clip is not None:
-            belt = shapely.clip_by_rect(belt, *clip)
-        belt = _minus(belt, assigned)
-        if not belt.is_empty:
-            estimated.append(code)
-            sea_out[code] = shapely.union_all([sea_out.get(code, shapely.Polygon()), belt])
-            assigned.extend(shapely.get_parts(belt))
-    fill: dict[str, shapely.Geometry] = {}
-    for code, g in land.items():
-        f = _minus(shapely.buffer(g, GAP_FILL_DEG, quad_segs=2), assigned)
-        if clip is not None:
-            f = shapely.clip_by_rect(f, *clip)
-        if not f.is_empty:
-            fill[code] = f
-            assigned.extend(shapely.get_parts(f))
-    out: dict[str, shapely.Geometry] = {}
-    for code in sorted(set(land) | set(sea_out) | set(fill)):
-        parts = [g for g in (land.get(code), sea_out.get(code), fill.get(code)) if g is not None and not g.is_empty]
-        merged = shapely.make_valid(shapely.union_all(parts))
-        polys = [p for p in shapely.get_parts(merged) if p.geom_type == "Polygon" and p.area > 0]
-        if polys:
-            out[code] = shapely.MultiPolygon(polys)
-    return out, estimated
+        points.append(shapely.line_interpolate_point(part, np.arange(OVERLAP_STEP_M / 2, length, OVERLAP_STEP_M)))
+    pts = np.concatenate(points) if points else np.array([], dtype=object)
+    parts = list(shapely.get_parts(real_m))
+    near = 0
+    if len(pts) and parts:
+        tree = shapely.STRtree(parts)
+        hits = tree.query(pts, predicate="dwithin", distance=OVERLAP_M)
+        near = len(np.unique(hits[0]))
+    share = near / len(pts) if len(pts) else 0.0
+    return {
+        "land_border_km": round(len(pts) * OVERLAP_STEP_M / 1000.0, 1),
+        "within_km": OVERLAP_M / 1000.0,
+        "share": round(share, 4),
+        "max_share": OVERLAP_MAX,
+        "pass": share <= OVERLAP_MAX,
+    }
 
 
 def _clip(g: shapely.Geometry, rect: tuple[float, float, float, float]) -> shapely.Geometry:
@@ -297,53 +249,71 @@ def _record(cell: int, pieces_at) -> bytes:
     return formats.encode_rings_record(pieces, shifted)
 
 
+def _theatre(pack: Pack) -> tuple[dict[str, shapely.Geometry], dict[str, shapely.Geometry], dict]:
+    """Grows the nations of the pack's world; writes work/nations.npz."""
+    world = borders.load_world(pack.cfg["territory"]["world"])
+    t = np.load(pack.work / "terrain_cells.npz")
+    result = borders.generate(world, int(pack.cfg["terrain"]["h3_res"]), t["cells"], t["cls"])
+    lines = borders.border_lines(result.territory, result.land_mask)
+    log("territory: overlap check against Natural Earth admin-0 land borders")
+    check = overlap_check(lines["land"], world.extent)
+    log(
+        f"territory: {check['share']:.1%} of {check['land_border_km']:,} km of land border lies within "
+        f"{check['within_km']:g} km of a real border (limit {OVERLAP_MAX:.0%})"
+    )
+    np.savez(
+        pack.work / "nations.npz",
+        cells=result.grid.cells,
+        owner=result.owner.astype(np.int16),
+        landlike=result.landlike,
+        sea=result.grid.sea,
+        cls=result.grid.cls,
+        codes=np.array(world.codes),
+    )
+    if not check["pass"]:
+        raise RuntimeError(
+            f"generated borders follow real borders for {check['share']:.1%} of their length "
+            f"(limit {OVERLAP_MAX:.0%}): move a seed or change a weight"
+        )
+    return result.territory, lines, {"world": world.id, "overlap": check}
+
+
 def build(pack: Pack) -> None:
     global _TILE_PIECES, _TILE_LINES, _RES, _SAMPLE
-    settings = _settings()
     w, s, e, n = pack.extent
-    clip = None if pack.is_world else (max(-180, w - 1), max(-90, s - 1), min(180, e + 1), min(90, n + 1))
-    bounds = clip or (-180.0, -90.0, 180.0, 90.0)
+    if pack.is_world:
+        bounds = (-180.0, -90.0, 180.0, 90.0)
+    else:
+        bounds = (max(-180, w - 1), max(-90, s - 1), min(180, e + 1), min(90, n + 1))
 
     pack.work.mkdir(parents=True, exist_ok=True)
     gpkg = pack.work / "territory.gpkg"
-    combined = pack.work / "territory_combined.json"
-    if gpkg.exists() and combined.exists():
-        # Merging land and seas takes minutes; reuse it (delete the work folder to redo it).
-        log(f"territory: reusing {gpkg.name}")
-        meta = json.loads(combined.read_text(encoding="utf-8"))
-        estimated, missing = meta["estimated"], meta["missing"]
-        territory = {r["code"]: g for r, g in _read(gpkg, None, ["code"])}
+    cfg = pack.cfg.get("territory", {})
+    if "world" in cfg:
+        territory, lines, meta = _theatre(pack)
+    elif "from_pack" in cfg:
+        src = WORK / cfg["from_pack"]
+        if not (src / "territory.gpkg").exists():
+            raise FileNotFoundError(f"{src / 'territory.gpkg'} is missing; build the `{cfg['from_pack']}` pack first")
+        territory = _read_layer(src / "territory.gpkg", "territory", "code")
+        lines = _read_layer(src / "territory.gpkg", "borders", "kind")
+        theirs = json.loads((src / "territory.json").read_text(encoding="utf-8"))
+        meta = {"world": theirs["world"], "overlap": theirs["overlap"], "from_pack": cfg["from_pack"]}
     else:
-        log("territory: loading Natural Earth land")
-        land = load_land(clip)
-        log("territory: loading Marine Regions seas")
-        seas = load_seas(clip)
-        missing = sorted(set(land) - set(seas))
-        log(f"territory: {len(missing)} land codes have no Marine Regions sea: {' '.join(missing)}")
-        territory, estimated = combine(
-            land,
-            seas,
-            settings.get("derived_territorial_sea", []),
-            clip,
-            settings.get("derived_territorial_sea_first", []),
-        )
-        _write_gpkg(gpkg, territory)
-        combined.write_text(json.dumps({"estimated": estimated, "missing": missing}), encoding="utf-8")
-    # Buffers (gap fill, derived belts) can spill past ±180° or the poles; keep the globe.
+        raise ValueError(f"pack `{pack.id}` has no `territory` source in packs.yaml")
     territory = {c: _polygonal(_clip(g, bounds)) for c, g in territory.items()}
     territory = {c: g for c, g in territory.items() if not g.is_empty}
+    _write_gpkg(gpkg, territory, lines)
     codes = sorted(territory)
     index = {c: i + 1 for i, c in enumerate(codes)}
-    log(f"territory: {len(codes)} countries; derived 12 nm belts (estimate): {estimated or 'none'}")
-    if not (pack.out / f"territory-{pack.id}.pmtiles").exists():
-        _write_gpkg(gpkg, territory)
-        _write_tiles(pack, gpkg)
+    log(f"territory: {len(codes)} nations: {' '.join(codes)}")
+    _write_tiles(pack, gpkg)
 
     log("territory: splitting into 1° tiles")
     polys = [(index[c], g) for c, g in territory.items()]
-    lines = [(index[c], shapely.boundary(g)) for c, g in territory.items()]
+    outlines = [(index[c], shapely.boundary(g)) for c, g in territory.items()]
     tile_pieces = _grid_fine(polys, bounds)
-    tile_lines = _grid_fine(lines, bounds)
+    tile_lines = _grid_fine(outlines, bounds)
     _TILE_PIECES = {k: [(i, shapely.to_wkb(g)) for i, g in v] for k, v in tile_pieces.items()}
     _TILE_LINES = {k: shapely.to_wkb(shapely.union_all([g for _, g in v])) for k, v in tile_lines.items()}
     _RES = int(pack.cfg["terrain"]["h3_res"])
@@ -379,10 +349,8 @@ def build(pack: Pack) -> None:
     log("territory: writing border-cell rings")
     records = [_record(int(c), pieces_at) for c in border_arr]
     formats.write_territory(pack.out / f"territory-{pack.id}.bin", _RES, codes, border_arr, records)
-    np.savez(pack.work / "territory_cells.npz", cells=cells, owners=owners, border=border_arr)
-    (pack.work / "territory.json").write_text(
-        json.dumps({"codes": codes, "estimated_seas": estimated, "missing_seas": missing}, indent=1), encoding="utf-8"
-    )
+    terrain.write(pack, codes, cells, owners, border_arr)
+    (pack.work / "territory.json").write_text(json.dumps({"codes": codes} | meta, indent=1), encoding="utf-8")
     log("territory: done")
 
 
@@ -409,7 +377,7 @@ def _antimeridian_border(tile_lines) -> set[int]:
     return out
 
 
-def _write_gpkg(path, territory: dict[str, shapely.Geometry]) -> None:
+def _write_gpkg(path, territory: dict[str, shapely.Geometry], lines: dict[str, shapely.Geometry]) -> None:
     path.unlink(missing_ok=True)
     drv = ogr.GetDriverByName("GPKG")
     ds = drv.CreateDataSource(str(path))
@@ -421,6 +389,16 @@ def _write_gpkg(path, territory: dict[str, shapely.Geometry]) -> None:
         f = ogr.Feature(layer.GetLayerDefn())
         f.SetField("code", code)
         f.SetGeometry(ogr.CreateGeometryFromWkb(shapely.to_wkb(geom)))
+        layer.CreateFeature(f)
+    layer = ds.CreateLayer("borders", srs, ogr.wkbMultiLineString, options=["SPATIAL_INDEX=NO"])
+    layer.CreateField(ogr.FieldDefn("kind", ogr.OFTString))
+    for kind, geom in lines.items():
+        parts = [p for p in shapely.get_parts(geom) if p.geom_type == "LineString" and not p.is_empty]
+        if not parts:
+            continue
+        f = ogr.Feature(layer.GetLayerDefn())
+        f.SetField("kind", kind)
+        f.SetGeometry(ogr.CreateGeometryFromWkb(shapely.to_wkb(shapely.MultiLineString(parts))))
         layer.CreateFeature(f)
     ds = None
 
@@ -439,6 +417,7 @@ def _write_tiles(pack: Pack, gpkg) -> None:
         str(local),
         str(gpkg),
         "territory",
+        "borders",
         "-dsco",
         f"MINZOOM={z['minzoom']}",
         "-dsco",

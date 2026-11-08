@@ -13,4 +13,14 @@ munitions:
   gb-900: 150
   eh-2: 60
   sl-20: 60
-design: { note: "Small and wealthy; few but advanced systems; basing follows with the PF bases" }
+basing:
+  - { platform: vf-5, base: mrv-raront-air, count: 8 }
+  - { platform: vf-5, base: mrv-fissont-air, count: 8 }
+  - { platform: vf-5, base: mrv-forraine-air, count: 8 }
+  - { platform: ej-2, base: mrv-raront-air, count: 2 }
+  - { platform: ej-2, base: mrv-fissont-air, count: 2 }
+  - { platform: aw-1, base: mrv-raront-air, count: 1 }
+  - { platform: aw-1, base: mrv-forraine-air, count: 1 }
+  - { platform: tk-3, base: mrv-raront-air, count: 1 }
+  - { platform: tk-3, base: mrv-forraine-air, count: 1 }
+design: { note: "Small and wealthy; few but advanced systems" }

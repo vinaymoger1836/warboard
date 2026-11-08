@@ -80,6 +80,7 @@ pub fn compile(set: &ContentSet) -> ContentDb {
     let mut db = ContentDb {
         strings: Vec::new(),
         nations: Vec::new(),
+        places: Vec::new(),
         platforms: Vec::new(),
         systems: Vec::new(),
         sensors: Vec::new(),
@@ -98,6 +99,10 @@ pub fn compile(set: &ContentSet) -> ContentDb {
         let custom = e.custom;
         match &e.entry {
             Entry::Nation(x) => db.nations.push(cx.nation(x, custom)),
+            Entry::Places(x) => {
+                let places: Vec<_> = x.places.iter().map(|p| cx.place(p)).collect();
+                db.places.extend(places);
+            }
             Entry::World(_) | Entry::Archetype(_) => {}
             Entry::Platform(x) => db.platforms.push(cx.platform(x, custom)),
             Entry::System(x) => db.systems.push(cx.system(x, custom)),
@@ -152,6 +157,20 @@ impl Compiler<'_> {
                 .map(|d| c::DatalinkIx(self.ix(Kind::Datalink, d)))
                 .collect(),
             design: self.design(&x.design, custom),
+        }
+    }
+
+    fn place(&mut self, x: &s::Place) -> c::Place {
+        let [lon, lat] = x.at;
+        c::Place {
+            name: self.st.id(&x.name),
+            kind: x.kind,
+            nation: x
+                .nation
+                .as_deref()
+                .map(|n| c::NationIx(self.ix(Kind::Nation, n))),
+            lat_rad: deg_to_rad(lat),
+            lon_rad: deg_to_rad(lon),
         }
     }
 

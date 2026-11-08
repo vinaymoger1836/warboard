@@ -1,0 +1,48 @@
+# Word parts for generated place and base names (doc 11 §2.4): one sound per nation.
+# `geodata places` and `geodata bases` build names as onset + vowel + coda (+ a second
+# syllable) + ending, picked by a hash of the world seed, the nation and the place, so
+# a re-run gives the same names. Edit the lists to change the sound; edit a name in
+# content/world/places.yaml or content/bases/ to change one place.
+# Results are checked against content/denylist.txt by the content check (step 5).
+
+nations:
+  ald:
+    onsets: [h, br, k, s, t, v, m, fr, sk, l]
+    vowels: [a, o, e, ae, i]
+    codas: [l, n, r, rn, lm, sk, d, v]
+    endings: [mere, haven, holm, sund, vik, wick, stade, by]
+  vsm:
+    onsets: [v, z, d, kr, m, s, gr, t, br, l]
+    vowels: [a, o, e, i, u, ya]
+    codas: [r, sl, v, d, n, zh, sk, t]
+    endings: [ov, ograd, insk, eva, ar, anets, ost, yar]
+  tlv:
+    onsets: [t, h, kj, f, st, n, sv, g, r, b]
+    vowels: [a, e, o, ei, ø, u]
+    codas: [l, n, rn, nd, ld, st, rg, k]
+    endings: [heim, dal, fjell, vann, berg, nes, stad, voll]
+  hlv:
+    onsets: [h, k, l, m, s, t, v, d]
+    vowels: [a, e, i, o, au]
+    codas: [l, r, s, n, st, m]
+    endings: [hamn, sted, ness, ey, ard, orn]
+  kld:
+    onsets: [k, gr, st, b, d, w, r, z, sch, br]
+    vowels: [a, e, o, u, ie]
+    codas: [l, n, rg, rd, lt, st, rk, m]
+    endings: [ow, burg, stadt, itz, au, heim, werk, feld]
+  ost:
+    onsets: [o, pr, l, v, m, r, b, s, d, z]
+    vowels: [a, e, i, o, y]
+    codas: [l, n, sk, r, sz, w, d, v]
+    endings: [ava, ice, owo, any, el, ino, ets, ary]
+  mrv:
+    onsets: [m, l, c, v, f, s, r, b, t]
+    vowels: [a, e, o, i, ea]
+    codas: [l, r, n, nt, rr, ss, v]
+    endings: [elle, ont, ard, ier, aine, ole, ance]
+  cnd:
+    onsets: [k, s, t, h, m, n, p, v, j]
+    vowels: [a, i, o, u, ä, e]
+    codas: [l, n, s, kk, rv, nt, t]
+    endings: [la, saari, joki, niemi, nen, vesi, lahti, ranta]

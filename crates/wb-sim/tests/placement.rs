@@ -132,8 +132,8 @@ sides:
 ";
 
 /// Needs `build/packs/{world,europe}` (`bash geodata/run.sh build …`). The
-/// territory checks (own waters, abroad) return with the generated borders
-/// in PF.
+/// territory points belong to Theatre North as grown from world seed 7301
+/// (`content/world/theatre-north.yaml`); see crates/wb-geo/tests/packs.rs.
 #[test]
 #[ignore = "needs the region packs in build/packs"]
 fn terrain_rules_on_the_real_packs() {
@@ -152,6 +152,18 @@ fn terrain_rules_on_the_real_packs() {
     assert_eq!(
         place(&mut s, BaseKind::RoadStrip, 55.3, 18.0).unwrap_err(),
         "Road strip cannot stand on water"
+    );
+    // Own waters (Aldmark's belt) and the enemy's (Vessmar's gulf).
+    place(&mut s, BaseKind::Anchorage, 55.5, 12.9).expect("anchorage in own waters");
+    assert_eq!(
+        place(&mut s, BaseKind::Anchorage, 57.6, 23.4).unwrap_err(),
+        "Outside own territory"
+    );
+    // Open land at home (Ostrevia) and abroad (Vessmar).
+    place(&mut s, BaseKind::RoadStrip, 53.7, 22.2).expect("road strip at home");
+    assert_eq!(
+        place(&mut s, BaseKind::RoadStrip, 56.75, 21.6).unwrap_err(),
+        "Outside own territory"
     );
 }
 

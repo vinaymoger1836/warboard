@@ -15,4 +15,10 @@ munitions:
   sl-12: 140
   sl-20: 60
   cg-30: 10
-design: { note: "Archipelago state; corvettes, coastal defence, drones; basing follows with the PF bases" }
+basing:
+  - { platform: mf-4, base: cnd-vitlahti-air, count: 8 }
+  - { platform: mf-4, base: cnd-nasatranta-air, count: 8 }
+  - { platform: ud-9, base: cnd-vitlahti-air, count: 5 }
+  - { platform: ud-9, base: cnd-nasatranta-air, count: 5 }
+  - { platform: kest, base: cnd-satsaari-naval, count: 8 }
+design: { note: "Archipelago state; corvettes, coastal defence, drones" }

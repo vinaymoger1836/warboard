@@ -16,4 +16,18 @@ munitions:
   sl-20: 200
   sl-12: 40
   cg-30: 10
-design: { note: "Northern and mountainous; fighters and coastal batteries; basing follows with the PF bases" }
+basing:
+  - { platform: mf-4, base: tlv-haknes-air, count: 8 }
+  - { platform: mf-4, base: tlv-fonakvann-air, count: 8 }
+  - { platform: mf-4, base: tlv-gandal-air, count: 8 }
+  - { platform: mf-4, base: tlv-goknes-air, count: 8 }
+  - { platform: mf-4, base: tlv-handal-air, count: 8 }
+  - { platform: mf-4, base: tlv-honokvann-air, count: 8 }
+  - { platform: ud-9, base: tlv-haknes-air, count: 1 }
+  - { platform: ud-9, base: tlv-fonakvann-air, count: 1 }
+  - { platform: ud-9, base: tlv-gandal-air, count: 1 }
+  - { platform: ud-9, base: tlv-goknes-air, count: 1 }
+  - { platform: kest, base: tlv-gaknes-naval, count: 1 }
+  - { platform: kest, base: tlv-baknes-naval, count: 1 }
+  - { platform: tk-3, base: tlv-haknes-air, count: 1 }
+design: { note: "Northern and mountainous; fighters and coastal batteries" }

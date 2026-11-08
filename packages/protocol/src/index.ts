@@ -67,6 +67,7 @@ export type { EntryMeta } from './generated/EntryMeta';
 export type { EwSuite } from './generated/EwSuite';
 export type { Flag } from './generated/Flag';
 export type { FlagPattern } from './generated/FlagPattern';
+export type { PlaceKind } from './generated/PlaceKind';
 export type { Inventory } from './generated/Inventory';
 export type { Kind } from './generated/Kind';
 export type { Loadout } from './generated/Loadout';

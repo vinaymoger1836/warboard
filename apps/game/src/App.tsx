@@ -183,6 +183,7 @@ export function App() {
 
   const mapReady = hasWorld(packs.usable);
   const coalition = useMemo(() => coalitionOf(war), [war]);
+  const places = useMemo(() => war?.places ?? [], [war]);
 
   return (
     <div className="app">
@@ -209,6 +210,7 @@ export function App() {
             packs={packs.usable}
             bridge={bridge}
             coalition={coalition}
+            places={places}
             geoReady={geoReady}
             terrainOverlay={terrainOverlay}
             onTerrainOverlay={setTerrainOverlay}

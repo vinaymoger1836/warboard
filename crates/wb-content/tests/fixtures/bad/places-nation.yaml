@@ -1,0 +1,11 @@
+# file: world/bad-places.yaml
+# expect: content/world/bad-places.yaml: world: unknown
+# expect: content/world/bad-places.yaml: places[0].nation: is required for nation, capital and city labels
+# expect: content/world/bad-places.yaml: places[2].kind: `tst` already has a capital
+id: bad-places
+kind: places
+world: nowhere
+places:
+  - { name: Somewhere, kind: city, at: [10.0, 55.0] }
+  - { name: First, kind: capital, nation: tst, at: [10.0, 55.0] }
+  - { name: Second, kind: capital, nation: tst, at: [11.0, 55.0] }

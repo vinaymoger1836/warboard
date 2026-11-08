@@ -24,10 +24,12 @@ ROLES = {
 # Which sources each file is made from, for the credits screen.
 FILE_SOURCES = {
     "basemap": ["basemap"],
-    "territory_tiles": ["natural_earth", "marine_regions"],
+    # Generated borders grow over WorldCover and DEM cells (doc 11 §2.2); Natural Earth
+    # is only read for the overlap check and is not part of a pack.
+    "territory_tiles": ["worldcover", "copernicus_dem"],
     "dem": ["copernicus_dem"],
-    "terrain": ["worldcover", "copernicus_dem", "natural_earth", "marine_regions"],
-    "territory": ["natural_earth", "marine_regions"],
+    "terrain": ["worldcover", "copernicus_dem"],
+    "territory": ["worldcover", "copernicus_dem"],
 }
 
 
@@ -68,7 +70,8 @@ def build(pack: Pack) -> None:
         ],
         "attribution": [sources[s]["attribution"] for s in order],
         "notes": {
-            "estimated_territorial_seas": terr["estimated_seas"],
+            "world": terr["world"],
+            "border_overlap": terr["overlap"],
             "terrain_classes": json.loads(classes.read_text(encoding="utf-8")) if classes.exists() else {},
         },
     }

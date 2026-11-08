@@ -9,4 +9,9 @@ munitions:
   ai-3: 80
   gb-900: 100
   sl-20: 300
-design: { note: "Agrarian plains; ground forces, short-range air defence; basing follows with the PF bases" }
+basing:
+  - { platform: mf-4, base: ost-sirice-air, count: 6 }
+  - { platform: mf-4, base: ost-doskava-air, count: 6 }
+  - { platform: mf-4, base: ost-sowerary-air, count: 6 }
+  - { platform: mf-4, base: ost-zorice-air, count: 6 }
+design: { note: "Agrarian plains; ground forces, short-range air defence" }

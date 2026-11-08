@@ -74,7 +74,10 @@ fn units_are_converted_to_si() {
 fn every_entry_has_a_design_note_and_catalogue_entries_an_archetype() {
     let set = content();
     for e in &set.entries {
-        if matches!(e.kind, Kind::Archetype | Kind::World | Kind::Realism) {
+        if matches!(
+            e.kind,
+            Kind::Archetype | Kind::World | Kind::Places | Kind::Realism
+        ) {
             continue;
         }
         let d = e

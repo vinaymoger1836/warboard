@@ -1,4 +1,4 @@
-"""Entry point: `python -m geodata build <pack> [--step …]`, `python -m geodata bases`."""
+"""Entry point: `python -m geodata build <pack> [--step …]`, `python -m geodata places|bases`."""
 
 from __future__ import annotations
 
@@ -7,7 +7,8 @@ import sys
 
 from .common import load_packs, log
 
-STEPS = ["basemap", "territory", "dem", "terrain", "manifest"]
+# Territory comes after terrain: borders grow over the terrain cells (doc 11 §2.2).
+STEPS = ["basemap", "dem", "terrain", "territory", "manifest"]
 
 
 def main(argv: list[str]) -> int:
@@ -16,10 +17,16 @@ def main(argv: list[str]) -> int:
     b = sub.add_parser("build", help="build a region pack into build/packs/<pack>/")
     b.add_argument("pack")
     b.add_argument("--step", choices=STEPS, action="append", help="run only these steps (repeatable)")
-    sub.add_parser("bases", help="import OurAirports + curated ports into content/bases/")
+    sub.add_parser("places", help="propose cities and nation labels into content/world/places.yaml")
+    sub.add_parser("bases", help="propose air and naval bases per nation into content/bases/")
     sub.add_parser("catalog", help="write build/packs/index.json from the built manifests")
     args = parser.parse_args(argv)
 
+    if args.cmd == "places":
+        from . import places
+
+        places.build()
+        return 0
     if args.cmd == "bases":
         from . import bases
 

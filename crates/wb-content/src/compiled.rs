@@ -18,7 +18,7 @@ use crate::source::system::{ComponentRole, DeployAs};
 use crate::source::weapon::{
     AltitudeEnvelope, Calibration, CoastTau, Midcourse, ProfileKind, Warhead, WeaponCategory,
 };
-use crate::source::world::{BaseType, FlagPattern, LaunchDoctrine};
+use crate::source::world::{BaseType, FlagPattern, LaunchDoctrine, PlaceKind};
 use crate::source::{
     AarSystem, Band, CountermeasureType, Domain, Emcon, EwEffect, Seeker, TargetClass,
 };
@@ -58,6 +58,8 @@ index_type! {
 pub struct ContentDb {
     pub strings: Vec<String>,
     pub nations: Vec<Nation>,
+    /// Map labels of every world in the pack (doc 11 §2.4), in file order.
+    pub places: Vec<Place>,
     pub platforms: Vec<Platform>,
     pub systems: Vec<System>,
     pub sensors: Vec<Sensor>,
@@ -102,6 +104,16 @@ pub struct Nation {
     pub doctrine: DoctrineIx,
     pub datalinks: Vec<DatalinkIx>,
     pub design: Design,
+}
+
+/// A map label (doc 11 §2.4). Geography only; never a unit or a contact.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Place {
+    pub name: StrId,
+    pub kind: PlaceKind,
+    pub nation: Option<NationIx>,
+    pub lat_rad: f64,
+    pub lon_rad: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

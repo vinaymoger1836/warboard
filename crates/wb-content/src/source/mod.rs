@@ -24,7 +24,7 @@ pub use system::{Loadout, System};
 pub use weapon::{Weapon, WeaponCategory};
 pub use world::{
     Archetype, Base, CellOverride, Doctrine, Flag, FlagPattern, Inventory, Nation, NationSeed,
-    World,
+    Place, PlaceKind, Places, World,
 };
 
 use common::{source_enum, source_type};
@@ -36,6 +36,7 @@ source_enum! {
     pub enum Kind {
         Nation,
         World,
+        Places,
         Archetype,
         Platform,
         System,
@@ -53,9 +54,10 @@ source_enum! {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 15] = [
+    pub const ALL: [Kind; 16] = [
         Kind::Nation,
         Kind::World,
+        Kind::Places,
         Kind::Archetype,
         Kind::Platform,
         Kind::System,
@@ -75,6 +77,7 @@ impl Kind {
         match self {
             Kind::Nation => "nation",
             Kind::World => "world",
+            Kind::Places => "places",
             Kind::Archetype => "archetype",
             Kind::Platform => "platform",
             Kind::System => "system",
@@ -95,7 +98,8 @@ impl Kind {
     pub fn folder(self) -> &'static str {
         match self {
             Kind::Nation => "nations",
-            Kind::World => "world",
+            // Worlds and their labels share a folder (doc 11 §2.2, §2.4).
+            Kind::World | Kind::Places => "world",
             Kind::Archetype => "archetypes",
             Kind::Platform => "platforms",
             Kind::System => "systems",
@@ -112,6 +116,8 @@ impl Kind {
         }
     }
 
+    /// The first kind stored in `folder`; [`Kind::folder`] may map several
+    /// kinds to one folder.
     pub fn from_folder(folder: &str) -> Option<Kind> {
         Kind::ALL.into_iter().find(|k| k.folder() == folder)
     }
@@ -152,6 +158,7 @@ source_type! {
 pub enum Entry {
     Nation(Nation),
     World(World),
+    Places(Places),
     Archetype(Archetype),
     Platform(Platform),
     System(System),
@@ -169,12 +176,12 @@ pub enum Entry {
 }
 
 impl Entry {
-    /// The entry's design note; none for archetypes, worlds and (optionally)
+    /// The entry's design note; none for archetypes, worlds, places and (optionally)
     /// realism profiles.
     pub fn design(&self) -> Option<&Design> {
         match self {
             Entry::Nation(e) => Some(&e.design),
-            Entry::World(_) | Entry::Archetype(_) => None,
+            Entry::World(_) | Entry::Places(_) | Entry::Archetype(_) => None,
             Entry::Platform(e) => Some(&e.design),
             Entry::System(e) => Some(&e.design),
             Entry::Sensor(e) => Some(&e.design),

@@ -1,9 +1,10 @@
-"""H3 terrain bake (doc 05 §3, ADR-012): class, mean elevation, slope, flags and country
+"""H3 terrain bake (doc 05 §3, ADR-012): class, mean elevation, slope, flags and nation
 per cell, written as `terrain-<pack>.wbh3`.
 
 - Land cover: ESA WorldCover pixel counts per cell, read at a coarse COG overview.
 - Relief: mean elevation, mean slope and elevation spread per cell from the pack's DEM.
-- Country and border flag: from the territory step.
+- Nation and border flag: added by the territory step, which grows the borders from
+  these cells (doc 11 §2.2) and then calls `write`.
 
 Thresholds come from geodata/packs.yaml. Results per source tile are cached in
 build/geodata/work/<pack>/terrain/, so an interrupted run resumes.
@@ -192,9 +193,6 @@ def build(pack: Pack) -> None:
     res = int(t["h3_res"])
     w, s, e, n = pack.extent
 
-    terr = np.load(pack.work / "territory_cells.npz")
-    codes = json.loads((pack.work / "territory.json").read_text(encoding="utf-8"))["codes"]
-
     tiles = [x for x in wc_tiles() if x[1] + 3 > s - 1 and x[1] < n + 1 and x[2] + 3 > w - 1 and x[2] < e + 1]
     log(f"terrain: {len(tiles)} WorldCover tiles at overview {t['worldcover_overview']} on {jobs()} processes")
     with pool() as workers:
@@ -222,10 +220,11 @@ def build(pack: Pack) -> None:
         parts = [p for p in workers.imap(_dem_job, dem_tiles, chunksize=4) if p is not None]
     dem_cells, sums = _merge_sums(parts) if parts else (np.zeros(0, np.uint64), np.zeros((0, 4)))
 
-    # Cells to store: every territory or border cell, and every cell with land pixels.
+    # Cells to store: every cell with land pixels. The territory step adds the sea
+    # cells inside territorial belts.
     land_px = counts[:, 1:].sum(axis=1) - counts[:, WC_COL[80]]
-    cells = np.unique(np.concatenate([terr["cells"], terr["border"], wc_cells[land_px > 0]]))
-    log(f"terrain: {len(cells):,} cells to store")
+    cells = wc_cells[land_px > 0]
+    log(f"terrain: {len(cells):,} cells with land")
 
     def pick(src_cells: np.ndarray, src: np.ndarray, fill) -> np.ndarray:
         """Rows of `src` for `cells` (src_cells sorted); `fill` where a cell is absent."""
@@ -246,14 +245,37 @@ def build(pack: Pack) -> None:
     lat = np.array([h3.cell_to_latlng(int(c))[0] for c in cells])
 
     cls, flags = classify(cnt, lat, slope, rough, t)
-    border = np.isin(cells, terr["border"])
-    flags |= np.where(border, formats.FLAG_BORDER, 0).astype(np.uint8)
-    country = pick(terr["cells"], terr["owners"], 0).astype(np.uint16)
     elev = np.clip(np.round(mean), -32000, 32000).astype(np.int16)
     slope_u8 = np.clip(np.round(slope * 2), 0, 255).astype(np.uint8)
-
-    out = pack.out / f"terrain-{pack.id}.wbh3"
-    formats.write_h3(out, res, codes, cells, cls, elev, slope_u8, flags, country)
+    np.savez(pack.work / "terrain_cells.npz", cells=cells, cls=cls, elev=elev, slope=slope_u8, flags=flags)
     hist = {k: int((cls == v).sum()) for k, v in formats.CLASS.items()}
-    log(f"terrain: wrote {out.name} ({out.stat().st_size:,} bytes); classes {hist}")
+    log(f"terrain: {len(cells):,} cells; classes {hist}")
     (pack.work / "terrain_classes.json").write_text(json.dumps(hist, indent=1), encoding="utf-8")
+
+
+def write(pack: Pack, codes: list[str], terr_cells: np.ndarray, owners: np.ndarray, border: np.ndarray) -> None:
+    """`terrain-<pack>.wbh3` from the terrain step's cells, plus the territory: nation of
+    every territory cell (`owners` index into `codes`, 1-based) and the border flag.
+    Territory cells the terrain step did not store are open water."""
+    t = np.load(pack.work / "terrain_cells.npz")
+    cells = np.unique(np.concatenate([t["cells"], terr_cells, border]).astype(np.uint64))
+
+    def pick(src_cells: np.ndarray, src: np.ndarray, fill) -> np.ndarray:
+        out = np.full(len(cells), fill, dtype=src.dtype)
+        if len(src_cells) == 0:
+            return out
+        pos = np.minimum(np.searchsorted(src_cells, cells), len(src_cells) - 1)
+        hit = src_cells[pos] == cells
+        out[hit] = src[pos[hit]]
+        return out
+
+    cls = pick(t["cells"], t["cls"], np.uint8(formats.CLASS["water"]))
+    elev = pick(t["cells"], t["elev"], np.int16(0))
+    slope = pick(t["cells"], t["slope"], np.uint8(0))
+    flags = pick(t["cells"], t["flags"], np.uint8(0))
+    flags = flags | np.where(np.isin(cells, border), formats.FLAG_BORDER, 0).astype(np.uint8)
+    country = pick(terr_cells, owners.astype(np.uint16), np.uint16(0))
+    out = pack.out / f"terrain-{pack.id}.wbh3"
+    res = int(pack.cfg["terrain"]["h3_res"])
+    formats.write_h3(out, res, codes, cells, cls, elev, slope, flags, country)
+    log(f"terrain: wrote {out.name} ({out.stat().st_size:,} bytes, {len(cells):,} cells)")
