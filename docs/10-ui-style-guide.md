@@ -149,6 +149,7 @@ At low zoom, groups collapse into one icon with the count in the label. Labels a
 - **Range rings** for the selected unit, all dashed 2 px: sensor `ring.sensor`, engagement `ring.engage`, combat radius `ring.radius` (1.5 px). The combat radius ring carries a label with a small purple dot icon: `<Base> Combat Radius (1390 km)`.
 - **Threat rings** of identified enemy SAMs: dashed `ring.threat`, label `(est.)`.
 - Rings are true geodesic circles (a 1,390 km ring is not a screen circle on Mercator).
+- **Ring tooltip:** resting the cursor on a ring, ellipse, bearing strobe or ground track shows what it is and its size (`Max engagement range: 130 km · AR-7`), in the toast style (`toast.bg`, `toast.text`, 1 px `panel.border`, radius 6 px, 12 px). Units and contacts under the cursor take precedence.
 
 ## 7. Unit card (from 05)
 
@@ -176,6 +177,7 @@ Floating, bottom right, width `min(470px, 100vw − 32px)`, `panel.bg`, 1 px `pa
 - Status colours: ON STATION `state.station`, PATROL / TRANSIT `text.primary`, RTB `state.warn`, ENGAGING `weapon.enemy`, LANDED / TURNAROUND `text.secondary`.
 - Fuel colour: ≥ 50% `state.ok`, 25–50% `state.warn`, < 25% or bingo `state.bad`.
 - Buttons by unit type, two per row: aircraft `ORDER RTB`, `RETASK PATROL`, `STRIKE`, `HOLD FIRE`; ships `MOVE`, `PATROL`, `STRIKE`, `EMCON`; sites `EMCON`, `HOLD FIRE`. Button text: JetBrains Mono 12 px, letter-spacing 0.12em.
+- **Weapons section:** per weapon the rounds left, then muted spec lines: class, range, top speed and flight profile, guidance and seeker, warhead, CEP, targets and altitudes (own weapons only).
 - Contact cards use the same frame, title `<label> (our estimate)` when estimated, plus classification level, last update age, uncertainty (± km) and sources.
 
 ## 8. Other panels

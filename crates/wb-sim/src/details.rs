@@ -5,7 +5,8 @@
 use bevy_ecs::prelude::*;
 use serde::Serialize;
 use wb_content::compiled::WeaponIx;
-use wb_content::source::{Domain, SensorType, StationKind, WeaponCategory};
+use wb_content::source::weapon::{Midcourse, ProfileKind, Warhead};
+use wb_content::source::{Domain, Seeker, SensorType, StationKind, WeaponCategory};
 use wb_core::UnitId;
 use wb_core::geo::LatLon;
 use wb_core::units::rad_to_deg;
@@ -186,6 +187,25 @@ pub struct WeaponRounds {
     /// sensors must hold the target.
     pub engage_on_remote: bool,
     pub count: u32,
+    /// Archetype class name, e.g. `Medium-range radar air-to-air missile`.
+    pub class_name: Option<String>,
+    /// Flight model (doc 02 §10).
+    pub profile: ProfileKind,
+    /// Top speed.
+    pub max_speed_mach: f64,
+    pub midcourse: Vec<Midcourse>,
+    pub seeker: Seeker,
+    pub seeker_range_m: Option<f64>,
+    pub warhead_kg: f64,
+    pub warhead: Option<Warhead>,
+    /// Circular error probable of satellite-navigation and unguided weapons.
+    pub cep_m: Option<f64>,
+    /// Altitude band of the targets it can reach, if limited.
+    pub min_alt_m: Option<f64>,
+    pub max_alt_m: Option<f64>,
+    /// Cruise and terminal altitudes of air-breathing and sea-skimming weapons.
+    pub cruise_alt_m: Option<f64>,
+    pub terminal_alt_m: Option<f64>,
 }
 
 /// One weapon on one station of the lead (doc 03 §6).
@@ -493,6 +513,19 @@ fn group(world: &World, side: u8, gid: UnitId, ge: Entity) -> Option<GroupDetail
                 max_range_m: c.profile.max_range_m,
                 engage_on_remote: c.engage_on_remote,
                 count: *n,
+                class_name: c.design.class_name.map(|s| db.str(s).to_owned()),
+                profile: c.profile.kind,
+                max_speed_mach: c.profile.max_speed_mach,
+                midcourse: c.guidance.midcourse.clone(),
+                seeker: c.guidance.terminal,
+                seeker_range_m: c.guidance.seeker_range_m,
+                warhead_kg: c.warhead_kg,
+                warhead: c.warhead,
+                cep_m: c.cep_m,
+                min_alt_m: c.envelope.as_ref().map(|e| e.min_alt_m),
+                max_alt_m: c.envelope.as_ref().map(|e| e.max_alt_m),
+                cruise_alt_m: c.profile.cruise_alt_m,
+                terminal_alt_m: c.profile.terminal_alt_m,
             }
         })
         .collect();

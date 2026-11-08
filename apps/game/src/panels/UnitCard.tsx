@@ -20,7 +20,7 @@ import type { EngineBridge } from '../bridge';
 import { patrolRadiusKm, sendCommand, sendTask } from '../orders';
 import { distance } from '../map2d/units/geo';
 import { type LonLat, type StrikeAim, ui, useUi } from '../store';
-import { duration, fuelColour, statusColour } from './format';
+import { duration, fuelColour, statusColour, weaponSpecLines } from './format';
 import { CloseGlyph, EngageGlyph, RadiusGlyph, SensorGlyph } from './glyphs';
 
 const CATEGORY_SYMBOL: Record<string, SymbolName> = {
@@ -758,6 +758,11 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
                     <dd>
                       {w.count}
                       {full > 0 ? ` of ${full}` : ''} {air ? 'per aircraft' : d.count > 1 ? 'per ship' : 'left'}
+                    </dd>
+                    <dd className="weapon-spec">
+                      {weaponSpecLines(w).map((line) => (
+                        <span key={line}>{line}</span>
+                      ))}
                     </dd>
                   </span>
                 );

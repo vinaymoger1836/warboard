@@ -752,6 +752,33 @@ button:focus-visible {
   display: contents;
 }
 
+/* Spec lines under a weapon in the unit card's Weapons section. */
+.section-body dd.weapon-spec {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: -2px 0 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* Ring tooltip (doc 10 §6): what the ring under the cursor is. */
+.map-tip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  max-width: 320px;
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .card-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;

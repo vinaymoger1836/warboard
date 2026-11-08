@@ -131,7 +131,11 @@ interface Path {
   color: [number, number, number, number];
   width: number;
   dashed: boolean;
+  /** What the line is, shown when the cursor rests on it (doc 10 §6). */
+  tip?: string;
 }
+
+const km = (m: number) => `${Math.round(m / 1000).toLocaleString('en-GB')} km`;
 
 interface TextItem {
   position: LonLat;
@@ -157,6 +161,10 @@ export class UnitLayers {
   private contacts: DrawnContact[] = [];
   private tracks = new Map<number, { paths: LonLat[][]; at: number; pending: boolean }>();
   private readonly weapons = new WeaponLayers();
+  /** Ring tooltip (doc 10 §6): a DOM element over the map, not a deck.gl widget. */
+  private readonly tip = document.createElement('div');
+  private hoverAt: [number, number] | null = null;
+  private hoverQueued = false;
   /** Last non-zero achieved speed (sim s per real s), for the effects' real-time scale. */
   private effectSpeed = 1;
   private readonly offs: (() => void)[] = [];
@@ -178,7 +186,23 @@ export class UnitLayers {
     on('contextmenu', (e) => this.contextMenu(e));
     on('mousemove', (e) => {
       this.cursor = [e.lngLat.lng, e.lngLat.lat];
+      this.hoverAt = [e.point.x, e.point.y];
+      if (!this.hoverQueued) {
+        this.hoverQueued = true;
+        requestAnimationFrame(() => {
+          this.hoverQueued = false;
+          this.hover();
+        });
+      }
     });
+    on('mouseout', () => {
+      this.hoverAt = null;
+      this.tip.style.display = 'none';
+    });
+    this.tip.className = 'map-tip';
+    this.tip.style.display = 'none';
+    map.getContainer().appendChild(this.tip);
+    this.offs.push(() => this.tip.remove());
     const key = (e: KeyboardEvent) => this.key(e);
     window.addEventListener('keydown', key);
     this.offs.push(() => window.removeEventListener('keydown', key));
@@ -210,6 +234,24 @@ export class UnitLayers {
   }
 
   // ---- Interaction --------------------------------------------------------------------
+
+  /** Shows what the ring or line under the cursor is; units and contacts take precedence. */
+  private hover(): void {
+    const at = this.hoverAt;
+    let text = '';
+    if (at && !ui.get().tool && !this.pick(at[0], at[1])) {
+      const info = this.hub.deck.pickObject({ x: at[0], y: at[1], radius: 5, layerIds: ['unit-paths', 'contact-paths'] }) as PickingInfo<Path> | null;
+      text = info?.object?.tip ?? '';
+    }
+    if (!text || !at) {
+      this.tip.style.display = 'none';
+      return;
+    }
+    this.tip.textContent = text;
+    this.tip.style.display = 'block';
+    this.tip.style.left = `${at[0] + 14}px`;
+    this.tip.style.top = `${at[1] + 14}px`;
+  }
 
   private pick(x: number, y: number): MapPick | null {
     const info = this.hub.deck.pickObject({
@@ -447,7 +489,13 @@ export class UnitLayers {
       const side = IDENTITY_SIDE[cv.identity[i] ?? 0] ?? 'unknown';
       const colour = c(side === 'enemy' ? 'side.enemy' : side === 'neutral' ? 'side.neutral' : 'side.unknown', 0.8);
       if (flags & CFLAG.BEARING_ONLY) {
-        ellipses.push({ path: [p, destination(p, cv.headingDeg[i] ?? 0, cv.ellipseA[i] ?? 0)], color: colour, width: 1.5, dashed: true });
+        ellipses.push({
+          path: [p, destination(p, cv.headingDeg[i] ?? 0, cv.ellipseA[i] ?? 0)],
+          color: colour,
+          width: 1.5,
+          dashed: true,
+          tip: 'Bearing to an emitter (passive detection, no range yet)',
+        });
         continue;
       }
       const stale = (flags & CFLAG.STALE) !== 0;
@@ -488,11 +536,24 @@ export class UnitLayers {
       const b = cv.ellipseB[i] ?? 0;
       if (estimated && a > 50) {
         const tint = isWeapon ? c('weapon.enemy', 0.8) : colour;
-        ellipses.push({ path: ellipse(pos, a, Math.max(b, 50), cv.ellipseRotDeg[i] ?? 0), color: tint, width: 1, dashed: true });
+        ellipses.push({
+          path: ellipse(pos, a, Math.max(b, 50), cv.ellipseRotDeg[i] ?? 0),
+          color: tint,
+          width: 1,
+          dashed: true,
+          tip: `Position uncertainty (our estimate): ±${km(a)}`,
+        });
       }
       const threat = cv.threatM[i] ?? 0;
       if (state.threatRings && threat > 0) {
-        ellipses.push({ path: geodesicCircle(pos, threat), color: c('ring.threat'), width: 1.5, dashed: true });
+        const what = strings.contactType(id);
+        ellipses.push({
+          path: geodesicCircle(pos, threat),
+          color: c('ring.threat'),
+          width: 1.5,
+          dashed: true,
+          tip: `Threat range (our estimate): ${km(threat)}${what ? ` · ${what}` : ''}`,
+        });
         threatLabels.push({ position: destination(pos, 0, threat), text: '(est.)', color: c('ring.threat') });
       }
     }
@@ -510,11 +571,18 @@ export class UnitLayers {
         if (d.base) continue;
         const i = view.index.get(d.id) ?? rowOf.get(d.id);
         const r = i === undefined ? 0 : (u.sensorKm[i] ?? 0) * 1000;
-        if (r > 0) ellipses.push({ path: geodesicCircle(d.position, r), color: c('ring.sensor', 0.45), width: 1, dashed: true });
+        if (r > 0)
+          ellipses.push({
+            path: geodesicCircle(d.position, r),
+            color: c('ring.sensor', 0.45),
+            width: 1,
+            dashed: true,
+            tip: `Sensor horizon: ${km(r)} · ${strings.name(d.id)}`,
+          });
       }
     }
     const tracks: Path[] = satellites.flatMap((s) =>
-      this.track(s.id).map((path) => ({ path, color: c('sat.track'), width: 1.5, dashed: true })),
+      this.track(s.id).map((path) => ({ path, color: c('sat.track'), width: 1.5, dashed: true, tip: `Ground track: ${strings.name(s.id)}` })),
     );
 
     const selected = drawn.find((d) => d.id === state.selected) ?? null;
@@ -561,6 +629,7 @@ export class UnitLayers {
         dashJustified: true,
         extensions: [dash],
         wrapLongitude: true,
+        pickable: true,
       }),
       new TextLayer<TextItem>({
         id: 'threat-labels',
@@ -695,6 +764,7 @@ export class UnitLayers {
         dashJustified: true,
         extensions: [dash],
         wrapLongitude: true,
+        pickable: true,
       }),
       new ScatterplotLayer<{ position: LonLat }>({
         id: 'waypoints',
@@ -819,11 +889,33 @@ export class UnitLayers {
   ): void {
     const { rings } = ui.get();
     const r = d.ranges;
-    if (rings.sensor && r.sensor_m) paths.push({ path: geodesicCircle(pos, r.sensor_m), color: c('ring.sensor'), width: 2, dashed: true });
-    if (rings.engage && r.engage_m) paths.push({ path: geodesicCircle(pos, r.engage_m), color: c('ring.engage'), width: 2, dashed: true });
+    if (rings.sensor && r.sensor_m)
+      paths.push({
+        path: geodesicCircle(pos, r.sensor_m),
+        color: c('ring.sensor'),
+        width: 2,
+        dashed: true,
+        tip: `Radar / sensor horizon: ${km(r.sensor_m)} · how far ${d.name} can see a typical target`,
+      });
+    if (rings.engage && r.engage_m) {
+      const longest = d.weapons.find((w) => w.max_range_m === r.engage_m);
+      paths.push({
+        path: geodesicCircle(pos, r.engage_m),
+        color: c('ring.engage'),
+        width: 2,
+        dashed: true,
+        tip: `Max engagement range: ${km(r.engage_m)}${longest ? ` · ${longest.name}` : ''}`,
+      });
+    }
     if (rings.radius && r.combat_radius_m && d.home_base) {
       const home: LonLat = [d.home_base.lon_deg, d.home_base.lat_deg];
-      paths.push({ path: geodesicCircle(home, r.combat_radius_m), color: c('ring.radius'), width: 1.5, dashed: true });
+      paths.push({
+        path: geodesicCircle(home, r.combat_radius_m),
+        color: c('ring.radius'),
+        width: 1.5,
+        dashed: true,
+        tip: `Combat radius: ${km(r.combat_radius_m)} from ${d.home_base.name} · out and back on current fuel rules`,
+      });
       texts.push({
         position: destination(home, 315, r.combat_radius_m * 0.55),
         text: `${d.home_base.name} Combat Radius (${Math.round(r.combat_radius_m / 1000)} km)`,
@@ -839,13 +931,20 @@ export class UnitLayers {
         color: c('ring.sensor', 0.6),
         width: 1.5,
         dashed: true,
+        tip: `Jammer coverage: ${km(d.jammer.coverage_km * 1000)} · enemy radars inside are affected`,
       });
     }
 
     const t = d.task;
     const wps = t.waypoints as LonLat[];
     if ((t.kind === 'patrol_circle' || t.kind === 'jam') && wps[0] && t.radius_m) {
-      paths.push({ path: geodesicCircle(wps[0], t.radius_m), color: t.kind === 'jam' ? c('ring.sensor', 0.8) : c('waypoint'), width: 1.5, dashed: true });
+      paths.push({
+        path: geodesicCircle(wps[0], t.radius_m),
+        color: t.kind === 'jam' ? c('ring.sensor', 0.8) : c('waypoint'),
+        width: 1.5,
+        dashed: true,
+        tip: `${t.kind === 'jam' ? 'Jamming orbit' : 'Patrol circle'}: ${km(t.radius_m)} radius`,
+      });
       return;
     }
     if (t.kind === 'suppress' && wps[0]) {
@@ -891,4 +990,5 @@ interface HandlerMap {
   dblclick: (e: MapMouseEvent) => void;
   contextmenu: (e: MapMouseEvent) => void;
   mousemove: (e: MapMouseEvent) => void;
+  mouseout: (e: MapMouseEvent) => void;
 }

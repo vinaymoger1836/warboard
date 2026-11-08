@@ -1,5 +1,5 @@
 // Text helpers shared by the panels: clock strings, event lines, state colours (doc 10 §7–8).
-import type { Event, StringTable } from '@warboard/protocol';
+import type { Event, StringTable, WeaponRounds } from '@warboard/protocol';
 import { cssVar } from '@warboard/symbols';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -321,4 +321,58 @@ export function subjectOf(e: Event): number | null {
   if ('BaseComponentDamaged' in k) return k.BaseComponentDamaged.base;
   if ('BaseComponentRepaired' in k) return k.BaseComponentRepaired.base;
   return null;
+}
+
+const SEEKER: Record<string, string> = {
+  active_radar: 'active radar',
+  semi_active_radar: 'semi-active radar',
+  ir: 'infrared',
+  imaging_ir: 'imaging infrared',
+  anti_radiation: 'emitter homing',
+  satnav_ins: 'satellite navigation / INS',
+  laser: 'laser',
+  command: 'command',
+  none: 'unguided',
+};
+const MIDCOURSE: Record<string, string> = {
+  inertial: 'inertial',
+  datalink: 'data link',
+  satnav: 'satellite navigation',
+  terrain_matching: 'terrain matching',
+  command: 'command',
+};
+const PROFILE: Record<string, string> = { rocket: 'rocket', air_breathing: 'air-breathing', glide: 'glide', ballistic: 'ballistic' };
+
+function distance(m: number): string {
+  if (m < 1000) return `${Math.round(m)} m`;
+  const k = m / 1000;
+  return `${k < 10 ? k.toFixed(1).replace(/\.0$/, '') : Math.round(k).toLocaleString('en-GB')} km`;
+}
+
+/** Spec lines of one of our own weapons for the unit card (game stats, doc 04 §4). */
+export function weaponSpecLines(w: WeaponRounds): string[] {
+  const lines: string[] = [];
+  if (w.class_name) lines.push(w.class_name);
+  lines.push(
+    [
+      `Range ${w.min_range_m > 0 ? `${distance(w.min_range_m)}–` : ''}${distance(w.max_range_m)}`,
+      `Mach ${w.max_speed_mach.toFixed(1)}`,
+      PROFILE[w.profile] ?? w.profile,
+    ].join(' · '),
+  );
+  const mid = w.midcourse.map((m) => MIDCOURSE[m] ?? m);
+  const seeker = SEEKER[w.seeker] ?? w.seeker;
+  const guidance = mid.length > 0 ? `${mid.join(' + ')} → ${seeker}` : seeker;
+  lines.push(`Guidance ${guidance}${w.seeker_range_m ? `, seeker ${distance(w.seeker_range_m)}` : ''}`);
+  const strike: string[] = [];
+  if (w.warhead_kg > 0) strike.push(`Warhead ${Math.round(w.warhead_kg)} kg${w.warhead ? ` ${w.warhead.replace(/_/g, '-')}` : ''}`);
+  if (w.cep_m != null) strike.push(`CEP ${distance(w.cep_m)}`);
+  if (w.targets.length > 0) strike.push(`Targets ${w.targets.join(', ')}`);
+  if (strike.length > 0) lines.push(strike.join(' · '));
+  const alt: string[] = [];
+  if (w.min_alt_m != null && w.max_alt_m != null) alt.push(`Target altitude ${distance(w.min_alt_m)}–${distance(w.max_alt_m)}`);
+  if (w.cruise_alt_m != null) alt.push(`cruise ${distance(w.cruise_alt_m)}`);
+  if (w.terminal_alt_m != null) alt.push(`terminal ${distance(w.terminal_alt_m)}`);
+  if (alt.length > 0) lines.push(alt.join(' · '));
+  return lines;
 }
