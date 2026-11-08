@@ -115,12 +115,14 @@ flowchart LR
   TER --> H3
   H3 --> PROP[city and base proposals]
   PROP --> CW[content/world/places.yaml\ncontent/bases/*.yaml]
-  CW --> PL[places-*.pmtiles]
-  BM & DEM & H3 & TER & PL --> MAN[manifest.json + BLAKE3]
+  CW --> CP[content pack: map label layer]
+  BM & DEM & H3 & TER --> MAN[manifest.json + BLAKE3]
 ```
 
 - Copernicus DEM and WorldCover are Cloud-Optimised GeoTIFFs: read them through GDAL's `/vsis3/` or `/vsicurl/` and use **overview levels** so the build never downloads full-resolution tiles it does not need.
 - `pmtiles extract` cuts the region and zoom range from the Protomaps build instead of building tiles from the whole planet.
 - Tools: GDAL 3.13.3 with its Python 3.14 bindings, `h3`, `shapely`, `zstandard`, `blake3` (Python) and the `pmtiles` CLI, all pinned in `geodata/Dockerfile`; `bash geodata/run.sh build <pack>` runs a pack build in that image. All free. (The phase prompt said Python 3.12; the pinned GDAL image ships 3.14.)
 - The P2 notes on Marine Regions downloads and derived territorial seas no longer apply: since PF every belt is computed from the fictional borders (doc 11 §2.3).
+- Step order since PF: basemap → dem → terrain → territory → manifest. The terrain step stores its cells in the work folder; the territory step grows the borders over them (`geodata/borders.py`), writes `territory-*.pmtiles` (layers `territory` and `borders`, the latter with `kind: land | sea`) and `territory-*.bin`, then finishes `terrain-*.wbh3` with the nation field. The theatre pack (`europe`) grows its world; the `world` pack reuses the theatre's polygons, so build `europe` first (ADR-042).
+- `geodata places` and `geodata bases` read the built theatre and propose labels and bases into content; labels reach the map through the content pack, not a tile set, so renaming a place needs no pack rebuild.
 - Each pack's manifest records source versions and download dates.

@@ -32,11 +32,11 @@ Eight nations around the sea. Names are data (`content/nations/`) and can be cha
 | `MRV` | Morvel | Small and wealthy; few but advanced systems, stealth fighters |
 | `CND` | Cindria | Archipelago state; corvettes, coastal defence, drones |
 
-There are **no fixed blocs**. War setup builds coalitions from any nations. Two suggested quick starts exist only for convenience (`content/scenarios/quickstart-*.yaml`). Neither should mirror a real alliance.
+There are **no fixed blocs**. War setup builds coalitions from any nations. Two suggested quick starts exist only for convenience (`scenarios/quickstart-north-*.yaml`; the content loader takes only entry kinds, so scenarios stay in `scenarios/`). Neither should mirror a real alliance.
 
 ### 2.2 Borders
 
-Borders are **generated, not traced**. `content/world/theatre-north.yaml` lists one seed point and a weight per nation. The geodata pipeline grows regions from the seeds over the H3 land cells. Mountains, wide rivers and sea cost more to cross, so borders settle along terrain features. Regions are then smoothed, small enclaves removed and fixed with a seed. Hand-edits go in `overrides` as cell lists. The result must not follow real borders: the pipeline reports the share of border length within 5 km of a Natural Earth admin-0 line, and the check fails above 15%. Natural Earth is used only for that check and is not shipped.
+Borders are **generated, not traced**. `content/world/theatre-north.yaml` lists one seed point and a weight per nation. The geodata pipeline grows regions from the seeds over the H3 land cells. Mountains, wide rivers and sea cost more to cross, so borders settle along terrain features. Regions are then smoothed, small enclaves removed and fixed with a seed. The world also sets a growth window (`extent`) and a reach (`reach_km`, in km of open flat land for weight 1); land outside the window or beyond every nation's reach is unclaimed. Noise from the world `seed` varies the crossing costs, so borders on open plains do not come out straight. Hand-edits go in `border_overrides` as cell lists (`overrides` is the meta key of doc 04 §3.6). The result must not follow real borders: the pipeline reports the share of border length within 5 km of a Natural Earth admin-0 line, and the check fails above 15%. Natural Earth is used only for that check and is not shipped.
 
 Islands go to the nearest region on the same side of the sea unless overridden. Land outside the eight nations is *unclaimed* (neutral, no forces).
 
@@ -47,11 +47,11 @@ The 12 nm sea belt is computed in the pipeline: sea cells within 22.2 km of a na
 ### 2.4 Place names
 
 - **Hidden:** all real labels from the basemap (countries, cities, seas, regions, roads). The style keeps only physical layers: land, water, land cover, coastline.
-- **Added:** a fictional label layer from `content/world/places.yaml`: nation names, capitals and major cities (placed on large urban land-cover areas), seas, gulfs, straits and island groups. The pipeline proposes city locations from urban land cover; names come from a word list per nation, deterministic from a seed and editable.
+- **Added:** a fictional label layer from `content/world/places.yaml`: nation names, capitals and major cities (placed on large urban land-cover areas), seas, gulfs, straits and island groups. The pipeline proposes city locations from urban land cover; names come from a word list per nation (`geodata/names.yaml`), deterministic from the world seed and editable. `places.yaml` is one entry of kind `places`; entries the pipeline wrote carry `generated: true` and are replaced on a re-run, the rest are kept. The labels travel in the content pack, so a rename needs no pack rebuild (ADR-042).
 
 ### 2.5 Bases
 
-Bases are authored per nation in `content/bases/<nation>.yaml` (no OurAirports, no real ports).
+Bases are authored per nation in `content/bases/<nation>/`, one base per file (no OurAirports, no real ports).
 
 | Base | Proposed by the pipeline where | Then |
 |---|---|---|
@@ -108,7 +108,7 @@ Done in phase **PF** (doc 09) before P6a:
 | Content | Remove real countries, systems, inventories, bases and data links; add nations, world seeds, places, the starter catalogue, archetypes and the denylist |
 | Packs | Rebuild territory and the H3 nation field from generated borders; computed 12 nm belts; basemap style without real labels plus the fictional label layer; remove OurAirports, Marine Regions and Natural Earth from the shipped build |
 | Satellites | Authored orbital elements replace CelesTrak TLEs (SGP4 unchanged) |
-| Placement rules | `real_airfield` and `real_port` become terrain rules (doc 03 §3) |
+| Placement rules | `real_airfield` and `real_port` become `preset`: air and naval bases match an authored base; other sites keep terrain rules (doc 03 §3, ADR-042) |
 | Golden scenarios | G1–G9 rebuilt on the fixtures of ADR-035 with the same bands |
 | Code and tests | No real names left; a CI step runs the content denylist over `content/`, `scenarios/`, `crates/`, `apps/` and `docs/` |
 | UI | Labels from nations and the catalogue; the reference screenshots are for the look only (doc 10) |

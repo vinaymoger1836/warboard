@@ -249,3 +249,20 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 - Pack schema 5 (nations and design notes in the pack).
 **Alternatives.** Upper-case nation ids (a second id rule and a case mapping to the pack codes); bands as errors (blocks deliberate outliers that the note explains).
 **Consequences.** + The schema matches the fictional setting and the content check guides balance. − Schema-4 packs are refused; `GroupDetails` and `SatelliteDetails` show the archetype's class name instead of a data confidence.
+
+## ADR-042 PF geodata: generated borders, places, bases and the denylist
+**Status — Proposed, 8 Nov 2026 (PF).** Implements doc 11 §2.2–§2.5 and §3.1; settles points the doc leaves open.
+**Context.** Doc 11 describes border growth, computed belts, a fictional label layer, base proposals and a denylist, but not where land stops being claimed, how the world pack gets its borders, how labels reach the map, how bases are filed, or how the denylist matches.
+**Decision.**
+- **Growth.** One priority queue for all nations over the theatre pack's H3 cells inside a window (`extent`); key = path cost ÷ weight, and a claimed cell grows only its owner, so regions stay connected. Step cost = length × mean terrain factor (open 1, forest 1.25, marsh 2, mountain 3.5, lake 4, sea 5) × seeded noise (three octaves, e^±0.8). A nation stops at `reach_km`; land nobody reaches is unclaimed. Then a majority filter, merging of pieces under 150 cells into their neighbour, and `border_overrides`.
+- **Belts.** Sea cells within 22.224 km of a coast take the owner of the nearest coast cell (unclaimed coasts included), which gives equidistance lines. Polygons are the cells' outlines, snapped and simplified as one coverage (0.035°), so neighbours share one edge; the 12 nm limit moves by at most about 2 km.
+- **Packs.** Terrain runs before territory. The theatre pack (`europe`) grows the borders; the `world` pack reuses its polygons. `territory-*.pmtiles` gains a `borders` layer (`kind: land | sea`). Pack version 2.0.0. The overlap check (≤ 15 % of land-border length within 5 km of a Natural Earth admin-0 line) fails the build; Theatre North measures 3.5 %.
+- **Places.** A `places` kind shares the `world/` folder with `world`. It compiles into the content pack (schema 6) and reaches the app through `map_labels` in wb-wasm, not through a tile set. Generated entries carry `generated: true`.
+- **Bases.** One base per file under `content/bases/<nation>/`, written by `geodata bases` with a first-line mark; removing the mark keeps an edit. Sizes are placeholders.
+- **Placement.** Air and naval bases are `preset` (ADR-041); `spawn_real_bases` became `spawn_preset_bases`.
+- **Denylist.** `content/denylist.txt`, one term per line, matched without regard to case as a whole word. `wb content check` applies it to every entry file; `wb content denylist` scans content, scenarios, crates, apps and docs in CI and the built bundle in `pages.yml`.
+- **Real-system wording.** The guidance value `gps` became `satnav` (and `gps_ins` → `satnav_ins`, `gps_jam_cep_factor` → `satnav_jam_cep_factor`).
+- **Reports.** Phase reports P1–P6b were rewritten without real names; the 19 screenshots that showed real names were deleted (git history keeps them).
+- **Quick starts** live in `scenarios/` (the content loader takes only entry kinds), not `content/scenarios/`.
+**Alternatives.** Voronoi by straight-line distance (borders ignore terrain); growing the world pack separately (two maps that disagree); labels as a tile set in the region pack (a rename needs a rebuild); one base file per nation (breaks one entry per file); a substring denylist (false hits inside words).
+**Consequences.** + Borders follow terrain and stay far from real ones; labels and bases are content. − Capitals and big cities sit on real large urban areas, as doc 11 asks, so their locations are recognisable. The world pack needs the theatre built first. Installed 1.x packs must update.

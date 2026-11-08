@@ -91,7 +91,7 @@ Pinned in `geodata/requirements.txt`; numpy and the GDAL bindings come with the 
 
 ## Geodata sources
 
-Pinned in `geodata/sources.lock.yaml`: Protomaps daily build 20261027 (basemap v4.15.2 schema), Natural Earth admin-0 1:10m 5.1.1, Marine Regions territorial seas v4 (2023) with internal and archipelagic waters, Copernicus DEM GLO-90 (AWS COG), ESA WorldCover 2021 v200, OurAirports snapshot of 28 Oct 2026.
+Pinned in `geodata/sources.lock.yaml`: Protomaps daily build 20261027 (basemap v4.15.2 schema), Copernicus DEM GLO-90 (AWS COG), ESA WorldCover 2021 v200, and Natural Earth admin-0 1:10m 5.1.1 (read only by the border overlap check, not in any pack). PF removed Marine Regions and OurAirports.
 
 ## GitHub Actions (pinned to commit SHA)
 
@@ -113,9 +113,9 @@ Runner image: `ubuntu-24.04`.
 
 | Artifact | Size |
 |---|---|
-| `wb_wasm_bg.wasm` (release, no wasm-opt) | P1: 968 KB (279 KB gzip). P2 with `wb-geo`, `h3o`, `ruzstd`, BLAKE3 hasher: 1,211,216 bytes (354,344 gzip). P3 with the engine (bevy_ecs world, content, saves): 2,066,441 bytes (575,295 gzip). P4 with sensors, pictures and SGP4: 2,657,338 bytes. P5 with weapons, endgame, damage and ROE: 3,421,497 bytes (901 KB gzip) |
-| `build/content.wbpack` | P1 seed set, 67 entries: 22,401 bytes. P2 with 312 imported bases, 379 entries: 85,086 bytes. P3, schema 2 (realism `movement`, `fuel`, `bases`): 86,607 bytes. P4, schema 3, 395 entries (10 sensors and 6 satellites added): 94,258 bytes. P5, schema 4, 397 entries (weapons, loadouts, countermeasures, realism `weapons`, `endgame`, `damage`, `roe`): 97,300 bytes |
-| App shell (`apps/game/dist`) | P2: main chunk 1.97 MB (557 KB gzip), MapLibre worker 519 KB, fonts 2.3 MB (glyph PBFs 2.1 MB). P3: main chunk 2.16 MB, plus the content pack (87 KB) and the WASM engine (2.07 MB) as assets. P4: main chunk 2.17 MB, content pack 94 KB, engine 2.66 MB. P5: main chunk 2.18 MB (611 KB gzip), content pack 97 KB, engine 3.42 MB |
+| `wb_wasm_bg.wasm` (release, no wasm-opt) | P1: 968 KB (279 KB gzip). P2 with `wb-geo`, `h3o`, `ruzstd`, BLAKE3 hasher: 1,211,216 bytes (354,344 gzip). P3 with the engine (bevy_ecs world, content, saves): 2,066,441 bytes (575,295 gzip). P4 with sensors, pictures and SGP4: 2,657,338 bytes. P5 with weapons, endgame, damage and ROE: 3,421,497 bytes (901 KB gzip). PF (places, `map_labels`): 3,625,278 bytes (935,972 gzip) |
+| `build/content.wbpack` | P1 seed set, 67 entries: 22,401 bytes. P2 with 312 imported bases, 379 entries: 85,086 bytes. P3, schema 2 (realism `movement`, `fuel`, `bases`): 86,607 bytes. P4, schema 3, 395 entries (10 sensors and 6 satellites added): 94,258 bytes. P5, schema 4, 397 entries (weapons, loadouts, countermeasures, realism `weapons`, `endgame`, `damage`, `roe`): 97,300 bytes. PF, schema 6, 188 entries (fictional catalogue, 45 bases, places, no real content): 27,067 bytes |
+| App shell (`apps/game/dist`) | P2: main chunk 1.97 MB (557 KB gzip), MapLibre worker 519 KB, fonts 2.3 MB (glyph PBFs 2.1 MB). P3: main chunk 2.16 MB, plus the content pack (87 KB) and the WASM engine (2.07 MB) as assets. P4: main chunk 2.17 MB, content pack 94 KB, engine 2.66 MB. P5: main chunk 2.18 MB (611 KB gzip), content pack 97 KB, engine 3.42 MB. PF: main chunk 2.20 MB |
 | Side view (`SideView` v1) | P3 benchmark, 2,000 platforms + 500 groups + 316 bases: 93,880 bytes per view. P5 (v3): `patrol-2000` 98,248 bytes, `sensors-2000` 55,288 bytes |
 | `.wbsave` | P3 `scenarios/save-load.yaml` at tick 900 (≈ 150 entities with all bases, events): 17,109 bytes. P4 demo war (removed in PF) at tick 1800, with contacts on both sides: 26,395 bytes |
 
@@ -123,13 +123,26 @@ Runner image: `ubuntu-24.04`.
 
 | Format | Version | Defined in |
 |---|---|---|
-| Content pack schema | 4 (P5: weapon flight, guidance, Pk and countermeasure fields; loadouts; realism `weapons`, `endgame` incl. `nominal_speed_fraction`, `countermeasures`, `damage`, `roe` incl. `territory_sigma`; P6b: radar `jam_resistance`, `ew_suite` modes with `jam_strength`, `coverage_km`, `sector_deg` and `effects`, weapon `seeker_resistance` and `nav_resistant`, realism `ew` constants; the legacy `eccm_db`, `seeker_eccm` and `j_db` are still read and migrated, number unchanged) | `crates/wb-content/src/pack.rs` |
+| Content pack schema | 6 (PF: schema 5 nations and design notes, ADR-041; schema 6 places, ADR-042; `gps` guidance renamed `satnav`). Before: 4 (P5: weapon flight, guidance, Pk and countermeasure fields; loadouts; realism `weapons`, `endgame` incl. `nominal_speed_fraction`, `countermeasures`, `damage`, `roe` incl. `territory_sigma`; P6b: radar `jam_resistance`, `ew_suite` modes with `jam_strength`, `coverage_km`, `sector_deg` and `effects`, weapon `seeker_resistance` and `nav_resistant`, realism `ew` constants; the legacy `eccm_db`, `seeker_eccm` and `j_db` are still read and migrated, number unchanged) | `crates/wb-content/src/pack.rs` |
 | State hash | 4 (P5: snapshot adds weapons in flight, magazines, health, ROE settings and requests, combat state; P6a: the effect struct changed, so P5 saves are refused, number unchanged; P6b: the unit record gains the jammer state (on or off, mode), so older saves are not expected to load, number unchanged) | `crates/wb-sim/src/snapshot.rs` |
 | `SideView` | 3 (P5: weapons section with shooter, target contact and tag; `RELATION`; weapon symbols 120–122; P6a: effects section filled and filtered by side, weapon contacts carry a weapon symbol, wire format unchanged; P6b: unit flag `JAMMING` and `JAMMED`, contact flag `JAMMED`, wire format unchanged) | `crates/wb-sim/src/view.rs`, doc 06 §3 |
 | `.wbsave` | 2 (after P6b: the snapshot changed in P5, P6a and P6b with the number left at 1, so old saves failed with a decode error; they are now refused as version 1) | `crates/wb-sim/src/save.rs`, doc 04 §7.1 |
 | IndexedDB `warboard` | 2 (P3: `saves` store) | `apps/game/src/db.ts` |
 
-### Region packs (P2, built 28 Oct 2026 from the sources in `geodata/sources.lock.yaml`)
+### Region packs 2.0.0 (PF, built 8 Nov 2026: generated Theatre North borders, ADR-042)
+
+| File | `world` | `europe` |
+|---|---|---|
+| `basemap-*.pmtiles` | 45,099,573 (z0–6, unchanged) | 601,820,577 (z7–9, unchanged) |
+| `territory-*.pmtiles` | 43,700 (layers `territory`, `borders`) | 146,144 |
+| `dem-*.wbdem` | 26,172,959 (unchanged) | 91,953,016 (unchanged) |
+| `terrain-*.wbh3` | 1,837,857 (res 5, 549,333 cells) | 9,502,812 (res 7, 2,956,482 cells) |
+| `territory-*.bin` | 80,729 (1,715 border cells) | 452,214 (14,987 border cells) |
+| **Total** (plus `manifest.json`) | **73,234,818 (70 MiB)** | **703,874,763 (671 MiB)** |
+
+Only the eight nations of Theatre North have territory now, so the territory files shrank from 39 MB to 0.7 MB in total. The border overlap check reports 3.5 % of 8,715 km of land border within 5 km of a real border (limit 15 %).
+
+### Region packs 1.0.0 (P2, built 28 Oct 2026 from the sources in `geodata/sources.lock.yaml`; replaced in PF)
 
 | File | `world` | `europe` |
 |---|---|---|

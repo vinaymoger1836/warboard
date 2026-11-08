@@ -13,7 +13,7 @@
 | Type | Folder | Purpose |
 |---|---|---|
 | `nation` | `content/nations/` | Name, id, generated flag (colours and a simple pattern), map colour, capital, default doctrine, data link families |
-| `world` | `content/world/` | Theatre definitions: nation seeds and weights, border overrides (cell lists), place names (`places.yaml`) |
+| `world` | `content/world/` | Theatre definitions (`kind: world`): window, reach, nation seeds and weights, border overrides (cell lists). Map labels (`kind: places`, `places.yaml`): nations, capitals, cities, seas, gulfs, straits, islands, regions; compiled into the pack for the label layer (ADR-042) |
 | `archetype` | `content/archetypes/` | Class bands for key stats (§4), shared by many systems |
 | `platform` | `content/platforms/<category>/` | Aircraft, helicopters, drones, ships, submarines, ground vehicles, launchers, radars, satellites, infantry and special forces formations |
 | `system` | `content/systems/` | Composite systems deployed as a site or group (long-range SAM battalion, medium-range SAM battery, rocket artillery battalion) |
@@ -23,7 +23,7 @@
 | `countermeasure` | `content/countermeasures/` | Chaff, flares, towed decoys, DIRCM |
 | `datalink` | `content/datalinks/` | Latency, capacity, engage-on-remote support |
 | `loadout` | `content/loadouts/` | Named loadout templates per platform |
-| `base` | `content/bases/<nation>.yaml` | Each nation's air and naval bases (proposed by the pipeline, kept or moved by the owner), runway class, berths, capacity |
+| `base` | `content/bases/<nation>/<id>.yaml` | Each nation's air and naval bases, one per file (proposed by `geodata bases`, kept or moved by the owner), runway, berths, capacity |
 | `inventory` | `content/inventories/` | Per nation: quantities, munition stocks, basing |
 | `doctrine` | `content/doctrine/` | AI profile per nation |
 | `realism` | `content/realism/` | Global tuning constants (doc 02 §17) |
