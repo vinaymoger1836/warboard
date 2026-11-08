@@ -1,0 +1,29 @@
+# G4 (doc 08 §3): an ESM aircraft flies toward an emitting SAM site. One-way
+# ESM detection must reach further than the site radar's two-way detection of
+# the aircraft. Rebuilt on the generic fixtures in PF (ADR-035), same band.
+name: G4 ESM vs emitting SAM radar
+seed: 4
+content: scenarios/fixtures
+start_utc: 2026-10-27T10:00:00Z
+start_mode: deploy
+sides:
+  - { name: Blue, nations: [tst] }
+  - { name: Red, nations: [opp] }
+units:
+  - { id: 10, name: Listener, platform: test-esm-aircraft, nation: tst, lat_deg: 54.7, lon_deg: 11.0, alt_m: 9000, heading_deg: 90 }
+  # Members: 31 command post, 32 radar, 33 and 34 launchers.
+  - { id: 30, name: Site, system: test-sam-site, nation: opp, lat_deg: 54.7, lon_deg: 20.5, heading_deg: 270, emcon: on }
+orders:
+  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: move, waypoints: [[20.5, 54.7]], alt_m: 9000 } }
+golden:
+  id: G4
+  description: ESM aircraft vs emitting SAM radar, ESM detects first
+  max_ticks: 3600
+  seeds: 50
+  expect:
+    - metric: first_detection_range_km
+      side: 0
+      target: 32
+      over: { metric: first_detection_range_km, side: 1, target: 11 }
+      aggregate: min
+      min: 1.0

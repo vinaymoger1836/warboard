@@ -1,0 +1,12 @@
+id: test-esm
+kind: sensor
+name: Test ESM receiver
+sensor_type: esm
+role: [esm, elint]
+esm:
+  bands: [UHF, L, S, C, X, Ku]
+  r_ref_km: 480
+  erp_ref_dbw: 80
+  bearing_sigma_deg: 1
+  field_of_regard_deg: 360
+design: { archetype: esm-airborne, note: "Generic test fixture (ADR-035); stats in the range of its class" }

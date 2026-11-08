@@ -19,6 +19,7 @@ stations:
 fuel:
   internal_kg: 6000
   burn_kg_h: { cruise: 2000, military: 3500, afterburner: 10000 }
+  aar: probe
 sensors:
   - { sensor: test-fighter-radar, height_m: 0 }
 ew:

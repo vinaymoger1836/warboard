@@ -1,25 +1,25 @@
-# G9 (doc 08 §3, P5): a FREMM under ROE Charlie (self-defence on) meets a
-# Russian attack under Alpha: two Su-35S with Kh-35U from the east and a
-# Steregushchiy closing. The frigate may only defend itself: it must fire
-# at the incoming missiles without any approval, never at the aircraft or
-# the corvette, and ask for approval to engage them.
+# G9 (doc 08 §3): a frigate under ROE Charlie with self-defence is attacked by
+# anti-ship missiles from fighters and a corvette. It defends itself against
+# the missiles, never fires first at a platform, and asks to engage.
+# Rebuilt on the generic fixtures in PF (ADR-035), same bands.
 name: G9 ROE Charlie vs missile attack
 seed: 9
+content: scenarios/fixtures
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 sides:
-  - { name: NATO, nations: [ita], roe: charlie, self_defence: true }
-  - { name: Russia, nations: [rus], roe: alpha }
+  - { name: Blue, nations: [tst], roe: charlie, self_defence: true }
+  - { name: Red, nations: [opp], roe: alpha }
 units:
-  - { id: 10, name: Bergamini, platform: fremm-bergamini, nation: ita, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 90, loadout: fremm-bergamini-standard }
-  - { id: 20, name: Sokol, platform: su-35s, nation: rus, count: 2, lat_deg: 55.5, lon_deg: 19.6, alt_m: 6000, heading_deg: 270, loadout: su-35s-anti-ship }
-  - { id: 30, name: Steregushchiy, platform: steregushchiy, nation: rus, lat_deg: 55.5, lon_deg: 17.6, heading_deg: 270, loadout: steregushchiy-standard }
+  - { id: 10, name: Frigate, platform: test-frigate, nation: tst, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
+  - { id: 20, name: Strikers, platform: test-fighter, nation: opp, count: 2, lat_deg: 55.5, lon_deg: 19.6, alt_m: 6000, heading_deg: 270, loadout: test-fighter-anti-ship }
+  - { id: 30, name: Corvette, platform: test-corvette, nation: opp, lat_deg: 55.5, lon_deg: 17.6, heading_deg: 270, loadout: test-corvette-standard }
 orders:
   - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[18.2, 55.5]] } }
   - { tick: 0, side: 1, type: AssignTask, units: [30], task: { kind: move, waypoints: [[17.35, 55.5]] } }
 golden:
   id: G9
-  description: FREMM under Charlie defends itself against a Kh-35U attack, never fires first, asks to engage
+  description: frigate under Charlie defends itself against an anti-ship missile attack, never fires first, asks to engage
   max_ticks: 12000
   seeds: 5
   expect:

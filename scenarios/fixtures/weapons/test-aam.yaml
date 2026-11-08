@@ -1,0 +1,30 @@
+id: test-aam
+kind: weapon
+name: Test Air-to-Air Missile
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 6
+  max_speed_mach: 4.0
+  coast_tau_s: { sea_level: 36.4, high_alt: 118.4 }   # the calibrated AR-7 profile (same class, same range)
+  min_speed_mach: 1.1
+  max_range_km: 130
+  min_range_km: 1.5
+  max_g: 40
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 18
+  seeker_resistance: 0.6
+warhead_kg: 20
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, ew_aircraft: 0.8, tanker: 0.85, uav: 0.85 }
+countermeasure_resistance: { chaff: 0.6 }
+mass_kg: 160
+station_category: [test_air_bay, test_air_wing]
+internal_carriage: true
+signature:
+  rcs_m2: { front: 0.05, side: 0.3, rear: 0.08, top: 0.3 }
+design: { archetype: aam-medium-radar, note: "Generic test fixture (ADR-035); stats in the range of its class" }

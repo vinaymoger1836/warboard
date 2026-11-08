@@ -1,0 +1,37 @@
+# G7 (doc 08 §3): a fighter pair on a patrol route from a base. Without the
+# tanker it calls bingo and lands with at least its reserve; with the tanker
+# it refuels and stays on station at least twice as long. Rebuilt on the
+# generic fixtures in PF (ADR-035), same bands.
+name: G7 patrol and tanker
+seed: 7
+content: scenarios/fixtures
+start_utc: 2026-10-27T06:00:00Z
+sides:
+  - { name: Blue, nations: [tst], player: true }
+  - { name: Red, nations: [opp] }
+units:
+  - { id: 10, name: Patrol, platform: test-fighter, nation: tst, count: 2, base: test-airbase, loadout: test-fighter-a2a }
+  - { id: 30, name: Tanker, platform: test-tanker, nation: tst, base: test-airbase }
+orders:
+  - tick: 0
+    side: 0
+    type: AssignTask
+    units: [10]
+    task: { kind: patrol_route, waypoints: [[17.0, 55.2], [18.5, 55.8], [18.7, 55.15]], loop: true }
+  - tick: 0
+    side: 0
+    type: AssignTask
+    units: [30]
+    task: { kind: tanker_track, a: [16.0, 55.7], b: [16.2, 54.9] }
+golden:
+  id: G7
+  description: tanker doubles time on station; without, lands with ≥ reserve fuel
+  max_ticks: 86400            # 24 h at 1 s ticks
+  variants:
+    no_tanker: { drop_units: [30] }
+    tanker: {}
+  expect:
+    - { variant: no_tanker, metric: bingo_calls, group: 10, min: 1 }
+    - { variant: no_tanker, metric: landed_reserve_margin_kg, group: 10, min: 0 }
+    - { variant: tanker, metric: refuels, group: 10, min: 1 }
+    - { variant: tanker, metric: time_on_station_s, group: 10, ratio_to: no_tanker, min: 2.0 }

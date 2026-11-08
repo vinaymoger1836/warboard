@@ -2,9 +2,11 @@
 # 15 km from a ground radar, and comes out past the ridge's north end. It must
 # stay undetected while terrain blocks the line of sight and be seen soon
 # after it clears. The ridge is synthetic terrain (test_terrain), so the
-# golden runs without region packs.
+# golden runs without region packs. Rebuilt on the generic fixtures in PF
+# (ADR-035), same bands.
 name: G3 ridge masking
 seed: 3
+content: scenarios/fixtures
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 test_terrain:
@@ -14,11 +16,11 @@ test_terrain:
   ridges:
     - { from: [20.5, 54.30], to: [20.5, 54.50], height_m: 600, half_width_m: 1500 }
 sides:
-  - { name: NATO, nations: [usa] }
-  - { name: Russia, nations: [rus] }
+  - { name: Blue, nations: [tst] }
+  - { name: Red, nations: [opp] }
 units:
-  - { id: 10, name: Radar, platform: an-mpq-65, nation: usa, lat_deg: 54.40, lon_deg: 20.40, heading_deg: 30 }
-  - { id: 20, name: Intruder, platform: su-35s, nation: rus, lat_deg: 54.30, lon_deg: 20.62, alt_m: 100, heading_deg: 0 }
+  - { id: 10, name: Radar, platform: test-ew-radar-unit, nation: tst, lat_deg: 54.40, lon_deg: 20.40, heading_deg: 30 }
+  - { id: 20, name: Intruder, platform: test-fighter, nation: opp, lat_deg: 54.30, lon_deg: 20.62, alt_m: 100, heading_deg: 0 }
 orders:
   - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[20.62, 54.99]], alt_m: 100 } }
 golden:

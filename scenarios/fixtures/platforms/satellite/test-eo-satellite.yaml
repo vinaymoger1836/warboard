@@ -1,0 +1,16 @@
+id: test-eo-satellite
+kind: platform
+name: Test EO satellite
+short_name: EO sat
+category: satellite/eo
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [test-eo-payload]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  # Authored so the ascending pass crosses 17.0E 55.2N at 19:00Z on 27 Oct 2026 (G5).
+  tle_line1: "1 99002U 26002A   26300.50000000  .00000400  00000+0  50000-4 0  9998"
+  tle_line2: "2 99002  97.5000 349.0688 0001000   0.0000 259.9178 15.20000000    12"
+design: { archetype: satellite-imaging, note: "Generic test fixture (ADR-035); stats in the range of its class" }

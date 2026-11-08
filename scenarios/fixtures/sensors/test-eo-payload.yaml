@@ -1,0 +1,11 @@
+id: test-eo-payload
+kind: sensor
+name: Test optical payload
+sensor_type: satellite_payload
+role: [imaging]
+payload:
+  kind: optical
+  swath_km: 1200
+  gsd_m: 0.5
+  downlink_delay_min: 30
+design: { archetype: payload-optical, note: "Generic test fixture (ADR-035); stats in the range of its class" }

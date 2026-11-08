@@ -1,0 +1,25 @@
+id: test-tanker
+kind: platform
+name: Test Tanker
+short_name: Tanker
+category: aircraft/tanker
+target_class: tanker
+mobility:
+  cruise_speed_mach: 0.8
+  max_speed_mach: 0.86
+  ceiling_m: 12500
+  climb_rate_mps: 15
+  sustained_g: 1.5
+  min_runway_m: 2400
+signature:
+  rcs_m2: { front: 50, side: 200, rear: 50, top: 300 }
+fuel:
+  internal_kg: 100000
+  burn_kg_h: { cruise: 5500 }
+tanker:
+  offload_kg: 45000
+  transfer_rate_kg_min: 3000
+  systems: [boom, probe]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 120
+design: { archetype: tanker, note: "Generic test fixture (ADR-035); stats in the range of its class" }

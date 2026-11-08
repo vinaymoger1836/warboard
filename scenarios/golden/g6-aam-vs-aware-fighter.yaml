@@ -1,0 +1,36 @@
+# G6 (doc 08 §3): a radar air-to-air missile at maximum range against a
+# beaming fighter mostly fails; at half range head-on its Pk is 0.6–0.85.
+# Rebuilt on the generic fixtures in PF (ADR-035), same bands.
+name: G6 AAM vs aware fighter
+seed: 6
+content: scenarios/fixtures
+start_utc: 2026-10-27T12:00:00Z
+start_mode: deploy
+sides:
+  - { name: Blue, nations: [tst], roe: alpha }
+  - { name: Red, nations: [opp], roe: charlie, self_defence: false }
+units:
+  - { id: 10, name: Shooter, platform: test-fighter, nation: tst, lat_deg: 55.0, lon_deg: 15.0, alt_m: 12000, heading_deg: 90, loadout: test-fighter-a2a }
+  - { id: 20, name: Target, platform: test-fighter, nation: opp, lat_deg: 55.0, lon_deg: 17.6, alt_m: 12000, heading_deg: 270 }
+orders:
+  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: move, waypoints: [[18.0, 55.0]], alt_m: 12000 } }
+  - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[14.0, 55.0]], alt_m: 12000 } }
+golden:
+  id: G6
+  description: radar AAM at max range vs a beaming fighter mostly fails; at half range head-on Pk 0.6–0.85
+  max_ticks: 3000
+  seeds: 500
+  variants:
+    max_range_beam:
+      orders:
+        - { tick: 0, side: 0, type: SetDoctrine, units: [10], launch: max_range, shots_per_target: 1 }
+        - { tick: 0, side: 1, type: SetBehaviour, units: [20], threat_reaction: beam }
+    half_range_head_on:
+      orders:
+        - { tick: 0, side: 0, type: SetDoctrine, units: [10], launch: close, shots_per_target: 1 }
+        - { tick: 0, side: 1, type: SetBehaviour, units: [20], threat_reaction: none }
+  expect:
+    # A slow missile chasing a beaming target loses it off the seeker's
+    # field of view and self-destructs: an energy defeat like running out.
+    - { variant: max_range_beam, metric: outcome_fraction, side: 0, weapon: test-aam, filter: first, outcomes: [out_of_energy, miss, self_destruct], aggregate: mean, min: 0.7 }
+    - { variant: half_range_head_on, metric: pk, side: 0, weapon: test-aam, filter: first, aggregate: mean, min: 0.6, max: 0.85 }

@@ -1,0 +1,16 @@
+id: test-sar-satellite
+kind: platform
+name: Test SAR satellite
+short_name: SAR sat
+category: satellite/sar
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [test-sar-payload]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  # Authored so the ascending pass crosses 17.0E 55.2N at 17:30Z on 27 Oct 2026 (G5).
+  tle_line1: "1 99001U 26001A   26300.50000000  .00000400  00000+0  50000-4 0  9996"
+  tle_line2: "2 99001  97.5000 326.5072 0001000   0.0000 241.9178 15.20000000    19"
+design: { archetype: satellite-imaging, note: "Generic test fixture (ADR-035); stats in the range of its class" }

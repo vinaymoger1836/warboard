@@ -1,0 +1,22 @@
+id: test-esm-aircraft
+kind: platform
+name: Test ESM Aircraft
+short_name: ESM jet
+category: aircraft/ew
+target_class: ew_aircraft
+mobility:
+  cruise_speed_mach: 0.85
+  max_speed_mach: 1.6
+  ceiling_m: 14000
+  climb_rate_mps: 150
+  sustained_g: 6.0
+  min_runway_m: 1800
+signature:
+  rcs_m2: { front: 4, side: 10, rear: 5, top: 15 }
+fuel:
+  internal_kg: 6000
+  burn_kg_h: { cruise: 2200, military: 4400, afterburner: 12000 }
+sensors:
+  - { sensor: test-esm, height_m: 0 }
+durability: { model: aircraft, p_kill_on_hit: 0.85 }
+design: { archetype: ew-jet, note: "Generic test fixture (ADR-035); stats in the range of its class" }

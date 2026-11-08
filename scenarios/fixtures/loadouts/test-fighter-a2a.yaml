@@ -1,0 +1,7 @@
+id: test-fighter-a2a
+kind: loadout
+name: Test Fighter Air-to-Air Loadout
+platform: test-fighter
+items:
+  - { station: bay, weapon: test-aam, count: 4 }
+design: { note: "Generic test fixture (ADR-035)" }

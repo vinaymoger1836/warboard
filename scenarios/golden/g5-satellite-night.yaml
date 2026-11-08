@@ -1,21 +1,23 @@
 # G5 (doc 08 §3): an optical and a SAR satellite are tasked on a corvette at
 # night. The optical pass returns an explained "no image" report; the SAR
-# pass images the area. Passes (from the CelesTrak elements in content):
-# CSG-1 about 17:36Z, WorldView-3 about 20:12Z, both after sunset.
+# pass images the area. The fixture orbits are authored so the SAR pass is at
+# about 17:30Z and the optical pass at about 19:00Z, both after sunset.
+# Rebuilt on the generic fixtures in PF (ADR-035), same bands.
 name: G5 satellite pass at night
 seed: 5
+content: scenarios/fixtures
 start_utc: 2026-10-27T16:00:00Z
 start_mode: deploy
 sides:
-  - { name: NATO, nations: [ita, usa] }
-  - { name: Russia, nations: [rus] }
+  - { name: Blue, nations: [tst] }
+  - { name: Red, nations: [opp] }
 units:
-  - { id: 10, name: CSG-1, platform: csg-1, nation: ita }
-  - { id: 12, name: WorldView-3, platform: worldview-3, nation: usa }
-  - { id: 20, name: Soobrazitelny, platform: steregushchiy, nation: rus, lat_deg: 54.9, lon_deg: 19.6 }
+  - { id: 10, name: SAR sat, platform: test-sar-satellite, nation: tst }
+  - { id: 12, name: EO sat, platform: test-eo-satellite, nation: tst }
+  - { id: 20, name: Corvette, platform: test-corvette, nation: opp, lat_deg: 55.2, lon_deg: 17.0 }
 orders:
-  - { tick: 0, side: 0, type: TaskSatellite, satellite: 10, centre: [19.6, 54.9], radius_km: 20 }
-  - { tick: 0, side: 0, type: TaskSatellite, satellite: 12, centre: [19.6, 54.9], radius_km: 20 }
+  - { tick: 0, side: 0, type: TaskSatellite, satellite: 10, centre: [17.0, 55.2], radius_km: 20 }
+  - { tick: 0, side: 0, type: TaskSatellite, satellite: 12, centre: [17.0, 55.2], radius_km: 20 }
 golden:
   id: G5
   description: satellite pass at night, optical no report, SAR report

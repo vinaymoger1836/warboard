@@ -1,0 +1,24 @@
+id: test-stealth-fighter
+kind: platform
+name: Test Stealth Fighter
+short_name: Stealth fighter
+category: aircraft/fighter
+target_class: fighter
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 1.7
+  ceiling_m: 15500
+  climb_rate_mps: 200
+  sustained_g: 6.0
+  min_runway_m: 2000
+signature:
+  rcs_m2: { front: 0.01, side: 0.2, rear: 0.08, top: 0.1 }
+stations:
+  - { id: bay, kind: internal, categories: [test_air_bay], capacity: 4 }
+fuel:
+  internal_kg: 8000
+  burn_kg_h: { cruise: 2500, military: 5000, afterburner: 13000 }
+sensors:
+  - { sensor: test-fighter-radar, height_m: 0 }
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+design: { archetype: fighter-stealth, note: "Generic test fixture (ADR-035); stats in the range of its class" }

@@ -1,0 +1,7 @@
+id: tanker
+kind: archetype
+name: Tanker
+bands:
+  mobility.max_speed_mach: [0.75, 0.9]
+  tanker.offload_kg: [30000, 60000]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."
