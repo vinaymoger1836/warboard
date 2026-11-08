@@ -266,8 +266,8 @@ function SatelliteCard({ d }: { d: SatelliteDetails }) {
           </dl>
         )}
         <dl>
-          <dt>Data confidence</dt>
-          <dd>{d.confidence}</dd>
+          <dt>Class</dt>
+          <dd>{d.class_name || '—'}</dd>
         </dl>
       </div>
     </>
@@ -808,8 +808,8 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
           <dl>
             <dt>Type</dt>
             <dd>{d.type_name}</dd>
-            <dt>Data confidence</dt>
-            <dd>{d.confidence}</dd>
+            <dt>Class</dt>
+            <dd>{d.class_name || '—'}</dd>
             {d.mach != null && (
               <>
                 <dt>Mach</dt>

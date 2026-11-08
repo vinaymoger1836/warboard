@@ -56,22 +56,26 @@ export type { Emcon } from './generated/Emcon';
 
 // Content source format (wb-content). The JSON Schema of the same format is
 // generated to ./generated/content.schema.json.
+export type { Archetype } from './generated/Archetype';
 export type { Base } from './generated/Base';
-export type { Confidence } from './generated/Confidence';
+export type { CellOverride } from './generated/CellOverride';
 export type { Countermeasure } from './generated/Countermeasure';
-export type { Country } from './generated/Country';
 export type { Datalink } from './generated/Datalink';
+export type { Design } from './generated/Design';
 export type { Doctrine } from './generated/Doctrine';
 export type { EntryMeta } from './generated/EntryMeta';
 export type { EwSuite } from './generated/EwSuite';
+export type { Flag } from './generated/Flag';
+export type { FlagPattern } from './generated/FlagPattern';
 export type { Inventory } from './generated/Inventory';
 export type { Kind } from './generated/Kind';
 export type { Loadout } from './generated/Loadout';
 export type { Manifest } from './generated/Manifest';
+export type { Nation } from './generated/Nation';
+export type { NationSeed } from './generated/NationSeed';
 export type { Platform } from './generated/Platform';
-export type { Provenance } from './generated/Provenance';
 export type { Realism } from './generated/Realism';
 export type { Sensor } from './generated/Sensor';
-export type { Source } from './generated/Source';
 export type { System } from './generated/System';
 export type { Weapon } from './generated/Weapon';
+export type { World } from './generated/World';

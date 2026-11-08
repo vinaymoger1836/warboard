@@ -79,7 +79,7 @@ function CursorReadout({ map, bridge }: { map: MapLibreMap; bridge: EngineBridge
         .then((v) => {
           const pos = `${Math.abs(lat).toFixed(3)}°${lat >= 0 ? 'N' : 'S'} ${Math.abs(lon).toFixed(3)}°${lon >= 0 ? 'E' : 'W'}`;
           if (v.length < 2) return setText(pos);
-          const owner = v.length > 2 ? String.fromCharCode(...v.slice(2)).toUpperCase() : 'No country';
+          const owner = v.length > 2 ? String.fromCharCode(...v.slice(2)).toUpperCase() : 'Unclaimed';
           const cls = TERRAIN_CLASSES[v[1] ?? 0] ?? 'water';
           setText(`${pos} · ${owner} · ${cls} · ${Math.round(v[0] ?? 0)} m`);
         })

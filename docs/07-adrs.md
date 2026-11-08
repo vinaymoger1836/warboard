@@ -234,3 +234,18 @@ All ADRs: **Status — Accepted, 27 Oct 2026.** Changing one needs a new ADR tha
 **Decision.** A manual GitHub Actions workflow (`pages.yml`) builds the game and publishes it to GitHub Pages. Packs live in a public R2 bucket (`r2.dev` URL; free tier 10 GB, no egress fees), uploaded with rclone; the bucket's CORS rule allows `GET`/`HEAD` from the Pages origin and `http://localhost:5173` only. Build-time settings choose the pack URL (`VITE_PACKS_URL`) and the war (`WB_SCENARIO`, `WB_CONTENT_PACK`, through Vite aliases so only the chosen scenario is bundled). The hosted build opens `scenarios/hosted-test.yaml` on the fixtures, and the workflow fails if the Baltic demo is in the bundle.
 **Alternatives.** Vercel or Render (built for servers; Vercel's traffic cap is about 125 full pack downloads a month and its builds lack Rust); Cloudflare Pages for both (25 MiB files); GitHub Releases for packs (no CORS); a Worker that proxies R2 under the app's origin (more moving parts).
 **Consequences.** + Free, static, no server, and the app still works offline after the first visit. − `r2.dev` URLs are rate-limited and meant for development; wider use needs a custom domain. Packs must be uploaded again after PF regenerates them. The fixtures have no airbase, so the test war's aircraft have nowhere to return to when fuel runs low.
+
+## ADR-041 PF content schema: design notes, nations, worlds, archetypes
+**Status — Proposed, 8 Nov 2026 (PF).** Implements doc 04 §2–§4 and doc 11 §4 (content); refines the doc 04 examples where noted.
+**Context.** PF replaces provenance (sources, confidence, estimates, `as_of`) with a design note and archetype bands, and countries with fictional nations. The doc 04 examples leave a few details open or clash with the loader.
+**Decision.**
+- Every entry carries `design: { archetype, note }` with a non-empty note. `archetype` is required on catalogue kinds (platform, system, sensor, weapon, EW suite, countermeasure, data link) and optional on nations, bases, inventories, doctrines and loadouts. Archetypes, worlds and the realism profile need no design block.
+- Values outside an archetype's bands are **warnings** (`ContentSet::warnings`, printed by `wb content check`), not errors. A band whose field an entry lacks is skipped.
+- Nation ids are **three lower-case letters** (`ald`), like every other id and like the territory codes in the packs; the UI shows them upper-case (`ALD`). Doc 04 writes `ALD`.
+- The world's hand-edits are `border_overrides`, because `overrides` is already the meta key for `extends` (doc 04 §3.6).
+- One inventory per nation, no `as_of`; bases lose `icao`.
+- Base placement (doc 03 §3 says `preset`, doc 11 §4 says terrain rules): air and naval bases use `preset` (they must match a base in `content/bases/`); road strips, heliports and other player-placed sites use `terrain` rules.
+- Until the starter catalogue lands, existing entries point at a placeholder archetype `legacy`, removed at the end of PF.
+- Pack schema 5 (nations and design notes in the pack).
+**Alternatives.** Upper-case nation ids (a second id rule and a case mapping to the pack codes); bands as errors (blocks deliberate outliers that the note explains).
+**Consequences.** + The schema matches the fictional setting and the content check guides balance. − Schema-4 packs are refused; `GroupDetails` and `SatelliteDetails` show the archetype's class name instead of a data confidence.

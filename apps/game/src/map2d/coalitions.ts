@@ -3,7 +3,7 @@
 import type { WarInfo } from '../engine/messages';
 
 export interface Coalition {
-  /** Own coalition country codes (content ids, e.g. `pol`). */
+  /** Own coalition nation codes (content ids, e.g. `ald`). */
   own: string[];
   enemy: string[];
 }
@@ -13,7 +13,7 @@ export const NO_COALITION: Coalition = { own: [], enemy: [] };
 export function coalitionOf(war: WarInfo | null): Coalition {
   if (!war) return NO_COALITION;
   return {
-    own: war.sides[war.side]?.countries ?? [],
-    enemy: war.sides.filter((_, i) => i !== war.side).flatMap((s) => s.countries),
+    own: war.sides[war.side]?.nations ?? [],
+    enemy: war.sides.filter((_, i) => i !== war.side).flatMap((s) => s.nations),
   };
 }
