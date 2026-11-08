@@ -349,30 +349,47 @@ function distance(m: number): string {
   return `${k < 10 ? k.toFixed(1).replace(/\.0$/, '') : Math.round(k).toLocaleString('en-GB')} km`;
 }
 
-/** Spec lines of one of our own weapons for the unit card (game stats, doc 04 §4). */
-export function weaponSpecLines(w: WeaponRounds): string[] {
-  const lines: string[] = [];
-  if (w.class_name) lines.push(w.class_name);
-  lines.push(
-    [
-      `Range ${w.min_range_m > 0 ? `${distance(w.min_range_m)}–` : ''}${distance(w.max_range_m)}`,
-      `Mach ${w.max_speed_mach.toFixed(1)}`,
-      PROFILE[w.profile] ?? w.profile,
-    ].join(' · '),
-  );
-  const mid = w.midcourse.map((m) => MIDCOURSE[m] ?? m);
-  const seeker = SEEKER[w.seeker] ?? w.seeker;
-  const guidance = mid.length > 0 ? `${mid.join(' + ')} → ${seeker}` : seeker;
-  lines.push(`Guidance ${guidance}${w.seeker_range_m ? `, seeker ${distance(w.seeker_range_m)}` : ''}`);
-  const strike: string[] = [];
-  if (w.warhead_kg > 0) strike.push(`Warhead ${Math.round(w.warhead_kg)} kg${w.warhead ? ` ${w.warhead.replace(/_/g, '-')}` : ''}`);
-  if (w.cep_m != null) strike.push(`CEP ${distance(w.cep_m)}`);
-  if (w.targets.length > 0) strike.push(`Targets ${w.targets.join(', ')}`);
-  if (strike.length > 0) lines.push(strike.join(' · '));
-  const alt: string[] = [];
-  if (w.min_alt_m != null && w.max_alt_m != null) alt.push(`Target altitude ${distance(w.min_alt_m)}–${distance(w.max_alt_m)}`);
-  if (w.cruise_alt_m != null) alt.push(`cruise ${distance(w.cruise_alt_m)}`);
-  if (w.terminal_alt_m != null) alt.push(`terminal ${distance(w.terminal_alt_m)}`);
-  if (alt.length > 0) lines.push(alt.join(' · '));
-  return lines;
+/** One label/value fact about one of our own weapons (game stats, doc 04 §4). */
+export interface WeaponFact {
+  label: string;
+  value: string;
 }
+
+/** Short tags for the weapon row: range, top speed, seeker. */
+export function weaponTags(w: WeaponRounds): string[] {
+  return [
+    `${w.min_range_m > 0 ? `${distance(w.min_range_m)}–` : ''}${distance(w.max_range_m)}`,
+    `Mach ${w.max_speed_mach.toFixed(1)}`,
+    SEEKER[w.seeker] ?? w.seeker,
+  ];
+}
+
+/** Every fact the card shows for a selected weapon. */
+export function weaponFacts(w: WeaponRounds): WeaponFact[] {
+  const facts: WeaponFact[] = [];
+  const add = (label: string, value: string | null | undefined) => {
+    if (value) facts.push({ label, value });
+  };
+  add('Class', w.class_name);
+  add('Range', `${w.min_range_m > 0 ? `${distance(w.min_range_m)}–` : ''}${distance(w.max_range_m)}`);
+  add('Top speed', `Mach ${w.max_speed_mach.toFixed(1)} (${PROFILE[w.profile] ?? w.profile})`);
+  const mid = w.midcourse.map((m) => MIDCOURSE[m] ?? m);
+  add('Guidance', [...mid, SEEKER[w.seeker] ?? w.seeker].join(' → '));
+  add('Seeker range', w.seeker_range_m ? distance(w.seeker_range_m) : null);
+  add('Warhead', w.warhead_kg > 0 ? `${Math.round(w.warhead_kg)} kg${w.warhead ? ` ${w.warhead.replace(/_/g, '-')}` : ''}` : null);
+  add('Accuracy (CEP)', w.cep_m != null ? distance(w.cep_m) : null);
+  add('Targets', w.targets.join(', '));
+  add('Target altitude', w.min_alt_m != null && w.max_alt_m != null ? `${distance(w.min_alt_m)}–${distance(w.max_alt_m)}` : null);
+  add('Cruise / terminal', w.cruise_alt_m != null || w.terminal_alt_m != null
+    ? [w.cruise_alt_m, w.terminal_alt_m].map((x) => (x == null ? '—' : distance(x))).join(' / ')
+    : null);
+  add('Fires on', w.engage_on_remote ? 'any shared track' : 'our own sensor track only');
+  return facts;
+}
+
+/** Colour of a health percentage (doc 10 §2.3 state colours). */
+export function healthColour(pct: number): string {
+  return cssVar(pct >= 60 ? 'state.ok' : pct >= 30 ? 'state.warn' : 'state.bad');
+}
+
+export { distance as formatDistance };

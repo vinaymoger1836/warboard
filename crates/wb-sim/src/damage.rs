@@ -47,7 +47,7 @@ fn name_of(kind: BaseComponentKind) -> &'static str {
     }
 }
 
-fn subsystem_name(s: Subsystem) -> &'static str {
+pub(crate) fn subsystem_name(s: Subsystem) -> &'static str {
     match s {
         Subsystem::Hull => "hull",
         Subsystem::Radar => "radar",

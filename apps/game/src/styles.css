@@ -714,40 +714,6 @@ button:focus-visible {
   gap: 2px;
 }
 
-.card-section {
-  border-top: 1px solid var(--panel-border);
-  padding-top: 6px;
-}
-
-.section-toggle {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  padding: 2px 0;
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.section-body {
-  padding: 6px 0 2px 14px;
-  font-size: 12px;
-}
-
-.section-body dl {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 4px 12px;
-  margin: 0;
-}
-
-.section-body dt {
-  color: var(--text-secondary);
-}
-
-.section-body dd {
-  margin: 0;
-}
-
 .dl-pair {
   display: contents;
 }
@@ -766,17 +732,6 @@ button:focus-visible {
 .range-sub {
   color: var(--text-secondary);
   font-weight: 400;
-}
-
-/* Spec lines under a weapon in the unit card's Weapons section. */
-.section-body dd.weapon-spec {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin: -2px 0 4px;
-  color: var(--text-muted);
-  font-size: 11px;
 }
 
 /* Ring tooltip (doc 10 §6): what the ring under the cursor is. */
@@ -1176,4 +1131,297 @@ button:focus-visible {
   font-family: var(--font-mono);
   font-size: 13px;
   text-align: center;
+}
+
+/* ---- Unit and contact cards: blocks, chips, tabs (doc 10 §7) ---- */
+
+.block-title {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.block {
+  border-top: 1px solid var(--panel-border);
+  padding-top: 8px;
+}
+
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pill {
+  display: inline-block;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.pill.dim {
+  color: var(--text-secondary);
+}
+
+.pill.ok {
+  color: var(--state-ok);
+  border-color: var(--state-ok);
+}
+
+.pill.warn {
+  color: var(--state-warn);
+  border-color: var(--state-warn);
+}
+
+.pill.bad {
+  color: var(--state-bad);
+  border-color: var(--state-bad);
+}
+
+.pill.solid {
+  font-weight: 600;
+}
+
+/* Condition: hull bar and subsystems per member. */
+.condition {
+  background: var(--panel-inset);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.condition > .block-title {
+  margin: 0;
+}
+
+.condition.compact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+}
+
+.condition .pill,
+.cond-flags .pill {
+  justify-self: start;
+}
+
+.cond-member {
+  display: grid;
+  gap: 4px;
+}
+
+.cond-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.hp {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.hp-bar,
+.ammo-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--panel-border);
+  overflow: hidden;
+}
+
+.hp-bar > span,
+.ammo-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.ammo-bar {
+  height: 3px;
+}
+
+.ammo-bar > span {
+  background: var(--ring-engage);
+}
+
+.cond-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Tabs below the ranges inset. */
+.card-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.card-tabs .tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.card-tabs .tab.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--btn-border);
+}
+
+.tab-body {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+  min-height: 48px;
+}
+
+.tab-line {
+  margin: 0;
+  font-size: 12px;
+}
+
+.tab-line .label {
+  color: var(--text-secondary);
+}
+
+.hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+dl.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 3px 12px;
+  margin: 0;
+  font-size: 12px;
+}
+
+dl.facts dt {
+  color: var(--text-secondary);
+}
+
+dl.facts dd {
+  margin: 0;
+}
+
+.tag-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag-list li {
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+}
+
+/* Weapons tab: selectable rows; the selected one shows its facts and its ring. */
+.weapon-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.weapon-row {
+  width: 100%;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+  background: var(--panel-inset);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 7px 9px;
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.weapon-row:hover {
+  border-color: var(--panel-border);
+}
+
+.weapon-row.on {
+  border-color: var(--ring-engage);
+}
+
+.w-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.w-name {
+  font-weight: 600;
+}
+
+.w-count {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.w-count b {
+  color: var(--text-primary);
+}
+
+.w-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.w-facts {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--panel-border);
+}
+
+/* Contact card. */
+.hits {
+  font-size: 13px;
+}
+
+.source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.source-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.src-unit {
+  color: var(--text-primary);
 }

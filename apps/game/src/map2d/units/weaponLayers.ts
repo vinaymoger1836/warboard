@@ -1,11 +1,11 @@
 // Our weapons in flight on the 2D map (doc 10 §5, references 02 and 04): amber missile
 // glyphs with a 1.5 px amber trail and `M-n` tags, cyan dashed interceptor trails with a
-// ring-dot head and `INT-n` tags, salvo labels at each salvo's centroid, interceptor group
+// cyan missile glyph and `INT-n` tags, salvo labels at each salvo's centroid, interceptor group
 // labels at each shooter's interceptors, and dashed amber shooter→target lines. Other
 // sides' weapons are contacts of our picture and drawn with the contacts.
 import type { Layer } from '@deck.gl/core';
 import { PathStyleExtension, type PathStyleExtensionProps } from '@deck.gl/extensions';
-import { IconLayer, PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
+import { IconLayer, PathLayer, TextLayer } from '@deck.gl/layers';
 import { RELATION, type SideView, type StringTable } from '@warboard/protocol';
 import {
   interceptorsLabel,
@@ -49,6 +49,7 @@ const dash = new PathStyleExtension({ dash: true });
 const SDF = { sdf: true, fontSize: 64, buffer: 10, radius: 14, cutoff: 0.18 };
 const c = (t: TokenName, a = 1) => rgba(t, a);
 const MISSILE_ICON = { url: missileDataUrl(), width: 32, height: 32, id: 'missile', mask: false };
+const INTERCEPTOR_ICON = { url: missileDataUrl('weapon.interceptor'), width: 32, height: 32, id: 'interceptor', mask: false };
 
 const centroid = (pts: LonLat[]): LonLat => [
   pts.reduce((s, p) => s + p[0], 0) / pts.length,
@@ -177,26 +178,16 @@ export class WeaponLayers {
         getSize: MISSILE_PX,
         sizeUnits: 'pixels',
       }),
-      new ScatterplotLayer<DrawnWeapon>({
-        id: 'interceptor-rings',
+      // Interceptors use the missile glyph in cyan (doc 10 §5); the dashed trail and the
+      // `INT-n` tags still tell them from offensive missiles without colour.
+      new IconLayer<DrawnWeapon>({
+        id: 'interceptor-icons',
         data: heads,
+        getIcon: () => INTERCEPTOR_ICON,
         getPosition: (d) => d.position,
-        getRadius: 5,
-        radiusUnits: 'pixels',
-        stroked: true,
-        filled: true,
-        getFillColor: c('map.label.halo', 0.6),
-        getLineColor: c('weapon.interceptor'),
-        getLineWidth: 1.5,
-        lineWidthUnits: 'pixels',
-      }),
-      new ScatterplotLayer<DrawnWeapon>({
-        id: 'interceptor-dots',
-        data: heads,
-        getPosition: (d) => d.position,
-        getRadius: 1.8,
-        radiusUnits: 'pixels',
-        getFillColor: c('glyph'),
+        getAngle: (d) => -d.heading,
+        getSize: MISSILE_PX * 0.85,
+        sizeUnits: 'pixels',
       }),
       new TextLayer<Label>({
         id: 'weapon-tags',

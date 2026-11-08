@@ -31,6 +31,8 @@ export interface UiState {
   selectedContact: number | null;
   contact: ContactDetails | null;
   rings: { sensor: boolean; engage: boolean; radius: boolean };
+  /** Weapon (content id) picked in the unit card's Weapons tab: its range ring replaces the engagement ring. */
+  weaponRing: string | null;
   /** Sensor rings of every own unit, not just the selection (layers button). */
   allSensorRings: boolean;
   /** Estimated threat rings of identified SAM types (doc 03 §10). */
@@ -55,6 +57,7 @@ let state: UiState = {
   selectedContact: null,
   contact: null,
   rings: { sensor: true, engage: true, radius: true },
+  weaponRing: null,
   allSensorRings: false,
   threatRings: true,
   tool: null,
@@ -82,6 +85,7 @@ export const ui = {
       selected: id,
       details: id === state.selected ? state.details : null,
       tool: null,
+      weaponRing: id === state.selected ? state.weaponRing : null,
       selectedContact: id === null ? state.selectedContact : null,
       contact: id === null ? state.contact : null,
     });
@@ -93,6 +97,7 @@ export const ui = {
       selected: id === null ? state.selected : null,
       details: id === null ? state.details : null,
       tool: null,
+      weaponRing: id === null ? state.weaponRing : null,
     });
   },
   addEvents(events: Event[], isAlert: (e: Event) => boolean, isIntel: (e: Event) => boolean): void {

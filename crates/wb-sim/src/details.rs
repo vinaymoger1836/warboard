@@ -114,6 +114,11 @@ pub struct ContactDetails {
     /// Estimated threat range of the identified type (SAM), metres.
     pub threat_m: Option<f64>,
     pub sources: Vec<ContactSourceView>,
+    /// Our own weapons that ended at this contact, and how many hit: what our
+    /// side knows of its damage (rule 1: never its true condition).
+    pub our_shots: u32,
+    pub our_hits: u32,
+    pub last_hit_s_ago: Option<f64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -165,6 +170,17 @@ pub struct MemberView {
     pub fuel_pct: Option<f64>,
     pub fuel_kg: Option<f64>,
     pub bingo_kg: Option<f64>,
+    /// Damage points left, percent (ships and ground units, doc 02 §13); none
+    /// for aircraft, which are either intact, damaged or lost.
+    pub health_pct: Option<f64>,
+    /// Hit at least once.
+    pub damaged: bool,
+    /// Subsystems knocked out: `radar`, `VLS`, `launcher`, `propulsion`.
+    pub out: Vec<String>,
+    /// At or below the out-of-action fraction: no fire, no sensors.
+    pub out_of_action: bool,
+    /// Seconds until a ship at zero points sinks.
+    pub sinking_in_s: Option<f64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -395,6 +411,7 @@ fn group(world: &World, side: u8, gid: UnitId, ge: Entity) -> Option<GroupDetail
         .filter_map(|m| {
             let e = entity(world, *m)?;
             let f = world.get::<Fuel>(e);
+            let h = world.get::<crate::components::Health>(e);
             Some(MemberView {
                 id: m.0,
                 name: world.get::<Identity>(e)?.name.clone(),
@@ -402,6 +419,26 @@ fn group(world: &World, side: u8, gid: UnitId, ge: Entity) -> Option<GroupDetail
                 fuel_pct: f.map(pct),
                 fuel_kg: f.map(|f| f.kg),
                 bingo_kg: f.map(|f| f.bingo_kg),
+                health_pct: match p.durability {
+                    wb_content::compiled::Durability::Aircraft { .. } => None,
+                    _ => Some(h.map_or(100.0, |h| {
+                        (h.points / h.max.max(1e-9) * 100.0).clamp(0.0, 100.0)
+                    })),
+                },
+                damaged: h.is_some_and(|h| h.damaged),
+                out: h.map_or_else(Vec::new, |h| {
+                    h.out
+                        .iter()
+                        .map(|s| crate::damage::subsystem_name(*s).to_owned())
+                        .collect()
+                }),
+                out_of_action: h.is_some_and(|h| {
+                    h.max > 0.0
+                        && h.points <= h.max * rules.realism().damage.ship_out_of_action_fraction
+                }),
+                sinking_in_s: h.and_then(|h| h.sink_at_ms).map(|t| {
+                    t.saturating_sub(world.resource::<SimClock>().sim_time_ms) as f64 / 1_000.0
+                }),
             })
         })
         .collect();
@@ -819,6 +856,24 @@ pub fn contact_details(world: &World, side: u8, id: u32) -> Result<ContactDetail
             age_s: now.saturating_sub(s.last_ms) as f64 / 1_000.0,
         })
         .collect();
+    // Battle damage our side can observe: our weapon results at this contact.
+    let (mut our_shots, mut our_hits, mut last_hit) = (0u32, 0u32, None::<u64>);
+    for ev in world.resource::<crate::events::EventLog>().visible(side, 0) {
+        if let crate::events::EventKind::WeaponTerminated {
+            target: Some(crate::events::AimRef::Contact { contact }),
+            outcome,
+            intercept: false,
+            ..
+        } = &ev.kind
+            && contact.0 == id
+        {
+            our_shots += 1;
+            if *outcome == crate::events::Outcome::Hit {
+                our_hits += 1;
+                last_hit = Some(ev.sim_time_ms);
+            }
+        }
+    }
     Ok(ContactDetails {
         contact_id: id,
         label: type_name
@@ -851,6 +906,9 @@ pub fn contact_details(world: &World, side: u8, id: u32) -> Result<ContactDetail
             .then(|| c.type_ref.threat_m(rules))
             .flatten(),
         sources,
+        our_shots,
+        our_hits,
+        last_hit_s_ago: last_hit.map(|t| now.saturating_sub(t) as f64 / 1_000.0),
     })
 }
 

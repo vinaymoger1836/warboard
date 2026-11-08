@@ -134,7 +134,7 @@ At low zoom, groups collapse into one icon with the count in the label. Labels a
 | Salvo label | At the salvo's centroid: `<type> (<n>× salvo)`, e.g. `AS-4 Tarn (12× salvo)` |
 | Per-missile tags | `M-1 … M-n` from zoom 7, next to each missile |
 | Shooter→target line | Dashed amber while weapons fly (01, 04) |
-| Interceptors | Cyan dashed trail with a ring-dot head; tags `INT-1 … INT-n`; group label `SHIP Halvard class (5× interceptors)` |
+| Interceptors | Cyan dashed trail with the missile glyph in `weapon.interceptor` (changed from the ring-dot head of 04, at the owner's request); tags `INT-1 … INT-n`; group label `SHIP Halvard class (5× interceptors)` |
 | Enemy weapons | Red glyph and red label with speed (06) |
 | Launch | Small white flash at the shooter |
 | Intercept | Cyan burst |
@@ -169,7 +169,7 @@ Floating, bottom right, width `min(470px, 100vw − 32px)`, `panel.bg`, 1 px `pa
 │ │ ◉ Max Engagement Range:                   200 km │ │  ring.engage
 │ │ ◉ Combat Radius Reach:                   1390 km │ │  ring.radius text
 │ └──────────────────────────────────────────────────┘ │
-│ ▸ Task · Weapons · Sensors & EMCON · ROE · Specs     │  collapsible sections (new)
+│ Weapons │ Task │ Sensors │ EW │ ROE │ Specs          │  tabs, Weapons first (new)
 │ [ ORDER RTB ]                 [ RETASK PATROL ]      │  outlined amber, mono, uppercase
 └──────────────────────────────────────────────────────┘
 ```
@@ -179,7 +179,10 @@ Floating, bottom right, width `min(470px, 100vw − 32px)`, `panel.bg`, 1 px `pa
 - Status colours: ON STATION `state.station`, PATROL / TRANSIT `text.primary`, RTB `state.warn`, ENGAGING `weapon.enemy`, LANDED / TURNAROUND `text.secondary`.
 - Fuel colour: ≥ 50% `state.ok`, 25–50% `state.warn`, < 25% or bingo `state.bad`.
 - Buttons by unit type, two per row: aircraft `ORDER RTB`, `RETASK PATROL`, `STRIKE`, `HOLD FIRE`; ships `MOVE`, `PATROL`, `STRIKE`, `EMCON`; sites `EMCON`, `HOLD FIRE`. Button text: JetBrains Mono 12 px, letter-spacing 0.12em.
-- **Weapons section:** per weapon the rounds left, then muted spec lines: class, range, top speed and flight profile, guidance and seeker, warhead, CEP, targets and altitudes (own weapons only).
+- **Condition** (new, between the status rows and the ranges inset): `Intact` on one line, or per member a hull bar (ships and ground units; ≥ 60 % `state.ok`, 30–60 % `state.warn`, below `state.bad`) and pills for knocked-out subsystems, `Out of action` and `Sinking in m:ss`; damaged aircraft read `Damaged · mission aborted`. Ships without fuel show `Hull: n%` in place of `Fuel` in the status row.
+- **Weapons tab:** one row per weapon on `panel.inset`: name, rounds `left / full`, a thin rounds bar in `ring.engage`, pills for range, top speed, seeker and `own track` (weapons that fire only on the shooter's own track). Clicking a row selects it (outline `ring.engage`), lists its facts (class, range, speed and profile, guidance, seeker range, warhead, CEP, targets, altitudes, what track it fires on) and replaces the engagement ring on the map with that weapon's ring: solid `ring.engage`, its minimum range dashed inside, labelled `<weapon> (<range> km)`. Own weapons only.
+- **Pills** (card only; the dock's event chips stay as they are): 11 px, sentence case, 1 px border, radius 10 px; `ok`, `warn`, `bad` use the state colours, `dim` is `text.secondary`.
+- **Contact card** blocks, in order: pills for identity (side colour), classification level, track quality and last update; speed, altitude, heading and position uncertainty; the threat-range row; **Our hits on it** (our weapons fired at it, hits, last hit: our own results only, never its true condition, rule 1); Identification; Sources.
 - Contact cards use the same frame, title `<label> (our estimate)` when estimated, plus classification level, last update age, uncertainty (± km) and sources.
 
 ## 8. Other panels

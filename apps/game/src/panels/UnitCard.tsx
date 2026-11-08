@@ -14,13 +14,13 @@ import {
   SYMBOLS,
   type SymbolName,
 } from '@warboard/protocol';
-import { contactLabel, cssVar, ESTIMATE_LINE, iconDataUrl, type IconSide } from '@warboard/symbols';
+import { contactLabel, cssVar, ESTIMATE_LINE, iconDataUrl, type IconSide, type TokenName } from '@warboard/symbols';
 import { useEffect, useState } from 'react';
 import type { EngineBridge } from '../bridge';
 import { patrolRadiusKm, sendCommand, sendCommandAck, sendTask } from '../orders';
 import { distance } from '../map2d/units/geo';
 import { type LonLat, type StrikeAim, ui, useUi } from '../store';
-import { duration, fuelColour, statusColour, weaponSpecLines } from './format';
+import { duration, fuelColour, healthColour, statusColour, weaponFacts, weaponTags } from './format';
 import { CloseGlyph, EngageGlyph, RadiusGlyph, SensorGlyph } from './glyphs';
 
 const CATEGORY_SYMBOL: Record<string, SymbolName> = {
@@ -134,6 +134,10 @@ function contactSymbol(bridge: EngineBridge, id: number): number {
   return v && i !== undefined ? (v.contacts.symbol[i] ?? 0) : 0;
 }
 
+const IDENTITY_TEXT: Record<string, string> = { hostile: 'Hostile', neutral: 'Neutral', friendly: 'Friendly', unknown: 'Unknown' };
+const IDENTITY_TOKEN: Record<string, TokenName> = { hostile: 'side.enemy', neutral: 'side.neutral', friendly: 'side.own', unknown: 'side.unknown' };
+const QUALITY_TEXT: Record<string, string> = { fire_control: 'Fire-control track', track: 'Track', report: 'Report only' };
+
 function ContactCard({ c, symbol }: { c: ContactDetails; symbol: number }) {
   const threatRings = useUi((s) => s.threatRings);
   const label = contactLabel({
@@ -146,32 +150,29 @@ function ContactCard({ c, symbol }: { c: ContactDetails; symbol: number }) {
   });
   const title = c.estimated ? `${label} ${ESTIMATE_LINE}` : label;
   const pm = c.uncertainty_a_m == null ? '—' : `± ${(c.uncertainty_a_m / 1000).toFixed(1)} km`;
+  const idColour = cssVar(IDENTITY_TOKEN[c.identity] ?? 'side.unknown');
   return (
     <>
       <Header
         symbol={SYMBOL_BY_CODE.get(symbol) ?? 'unknown'}
         title={title}
-        subtitle={`Contact C${c.contact_id} · ${c.identity} · ${c.domain}`}
+        subtitle={`Contact C${c.contact_id} · ${c.domain}`}
         side={IDENTITY_SIDE[c.identity] ?? 'unknown'}
         estimate={c.estimated}
         onClose={() => ui.selectContact(null)}
       />
       <div className="card-body">
-        <div className="card-row">
-          <span>
-            <span className="label">Classification: </span>
-            <b>{LEVEL_TEXT[c.level] ?? c.level}</b>
+        <div className="pill-row">
+          <span className="pill solid" style={{ borderColor: idColour, color: idColour }}>
+            {IDENTITY_TEXT[c.identity] ?? c.identity}
           </span>
-          <span>
-            <span className="label">Last update: </span>
-            <b>{c.lost ? `lost ${duration(c.age_s)} ago` : `${duration(c.age_s)} ago`}</b>
+          <span className="pill dim">Classified: {LEVEL_TEXT[c.level] ?? c.level}</span>
+          <span className="pill dim">{QUALITY_TEXT[c.quality] ?? c.quality}</span>
+          <span className={c.lost ? 'pill warn' : 'pill dim'}>
+            {c.lost ? `Lost ${duration(c.age_s)} ago` : `Updated ${duration(c.age_s)} ago`}
           </span>
         </div>
         <div className="card-row">
-          <span>
-            <span className="label">Uncertainty: </span>
-            <b>{c.bearing_only ? 'bearing only' : pm}</b>
-          </span>
           {c.speed_mps != null && !c.fixed && (
             <span>
               <span className="label">Speed: </span>
@@ -184,6 +185,16 @@ function ContactCard({ c, symbol }: { c: ContactDetails; symbol: number }) {
               <b>{(c.alt_m / 1000).toFixed(1)} km</b>
             </span>
           )}
+          {c.heading_deg != null && !c.fixed && (
+            <span>
+              <span className="label">Heading: </span>
+              <b>{Math.round(c.heading_deg)}°</b>
+            </span>
+          )}
+          <span>
+            <span className="label">Position: </span>
+            <b>{c.bearing_only ? 'bearing only' : pm}</b>
+          </span>
         </div>
         {c.threat_m != null && (
           <div className="ranges">
@@ -199,30 +210,56 @@ function ContactCard({ c, symbol }: { c: ContactDetails; symbol: number }) {
             </button>
           </div>
         )}
-        <dl>
-          <dt>Class</dt>
-          <dd>{c.class_name ?? '—'}</dd>
-          <dt>Type</dt>
-          <dd>{c.type_name ?? '—'}</dd>
-          <dt>Count</dt>
-          <dd>{c.count_known ? c.count_max : `${c.count_min}–${c.count_max} (estimate)`}</dd>
-          <dt>Quality</dt>
-          <dd>{c.quality.replace('_', ' ')}</dd>
-          <dt>First seen</dt>
-          <dd>{duration(c.first_seen_s_ago)} ago</dd>
-        </dl>
-        <h3 className="card-subhead">Sources</h3>
-        <ul className="sources">
-          {c.sources.map((s) => (
-            <li key={`${s.kind}-${s.unit}-${s.sensor ?? ''}`}>
-              <b>{s.kind}</b> · {s.unit}
-              {s.sensor ? ` (${s.sensor})` : ''}
-              <span className="muted-inline">
-                {s.network ? ` via ${s.network}` : ' via C2 report'} · {duration(s.age_s)} ago
-              </span>
-            </li>
-          ))}
-        </ul>
+        <div className="block">
+          <span className="block-title">Our hits on it</span>
+          {c.our_shots === 0 ? (
+            <p className="tab-line muted-inline">No weapons fired at it yet.</p>
+          ) : (
+            <>
+              <div className="hits">
+                <b style={{ color: cssVar(c.our_hits > 0 ? 'state.ok' : 'text.secondary') }}>
+                  {c.our_hits} hit{c.our_hits === 1 ? '' : 's'}
+                </b>
+                <span className="muted-inline">
+                  {' '}
+                  of {c.our_shots} weapon{c.our_shots === 1 ? '' : 's'} fired
+                  {c.last_hit_s_ago != null ? ` · last hit ${duration(c.last_hit_s_ago)} ago` : ''}
+                </span>
+              </div>
+              <p className="hint">Its true condition is not known: only our own weapon results are reported.</p>
+            </>
+          )}
+        </div>
+        <div className="block">
+          <span className="block-title">Identification</span>
+          <dl className="facts">
+            <dt>Class</dt>
+            <dd>{c.class_name ?? '—'}</dd>
+            <dt>Type</dt>
+            <dd>{c.type_name ?? '—'}</dd>
+            <dt>Count</dt>
+            <dd>{c.count_known ? c.count_max : `${c.count_min}–${c.count_max} (estimate)`}</dd>
+            <dt>First seen</dt>
+            <dd>{duration(c.first_seen_s_ago)} ago</dd>
+          </dl>
+        </div>
+        <div className="block">
+          <span className="block-title">Sources</span>
+          <ul className="source-list">
+            {c.sources.map((s) => (
+              <li key={`${s.kind}-${s.unit}-${s.sensor ?? ''}`}>
+                <span className="pill dim">{s.kind}</span>
+                <span className="src-unit">
+                  {s.unit}
+                  {s.sensor ? ` · ${s.sensor}` : ''}
+                </span>
+                <span className="muted-inline">
+                  {s.network ? `via ${s.network}` : 'C2 report'} · {duration(s.age_s)} ago
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </>
   );
@@ -254,7 +291,7 @@ function SatelliteCard({ d }: { d: SatelliteDetails }) {
         ) : d.taskings.length === 0 ? (
           <p className="muted">No imaging tasks. Right-click the map to task this satellite.</p>
         ) : (
-          <dl>
+          <dl className="facts">
             {d.taskings.map((t, i) => (
               <span key={i} className="dl-pair">
                 <dt>
@@ -265,7 +302,7 @@ function SatelliteCard({ d }: { d: SatelliteDetails }) {
             ))}
           </dl>
         )}
-        <dl>
+        <dl className="facts">
           <dt>Class</dt>
           <dd>{d.class_name || '—'}</dd>
         </dl>
@@ -381,7 +418,7 @@ function RoeControl({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   ];
   return (
     <div className="roe-control">
-      <dl>
+      <dl className="facts">
         <dt>Effective</dt>
         <dd>
           {ROE_NAMES[d.roe]} <span className="muted-inline">(from the {d.roe_source})</span>
@@ -502,7 +539,7 @@ function StrikePanel({ d, aim, bridge, toast }: { d: GroupDetails; aim: StrikeAi
   return (
     <div className="strike-panel">
       <div className="strike-title">Strike</div>
-      <dl>
+      <dl className="facts">
         <dt>Target</dt>
         <dd>{targetText ?? <span className="muted-inline">Click an enemy contact on the map, or open sea for a point. Esc cancels.</span>}</dd>
         {rangeM != null && (
@@ -576,7 +613,9 @@ function StrikePanel({ d, aim, bridge, toast }: { d: GroupDetails; aim: StrikeAi
 
 function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   const rings = useUi((s) => s.rings);
-  const [open, setOpen] = useState<string | null>(null);
+  const weaponRing = useUi((s) => s.weaponRing);
+  const picked = d.weapons.find((w) => w.id === weaponRing) ?? null;
+  const [tab, setTab] = useState('weapons');
   const air = d.domain === 'air';
   const title = d.count > 1 ? `${d.count} × ${d.type_name}` : d.type_name;
   const subtitle = [d.name, d.crew ? `${d.crew} Personnel` : null].filter(Boolean).join(' · ');
@@ -650,14 +689,16 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
           },
         ],
       ];
-  const section = (key: string, label: string, body: React.ReactNode) => (
-    <div className="card-section">
-      <button type="button" className="section-toggle" aria-expanded={open === key} onClick={() => setOpen(open === key ? null : key)}>
-        {open === key ? '▾' : '▸'} {label}
-      </button>
-      {open === key && <div className="section-body">{body}</div>}
-    </div>
-  );
+  const tabs: [string, string][] = [
+    ['weapons', 'Weapons'],
+    ['task', 'Task'],
+    ['sensors', 'Sensors'],
+    ...(d.jammer ? ([['ew', 'EW']] as [string, string][]) : []),
+    ['roe', 'ROE'],
+    ['specs', 'Specs'],
+  ];
+  const current = tabs.some(([k]) => k === tab) ? tab : 'weapons';
+  const health = groupHealth(d);
   return (
     <>
       <Header symbol={CATEGORY_SYMBOL[d.category] ?? 'unknown'} title={title} subtitle={subtitle} />
@@ -668,13 +709,21 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
             <span className="label">Status: </span>
             <b style={{ color: statusColour(d.status) }}>{d.status || '—'}</b>
           </span>
-          <span>
-            <span className="label">Fuel: </span>
-            <b style={{ color: fuelColour(d.fuel_pct, d.bingo) }}>
-              {d.fuel_pct == null ? '—' : `${Math.round(d.fuel_pct)}%`}
-              {d.bingo ? ' BINGO' : ''}
-            </b>
-          </span>
+          {d.fuel_pct != null ? (
+            <span>
+              <span className="label">Fuel: </span>
+              <b style={{ color: fuelColour(d.fuel_pct, d.bingo) }}>
+                {Math.round(d.fuel_pct)}%{d.bingo ? ' BINGO' : ''}
+              </b>
+            </span>
+          ) : (
+            health && (
+              <span>
+                <span className="label">Hull: </span>
+                <b style={{ color: healthColour(health.pct) }}>{Math.round(health.pct)}%</b>
+              </span>
+            )
+          )}
         </div>
         <div className="card-row">
           <span>
@@ -692,6 +741,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
             <b>{Math.round(d.heading_deg)}°</b>
           </span>
         </div>
+        <Condition d={d} />
         <div className="ranges">
           <button type="button" className={`range-row sensor${rings.sensor ? '' : ' off'}`} aria-pressed={rings.sensor} onClick={() => toggle('sensor')}>
             <SensorGlyph />
@@ -703,8 +753,8 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
           </button>
           <button type="button" className={`range-row engage${rings.engage ? '' : ' off'}`} aria-pressed={rings.engage} onClick={() => toggle('engage')}>
             <EngageGlyph />
-            <span>Max Engagement Range:</span>
-            <b>{km(d.ranges.engage_m)}</b>
+            <span>{picked ? `${picked.name} Range:` : 'Max Engagement Range:'}</span>
+            <b>{km(picked ? picked.max_range_m : d.ranges.engage_m)}</b>
           </button>
           <button type="button" className={`range-row radius${rings.radius ? '' : ' off'}`} aria-pressed={rings.radius} onClick={() => toggle('radius')}>
             <RadiusGlyph />
@@ -712,133 +762,89 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
             <b>{km(d.ranges.combat_radius_m)}</b>
           </button>
         </div>
-        {section(
-          'task',
-          'Task',
-          <dl>
-            <dt>Task</dt>
-            <dd>{d.task.kind.replace('_', ' ')}</dd>
-            {d.task.waypoints.length > 0 && (
-              <>
-                <dt>Waypoints</dt>
-                <dd>
-                  {d.task.waypoints.length}
-                  {d.task.looped ? ', loop' : ''}
-                </dd>
-              </>
-            )}
-            {d.task.radius_m != null && (
-              <>
-                <dt>Radius</dt>
-                <dd>{km(d.task.radius_m)}</dd>
-              </>
-            )}
-            {d.task.base && (
-              <>
-                <dt>Base</dt>
-                <dd>{d.task.base.name}</dd>
-              </>
-            )}
-            <dt>Home base</dt>
-            <dd>{d.home_base?.name ?? '—'}</dd>
-            <dt>Bingo return</dt>
-            <dd>{d.bingo_rtb ? 'on' : 'off'}</dd>
-          </dl>,
-        )}
-        {section(
-          'weapons',
-          'Weapons',
-          d.weapons.length === 0 && d.countermeasures.length === 0 ? (
-            <p className="muted">No weapons loaded.</p>
-          ) : (
-            <dl>
-              {d.loadout && (
+        <div className="card-tabs" role="tablist" aria-label="Unit details">
+          {tabs.map(([key, label]) => (
+            <button key={key} type="button" role="tab" aria-selected={current === key} className={current === key ? 'tab active' : 'tab'} onClick={() => setTab(key)}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="tab-body" role="tabpanel">
+          {current === 'weapons' && <WeaponsTab d={d} />}
+          {current === 'task' && (
+            <dl className="facts">
+              <dt>Task</dt>
+              <dd>{d.task.kind.replace(/_/g, ' ')}</dd>
+              {d.task.waypoints.length > 0 && (
                 <>
-                  <dt>Loadout</dt>
-                  <dd>{d.loadout}</dd>
-                </>
-              )}
-              {d.weapons.map((w) => {
-                const full = d.stations.filter((s) => s.weapon === w.name).reduce((sum, s) => sum + s.full, 0);
-                return (
-                  <span key={w.name} className="dl-pair">
-                    <dt>{w.name}</dt>
-                    <dd>
-                      {w.count}
-                      {full > 0 ? ` of ${full}` : ''} {air ? 'per aircraft' : d.count > 1 ? 'per ship' : 'left'}
-                    </dd>
-                    <dd className="weapon-spec">
-                      {weaponSpecLines(w).map((line) => (
-                        <span key={line}>{line}</span>
-                      ))}
-                    </dd>
-                  </span>
-                );
-              })}
-              {d.fire_channels && (
-                <>
-                  <dt>Fire channels</dt>
-                  <dd style={{ color: d.fire_channels.used >= d.fire_channels.total ? cssVar('state.warn') : undefined }}>
-                    {d.fire_channels.used} of {d.fire_channels.total} in use
+                  <dt>Waypoints</dt>
+                  <dd>
+                    {d.task.waypoints.length}
+                    {d.task.looped ? ', loop' : ''}
                   </dd>
                 </>
               )}
-              {d.countermeasures.map((m) => (
-                <span key={m.name} className="dl-pair">
+              {d.task.radius_m != null && (
+                <>
+                  <dt>Radius</dt>
+                  <dd>{km(d.task.radius_m)}</dd>
+                </>
+              )}
+              {d.task.base && (
+                <>
+                  <dt>Base</dt>
+                  <dd>{d.task.base.name}</dd>
+                </>
+              )}
+              <dt>Home base</dt>
+              <dd>{d.home_base?.name ?? '—'}</dd>
+              {air && (
+                <>
+                  <dt>Bingo return</dt>
+                  <dd>{d.bingo_rtb ? 'on' : 'off'}</dd>
+                </>
+              )}
+            </dl>
+          )}
+          {current === 'sensors' && (
+            <>
+              <EmconControl d={d} bridge={bridge} toast={toast} />
+              {d.sensors.length === 0 ? (
+                <p className="muted">No sensors besides the crew.</p>
+              ) : (
+                <ul className="tag-list">
+                  {d.sensors.map((s) => (
+                    <li key={s}>{s}</li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+          {current === 'ew' && <JammerControl d={d} bridge={bridge} toast={toast} />}
+          {current === 'roe' && <RoeControl d={d} bridge={bridge} toast={toast} />}
+          {current === 'specs' && (
+            <dl className="facts">
+              <dt>Type</dt>
+              <dd>{d.type_name}</dd>
+              <dt>Class</dt>
+              <dd>{d.class_name || '—'}</dd>
+              {d.mach != null && (
+                <>
+                  <dt>Mach</dt>
+                  <dd>{d.mach.toFixed(2)}</dd>
+                </>
+              )}
+              {d.members.map((m) => (
+                <span key={m.id} className="dl-pair">
                   <dt>{m.name}</dt>
-                  <dd>{m.count} left</dd>
+                  <dd style={{ color: fuelColour(m.fuel_pct) }}>
+                    {m.status} {m.fuel_pct == null ? '' : `· ${Math.round(m.fuel_pct)}%`}
+                  </dd>
                 </span>
               ))}
             </dl>
-          ),
-        )}
-        {section(
-          'sensors',
-          'Sensors & EMCON',
-          <>
-            <EmconControl d={d} bridge={bridge} toast={toast} />
-            {d.sensors.length === 0 ? (
-              <p className="muted">No sensors besides the crew.</p>
-            ) : (
-              <ul className="sources">
-                {d.sensors.map((s) => (
-                  <li key={s}>{s}</li>
-                ))}
-              </ul>
-            )}
-          </>,
-        )}
-        {d.jammer &&
-          section(
-            'ew',
-            'Electronic Warfare',
-            <JammerControl d={d} bridge={bridge} toast={toast} />,
           )}
-        {section('roe', 'ROE', <RoeControl d={d} bridge={bridge} toast={toast} />)}
-        {section(
-          'specs',
-          'Specs',
-          <dl>
-            <dt>Type</dt>
-            <dd>{d.type_name}</dd>
-            <dt>Class</dt>
-            <dd>{d.class_name || '—'}</dd>
-            {d.mach != null && (
-              <>
-                <dt>Mach</dt>
-                <dd>{d.mach.toFixed(2)}</dd>
-              </>
-            )}
-            {d.members.map((m) => (
-              <span key={m.id} className="dl-pair">
-                <dt>{m.name}</dt>
-                <dd style={{ color: fuelColour(m.fuel_pct) }}>
-                  {m.status} {m.fuel_pct == null ? '' : `· ${Math.round(m.fuel_pct)}%`}
-                </dd>
-              </span>
-            ))}
-          </dl>,
-        )}
+        </div>
         {striking ? (
           <StrikePanel d={d} aim={striking.aim} bridge={bridge} toast={toast} />
         ) : (
@@ -851,6 +857,143 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+/** Lowest hull of a ship or ground group; none for aircraft. */
+function groupHealth(d: GroupDetails): { pct: number } | null {
+  const pcts = d.members.map((m) => m.health_pct).filter((p): p is number => p != null);
+  return pcts.length === 0 ? null : { pct: Math.min(...pcts) };
+}
+
+const SHIP_SUBSYSTEMS = ['radar', 'VLS', 'launcher', 'propulsion'];
+
+/** Condition of each member after hits (doc 02 §13): hull bar and knocked-out subsystems for
+ * ships and ground units; intact or damaged for aircraft. */
+function Condition({ d }: { d: GroupDetails }) {
+  const ship = d.category.startsWith('ship');
+  const hurt = d.members.some((m) => m.damaged);
+  if (!hurt) {
+    return (
+      <div className="condition compact">
+        <span className="block-title">Condition</span>
+        <span className="pill ok">{d.count > 1 ? 'All intact' : 'Intact'}</span>
+      </div>
+    );
+  }
+  return (
+    <div className="condition">
+      <span className="block-title">Condition</span>
+      {d.members.map((m) => (
+        <div key={m.id} className="cond-member">
+          {d.count > 1 && <span className="cond-name">{m.name}</span>}
+          {m.health_pct != null ? (
+            <span className="hp" title={`${Math.round(m.health_pct)}% of damage points left`}>
+              <span className="hp-bar">
+                <span style={{ width: `${m.health_pct}%`, background: healthColour(m.health_pct) }} />
+              </span>
+              <b style={{ color: healthColour(m.health_pct) }}>{Math.round(m.health_pct)}%</b>
+            </span>
+          ) : (
+            <span className={m.damaged ? 'pill bad' : 'pill ok'}>{m.damaged ? 'Damaged · mission aborted' : 'Intact'}</span>
+          )}
+          <span className="cond-flags">
+            {m.sinking_in_s != null && <span className="pill bad">Sinking in {duration(m.sinking_in_s)}</span>}
+            {m.out_of_action && m.sinking_in_s == null && <span className="pill bad">Out of action</span>}
+            {ship &&
+              SHIP_SUBSYSTEMS.map((s) => {
+                const out = m.out.includes(s);
+                return (
+                  <span key={s} className={out ? 'pill bad' : 'pill dim'} title={out ? `${s} knocked out` : `${s} working`}>
+                    {s}
+                    {out ? ' out' : ''}
+                  </span>
+                );
+              })}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Weapons tab: one row per weapon with rounds and key numbers; picking one shows its full
+ * specs and its range ring on the map (doc 10 §7). */
+function WeaponsTab({ d }: { d: GroupDetails }) {
+  const picked = useUi((s) => s.weaponRing);
+  const air = d.domain === 'air';
+  if (d.weapons.length === 0 && d.countermeasures.length === 0) return <p className="muted">No weapons loaded.</p>;
+  return (
+    <>
+      {d.loadout && (
+        <p className="tab-line">
+          <span className="label">Loadout </span>
+          {d.loadout}
+        </p>
+      )}
+      <ul className="weapon-list">
+        {d.weapons.map((w) => {
+          const full = d.stations.filter((s) => s.weapon === w.name).reduce((sum, s) => sum + s.full, 0);
+          const on = picked === w.id;
+          const left = full > 0 ? w.count / full : 1;
+          return (
+            <li key={w.id}>
+              <button
+                type="button"
+                className={on ? 'weapon-row on' : 'weapon-row'}
+                aria-pressed={on}
+                title={on ? 'Hide this weapon’s range ring' : 'Show this weapon’s range on the map'}
+                onClick={() => ui.set({ weaponRing: on ? null : w.id })}
+              >
+                <span className="w-head">
+                  <span className="w-name">{w.name}</span>
+                  <span className="w-count">
+                    <b>{w.count}</b>
+                    {full > 0 ? ` / ${full}` : ''} {air ? 'per aircraft' : d.count > 1 ? 'per ship' : ''}
+                  </span>
+                </span>
+                <span className="ammo-bar">
+                  <span style={{ width: `${Math.round(left * 100)}%` }} />
+                </span>
+                <span className="w-tags">
+                  {weaponTags(w).map((t) => (
+                    <span key={t} className="pill dim">
+                      {t}
+                    </span>
+                  ))}
+                  {!w.engage_on_remote && <span className="pill warn">own track</span>}
+                </span>
+                {on && (
+                  <dl className="facts w-facts">
+                    {weaponFacts(w).map((f) => (
+                      <span key={f.label} className="dl-pair">
+                        <dt>{f.label}</dt>
+                        <dd>{f.value}</dd>
+                      </span>
+                    ))}
+                  </dl>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {d.weapons.length > 0 && !picked && <p className="hint">Select a weapon to see its range on the map.</p>}
+      {d.fire_channels && (
+        <p className="tab-line">
+          <span className="label">Fire channels </span>
+          <b style={{ color: d.fire_channels.used >= d.fire_channels.total ? cssVar('state.warn') : undefined }}>
+            {d.fire_channels.used} of {d.fire_channels.total} in use
+          </b>
+        </p>
+      )}
+      {d.countermeasures.length > 0 && (
+        <p className="tab-line">
+          <span className="label">Countermeasures </span>
+          {d.countermeasures.map((m) => `${m.name} ${m.count}`).join(' · ')}
+        </p>
+      )}
     </>
   );
 }

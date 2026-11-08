@@ -867,7 +867,7 @@ export class UnitLayers {
         getPosition: (d) => d.position,
         getRadius: 5,
         radiusUnits: 'pixels',
-        getFillColor: c('ring.radius'),
+        getFillColor: (d) => d.color,
       }),
     ];
     const contactAt = new Map(contacts.map((d) => [d.id, d.position]));
@@ -887,8 +887,9 @@ export class UnitLayers {
     texts: TextItem[],
     waypoints: { position: LonLat; text: string }[],
   ): void {
-    const { rings } = ui.get();
+    const { rings, weaponRing } = ui.get();
     const r = d.ranges;
+    const picked = d.weapons.find((w) => w.id === weaponRing) ?? null;
     if (rings.sensor && r.sensor_m) {
       paths.push({
         path: geodesicCircle(pos, r.sensor_m),
@@ -910,7 +911,30 @@ export class UnitLayers {
           tip: `Radar horizon vs ships: ${km(r.surface_horizon_m)} · beyond it Earth's curvature hides ships and ground units from ${d.name}'s own radar`,
         });
     }
-    if (rings.engage && r.engage_m) {
+    if (rings.engage && picked) {
+      // The weapon picked in the card's Weapons tab replaces the engagement ring.
+      const own = !picked.engage_on_remote ? ' · fires only on our own track' : '';
+      paths.push({
+        path: geodesicCircle(pos, picked.max_range_m),
+        color: c('ring.engage'),
+        width: 2.5,
+        dashed: false,
+        tip: `${picked.name}: reaches ${km(picked.max_range_m)}${picked.min_range_m > 0 ? `, not closer than ${(picked.min_range_m / 1000).toFixed(1)} km` : ''}${own}`,
+      });
+      if (picked.min_range_m >= 1000)
+        paths.push({
+          path: geodesicCircle(pos, picked.min_range_m),
+          color: c('ring.engage', 0.6),
+          width: 1,
+          dashed: true,
+          tip: `${picked.name}: minimum range ${(picked.min_range_m / 1000).toFixed(1)} km`,
+        });
+      texts.push({
+        position: destination(pos, 0, picked.max_range_m),
+        text: `${picked.name} (${km(picked.max_range_m)})`,
+        color: c('ring.engage'),
+      });
+    } else if (rings.engage && r.engage_m) {
       const longest = d.weapons.find((w) => w.max_range_m === r.engage_m);
       const ownTrack = longest && !longest.engage_on_remote;
       paths.push({
