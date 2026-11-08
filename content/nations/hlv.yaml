@@ -1,0 +1,8 @@
+id: hlv
+kind: nation
+name: Halvast
+colour: "#5E8C8C"
+flag: { pattern: disc, colours: ["#2B5C6B", "#F0E6C8"] }
+doctrine: hlv-patrol
+datalinks: [weave]
+design: { note: "Island republic; frigates, maritime patrol, drones" }

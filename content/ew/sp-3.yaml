@@ -1,0 +1,7 @@
+id: sp-3
+kind: ew_suite
+name: SP-3 self-protection jammer
+modes:
+  self_protect: { jam_strength: 4 }
+effects: [radar]
+design: { archetype: jammer-self-protect, note: "Internal self-protection jammer for heavy and stealth fighters" }

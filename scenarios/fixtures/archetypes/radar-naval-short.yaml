@@ -1,0 +1,6 @@
+id: radar-naval-short
+kind: archetype
+name: Naval short-range radar
+bands:
+  radar.r_ref_km: [60, 120]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,16 @@
+id: ald-maritime
+kind: doctrine
+name: Aldmark maritime
+aggression: 0.5
+risk_tolerance: 0.4
+emcon_discipline: 0.6
+emcon_default: on
+missile_reserve_fraction: 0.3
+launch_doctrine: no_escape_zone
+shots_per_target: 2
+cap_aircraft: 2
+cap_rotation_min: 60
+reaction_time_s: 6
+iads_layers: [medium, short]
+strike_package: [escort, strike]
+design: { note: "Fleet first; protects sea lanes" }

@@ -1,0 +1,7 @@
+id: radar-fighter-aesa
+kind: archetype
+name: Fighter AESA radar
+bands:
+  radar.r_ref_km: [80, 160]
+  radar.jam_resistance: [5, 9]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

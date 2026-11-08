@@ -1,0 +1,9 @@
+id: ej-2-escort
+kind: loadout
+name: Escort jamming
+platform: ej-2
+roles: [ew]
+items:
+  - { station: wing, weapon: eh-2, count: 2 }
+  - { station: wingtip, weapon: ai-3, count: 2 }
+design: { note: "Jams and shoots back at radars" }

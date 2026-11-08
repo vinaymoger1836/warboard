@@ -1,0 +1,7 @@
+id: aam-short-ir
+kind: archetype
+name: Short-range IR air-to-air missile
+bands:
+  profile.max_range_km: [10, 35]
+  profile.max_speed_mach: [2.5, 3.5]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

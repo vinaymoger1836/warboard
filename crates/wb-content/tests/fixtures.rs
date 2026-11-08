@@ -150,7 +150,8 @@ name: Test flare
 bands:
   effect: [0.5, 0.9]
   mass_kg: [1, 2]
-".into(),
+"
+        .into(),
     });
     files.push(SourceFile {
         path: "countermeasures/test-weak-flare.yaml".into(),
@@ -161,7 +162,8 @@ cm_type: flare
 effect: 0.3
 defeats: [ir]
 design: { archetype: test-flare-band, note: \"Below the band on purpose.\" }
-".into(),
+"
+        .into(),
     });
     let set = load_files("content", files).expect("warnings do not fail the load");
     let shown: Vec<String> = set.warnings.iter().map(|w| w.to_string()).collect();

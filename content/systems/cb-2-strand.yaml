@@ -1,0 +1,13 @@
+id: cb-2-strand
+kind: system
+name: CB-2 Strand coastal battery
+short_name: Strand
+deploy_as: site
+setup_min: 10
+components:
+  - { platform: strand-radar-vehicle, count: 1, role: fire_control }
+  - { platform: strand-cp, count: 1, role: c2 }
+  - { platform: strand-launcher, count: 4, role: launcher, magazine: { as-4-tarn: 2 } }
+emcon_default: off
+iads_capable: false
+design: { archetype: coastal-battery, note: "Closes straits and gulfs to surface ships; blind without its radar or an external picture" }

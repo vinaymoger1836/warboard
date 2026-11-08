@@ -1,0 +1,16 @@
+id: mrv-quality
+kind: doctrine
+name: Morvel quality over quantity
+aggression: 0.5
+risk_tolerance: 0.2
+emcon_discipline: 0.9
+emcon_default: off
+missile_reserve_fraction: 0.3
+launch_doctrine: no_escape_zone
+shots_per_target: 1
+cap_aircraft: 2
+cap_rotation_min: 60
+reaction_time_s: 4
+iads_layers: [medium]
+strike_package: [sead, strike]
+design: { note: "Few, advanced, and careful with them" }

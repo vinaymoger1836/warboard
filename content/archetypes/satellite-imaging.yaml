@@ -1,0 +1,5 @@
+id: satellite-imaging
+kind: archetype
+name: Imaging satellite
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

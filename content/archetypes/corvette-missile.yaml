@@ -1,0 +1,6 @@
+id: corvette-missile
+kind: archetype
+name: Missile corvette
+bands:
+  mobility.max_speed_kt: [25, 35]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

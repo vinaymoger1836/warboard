@@ -1,0 +1,20 @@
+id: hlv-forces
+kind: inventory
+nation: hlv
+platforms:
+  mf-4: 24
+  ud-9: 12
+  aw-1: 2
+  halvard: 8
+  kest: 2
+  mr-sam-tolven: 2
+munitions:
+  ar-7: 150
+  ai-3: 80
+  as-4-tarn: 160
+  gb-900: 60
+  sn-30: 400
+  sl-12: 40
+  sl-20: 60
+  cg-30: 40
+design: { note: "Island republic; frigates, maritime patrol, drones; basing follows with the PF bases" }

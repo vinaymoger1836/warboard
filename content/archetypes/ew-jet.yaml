@@ -1,0 +1,7 @@
+id: ew-jet
+kind: archetype
+name: Electronic warfare jet
+bands:
+  signature.rcs_m2.front: [2, 15]
+  mobility.max_speed_mach: [0.8, 1.8]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

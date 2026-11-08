@@ -1,0 +1,5 @@
+id: ground-launcher
+kind: archetype
+name: Missile launcher vehicle
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,7 @@
+id: sam-missile-medium
+kind: archetype
+name: Medium-range surface-to-air missile
+bands:
+  profile.max_range_km: [40, 120]
+  profile.max_speed_mach: [3.0, 5.0]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,24 @@
+id: gb-900
+kind: weapon
+name: GB-900
+category: bomb
+targets: [ground, surface]
+profile:
+  kind: glide
+  max_speed_mach: 0.9
+  max_range_km: 25
+guidance:
+  midcourse: [inertial, gps]
+  terminal: gps_ins
+warhead_kg: 430
+warhead: blast
+cep_m: 10
+lethal_radius_m: 30
+mass_kg: 920
+station_category: [bomb_900kg]
+internal_carriage: true
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
+  ir: { cruise: 0.05 }
+  visual_size_m: 3.9
+design: { archetype: bomb-guided-900, note: "Unpowered satellite-guided bomb; release envelope from altitude and speed" }

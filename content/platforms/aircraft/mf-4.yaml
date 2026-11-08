@@ -1,0 +1,32 @@
+id: mf-4
+kind: platform
+name: MF-4 Sellis
+short_name: MF-4
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 1.9
+  ceiling_m: 15000
+  sustained_g: 8.0
+  min_runway_m: 1500
+signature:
+  rcs_m2: { front: 2, side: 6, rear: 3, top: 10 }
+  ir: { cruise: 1.0, afterburner: 3.0 }
+  visual_size_m: 15.0
+fuel:
+  internal_kg: 4500
+  burn_kg_h: { cruise: 1800, military: 3600, afterburner: 10000 }
+  aar: probe
+stations:
+  - { id: wing_inner, kind: external, categories: [bomb_900kg, ashm, arm, aam_medium], max_kg: 2000, capacity: 2 }
+  - { id: wing_mid,   kind: external, categories: [aam_medium, arm], max_kg: 600, capacity: 2 }
+  - { id: wingtip,    kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+  - { id: centre,     kind: external, categories: [bomb_900kg], max_kg: 1000, capacity: 1 }
+sensors: [mr-24]
+countermeasures: { cm-chaff: 30, cm-flare: 30 }
+datalinks: [weave, tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.85 }
+turnaround_min: 45
+design: { archetype: fighter-multirole, note: "The workhorse: cheap, flexible, short-legged" }

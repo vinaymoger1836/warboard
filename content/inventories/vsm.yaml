@@ -1,0 +1,23 @@
+id: vsm-forces
+kind: inventory
+nation: vsm
+platforms:
+  hf-4: 48
+  mf-4: 72
+  aw-1: 4
+  tk-3: 4
+  lr-sam-bastra: 8
+  mr-sam-tolven: 12
+  kest: 6
+munitions:
+  ar-7: 500
+  ar-9: 120
+  ai-3: 300
+  as-8-spire: 80
+  as-4-tarn: 60
+  gb-900: 400
+  sl-40: 300
+  sl-20: 400
+  sl-12: 120
+  cg-30: 20
+design: { note: "Large continental power; deep air-defence network, many fighters; basing follows with the PF bases" }

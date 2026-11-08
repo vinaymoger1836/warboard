@@ -1,0 +1,25 @@
+id: ud-9
+kind: platform
+name: UD-9 Longwatch
+short_name: UD-9
+category: aircraft/uav
+target_class: uav
+crew: 0
+mobility:
+  cruise_speed_mach: 0.25
+  max_speed_mach: 0.38
+  ceiling_m: 14000
+  sustained_g: 2
+  min_runway_m: 1500
+signature:
+  rcs_m2: { front: 1, side: 3, rear: 1, top: 5 }
+  ir: { cruise: 0.1 }
+  visual_size_m: 20.0
+fuel:
+  internal_kg: 1700
+  burn_kg_h: { cruise: 70 }
+sensors: [et-12, es-60]
+datalinks: [weave]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 120
+design: { archetype: drone-male, note: "Slow, long-endurance eyes and ears; unarmed" }

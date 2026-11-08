@@ -1,0 +1,6 @@
+id: flare-cartridge
+kind: archetype
+name: Decoy flare
+bands:
+  effect: [0.2, 0.8]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

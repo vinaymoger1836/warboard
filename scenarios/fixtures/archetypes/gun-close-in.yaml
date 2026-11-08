@@ -1,0 +1,6 @@
+id: gun-close-in
+kind: archetype
+name: Close-in gun
+bands:
+  profile.max_range_km: [1.5, 4]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

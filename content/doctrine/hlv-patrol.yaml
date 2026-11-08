@@ -1,0 +1,16 @@
+id: hlv-patrol
+kind: doctrine
+name: Halvast maritime patrol
+aggression: 0.4
+risk_tolerance: 0.4
+emcon_discipline: 0.6
+emcon_default: on
+missile_reserve_fraction: 0.3
+launch_doctrine: no_escape_zone
+shots_per_target: 2
+cap_aircraft: 2
+cap_rotation_min: 90
+reaction_time_s: 6
+iads_layers: [medium, short]
+strike_package: [escort, strike]
+design: { note: "Watches the sea with drones and frigates" }

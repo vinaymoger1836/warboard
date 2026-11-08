@@ -1,0 +1,32 @@
+id: sl-12
+kind: weapon
+name: SL-12
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 3
+  max_speed_mach: 3.0
+  coast_tau_s: { sea_level: 12.1, high_alt: 30.4 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 15
+  min_range_km: 0.5
+  max_g: 40
+  calibration: { launch_alt_m: 0, launch_speed_mach: 0, target_alt_m: 3000, target_speed_mach: 0.8 }
+guidance:
+  terminal: ir
+  seeker_range_km: 12
+  seeker_resistance: 0.5
+warhead_kg: 10
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, cruise_missile: 0.6, anti_ship_missile: 0.6, anti_radiation_missile: 0.5 }
+mass_kg: 100
+station_category: [sam_box]
+countermeasure_resistance: { flare: 0.5 }
+envelope: { min_alt_m: 5, max_alt_m: 8000 }
+signature:
+  rcs_m2: { front: 0.02, side: 0.1, rear: 0.03, top: 0.1 }
+  ir: { cruise: 0.4 }
+  visual_size_m: 3.0
+design: { archetype: sam-missile-short, note: "IR point-defence missile for corvettes" }

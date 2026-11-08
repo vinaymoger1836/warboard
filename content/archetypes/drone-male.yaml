@@ -1,0 +1,8 @@
+id: drone-male
+kind: archetype
+name: Medium-altitude long-endurance drone
+bands:
+  signature.rcs_m2.front: [0.5, 3]
+  mobility.max_speed_mach: [0.3, 0.5]
+  mobility.ceiling_m: [9000, 16000]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

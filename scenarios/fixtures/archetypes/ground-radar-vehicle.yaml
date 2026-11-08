@@ -1,0 +1,5 @@
+id: ground-radar-vehicle
+kind: archetype
+name: Radar vehicle
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

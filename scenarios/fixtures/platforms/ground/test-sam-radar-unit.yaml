@@ -9,4 +9,4 @@ signature: { rcs_m2: { front: 25, side: 35, rear: 25, top: 50 } }
 sensors:
   - { sensor: test-sam-radar, height_m: 15 }
 durability: { model: ground, damage_points: 50 }
-design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { archetype: ground-radar-vehicle, note: "Generic test fixture (ADR-035); stats in the range of its class" }

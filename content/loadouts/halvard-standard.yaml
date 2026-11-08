@@ -1,0 +1,10 @@
+id: halvard-standard
+kind: loadout
+name: Standard
+platform: halvard
+roles: [air_defence, anti_ship]
+items:
+  - { station: vls, weapon: sn-30, count: 32 }
+  - { station: ashm, weapon: as-4-tarn, count: 8 }
+  - { station: gun, weapon: cg-30, count: 2 }
+design: { note: "Full air-defence fit" }

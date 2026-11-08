@@ -1,0 +1,7 @@
+id: aam-long-ramjet
+kind: archetype
+name: Long-range ramjet air-to-air missile
+bands:
+  profile.max_range_km: [150, 250]
+  profile.max_speed_mach: [3.5, 4.5]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

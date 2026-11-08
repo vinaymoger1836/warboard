@@ -5,4 +5,4 @@ colour: "#8A6F4E"
 flag: { pattern: horizontal, colours: ["#8A6F4E", "#E6E8EB"] }
 doctrine: test-doctrine
 datalinks: [test-link]
-design: { note: "Generic test fixture (ADR-035)." }
+design: { note: "Generic test fixture (ADR-035)" }

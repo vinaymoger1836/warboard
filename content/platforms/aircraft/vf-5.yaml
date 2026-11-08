@@ -1,0 +1,35 @@
+id: vf-5
+kind: platform
+name: VF-5 Vantor
+short_name: VF-5
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 1.7
+  ceiling_m: 15500
+  sustained_g: 6.0
+  min_runway_m: 2200
+signature:
+  rcs_m2: { front: 0.01, side: 0.2, rear: 0.08, top: 0.1 }
+  external_stores_rcs_multiplier: 8
+  ir: { cruise: 1.0, afterburner: 3.0 }
+  visual_size_m: 15.5
+fuel:
+  internal_kg: 8000
+  burn_kg_h: { cruise: 2500, military: 5000, afterburner: 13500 }
+  aar: boom
+stations:
+  - { id: bay_l_in,  kind: internal, categories: [aam_medium, aam_short], max_kg: 200 }
+  - { id: bay_l_out, kind: internal, categories: [aam_medium, bomb_900kg, arm], max_kg: 1100 }
+  - { id: bay_r_out, kind: internal, categories: [aam_medium, bomb_900kg, arm], max_kg: 1100 }
+  - { id: bay_r_in,  kind: internal, categories: [aam_medium, aam_short], max_kg: 200 }
+  - { id: wing,      kind: external, categories: [bomb_900kg, ashm, arm, aam_medium], max_kg: 2400, capacity: 2 }
+sensors: [vr-81, ir-50]
+ew: [sp-3]
+countermeasures: { cm-chaff: 40, cm-flare: 40 }
+datalinks: [weave]
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+turnaround_min: 75
+design: { archetype: fighter-stealth, note: "Low frontal RCS, modest speed; strong in the first look, few weapons inside" }

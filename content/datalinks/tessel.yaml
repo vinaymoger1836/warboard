@@ -1,0 +1,9 @@
+id: tessel
+kind: datalink
+name: Tessel
+latency_s: 3
+capacity_tracks: 600
+range_km: 400
+engage_on_remote: false
+jam_resistance: 0.6
+design: { archetype: datalink-tactical, note: "Robust but slower link without engage-on-remote; used by the continental nations" }

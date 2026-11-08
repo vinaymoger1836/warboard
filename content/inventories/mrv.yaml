@@ -1,0 +1,16 @@
+id: mrv-forces
+kind: inventory
+nation: mrv
+platforms:
+  vf-5: 24
+  ej-2: 4
+  aw-1: 2
+  tk-3: 2
+  mr-sam-tolven: 2
+munitions:
+  ar-7: 200
+  ai-3: 80
+  gb-900: 150
+  eh-2: 60
+  sl-20: 60
+design: { note: "Small and wealthy; few but advanced systems; basing follows with the PF bases" }

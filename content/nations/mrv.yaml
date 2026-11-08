@@ -1,0 +1,8 @@
+id: mrv
+kind: nation
+name: Morvel
+colour: "#7B6A9A"
+flag: { pattern: diagonal, colours: ["#3B2F5C", "#D8D8E0"] }
+doctrine: mrv-quality
+datalinks: [weave]
+design: { note: "Small and wealthy; few but advanced systems" }

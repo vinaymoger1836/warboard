@@ -9,4 +9,4 @@ munitions:
   test-interceptor: 120
   test-asm: 64
   test-ciws: 50
-design: { note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { note: "Generic test fixture (ADR-035)" }

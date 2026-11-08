@@ -1,0 +1,7 @@
+id: sam-missile-long
+kind: archetype
+name: Long-range surface-to-air missile
+bands:
+  profile.max_range_km: [150, 300]
+  profile.max_speed_mach: [4.0, 7.0]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

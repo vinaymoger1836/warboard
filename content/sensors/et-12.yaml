@@ -1,0 +1,11 @@
+id: et-12
+kind: sensor
+name: ET-12 EO/IR turret
+sensor_type: eo_ir
+role: [targeting, imaging]
+eo_ir:
+  max_range_km: 30
+  gsd_at_10km_m: 0.3
+  night_capable: true
+  field_of_regard_deg: 360
+design: { archetype: eo-ir-turret, note: "Day and night turret of the UD-9" }

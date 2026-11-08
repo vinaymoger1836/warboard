@@ -1,0 +1,7 @@
+id: sam-missile-naval-area
+kind: archetype
+name: Naval area-defence missile
+bands:
+  profile.max_range_km: [60, 160]
+  profile.max_speed_mach: [3.0, 5.0]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -7,4 +7,4 @@ lat_deg: 55.0
 lon_deg: 17.0
 elevation_m: 0
 ship_berths: 8
-design: { note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { note: "Generic test fixture (ADR-035)" }

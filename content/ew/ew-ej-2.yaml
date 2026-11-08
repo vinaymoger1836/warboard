@@ -1,0 +1,8 @@
+id: ew-ej-2
+kind: ew_suite
+name: EJ-2 tactical jamming pods
+modes:
+  escort:    { jam_strength: 6, coverage_km: 150, sector_deg: 120 }
+  stand_off: { jam_strength: 7, coverage_km: 220, sector_deg: 120 }
+effects: [radar, datalink]
+design: { archetype: jammer-escort, note: "The only dedicated jammer in the catalogue; strengths set by balance and the test bench" }

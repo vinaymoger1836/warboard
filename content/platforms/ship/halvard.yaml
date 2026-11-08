@@ -1,0 +1,28 @@
+id: halvard
+kind: platform
+name: Halvard-class frigate
+short_name: Halvard
+category: ship/frigate
+target_class: surface_ship
+crew: 180
+mobility:
+  cruise_speed_kt: 16
+  max_speed_kt: 29
+  turn_radius_m: 450
+signature:
+  rcs_m2: { front: 3000, side: 10000, rear: 3000, top: 10000 }
+  ir: { cruise: 5 }
+  acoustic_db: 115
+  visual_size_m: 140
+fuel:
+  range_nm: 6000
+stations:
+  - { id: vls, kind: vls, categories: [vls_cell], capacity: 32 }
+  - { id: ashm, kind: launcher, categories: [ashm_canister], capacity: 8 }
+  - { id: gun, kind: launcher, categories: [gun_mount], capacity: 2 }
+sensors:
+  - { sensor: hr-200, height_m: 30 }
+countermeasures: { cm-chaff: 24, cm-flare: 12 }
+datalinks: [weave, tessel]
+durability: { model: ship, damage_points: 4500 }
+design: { archetype: frigate-air-defence, note: "Area air defence for a task group; 32 cells shared between defence and nothing else" }

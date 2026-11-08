@@ -1,0 +1,33 @@
+id: sl-20
+kind: weapon
+name: SL-20
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 5
+  max_speed_mach: 4.0
+  coast_tau_s: { sea_level: 23.2, high_alt: 83.4 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.2
+  max_range_km: 70
+  min_range_km: 2
+  max_g: 30
+guidance:
+  midcourse: [inertial, command]
+  terminal: active_radar
+  seeker_range_km: 15
+  seeker_resistance: 0.5
+warhead_kg: 40
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, cruise_missile: 0.6, anti_ship_missile: 0.6, anti_radiation_missile: 0.5 }
+mass_kg: 400
+station_category: [tolven_tube]
+countermeasure_resistance: { chaff: 0.5 }
+engage_on_remote: true
+envelope: { min_alt_m: 10, max_alt_m: 20000 }
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 5.0
+design: { archetype: sam-missile-medium, note: "Active-radar missile of the Tolven battery" }

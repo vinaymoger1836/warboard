@@ -1,0 +1,6 @@
+id: irst-airborne
+kind: archetype
+name: Airborne IRST
+bands:
+  irst.r_ref_km: [30, 80]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

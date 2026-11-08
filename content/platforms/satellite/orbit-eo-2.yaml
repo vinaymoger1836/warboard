@@ -1,0 +1,16 @@
+id: orbit-eo-2
+kind: platform
+name: Orbit EO-2
+short_name: Orbit EO-2
+category: satellite/eo
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [oe-2-optical]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  # Authored elements with a fictional catalogue number (doc 11 §4), propagated with SGP4.
+  tle_line1: "1 90002U 26902A   26300.50000000  .00000400  00000+0  50000-4 0  9998"
+  tle_line2: "2 90002  97.4000  30.0000 0001100  80.0000 280.0000 15.25000000    10"
+design: { archetype: satellite-imaging, note: "Optical imaging satellite in a late-morning sun-synchronous orbit" }

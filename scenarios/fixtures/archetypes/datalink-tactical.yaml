@@ -1,0 +1,7 @@
+id: datalink-tactical
+kind: archetype
+name: Tactical data link
+bands:
+  latency_s: [0.1, 4]
+  range_km: [300, 700]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

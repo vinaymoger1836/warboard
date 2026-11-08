@@ -1,0 +1,8 @@
+id: cm-chaff
+kind: countermeasure
+name: CM-C chaff cartridge
+cm_type: chaff
+effect: 0.3
+defeats: [active_radar, semi_active_radar]
+mass_kg: 0.2
+design: { archetype: chaff-cartridge, note: "Standard chaff for aircraft and ships" }

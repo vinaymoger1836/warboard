@@ -1,0 +1,6 @@
+id: payload-optical
+kind: archetype
+name: Satellite optical payload
+bands:
+  payload.gsd_m: [0.3, 2]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

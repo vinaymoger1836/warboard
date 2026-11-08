@@ -1,0 +1,28 @@
+id: kest
+kind: platform
+name: Kest-class corvette
+short_name: Kest
+category: ship/corvette
+target_class: surface_ship
+crew: 90
+mobility:
+  cruise_speed_kt: 15
+  max_speed_kt: 30
+  turn_radius_m: 300
+signature:
+  rcs_m2: { front: 800, side: 3000, rear: 800, top: 3000 }
+  ir: { cruise: 3 }
+  acoustic_db: 112
+  visual_size_m: 95
+fuel:
+  range_nm: 3500
+stations:
+  - { id: ashm, kind: launcher, categories: [ashm_canister], capacity: 8 }
+  - { id: sam, kind: launcher, categories: [sam_box], capacity: 16 }
+  - { id: gun, kind: launcher, categories: [gun_mount], capacity: 1 }
+sensors:
+  - { sensor: kr-90, height_m: 20 }
+countermeasures: { cm-chaff: 12 }
+datalinks: [weave, tessel]
+durability: { model: ship, damage_points: 1800 }
+design: { archetype: corvette-missile, note: "A heavy anti-ship punch for its size, only point defence against air attack" }

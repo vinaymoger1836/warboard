@@ -1,0 +1,6 @@
+id: eo-ir-turret
+kind: archetype
+name: EO/IR turret
+bands:
+  eo_ir.max_range_km: [15, 40]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

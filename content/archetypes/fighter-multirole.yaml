@@ -1,0 +1,9 @@
+id: fighter-multirole
+kind: archetype
+name: Medium multirole fighter
+bands:
+  signature.rcs_m2.front: [1, 5]
+  mobility.max_speed_mach: [1.6, 2.2]
+  mobility.sustained_g: [6.5, 9.0]
+  fuel.internal_kg: [3000, 6000]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

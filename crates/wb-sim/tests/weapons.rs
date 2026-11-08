@@ -152,8 +152,15 @@ fn fuzed(o: Outcome) -> bool {
     matches!(o, Outcome::Hit | Outcome::Miss | Outcome::Decoyed)
 }
 
+/// Every weapon except guns: the head-on target is a copy of the weapon
+/// itself, and a gun round ends its own flight at a few kilometres, so the
+/// target is gone before the round arrives. Close-in guns are pinned by G10.
 fn weapons(db: &wb_content::ContentDb) -> Vec<WeaponIx> {
-    (0..db.weapons.len() as u32).map(WeaponIx).collect()
+    use wb_content::source::WeaponCategory;
+    (0..db.weapons.len() as u32)
+        .map(WeaponIx)
+        .filter(|w| db.weapons[w.0 as usize].category != WeaponCategory::Shell)
+        .collect()
 }
 
 #[test]

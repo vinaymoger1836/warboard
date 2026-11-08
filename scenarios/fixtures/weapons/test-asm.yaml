@@ -25,4 +25,4 @@ mass_kg: 650
 station_category: [test_canister, test_vls]
 signature:
   rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
-design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { archetype: ashm-subsonic, note: "Generic test fixture (ADR-035). Mach 1.2 is above the subsonic band on purpose: G10-naval-layered-defence was banded with it, and at Mach 0.95 the defence intercepts 97% (band 0.6..0.95)" }

@@ -1,0 +1,11 @@
+id: os-1-sar
+kind: sensor
+name: Orbit SAR-1 radar
+sensor_type: satellite_payload
+role: [imaging]
+payload:
+  kind: sar
+  swath_km: 700
+  gsd_m: 1.0
+  downlink_delay_min: 30
+design: { archetype: payload-sar, note: "All-weather, day and night imaging" }

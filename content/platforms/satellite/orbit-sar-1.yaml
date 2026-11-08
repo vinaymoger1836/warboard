@@ -1,0 +1,16 @@
+id: orbit-sar-1
+kind: platform
+name: Orbit SAR-1
+short_name: Orbit SAR-1
+category: satellite/sar
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [os-1-sar]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  # Authored elements with a fictional catalogue number (doc 11 §4), propagated with SGP4.
+  tle_line1: "1 90001U 26901A   26300.50000000  .00000400  00000+0  50000-4 0  9996"
+  tle_line2: "2 90001  97.6000 120.0000 0001200  90.0000 270.0000 15.19000000    15"
+design: { archetype: satellite-imaging, note: "Radar imaging satellite in a dawn-dusk sun-synchronous orbit" }

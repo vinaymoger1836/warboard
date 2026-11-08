@@ -1,0 +1,8 @@
+id: cm-flare
+kind: countermeasure
+name: CM-F decoy flare
+cm_type: flare
+effect: 0.35
+defeats: [ir]
+mass_kg: 0.5
+design: { archetype: flare-cartridge, note: "Standard decoy flare" }

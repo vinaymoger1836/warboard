@@ -1,0 +1,7 @@
+id: radar-fighter-pd
+kind: archetype
+name: Fighter pulse-Doppler radar
+bands:
+  radar.r_ref_km: [60, 150]
+  radar.jam_resistance: [3, 7]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

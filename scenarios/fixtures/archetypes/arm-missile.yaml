@@ -1,0 +1,7 @@
+id: arm-missile
+kind: archetype
+name: Emitter-homing missile
+bands:
+  profile.max_range_km: [60, 150]
+  profile.max_speed_mach: [2.0, 4.0]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

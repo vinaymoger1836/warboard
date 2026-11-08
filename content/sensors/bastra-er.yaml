@@ -1,0 +1,17 @@
+id: bastra-er
+kind: sensor
+name: Bastra engagement radar
+sensor_type: radar
+role: [fire_control, missile_guidance]
+radar:
+  band: X
+  r_ref_km: 190
+  sigma_ref_m2: 1.0
+  scan_period_s: 1
+  field_of_regard_deg: 90
+  clutter_rejection: 0.9
+  pulse_doppler: true
+  jam_resistance: 7
+  erp_class_dbw: 85
+  fire_channels: 8
+design: { archetype: radar-sam-engagement, note: "Sector engagement radar; guides SL-40" }

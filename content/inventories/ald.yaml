@@ -1,0 +1,25 @@
+id: ald-forces
+kind: inventory
+nation: ald
+platforms:
+  mf-4: 36
+  ej-2: 4
+  aw-1: 2
+  tk-3: 2
+  ud-9: 6
+  halvard: 6
+  kest: 4
+  mr-sam-tolven: 4
+  cb-2-strand: 4
+munitions:
+  ar-7: 300
+  ai-3: 120
+  as-4-tarn: 120
+  as-8-spire: 40
+  eh-2: 40
+  gb-900: 200
+  sn-30: 300
+  sl-12: 120
+  sl-20: 120
+  cg-30: 40
+design: { note: "Maritime trading state; strong navy, small air force; basing follows with the PF bases" }

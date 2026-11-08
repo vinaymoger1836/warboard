@@ -1,0 +1,8 @@
+id: cnd
+kind: nation
+name: Cindria
+colour: "#6A7684"
+flag: { pattern: nordic_cross, colours: ["#E6E8EB", "#2E6B8A"] }
+doctrine: cnd-coastal
+datalinks: [weave]
+design: { note: "Archipelago state; corvettes, coastal defence, drones" }

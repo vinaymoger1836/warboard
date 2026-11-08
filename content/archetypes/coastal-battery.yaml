@@ -1,0 +1,5 @@
+id: coastal-battery
+kind: archetype
+name: Coastal anti-ship battery
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

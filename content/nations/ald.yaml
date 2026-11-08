@@ -1,0 +1,8 @@
+id: ald
+kind: nation
+name: Aldmark
+colour: "#5C7FA8"
+flag: { pattern: nordic_cross, colours: ["#1F3B5C", "#E8C547"] }
+doctrine: ald-maritime
+datalinks: [weave]
+design: { note: "Maritime trading state; strong navy, small air force" }

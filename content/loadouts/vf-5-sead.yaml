@@ -1,0 +1,11 @@
+id: vf-5-sead
+kind: loadout
+name: Suppression (internal)
+platform: vf-5
+roles: [sead]
+items:
+  - { station: bay_l_in, weapon: ar-7, count: 1 }
+  - { station: bay_l_out, weapon: eh-2, count: 1 }
+  - { station: bay_r_out, weapon: eh-2, count: 1 }
+  - { station: bay_r_in, weapon: ar-7, count: 1 }
+design: { note: "Emitter hunters inside" }

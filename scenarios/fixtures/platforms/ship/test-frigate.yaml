@@ -16,4 +16,4 @@ countermeasures:
   test-chaff: 24
   test-flare: 12
 durability: { model: ship, damage_points: 300 }
-design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { archetype: frigate-air-defence, note: "Generic test fixture (ADR-035); stats in the range of its class" }

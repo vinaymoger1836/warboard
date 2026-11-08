@@ -1,0 +1,16 @@
+id: vsm-iads
+kind: doctrine
+name: Vessmar layered defence
+aggression: 0.4
+risk_tolerance: 0.3
+emcon_discipline: 0.8
+emcon_default: blink
+missile_reserve_fraction: 0.4
+launch_doctrine: max_range
+shots_per_target: 2
+cap_aircraft: 4
+cap_rotation_min: 60
+reaction_time_s: 5
+iads_layers: [long, medium, short]
+strike_package: [sead, escort, strike, jammer]
+design: { note: "Deep air-defence network and many fighters" }

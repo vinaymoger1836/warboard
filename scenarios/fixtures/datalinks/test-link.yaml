@@ -6,4 +6,4 @@ capacity_tracks: 500
 range_km: 500
 engage_on_remote: true
 jam_resistance: 0.5
-design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { archetype: datalink-tactical, note: "Generic test fixture (ADR-035); stats in the range of its class" }

@@ -1,0 +1,18 @@
+id: cnd-forces
+kind: inventory
+nation: cnd
+platforms:
+  mf-4: 16
+  ud-9: 10
+  kest: 8
+  cb-2-strand: 8
+  mr-sam-tolven: 2
+munitions:
+  ar-7: 100
+  ai-3: 60
+  as-4-tarn: 160
+  as-8-spire: 64
+  sl-12: 140
+  sl-20: 60
+  cg-30: 10
+design: { note: "Archipelago state; corvettes, coastal defence, drones; basing follows with the PF bases" }

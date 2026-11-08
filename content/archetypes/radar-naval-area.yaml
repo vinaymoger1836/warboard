@@ -1,0 +1,6 @@
+id: radar-naval-area
+kind: archetype
+name: Naval area-defence radar
+bands:
+  radar.r_ref_km: [150, 250]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,6 @@
+id: radar-sam-engagement
+kind: archetype
+name: SAM engagement radar
+bands:
+  radar.r_ref_km: [80, 220]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

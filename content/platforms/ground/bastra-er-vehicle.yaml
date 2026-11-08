@@ -1,0 +1,16 @@
+id: bastra-er-vehicle
+kind: platform
+name: Bastra engagement radar vehicle
+short_name: Bastra ER
+category: ground/radar
+target_class: radar_site
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 30, side: 60, rear: 30, top: 90 }
+  visual_size_m: 12
+sensors:
+  - { sensor: bastra-er, height_m: 6 }
+durability: { model: ground, damage_points: 100 }
+design: { archetype: ground-radar-vehicle, note: "Engagement radar of the Bastra battalion; lose it and the SL-40s cannot be guided" }

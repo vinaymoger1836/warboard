@@ -1,0 +1,19 @@
+id: tlv-forces
+kind: inventory
+nation: tlv
+platforms:
+  mf-4: 48
+  ud-9: 4
+  tk-3: 1
+  mr-sam-tolven: 6
+  cb-2-strand: 6
+  kest: 2
+munitions:
+  ar-7: 300
+  ai-3: 150
+  as-4-tarn: 100
+  gb-900: 100
+  sl-20: 200
+  sl-12: 40
+  cg-30: 10
+design: { note: "Northern and mountainous; fighters and coastal batteries; basing follows with the PF bases" }

@@ -1,0 +1,17 @@
+id: strand-ssr
+kind: sensor
+name: Strand surface-search radar
+sensor_type: radar
+role: [surface_search, fire_control]
+radar:
+  band: X
+  r_ref_km: 60
+  sigma_ref_m2: 1.0
+  scan_period_s: 3
+  field_of_regard_deg: 360
+  clutter_rejection: 0.85
+  pulse_doppler: true
+  jam_resistance: 4
+  erp_class_dbw: 70
+  fire_channels: 2
+design: { archetype: radar-coastal, note: "Mast radar of the coastal battery" }

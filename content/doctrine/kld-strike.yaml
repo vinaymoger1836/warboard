@@ -1,0 +1,16 @@
+id: kld-strike
+kind: doctrine
+name: Kaldoria long reach
+aggression: 0.7
+risk_tolerance: 0.6
+emcon_discipline: 0.5
+emcon_default: on
+missile_reserve_fraction: 0.2
+launch_doctrine: max_range
+shots_per_target: 1
+cap_aircraft: 4
+cap_rotation_min: 60
+reaction_time_s: 5
+iads_layers: [long, medium]
+strike_package: [escort, strike, jammer]
+design: { note: "Strikes early and from far away" }

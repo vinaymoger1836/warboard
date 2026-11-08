@@ -29,4 +29,4 @@ mass_kg: 350
 station_category: [test_air_wing, test_air_bay]
 signature:
   rcs_m2: { front: 0.05, side: 0.2, rear: 0.05, top: 0.2 }
-design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { archetype: arm-missile, note: "Generic test fixture (ADR-035); stats in the range of its class" }

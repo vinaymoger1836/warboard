@@ -1,0 +1,17 @@
+id: mr-24
+kind: sensor
+name: MR-24 AESA
+sensor_type: radar
+role: [air_search, fire_control, ground_mapping, surface_search]
+radar:
+  band: X
+  r_ref_km: 100
+  sigma_ref_m2: 1.0
+  scan_period_s: 2
+  field_of_regard_deg: 120
+  clutter_rejection: 0.85
+  pulse_doppler: true
+  jam_resistance: 6
+  erp_class_dbw: 66
+  fire_channels: 4
+design: { archetype: radar-fighter-aesa, note: "Mid-band AESA for the medium fighter" }

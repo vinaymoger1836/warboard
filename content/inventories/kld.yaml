@@ -1,0 +1,20 @@
+id: kld-forces
+kind: inventory
+nation: kld
+platforms:
+  hf-4: 36
+  mf-4: 24
+  tk-3: 4
+  aw-1: 2
+  lr-sam-bastra: 4
+  mr-sam-tolven: 4
+munitions:
+  ar-7: 300
+  ar-9: 120
+  ai-3: 150
+  as-8-spire: 120
+  gb-900: 300
+  eh-2: 40
+  sl-40: 150
+  sl-20: 120
+design: { note: "Industrial state; long-range missiles, heavy fighters; basing follows with the PF bases" }

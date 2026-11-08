@@ -9,4 +9,4 @@ signature: { rcs_m2: { front: 20, side: 30, rear: 20, top: 40 } }
 stations:
   - { id: tubes, kind: launcher, categories: [test_sam_tube], capacity: 4 }
 durability: { model: ground, damage_points: 50 }
-design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { archetype: ground-launcher, note: "Generic test fixture (ADR-035); stats in the range of its class" }

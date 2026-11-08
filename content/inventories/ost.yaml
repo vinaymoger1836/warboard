@@ -1,0 +1,12 @@
+id: ost-forces
+kind: inventory
+nation: ost
+platforms:
+  mf-4: 24
+  mr-sam-tolven: 10
+munitions:
+  ar-7: 120
+  ai-3: 80
+  gb-900: 100
+  sl-20: 300
+design: { note: "Agrarian plains; ground forces, short-range air defence; basing follows with the PF bases" }

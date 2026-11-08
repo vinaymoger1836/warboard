@@ -1,0 +1,6 @@
+id: radar-aew
+kind: archetype
+name: Airborne early-warning radar
+bands:
+  radar.r_ref_km: [250, 450]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

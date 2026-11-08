@@ -1,0 +1,10 @@
+id: mf-4-sead
+kind: loadout
+name: Suppression
+platform: mf-4
+roles: [sead]
+items:
+  - { station: wing_inner, weapon: eh-2, count: 2 }
+  - { station: wing_mid, weapon: ar-7, count: 2 }
+  - { station: wingtip, weapon: ai-3, count: 2 }
+design: { note: "Two emitter-homing missiles" }

@@ -1,0 +1,8 @@
+id: tlv
+kind: nation
+name: Talvenor
+colour: "#6E8F6A"
+flag: { pattern: chevron, colours: ["#2F4F3A", "#E6E8EB"] }
+doctrine: tlv-defensive
+datalinks: [weave]
+design: { note: "Northern and mountainous; fighters and coastal batteries" }

@@ -1,0 +1,16 @@
+id: ost-ground
+kind: doctrine
+name: Ostrevia ground defence
+aggression: 0.4
+risk_tolerance: 0.4
+emcon_discipline: 0.6
+emcon_default: blink
+missile_reserve_fraction: 0.4
+launch_doctrine: close
+shots_per_target: 2
+cap_aircraft: 2
+cap_rotation_min: 60
+reaction_time_s: 7
+iads_layers: [medium, short]
+strike_package: [strike]
+design: { note: "Small air force; batteries cover the plains" }

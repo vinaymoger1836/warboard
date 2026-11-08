@@ -14,4 +14,4 @@ radar:
   jam_resistance: 3
   erp_class_dbw: 85
   fire_channels: 0
-design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { archetype: radar-ground-surveillance, note: "Generic test fixture (ADR-035); stats in the range of its class" }

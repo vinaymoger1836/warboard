@@ -1,0 +1,16 @@
+id: strand-radar-vehicle
+kind: platform
+name: Strand radar vehicle
+short_name: Strand radar
+category: ground/radar
+target_class: radar_site
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 25, side: 50, rear: 25, top: 75 }
+  visual_size_m: 12
+sensors:
+  - { sensor: strand-ssr, height_m: 25 }
+durability: { model: ground, damage_points: 80 }
+design: { archetype: ground-radar-vehicle, note: "Mast radar of the coastal battery" }

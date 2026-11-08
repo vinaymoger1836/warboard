@@ -4,4 +4,4 @@ name: Test Chaff
 cm_type: chaff
 defeats: [active_radar, semi_active_radar]
 effect: 0.7
-design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { archetype: chaff-cartridge, note: "Generic test fixture (ADR-035); stats in the range of its class" }

@@ -1,0 +1,6 @@
+id: radar-ground-surveillance
+kind: archetype
+name: Ground surveillance radar
+bands:
+  radar.r_ref_km: [200, 400]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

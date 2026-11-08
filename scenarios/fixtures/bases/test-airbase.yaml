@@ -8,4 +8,4 @@ lon_deg: 14.95
 elevation_m: 60
 runway_length_m: 2500
 aircraft_capacity: 12
-design: { note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }
+design: { note: "Generic test fixture (ADR-035)" }

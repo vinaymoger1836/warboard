@@ -1,0 +1,6 @@
+id: payload-sar
+kind: archetype
+name: Satellite SAR payload
+bands:
+  payload.gsd_m: [0.3, 3]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

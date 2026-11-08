@@ -1,0 +1,7 @@
+id: jammer-aircraft-standoff
+kind: archetype
+name: Stand-off jamming aircraft
+bands:
+  signature.rcs_m2.front: [10, 60]
+  mobility.max_speed_mach: [0.7, 0.9]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

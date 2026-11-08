@@ -1,0 +1,8 @@
+id: vsm
+kind: nation
+name: Vessmar
+colour: "#8A6F4E"
+flag: { pattern: horizontal, colours: ["#6B2E2E", "#E6E8EB", "#2E4A6B"] }
+doctrine: vsm-iads
+datalinks: [tessel]
+design: { note: "Large continental power; deep air-defence network, many fighters" }

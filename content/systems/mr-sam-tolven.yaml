@@ -1,0 +1,13 @@
+id: mr-sam-tolven
+kind: system
+name: MR-SAM Tolven battery
+short_name: Tolven
+deploy_as: site
+setup_min: 5
+components:
+  - { platform: tolven-radar-vehicle, count: 1, role: fire_control }
+  - { platform: tolven-cp, count: 1, role: c2 }
+  - { platform: tolven-launcher, count: 4, role: launcher, magazine: { sl-20: 6 } }
+emcon_default: blink
+iads_capable: true
+design: { archetype: sam-medium-range, note: "Mobile medium-range battery used by most nations" }

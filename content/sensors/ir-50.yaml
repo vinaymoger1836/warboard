@@ -1,0 +1,11 @@
+id: ir-50
+kind: sensor
+name: IR-50 IRST
+sensor_type: irst
+role: [irst, targeting]
+irst:
+  r_ref_km: 50
+  i_ref: 1
+  field_of_regard_deg: 180
+  scan_period_s: 2
+design: { archetype: irst-airborne, note: "Passive search for the HF-4 and VF-5" }

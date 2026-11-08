@@ -1,0 +1,11 @@
+id: vf-5-air
+kind: loadout
+name: Air superiority (internal)
+platform: vf-5
+roles: [air_superiority]
+items:
+  - { station: bay_l_in, weapon: ar-7, count: 1 }
+  - { station: bay_l_out, weapon: ar-7, count: 1 }
+  - { station: bay_r_out, weapon: ar-7, count: 1 }
+  - { station: bay_r_in, weapon: ar-7, count: 1 }
+design: { note: "Keeps the low signature" }

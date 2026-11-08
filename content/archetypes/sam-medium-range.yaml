@@ -1,0 +1,5 @@
+id: sam-medium-range
+kind: archetype
+name: Medium-range SAM battery
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,8 @@
+id: kld
+kind: nation
+name: Kaldoria
+colour: "#9A5C6B"
+flag: { pattern: vertical, colours: ["#3A3A3A", "#C8A040", "#7A2A2A"] }
+doctrine: kld-strike
+datalinks: [tessel]
+design: { note: "Industrial state; long-range missiles, heavy fighters" }

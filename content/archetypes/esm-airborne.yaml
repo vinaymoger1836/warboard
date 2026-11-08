@@ -1,0 +1,6 @@
+id: esm-airborne
+kind: archetype
+name: Airborne ESM receiver
+bands:
+  esm.r_ref_km: [200, 500]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

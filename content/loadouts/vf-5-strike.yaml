@@ -1,0 +1,11 @@
+id: vf-5-strike
+kind: loadout
+name: Strike (internal)
+platform: vf-5
+roles: [strike]
+items:
+  - { station: bay_l_in, weapon: ar-7, count: 1 }
+  - { station: bay_l_out, weapon: gb-900, count: 1 }
+  - { station: bay_r_out, weapon: gb-900, count: 1 }
+  - { station: bay_r_in, weapon: ar-7, count: 1 }
+design: { note: "Two bombs and two missiles inside" }

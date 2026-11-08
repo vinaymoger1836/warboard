@@ -1,0 +1,6 @@
+id: aew-aircraft
+kind: archetype
+name: Airborne early warning
+bands:
+  mobility.max_speed_mach: [0.5, 0.85]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

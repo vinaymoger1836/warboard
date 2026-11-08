@@ -1,0 +1,9 @@
+id: weave
+kind: datalink
+name: Weave
+latency_s: 1
+capacity_tracks: 1500
+range_km: 500
+engage_on_remote: true
+jam_resistance: 0.8
+design: { archetype: datalink-tactical, note: "High-capacity link that supports engage-on-remote; used by the maritime and western nations" }

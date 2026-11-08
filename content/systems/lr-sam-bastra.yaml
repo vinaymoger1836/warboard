@@ -1,0 +1,14 @@
+id: lr-sam-bastra
+kind: system
+name: LR-SAM Bastra battalion
+short_name: Bastra
+deploy_as: site
+setup_min: 5
+components:
+  - { platform: bastra-sr-vehicle, count: 1, role: surveillance }
+  - { platform: bastra-er-vehicle, count: 1, role: fire_control }
+  - { platform: bastra-cp, count: 1, role: c2 }
+  - { platform: bastra-launcher, count: 6, role: launcher, magazine: { sl-40: 4 } }
+emcon_default: blink
+iads_capable: true
+design: { archetype: sam-long-range, note: "Vessmar's main air-defence system; reach over 200 km, but one engagement radar" }
