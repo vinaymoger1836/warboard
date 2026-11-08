@@ -11,4 +11,4 @@ warhead_kg: 24
 pk_base: { fighter: 0.7 }
 mass_kg: 420
 station_category: [test_tube]
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { archetype: legacy, note: "Test entry." }

@@ -18,9 +18,9 @@ use crate::source::system::{ComponentRole, DeployAs};
 use crate::source::weapon::{
     AltitudeEnvelope, Calibration, CoastTau, Midcourse, ProfileKind, Warhead, WeaponCategory,
 };
-use crate::source::world::{BaseType, LaunchDoctrine};
+use crate::source::world::{BaseType, FlagPattern, LaunchDoctrine};
 use crate::source::{
-    AarSystem, Band, Confidence, CountermeasureType, Domain, Emcon, EwEffect, Seeker, TargetClass,
+    AarSystem, Band, CountermeasureType, Domain, Emcon, EwEffect, Seeker, TargetClass,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -39,7 +39,7 @@ macro_rules! index_type {
 index_type! {
     /// Index into [`ContentDb::strings`].
     StrId,
-    CountryIx,
+    NationIx,
     PlatformIx,
     SystemIx,
     SensorIx,
@@ -57,7 +57,7 @@ index_type! {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ContentDb {
     pub strings: Vec<String>,
-    pub countries: Vec<Country>,
+    pub nations: Vec<Nation>,
     pub platforms: Vec<Platform>,
     pub systems: Vec<System>,
     pub sensors: Vec<Sensor>,
@@ -78,32 +78,30 @@ impl ContentDb {
     }
 }
 
+/// An entry's design note (doc 04 §4).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Provenance {
-    pub confidence: Confidence,
+pub struct Design {
+    /// Archetype id, if the entry names one.
+    pub archetype: Option<StrId>,
+    /// The archetype's class name, e.g. `Stealth multirole fighter`.
+    pub class_name: Option<StrId>,
+    pub note: StrId,
+    /// A user-made variant (`custom: true`).
     pub custom: bool,
-    pub estimates: Vec<StrId>,
-    pub sources: Vec<Source>,
-    pub notes: Option<StrId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Source {
-    pub title: StrId,
-    pub url: StrId,
-    pub accessed: StrId,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Country {
+pub struct Nation {
     pub id: StrId,
     pub name: StrId,
-    pub iso2: StrId,
-    pub iso3: StrId,
-    pub flag: StrId,
+    /// `#RRGGBB`.
+    pub colour: StrId,
+    pub flag_pattern: FlagPattern,
+    pub flag_colours: Vec<StrId>,
+    pub capital: Option<StrId>,
     pub doctrine: DoctrineIx,
     pub datalinks: Vec<DatalinkIx>,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -129,7 +127,7 @@ pub struct Platform {
     pub turnaround_s: Option<f64>,
     /// Two-line elements (satellites), parsed by `wb_core::orbit`.
     pub orbit: Option<(StrId, StrId)>,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 /// Aircraft speeds stay in Mach; surface and ground speeds are m/s.
@@ -219,7 +217,7 @@ pub struct System {
     pub components: Vec<SystemComponent>,
     pub emcon_default: Emcon,
     pub iads_capable: bool,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -243,7 +241,7 @@ pub struct Sensor {
     pub sonar: Option<Sonar>,
     pub visual: Option<Visual>,
     pub payload: Option<Payload>,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -332,7 +330,7 @@ pub struct Weapon {
     pub nav_resistant: bool,
     pub envelope: Option<AltitudeEnvelope>,
     pub signature: Option<Signature>,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -366,7 +364,7 @@ pub struct EwSuite {
     pub name: StrId,
     pub modes: CompiledEwModes,
     pub effects: Vec<EwEffect>,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -391,7 +389,7 @@ pub struct Countermeasure {
     pub effect: f64,
     pub defeats: Vec<Seeker>,
     pub mass_kg: Option<f64>,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -403,7 +401,7 @@ pub struct Datalink {
     pub range_m: f64,
     pub engage_on_remote: bool,
     pub jam_resistance: f64,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -413,7 +411,7 @@ pub struct Loadout {
     pub platform: PlatformIx,
     pub roles: Vec<StrId>,
     pub items: Vec<LoadoutItem>,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -429,15 +427,14 @@ pub struct Base {
     pub id: StrId,
     pub name: StrId,
     pub base_type: BaseType,
-    pub country: CountryIx,
-    pub icao: Option<StrId>,
+    pub nation: NationIx,
     pub lat_rad: f64,
     pub lon_rad: f64,
     pub elevation_m: f64,
     pub runway_length_m: Option<f64>,
     pub aircraft_capacity: u32,
     pub ship_berths: u32,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 /// A platform or a composite system, as counted in an inventory.
@@ -450,14 +447,13 @@ pub enum ForceIx {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Inventory {
     pub id: StrId,
-    pub country: CountryIx,
-    pub as_of: StrId,
+    pub nation: NationIx,
     pub platforms: Vec<(ForceIx, u32)>,
     pub munitions: Vec<(WeaponIx, u32)>,
     pub basing: Vec<Basing>,
     /// Each base's munitions at war start, weapons in index order.
     pub munition_basing: Vec<(BaseIx, Vec<(WeaponIx, u32)>)>,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -483,7 +479,7 @@ pub struct Doctrine {
     pub reaction_time_s: f64,
     pub iads_layers: Vec<StrId>,
     pub strike_package: Vec<StrId>,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -559,7 +555,7 @@ pub struct Realism {
     pub spatial: SpatialRealism,
     pub bases: BTreeMap<BaseKind, BaseRule>,
     pub ground: GroundRealism,
-    pub provenance: Provenance,
+    pub design: Design,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

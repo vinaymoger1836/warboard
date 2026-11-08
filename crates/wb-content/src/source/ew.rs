@@ -1,6 +1,6 @@
 //! `ew_suite`, `countermeasure` and `datalink` (doc 02 §8–9).
 
-use super::common::{Band, CountermeasureType, Provenance, Seeker, source_enum, source_type};
+use super::common::{Band, CountermeasureType, Design, Seeker, source_enum, source_type};
 
 source_enum! {
     #[serde(rename_all = "snake_case")]
@@ -51,7 +51,7 @@ source_type! {
         pub modes: EwModes,
         #[serde(default)]
         pub effects: Vec<EwEffect>,
-        pub provenance: Provenance,
+        pub design: Design,
         // Legacy fields for backwards compatibility with P1 schema:
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub ew_type: Option<EwType>,
@@ -80,7 +80,7 @@ source_type! {
         pub defeats: Vec<Seeker>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub mass_kg: Option<f64>,
-        pub provenance: Provenance,
+        pub design: Design,
     }
 
     #[serde(deny_unknown_fields)]
@@ -97,7 +97,7 @@ source_type! {
         pub engage_on_remote: bool,
         /// 0..1 resistance to comms jamming.
         pub jam_resistance: f64,
-        pub provenance: Provenance,
+        pub design: Design,
     }
 }
 

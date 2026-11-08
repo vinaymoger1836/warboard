@@ -1,6 +1,6 @@
 //! Scenario files (`scenarios/*.yaml`).
 //!
-//! A scenario names its sides (coalitions of content countries), the start
+//! A scenario names its sides (coalitions of content nations), the start
 //! mode, platform units (a group of `count` aircraft or ships at a base or in
 //! the air), orders with their ticks, and optionally test-only blocks: bare
 //! units and the determinism probe (P0), `force_fine_tick` and
@@ -17,7 +17,7 @@ use bevy_ecs::world::World;
 use core::f64::consts::TAU;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
-use wb_content::compiled::{CountryIx, LoadoutIx, PlatformIx, WeaponIx};
+use wb_content::compiled::{LoadoutIx, NationIx, PlatformIx, WeaponIx};
 use wb_content::source::Emcon;
 use wb_core::geo::{LatLon, destination_point, normalize_bearing};
 use wb_core::units::deg_to_rad;
@@ -70,7 +70,7 @@ pub enum ScenarioError {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum StartMode {
-    /// Real bases of each side's countries are active at start (doc 03 §2).
+    /// Real bases of each side's nations are active at start (doc 03 §2).
     #[default]
     Garrisoned,
     /// No bases; place them with `PlaceBase` orders.
@@ -126,8 +126,8 @@ pub struct Scenario {
 #[serde(deny_unknown_fields)]
 pub struct SideSpec {
     pub name: String,
-    /// Content country ids.
-    pub countries: Vec<String>,
+    /// Content nation ids.
+    pub nations: Vec<String>,
     #[serde(default)]
     pub player: bool,
     /// Side default ROE; Charlie when absent.
@@ -142,7 +142,7 @@ pub struct SideSpec {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TerritorySpec {
-    pub country: String,
+    pub nation: String,
     pub polygon: Vec<[f64; 2]>,
 }
 
@@ -164,7 +164,7 @@ pub struct ScenarioUnit {
     #[serde(default)]
     pub platform: Option<String>,
     #[serde(default)]
-    pub country: Option<String>,
+    pub nation: Option<String>,
     #[serde(default = "one")]
     pub count: u32,
     /// Content base id it is stationed at.
@@ -223,7 +223,7 @@ pub struct ScriptedTargetSpec {
     pub id: u32,
     pub name: String,
     pub weapon: String,
-    pub country: String,
+    pub nation: String,
     pub lat_deg: f64,
     pub lon_deg: f64,
     pub alt_m: f64,
@@ -300,7 +300,7 @@ pub struct GeneratedUnits {
     pub group_size: u32,
     /// Platform ids, used in turn.
     pub platforms: Vec<String>,
-    pub country: String,
+    pub nation: String,
     /// `[south, west, north, east]` in degrees.
     pub area: [f64; 4],
     /// Patrol circle radius range, km.
@@ -434,14 +434,13 @@ impl Scenario {
             let mut areas = Vec::new();
             for (i, t) in self.test_territory.iter().enumerate() {
                 let bad = |reason: String| ScenarioError::InvalidSide { side: i, reason };
-                let c = country(&rules, &t.country).ok_or_else(|| {
-                    bad(format!("test_territory: unknown country `{}`", t.country))
-                })?;
+                let c = nation(&rules, &t.nation)
+                    .ok_or_else(|| bad(format!("test_territory: unknown nation `{}`", t.nation)))?;
                 if t.polygon.len() < 3 {
                     return Err(bad("test_territory: a polygon needs 3 corners".into()));
                 }
                 areas.push(crate::roe::TerritoryArea {
-                    country: c,
+                    nation: c,
                     polygon: t.polygon.clone(),
                 });
             }
@@ -463,28 +462,28 @@ impl Scenario {
 
     fn sides(&self, rules: &Rules) -> Result<Sides, ScenarioError> {
         let mut sides = Vec::new();
-        let mut country_ix = Vec::new();
+        let mut nation_ix = Vec::new();
         let mut used = BTreeSet::new();
         for (i, s) in self.sides.iter().enumerate() {
             let mut ixs = Vec::new();
-            for c in &s.countries {
-                let ix = country(rules, c).ok_or_else(|| ScenarioError::InvalidSide {
+            for c in &s.nations {
+                let ix = nation(rules, c).ok_or_else(|| ScenarioError::InvalidSide {
                     side: i,
-                    reason: format!("unknown country `{c}`"),
+                    reason: format!("unknown nation `{c}`"),
                 })?;
                 if !used.insert(ix) {
                     return Err(ScenarioError::InvalidSide {
                         side: i,
-                        reason: format!("country `{c}` is on more than one side"),
+                        reason: format!("nation `{c}` is on more than one side"),
                     });
                 }
                 ixs.push(ix);
             }
             ixs.sort();
-            country_ix.push(ixs);
+            nation_ix.push(ixs);
             sides.push(SideInfo {
                 name: s.name.clone(),
-                countries: s.countries.clone(),
+                nations: s.nations.clone(),
                 player: s.player,
                 roe: s.roe.unwrap_or(Roe::Charlie),
                 self_defence: s.self_defence.unwrap_or(true),
@@ -496,7 +495,7 @@ impl Scenario {
                 reason: "at most 8 sides".into(),
             });
         }
-        Ok(Sides { sides, country_ix })
+        Ok(Sides { sides, nation_ix })
     }
 
     fn spawn(
@@ -540,14 +539,14 @@ impl Scenario {
             .platform_by_id(pid)
             .ok_or_else(|| bad(format!("unknown platform `{pid}`")))?;
         let cid = u
-            .country
+            .nation
             .as_deref()
-            .ok_or_else(|| bad("needs a country".into()))?;
-        let cix = country(rules, cid).ok_or_else(|| bad(format!("unknown country `{cid}`")))?;
+            .ok_or_else(|| bad("needs a nation".into()))?;
+        let cix = nation(rules, cid).ok_or_else(|| bad(format!("unknown nation `{cid}`")))?;
         let side = world
             .resource::<Sides>()
             .side_of(cix)
-            .ok_or_else(|| bad(format!("country `{cid}` is on no side")))?;
+            .ok_or_else(|| bad(format!("nation `{cid}` is on no side")))?;
         let loadout = match &u.loadout {
             Some(l) => Some(
                 rules
@@ -575,7 +574,7 @@ impl Scenario {
                         unit: UnitId(u.id),
                         name: u.name.clone(),
                     },
-                    Allegiance { side, country: cix },
+                    Allegiance { side, nation: cix },
                     PlatformRef(pix),
                     Kinematics::default(),
                     SatelliteState::default(),
@@ -615,7 +614,7 @@ impl Scenario {
             &u.name,
             &members,
             pix,
-            Allegiance { side, country: cix },
+            Allegiance { side, nation: cix },
             loadout,
             at,
             Task::Idle,
@@ -656,17 +655,17 @@ fn default_jammer_mode(rules: &Rules, p: &wb_content::compiled::Platform) -> Jam
     JammerMode::SelfProtect
 }
 
-/// Starting emission control: the system's default, else the country
+/// Starting emission control: the system's default, else the nation
 /// doctrine's (doc 03 §11).
 fn default_emcon(
     rules: &Rules,
-    country: CountryIx,
+    nation: NationIx,
     system: Option<wb_content::compiled::SystemIx>,
 ) -> Emcon {
     if let Some(s) = system {
         return rules.db.systems[s.0 as usize].emcon_default;
     }
-    let c = &rules.db.countries[country.0 as usize];
+    let c = &rules.db.nations[nation.0 as usize];
     rules.db.doctrines[c.doctrine.0 as usize].emcon_default
 }
 
@@ -691,14 +690,14 @@ fn spawn_system(
         .map(|i| wb_content::compiled::SystemIx(i as u32))
         .ok_or_else(|| bad(format!("unknown system `{sid}`")))?;
     let cid = u
-        .country
+        .nation
         .as_deref()
-        .ok_or_else(|| bad("needs a country".into()))?;
-    let cix = country(rules, cid).ok_or_else(|| bad(format!("unknown country `{cid}`")))?;
+        .ok_or_else(|| bad("needs a nation".into()))?;
+    let cix = nation(rules, cid).ok_or_else(|| bad(format!("unknown nation `{cid}`")))?;
     let side = world
         .resource::<Sides>()
         .side_of(cix)
-        .ok_or_else(|| bad(format!("country `{cid}` is on no side")))?;
+        .ok_or_else(|| bad(format!("nation `{cid}` is on no side")))?;
     let sys = &rules.db.systems[six.0 as usize];
     let total: u32 = sys.components.iter().map(|c| c.count).sum();
     if total == 0 || total > 64 {
@@ -726,7 +725,7 @@ fn spawn_system(
                 id,
                 (
                     Identity { unit: id, name },
-                    Allegiance { side, country: cix },
+                    Allegiance { side, nation: cix },
                     PlatformRef(pix),
                     Kinematics {
                         lat: at.lat,
@@ -769,7 +768,7 @@ fn spawn_system(
                 unit: UnitId(u.id),
                 name: u.name.clone(),
             },
-            Allegiance { side, country: cix },
+            Allegiance { side, nation: cix },
             Group {
                 members,
                 system: Some(six),
@@ -803,12 +802,12 @@ fn spawn_scripted(
     if rules.db.weapons[wix.0 as usize].signature.is_none() {
         return Err(bad(format!("weapon `{}` has no signature", t.weapon)));
     }
-    let cix = country(rules, &t.country)
-        .ok_or_else(|| bad(format!("unknown country `{}`", t.country)))?;
+    let cix =
+        nation(rules, &t.nation).ok_or_else(|| bad(format!("unknown nation `{}`", t.nation)))?;
     let side = world
         .resource::<Sides>()
         .side_of(cix)
-        .ok_or_else(|| bad(format!("country `{}` is on no side", t.country)))?;
+        .ok_or_else(|| bad(format!("nation `{}` is on no side", t.nation)))?;
     let p = LatLon::from_deg(t.lat_deg, t.lon_deg);
     spawn_unit(
         world,
@@ -818,7 +817,7 @@ fn spawn_scripted(
                 unit: UnitId(t.id),
                 name: t.name.clone(),
             },
-            Allegiance { side, country: cix },
+            Allegiance { side, nation: cix },
             Kinematics {
                 lat: p.lat,
                 lon: p.lon,
@@ -845,20 +844,20 @@ enum Start {
     },
 }
 
-fn country(rules: &Rules, id: &str) -> Option<CountryIx> {
+fn nation(rules: &Rules, id: &str) -> Option<NationIx> {
     rules
         .db
-        .countries
+        .nations
         .iter()
         .position(|c| rules.db.str(c.id) == id)
-        .map(|i| CountryIx(i as u32))
+        .map(|i| NationIx(i as u32))
 }
 
-/// Garrisoned start: every content base of a side's country, in content order.
+/// Garrisoned start: every content base of a side's nation, in content order.
 fn spawn_real_bases(world: &mut World, rules: &Rules) {
     let sides = world.resource::<Sides>().clone();
     for (i, b) in rules.db.bases.iter().enumerate() {
-        let Some(side) = sides.side_of(b.country) else {
+        let Some(side) = sides.side_of(b.nation) else {
             continue;
         };
         let (kind, air, port) = content_kind(b);
@@ -873,7 +872,7 @@ fn spawn_real_bases(world: &mut World, rules: &Rules) {
                 },
                 Allegiance {
                     side,
-                    country: b.country,
+                    nation: b.nation,
                 },
                 BaseSite {
                     content: Some(wb_content::compiled::BaseIx(i as u32)),
@@ -1094,12 +1093,12 @@ fn generate(
                 .ok_or_else(|| err(format!("unknown platform `{p}`")))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let cix = country(rules, &g.country)
-        .ok_or_else(|| err(format!("unknown country `{}`", g.country)))?;
+    let cix =
+        nation(rules, &g.nation).ok_or_else(|| err(format!("unknown nation `{}`", g.nation)))?;
     let side = world
         .resource::<Sides>()
         .side_of(cix)
-        .ok_or_else(|| err(format!("country `{}` is on no side", g.country)))?;
+        .ok_or_else(|| err(format!("nation `{}` is on no side", g.nation)))?;
     let [south, west, north, east] = g.area;
     let groups = g.count.div_ceil(g.group_size);
     let mut left = g.count;
@@ -1142,7 +1141,7 @@ fn generate(
             &format!("{} {}", rules.db.str(p.name), i + 1),
             &members,
             pix,
-            Allegiance { side, country: cix },
+            Allegiance { side, nation: cix },
             None,
             Start::Air {
                 at,

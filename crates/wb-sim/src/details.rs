@@ -45,7 +45,7 @@ pub struct SatelliteDetails {
     pub id: u32,
     pub name: String,
     pub type_name: String,
-    /// Country code, `USA`.
+    /// Nation code, `USA`.
     pub owner: String,
     /// `optical`, `sar` or `sigint`.
     pub payload: String,
@@ -56,7 +56,8 @@ pub struct SatelliteDetails {
     pub lon_deg: f64,
     pub alt_m: f64,
     pub taskings: Vec<TaskingView>,
-    pub confidence: String,
+    /// Class archetype name (doc 04 §4), empty if the entry names none.
+    pub class_name: String,
 }
 
 /// One source of a contact, as the contact card lists it (doc 10 §7).
@@ -248,8 +249,8 @@ pub struct GroupDetails {
     /// Fire channels in use, lead (or the battery); none for aircraft and
     /// units without weapons.
     pub fire_channels: Option<FireChannels>,
-    /// Provenance confidence of the platform's data.
-    pub confidence: String,
+    /// Class archetype name of the lead's platform (doc 04 §4), empty if none.
+    pub class_name: String,
     /// Emission control of the lead: `on`, `off` or `blink` (none without radars).
     pub emcon: Option<String>,
     /// Electronic warfare / jammer state of the lead (none without EW suites).
@@ -595,7 +596,11 @@ fn group(world: &World, side: u8, gid: UnitId, ge: Entity) -> Option<GroupDetail
         countermeasures,
         fire_channels,
         weapons,
-        confidence: format!("{:?}", p.provenance.confidence).to_lowercase(),
+        class_name: p
+            .design
+            .class_name
+            .map(|n| rules.db.str(n).to_owned())
+            .unwrap_or_default(),
         emcon: world
             .get::<crate::components::EmconState>(lead)
             .filter(|_| {
@@ -677,12 +682,12 @@ fn satellite(world: &World, id: UnitId, e: Entity) -> Option<SatelliteDetails> {
     let k = world.get::<Kinematics>(e)?;
     let (_, pl) = crate::satellites::payload(rules, pix)?;
     let st = world.get::<crate::components::SatelliteState>(e)?;
-    let country = &rules.db.countries[world.get::<Allegiance>(e)?.country.0 as usize];
+    let nation = &rules.db.nations[world.get::<Allegiance>(e)?.nation.0 as usize];
     Some(SatelliteDetails {
         id: id.0,
         name: world.get::<Identity>(e)?.name.clone(),
         type_name: rules.db.str(p.name).to_owned(),
-        owner: rules.db.str(country.iso3).to_uppercase(),
+        owner: rules.db.str(nation.id).to_uppercase(),
         payload: format!("{:?}", pl.kind).to_lowercase(),
         payload_label: crate::view::payload_label(rules, pix).unwrap_or_default(),
         swath_km: pl.swath_m / 1_000.0,
@@ -698,7 +703,11 @@ fn satellite(world: &World, id: UnitId, e: Entity) -> Option<SatelliteDetails> {
                 pass_in_s: t.pass_ms.saturating_sub(now) as f64 / 1_000.0,
             })
             .collect(),
-        confidence: format!("{:?}", p.provenance.confidence).to_lowercase(),
+        class_name: p
+            .design
+            .class_name
+            .map(|n| rules.db.str(n).to_owned())
+            .unwrap_or_default(),
     })
 }
 

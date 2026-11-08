@@ -14,11 +14,11 @@ test_terrain:
   ridges:
     - { from: [20.5, 54.30], to: [20.5, 54.50], height_m: 600, half_width_m: 1500 }
 sides:
-  - { name: NATO, countries: [usa] }
-  - { name: Russia, countries: [rus] }
+  - { name: NATO, nations: [usa] }
+  - { name: Russia, nations: [rus] }
 units:
-  - { id: 10, name: Radar, platform: an-mpq-65, country: usa, lat_deg: 54.40, lon_deg: 20.40, heading_deg: 30 }
-  - { id: 20, name: Intruder, platform: su-35s, country: rus, lat_deg: 54.30, lon_deg: 20.62, alt_m: 100, heading_deg: 0 }
+  - { id: 10, name: Radar, platform: an-mpq-65, nation: usa, lat_deg: 54.40, lon_deg: 20.40, heading_deg: 30 }
+  - { id: 20, name: Intruder, platform: su-35s, nation: rus, lat_deg: 54.30, lon_deg: 20.62, alt_m: 100, heading_deg: 0 }
 orders:
   - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[20.62, 54.99]], alt_m: 100 } }
 golden:

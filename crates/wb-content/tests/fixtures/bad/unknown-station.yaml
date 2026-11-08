@@ -6,4 +6,4 @@ name: Bad
 platform: test-fighter
 items:
   - { station: wingtip, weapon: test-aam, count: 1 }
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { note: "Test entry." }

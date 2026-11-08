@@ -7,15 +7,15 @@ content: scenarios/fixtures
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 sides:
-  - { name: Blue, countries: [tst], roe: charlie, self_defence: true }
-  - { name: Red, countries: [opp], roe: alpha }
+  - { name: Blue, nations: [tst], roe: charlie, self_defence: true }
+  - { name: Red, nations: [opp], roe: alpha }
 units:
   # Blue frigates: 2 frigates 5.5 km apart, defending each other
-  - { id: 10, name: Frigate1, platform: test-frigate, country: tst, lat_deg: 55.50, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
-  - { id: 20, name: Frigate2, platform: test-frigate, country: tst, lat_deg: 55.55, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
+  - { id: 10, name: Frigate1, platform: test-frigate, nation: tst, lat_deg: 55.50, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
+  - { id: 20, name: Frigate2, platform: test-frigate, nation: tst, lat_deg: 55.55, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
   # Red shooters: 2 corvettes ~40 km East, each firing 6 anti-ship missiles
-  - { id: 30, name: RedCorvette1, platform: test-corvette, country: opp, lat_deg: 55.50, lon_deg: 17.65, heading_deg: 270, loadout: test-corvette-standard }
-  - { id: 40, name: RedCorvette2, platform: test-corvette, country: opp, lat_deg: 55.55, lon_deg: 17.65, heading_deg: 270, loadout: test-corvette-standard }
+  - { id: 30, name: RedCorvette1, platform: test-corvette, nation: opp, lat_deg: 55.50, lon_deg: 17.65, heading_deg: 270, loadout: test-corvette-standard }
+  - { id: 40, name: RedCorvette2, platform: test-corvette, nation: opp, lat_deg: 55.55, lon_deg: 17.65, heading_deg: 270, loadout: test-corvette-standard }
 orders:
   # Corvette 1 fires a salvo of 6 test-asm at Frigate 1's position
   - { tick: 0, side: 1, type: AssignTask, units: [30], task: { kind: strike, point: [17.0, 55.50], count: 6, weapon: test-asm } }

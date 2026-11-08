@@ -2,10 +2,9 @@
 # expect: content/inventories/bad-munitions.yaml: munition_basing: stores 120 × `test-aam` but the inventory has 100
 id: bad-munitions
 kind: inventory
-country: tst
-as_of: 2026-10-01
+nation: tst
 munitions: { test-aam: 100 }
 munition_basing:
   - { base: test-base, munitions: { test-aam: 80 } }
   - { base: test-base, munitions: { test-aam: 40 } }
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { note: "Test entry." }

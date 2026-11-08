@@ -3,19 +3,10 @@ id: grazzanise-air-base-lirm
 kind: base
 name: "Grazzanise Air Base"
 base_type: air_base
-country: ita
-icao: LIRM
+nation: ita
 lat_deg: 41.0608
 lon_deg: 14.0819
 elevation_m: 8.8
 runway_length_m: 2991
 aircraft_capacity: 24
-provenance:
-  confidence: medium
-  notes: >-
-    Imported from OurAirports (military by name or keywords).
-    Position, elevation and longest hard runway are from the source.
-  estimates:
-    - aircraft_capacity
-  sources:
-    - { title: "OurAirports: Grazzanise Air Base (LIRM)", url: "https://ourairports.com/airports/LIRM/", accessed: 2026-10-28 }
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

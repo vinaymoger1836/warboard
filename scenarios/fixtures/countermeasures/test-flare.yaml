@@ -4,4 +4,4 @@ name: Test Flare
 cm_type: flare
 defeats: [ir]
 effect: 0.7
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }

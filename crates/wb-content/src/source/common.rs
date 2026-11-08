@@ -1,4 +1,4 @@
-//! Types shared by several content kinds: provenance, bands, classes.
+//! Types shared by several content kinds: design notes, bands, classes.
 
 /// Derives for every source type: serde, plus JSON Schema and TypeScript
 /// export behind the `schema` and `ts` features.
@@ -30,45 +30,18 @@ macro_rules! source_enum {
 
 pub(crate) use {source_enum, source_type};
 
-source_enum! {
-    /// How far an entry's values can be trusted (doc 04 §4).
-    #[serde(rename_all = "snake_case")]
-    pub enum Confidence {
-        /// Official figures.
-        High,
-        /// Consistent open-source reporting.
-        Medium,
-        /// A single or disputed source.
-        Low,
-        /// A reasoned guess.
-        Estimate,
-    }
-}
-
 source_type! {
-    /// Where the values of an entry come from. Required on every entry.
+    /// What an entry is meant to be in the game (doc 04 §4, ADR-036). Required
+    /// on every entry except archetypes, worlds and realism profiles.
     #[serde(deny_unknown_fields)]
-    pub struct Provenance {
-        pub confidence: Confidence,
-        /// Field paths (e.g. `signature.rcs_m2`, `stations[0].max_kg`) that are
-        /// guesses even if the entry is otherwise solid.
-        #[serde(default)]
-        pub estimates: Vec<String>,
-        /// Public sources. Empty only for custom entries.
-        #[serde(default)]
-        pub sources: Vec<Source>,
-        /// Free text: disagreements between sources, ranges, reasoning.
+    pub struct Design {
+        /// Class archetype id (`content/archetypes/`). Required on catalogue
+        /// entries (platforms, systems, sensors, weapons, EW suites,
+        /// countermeasures, data links); key stats should sit in its bands.
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub notes: Option<String>,
-    }
-
-    /// One public source.
-    #[serde(deny_unknown_fields)]
-    pub struct Source {
-        pub title: String,
-        pub url: String,
-        /// Access date, `YYYY-MM-DD`.
-        pub accessed: String,
+        pub archetype: Option<String>,
+        /// One or two lines on the entry's role and balance.
+        pub note: String,
     }
 }
 

@@ -1,0 +1,8 @@
+id: opp
+kind: nation
+name: Opponent Country
+colour: "#5C7FA8"
+flag: { pattern: horizontal, colours: ["#5C7FA8", "#E6E8EB"] }
+doctrine: test-doctrine
+datalinks: [test-link]
+design: { note: "Generic test fixture (ADR-035)." }

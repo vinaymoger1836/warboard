@@ -1,0 +1,8 @@
+id: usa
+kind: nation
+name: United States
+colour: "#7B6A9A"
+flag: { pattern: horizontal, colours: ["#7B6A9A", "#E6E8EB"] }
+doctrine: nato-default
+datalinks: [link-16]
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

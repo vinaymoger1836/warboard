@@ -6,12 +6,4 @@ roles: [air_defence, anti_ship]
 items:
   - { station: redut, weapon: 9m96, count: 12 }
   - { station: uran, weapon: kh-35, count: 8 }
-provenance:
-  confidence: medium
-  notes: >-
-    12 Redut cells, 2 x 4 Kh-35.
-  estimates:
-    - items
-  sources:
-    - { title: "Steregushchiy-class corvette", url: "https://en.wikipedia.org/wiki/Steregushchiy-class_corvette", accessed: 2026-10-27 }
-    - { title: "S-400 missile system (components, missile table)", url: "https://en.wikipedia.org/wiki/S-400_missile_system", accessed: 2026-10-27 }
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

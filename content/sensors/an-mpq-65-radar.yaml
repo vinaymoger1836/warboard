@@ -15,19 +15,4 @@ radar:
   jam_resistance: 8
   erp_class_dbw: 85
   fire_channels: 9
-provenance:
-  confidence: low
-  notes: >-
-    Source describes the -65 as the PAC-3 radar with a second TWT for better search and detection; no range is published there.
-  estimates:
-    - radar.band
-    - radar.r_ref_km
-    - radar.max_range_km
-    - radar.scan_period_s
-    - radar.field_of_regard_deg
-    - radar.clutter_rejection
-    - radar.jam_resistance
-    - radar.erp_class_dbw
-    - radar.fire_channels
-  sources:
-    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

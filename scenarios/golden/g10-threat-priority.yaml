@@ -9,16 +9,16 @@ content: scenarios/fixtures
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 sides:
-  - { name: Blue, countries: [tst], roe: charlie, self_defence: true }
-  - { name: Red, countries: [opp], roe: alpha }
+  - { name: Blue, nations: [tst], roe: charlie, self_defence: true }
+  - { name: Red, nations: [opp], roe: alpha }
 units:
-  - { id: 10, name: Frigate, platform: test-frigate, country: tst, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
-  - { id: 20, name: Corvette, platform: test-corvette, country: tst, lat_deg: 55.55, lon_deg: 17.0, heading_deg: 90, loadout: test-corvette-standard }
+  - { id: 10, name: Frigate, platform: test-frigate, nation: tst, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 90, loadout: test-frigate-standard }
+  - { id: 20, name: Corvette, platform: test-corvette, nation: tst, lat_deg: 55.55, lon_deg: 17.0, heading_deg: 90, loadout: test-corvette-standard }
 scripted_targets:
   # Threat 901: aimed at escort corvette (lat 55.55), at lon 17.38 (~24 km away, TTI ~88s)
-  - { id: 901, name: ThreatEscort, weapon: test-asm, country: opp, lat_deg: 55.55, lon_deg: 17.38, alt_m: 15, heading_deg: 270, speed_mps: 270 }
+  - { id: 901, name: ThreatEscort, weapon: test-asm, nation: opp, lat_deg: 55.55, lon_deg: 17.38, alt_m: 15, heading_deg: 270, speed_mps: 270 }
   # Threat 902: aimed at frigate (lat 55.5), at lon 17.44 (~28 km away, TTI ~103s)
-  - { id: 902, name: ThreatSelf, weapon: test-asm, country: opp, lat_deg: 55.5, lon_deg: 17.44, alt_m: 15, heading_deg: 270, speed_mps: 270 }
+  - { id: 902, name: ThreatSelf, weapon: test-asm, nation: opp, lat_deg: 55.5, lon_deg: 17.44, alt_m: 15, heading_deg: 270, speed_mps: 270 }
 golden:
   id: G10-Priority
   description: test frigate engages threat to itself before threat to escort

@@ -1,0 +1,10 @@
+# file: nations/bad.yaml
+# expect: content/nations/bad.yaml: colour: `blue` must be a colour like #5C7FA8
+# expect: content/nations/bad.yaml: flag.colours: must list two or three colours
+id: bad
+kind: nation
+name: Badland
+colour: blue
+flag: { pattern: disc, colours: ["#112233"] }
+doctrine: test-doctrine
+design: { note: "Bad colours." }

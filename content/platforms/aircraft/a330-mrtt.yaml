@@ -26,18 +26,4 @@ countermeasures: { chaff-generic: 60, flare-generic: 60 }
 datalinks: [link-16]
 durability: { model: aircraft, p_kill_on_hit: 0.9 }
 turnaround_min: 120
-provenance:
-  confidence: medium
-  notes: >-
-    Source: 111,000 kg fuel without extra tanks, boom flow up to 3,600 kg/min, underwing probe-and-drogue pods; boom and receptacle fit vary by customer.
-  estimates:
-    - crew
-    - mobility
-    - signature
-    - fuel.burn_kg_h
-    - tanker.offload_kg
-    - countermeasures
-    - durability
-    - turnaround_min
-  sources:
-    - { title: "Airbus A330 MRTT", url: "https://en.wikipedia.org/wiki/Airbus_A330_MRTT", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

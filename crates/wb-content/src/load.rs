@@ -2,8 +2,8 @@
 //! `extends` + `overrides`, read the typed entry.
 
 use crate::source::{
-    Base, Countermeasure, Country, Datalink, Doctrine, Entry, EntryMeta, EwSuite, Inventory, Kind,
-    Loadout, Manifest, Platform, Realism, Sensor, System, Weapon,
+    Archetype, Base, Countermeasure, Datalink, Doctrine, Entry, EntryMeta, EwSuite, Inventory,
+    Kind, Loadout, Manifest, Nation, Platform, Realism, Sensor, System, Weapon, World,
 };
 use serde::de::DeserializeOwned;
 use serde_yaml::{Mapping, Value};
@@ -14,7 +14,7 @@ use std::path::Path;
 /// One problem in the content, with the file and field it is in.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ContentError {
-    /// File as shown to the user, e.g. `content/weapons/aim-120d.yaml`.
+    /// File as shown to the user, e.g. `content/weapons/ar-7.yaml`.
     pub file: String,
     /// Field path, e.g. `profile.max_range_km` or `stations[0].max_kg`; empty
     /// for the whole file.
@@ -49,7 +49,7 @@ pub struct LoadedEntry {
     pub id: String,
     pub kind: Kind,
     pub custom: bool,
-    /// Resolved YAML without meta keys (used for estimates paths and
+    /// Resolved YAML without meta keys (used for archetype bands and
     /// unit checks).
     pub value: Value,
     pub entry: Entry,
@@ -60,6 +60,9 @@ pub struct LoadedEntry {
 pub struct ContentSet {
     pub manifest: Manifest,
     pub entries: Vec<LoadedEntry>,
+    /// Problems that do not stop the build: values outside their archetype's
+    /// bands (doc 04 §4).
+    pub warnings: Vec<ContentError>,
 }
 
 const MANIFEST: &str = "manifest.yaml";
@@ -227,10 +230,12 @@ pub fn load_files(
             ));
             continue;
         }
-        if !map.contains_key("provenance") {
+        if !map.contains_key("design")
+            && !matches!(meta.kind, Kind::Archetype | Kind::World | Kind::Realism)
+        {
             errors.push(err(
-                "provenance",
-                "is missing; every entry needs sources and a confidence (doc 04 §4)".into(),
+                "design",
+                "is missing; every entry needs `design: { archetype, note }` (doc 04 §4)".into(),
             ));
             continue;
         }
@@ -288,12 +293,14 @@ pub fn load_files(
     }
 
     if errors.is_empty() {
-        let set = ContentSet {
+        let mut set = ContentSet {
             manifest: manifest.expect("checked above"),
             entries,
+            warnings: Vec::new(),
         };
         errors = crate::validate::validate(&set);
         if errors.is_empty() {
+            set.warnings = crate::validate::band_warnings(&set);
             return Ok(set);
         }
     }
@@ -402,7 +409,9 @@ fn from_value<T: DeserializeOwned>(value: Value) -> Result<T, (String, String)> 
 
 fn typed(kind: Kind, v: Value) -> Result<Entry, (String, String)> {
     Ok(match kind {
-        Kind::Country => Entry::Country(from_value::<Country>(v)?),
+        Kind::Nation => Entry::Nation(from_value::<Nation>(v)?),
+        Kind::World => Entry::World(from_value::<World>(v)?),
+        Kind::Archetype => Entry::Archetype(from_value::<Archetype>(v)?),
         Kind::Platform => Entry::Platform(from_value::<Platform>(v)?),
         Kind::System => Entry::System(from_value::<System>(v)?),
         Kind::Sensor => Entry::Sensor(from_value::<Sensor>(v)?),

@@ -4,7 +4,7 @@
 //! Sections whose fields are already SI (or dimensionless) are stored in the
 //! pack unchanged; the others are converted by the compiler.
 
-use super::common::{Domain, Provenance, Seeker, source_enum, source_type};
+use super::common::{Design, Domain, Seeker, source_enum, source_type};
 use super::platform::PlatformCategory;
 use super::weapon::{Calibration, Warhead, WeaponCategory};
 use std::collections::BTreeMap;
@@ -122,7 +122,8 @@ source_type! {
         /// Placement rules per base kind (doc 03 §3). Every kind must be listed.
         pub bases: BTreeMap<BaseKind, BaseRule>,
         pub ground: GroundRealism,
-        pub provenance: Provenance,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub design: Option<Design>,
     }
 
     /// Scheduler (doc 02 §3).

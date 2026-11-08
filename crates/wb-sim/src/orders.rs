@@ -9,7 +9,7 @@
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use wb_content::compiled::{CountryIx, LoadoutItem, LoadoutIx, WeaponIx};
+use wb_content::compiled::{LoadoutItem, LoadoutIx, NationIx, WeaponIx};
 use wb_content::source::realism::BaseKind;
 use wb_content::source::world::LaunchDoctrine;
 use wb_core::geo::{LatLon, distance_m, intermediate_point};
@@ -292,7 +292,7 @@ pub enum Command {
     DenyEngagement {
         request: u32,
     },
-    /// Launch doctrine of groups, overriding their country's (doc 03 §5).
+    /// Launch doctrine of groups, overriding their nation's (doc 03 §5).
     SetDoctrine {
         units: Vec<u32>,
         #[serde(default)]
@@ -336,7 +336,7 @@ pub enum Resolved {
     },
     PlaceBase {
         site: BaseSite,
-        country: CountryIx,
+        nation: NationIx,
         name: String,
     },
     AutoSlow {
@@ -605,7 +605,7 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
                 .unwrap_or_else(|| bases::kind_name(*kind).to_owned());
             Ok(Resolved::PlaceBase {
                 site: placed.site,
-                country: placed.country,
+                nation: placed.nation,
                 name,
             })
         }
@@ -1344,11 +1344,7 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
                 }
             }
         }
-        Resolved::PlaceBase {
-            site,
-            country,
-            name,
-        } => {
+        Resolved::PlaceBase { site, nation, name } => {
             let id = world.resource_mut::<UnitIdAlloc>().take();
             let active = site.active;
             spawn_unit(
@@ -1356,7 +1352,7 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
                 id,
                 (
                     Identity { unit: id, name },
-                    Allegiance { side, country },
+                    Allegiance { side, nation },
                     site,
                 ),
             );
@@ -1581,7 +1577,7 @@ fn split(world: &mut World, side: u8, pick: &GroupPick) -> Option<Entity> {
         world.get::<Identity>(ge).map_or("", |i| i.name.as_str()),
         members.len()
     );
-    let country = world.get::<Allegiance>(ge)?.country;
+    let nation = world.get::<Allegiance>(ge)?.nation;
     {
         let mut old = world.get_mut::<Group>(ge)?;
         old.members.retain(|m| !members.contains(m));
@@ -1607,7 +1603,7 @@ fn split(world: &mut World, side: u8, pick: &GroupPick) -> Option<Entity> {
         id,
         (
             Identity { unit: id, name },
-            Allegiance { side, country },
+            Allegiance { side, nation },
             new,
         ),
     ))

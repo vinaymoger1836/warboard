@@ -30,21 +30,4 @@ countermeasures: { chaff-generic: 60, flare-generic: 60 }
 datalinks: [link-16]
 durability: { model: aircraft, p_kill_on_hit: 0.8 }
 turnaround_min: 75
-provenance:
-  confidence: medium
-  notes: >-
-    Source: up to five ALQ-99 pods plus typically two AIM-120 or AGM-88. Pod stations are modelled through the EW suite, so only weapon stations are listed.
-  estimates:
-    - mobility.cruise_speed_mach
-    - mobility.sustained_g
-    - mobility.min_runway_m
-    - signature
-    - fuel.burn_kg_h
-    - stations
-    - countermeasures
-    - durability
-    - turnaround_min
-  sources:
-    - { title: "Boeing EA-18G Growler (specifications)", url: "https://en.wikipedia.org/wiki/Boeing_EA-18G_Growler", accessed: 2026-10-27 }
-    - { title: "AN/ALQ-218", url: "https://en.wikipedia.org/wiki/AN/ALQ-218", accessed: 2026-10-27 }
-    - { title: "AN/ALQ-99", url: "https://en.wikipedia.org/wiki/AN/ALQ-99", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

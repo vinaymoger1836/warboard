@@ -1,0 +1,9 @@
+# file: countermeasures/bad-archetype-ref.yaml
+# expect: content/countermeasures/bad-archetype-ref.yaml: design.archetype: unknown
+id: bad-archetype-ref
+kind: countermeasure
+name: Bad
+cm_type: flare
+effect: 0.3
+defeats: [ir]
+design: { archetype: flare-nonexistent, note: "Unknown archetype." }

@@ -15,18 +15,4 @@ radar:
   jam_resistance: 6
   erp_class_dbw: 85
   fire_channels: 16
-provenance:
-  confidence: low
-  notes: >-
-    Source names the Kronos Grand Naval AESA on Italian FREMMs; performance figures are estimates.
-  estimates:
-    - radar.band
-    - radar.r_ref_km
-    - radar.max_range_km
-    - radar.scan_period_s
-    - radar.clutter_rejection
-    - radar.jam_resistance
-    - radar.erp_class_dbw
-    - radar.fire_channels
-  sources:
-    - { title: "FREMM multipurpose frigate (Italian GP variant)", url: "https://en.wikipedia.org/wiki/FREMM_multipurpose_frigate", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

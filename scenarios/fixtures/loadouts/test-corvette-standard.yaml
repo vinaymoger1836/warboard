@@ -5,4 +5,4 @@ platform: test-corvette
 items:
   - { station: ashm_tubes, weapon: test-asm, count: 8 }
   - { station: ciws, weapon: test-ciws, count: 1 }
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }

@@ -381,13 +381,12 @@ fn geometry(c: &Contact, from: LatLon, now: u64) -> Option<(LatLon, f64, f64)> {
     Some((at, e.alt_m, e.speed_mps * cos(e.heading - to_shooter)))
 }
 
-/// Country doctrine of a group, with the group's overrides.
+/// Nation doctrine of a group, with the group's overrides.
 fn doctrine(world: &World, rules: &Rules, gid: UnitId, g: &Group) -> (LaunchDoctrine, u32) {
-    let country = entity(world, gid)
+    let nation = entity(world, gid)
         .and_then(|e| world.get::<Allegiance>(e))
-        .map(|a| a.country);
-    let d =
-        country.map(|c| &rules.db.doctrines[rules.db.countries[c.0 as usize].doctrine.0 as usize]);
+        .map(|a| a.nation);
+    let d = nation.map(|c| &rules.db.doctrines[rules.db.nations[c.0 as usize].doctrine.0 as usize]);
     (
         g.doctrine
             .launch
@@ -445,11 +444,11 @@ fn self_defence(
 
     let ge = entity(world, gid);
     let g = ge.and_then(|e| world.get::<Group>(e).cloned());
-    let country = ge
+    let nation = ge
         .and_then(|e| world.get::<Allegiance>(e))
-        .map(|a| a.country);
+        .map(|a| a.nation);
     let doc =
-        country.map(|c| &rules.db.doctrines[rules.db.countries[c.0 as usize].doctrine.0 as usize]);
+        nation.map(|c| &rules.db.doctrines[rules.db.nations[c.0 as usize].doctrine.0 as usize]);
     let reserve_fraction = doc.map_or(0.0, |d| d.missile_reserve_fraction);
 
     // Friendly ships and ground units to defend

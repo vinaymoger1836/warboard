@@ -9,18 +9,18 @@ content: scenarios/fixtures
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 sides:
-  - { name: Blue, countries: [tst], roe: alpha }
-  - { name: Red, countries: [opp], roe: alpha }
+  - { name: Blue, nations: [tst], roe: alpha }
+  - { name: Red, nations: [opp], roe: alpha }
 units:
   # SAM site: 101 CP (C2), 102 Radar (120 deg sector North), 103/104 Launchers
-  - { id: 100, name: SAMSite, system: test-sam-site, country: tst, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 0 }
+  - { id: 100, name: SAMSite, system: test-sam-site, nation: tst, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 0 }
   # Remote EW radar: 360 deg air search
-  - { id: 200, name: EWRadar, platform: test-ew-radar-unit, country: tst, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 0 }
+  - { id: 200, name: EWRadar, platform: test-ew-radar-unit, nation: tst, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 0 }
 scripted_targets:
   # Target 901: South of SAM site (bearing 180 deg, outside 120 deg sector), seen only by remote EW radar
-  - { id: 901, name: RemoteOnly, weapon: test-asm, country: opp, lat_deg: 55.3, lon_deg: 17.0, alt_m: 6000, heading_deg: 0, speed_mps: 250 }
+  - { id: 901, name: RemoteOnly, weapon: test-asm, nation: opp, lat_deg: 55.3, lon_deg: 17.0, alt_m: 6000, heading_deg: 0, speed_mps: 250 }
   # Target 902: North of SAM site (bearing 0 deg, inside 120 deg sector), tracked by SAM site's own radar
-  - { id: 902, name: OwnRadar, weapon: test-asm, country: opp, lat_deg: 55.75, lon_deg: 17.0, alt_m: 6000, heading_deg: 180, speed_mps: 250 }
+  - { id: 902, name: OwnRadar, weapon: test-asm, nation: opp, lat_deg: 55.75, lon_deg: 17.0, alt_m: 6000, heading_deg: 180, speed_mps: 250 }
 orders:
   # Destroy the C2 node (command post 101) at tick 1
   - { tick: 1, side: 0, type: TestDestroyUnit, unit: 101 }

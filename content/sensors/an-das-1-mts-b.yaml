@@ -8,13 +8,4 @@ eo_ir:
   gsd_at_10km_m: 0.3
   night_capable: true
   field_of_regard_deg: 360
-provenance:
-  confidence: low
-  notes: >-
-    Source names the MTS-B multi-spectral targeting system (TV and infrared) on the MQ-9.
-    Range and resolution are estimates.
-  estimates:
-    - eo_ir.max_range_km
-    - eo_ir.gsd_at_10km_m
-  sources:
-    - { title: "General Atomics MQ-9 Reaper", url: "https://en.wikipedia.org/wiki/General_Atomics_MQ-9_Reaper", accessed: 2026-10-29 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

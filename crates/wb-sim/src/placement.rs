@@ -6,7 +6,7 @@
 //! pack. Terrain, territory, coast and slope rules read the packs; without
 //! them such placements are rejected rather than guessed.
 
-use wb_content::compiled::{BaseIx, CountryIx};
+use wb_content::compiled::{BaseIx, NationIx};
 use wb_content::source::realism::{BaseKind, CellClass, SiteRule};
 use wb_core::geo::{LatLon, distance_m};
 use wb_geo::{Geo, TerrainClass};
@@ -20,7 +20,7 @@ use crate::world::Sides;
 #[derive(Clone, Debug)]
 pub struct Placed {
     pub site: BaseSite,
-    pub country: CountryIx,
+    pub nation: NationIx,
     /// Name of the real base it sits on, if any.
     pub real_name: Option<String>,
 }
@@ -57,7 +57,7 @@ pub fn validate(
         .bases
         .get(&kind)
         .ok_or_else(|| format!("{name}: no placement rule in the realism profile"))?;
-    let own = &sides.country_ix[usize::from(side)];
+    let own = &sides.nation_ix[usize::from(side)];
     let setup_ms = (rule.setup_s * 1_000.0) as u64;
 
     match rule.site {
@@ -87,8 +87,8 @@ pub fn validate(
                 ));
             };
             let real = db.str(b.name).to_owned();
-            if own.binary_search(&b.country).is_err() {
-                return Err(format!("{real} belongs to another country, not your side"));
+            if own.binary_search(&b.nation).is_err() {
+                return Err(format!("{real} belongs to another nation, not your side"));
             }
             let ix = BaseIx(i as u32);
             if active.iter().any(|a| a.content == Some(ix)) {
@@ -112,7 +112,7 @@ pub fn validate(
                     stock: crate::bases::initial_stock(rules, ix),
                     damaged: Default::default(),
                 },
-                country: b.country,
+                nation: b.nation,
                 real_name: Some(real),
             })
         }
@@ -152,18 +152,18 @@ pub fn validate(
             let owner_ix = owner.and_then(|c| {
                 rules
                     .db
-                    .countries
+                    .nations
                     .iter()
                     .position(|k| rules.db.str(k.id) == c.as_str())
-                    .map(|i| CountryIx(i as u32))
+                    .map(|i| NationIx(i as u32))
             });
             let in_own = owner_ix.filter(|c| own.binary_search(c).is_ok());
             if rule.own_territory && in_own.is_none() {
                 return Err("Outside own territory".to_owned());
             }
-            let country = in_own
+            let nation = in_own
                 .or_else(|| own.first().copied())
-                .ok_or_else(|| "Your side has no country to own this base".to_owned())?;
+                .ok_or_else(|| "Your side has no nation to own this base".to_owned())?;
             let air = rule.aircraft_capacity > 0;
             let port = rule.ship_berths > 0;
             Ok(Placed {
@@ -183,7 +183,7 @@ pub fn validate(
                     stock: Default::default(),
                     damaged: Default::default(),
                 },
-                country,
+                nation,
                 real_name: None,
             })
         }

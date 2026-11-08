@@ -7,11 +7,11 @@ name: G7 F-35A patrol and tanker
 seed: 7
 start_utc: 2026-10-27T06:00:00Z
 sides:
-  - { name: NATO, countries: [pol, deu, fra, ita, usa], player: true }
-  - { name: Russia, countries: [rus] }
+  - { name: NATO, nations: [pol, deu, fra, ita, usa], player: true }
+  - { name: Russia, nations: [rus] }
 units:
-  - { id: 10, name: Husarz, platform: f-35a, country: pol, count: 2, base: lask-air-base-eplk, loadout: f-35a-air-superiority }
-  - { id: 30, name: Phenix, platform: a330-mrtt, country: fra, base: lask-air-base-eplk }
+  - { id: 10, name: Husarz, platform: f-35a, nation: pol, count: 2, base: lask-air-base-eplk, loadout: f-35a-air-superiority }
+  - { id: 30, name: Phenix, platform: a330-mrtt, nation: fra, base: lask-air-base-eplk }
 orders:
   - tick: 0
     side: 0

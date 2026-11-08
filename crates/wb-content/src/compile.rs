@@ -79,7 +79,7 @@ pub fn compile(set: &ContentSet) -> ContentDb {
     };
     let mut db = ContentDb {
         strings: Vec::new(),
-        countries: Vec::new(),
+        nations: Vec::new(),
         platforms: Vec::new(),
         systems: Vec::new(),
         sensors: Vec::new(),
@@ -97,7 +97,8 @@ pub fn compile(set: &ContentSet) -> ContentDb {
     for e in &set.entries {
         let custom = e.custom;
         match &e.entry {
-            Entry::Country(x) => db.countries.push(cx.country(x, custom)),
+            Entry::Nation(x) => db.nations.push(cx.nation(x, custom)),
+            Entry::World(_) | Entry::Archetype(_) => {}
             Entry::Platform(x) => db.platforms.push(cx.platform(x, custom)),
             Entry::System(x) => db.systems.push(cx.system(x, custom)),
             Entry::Sensor(x) => db.sensors.push(cx.sensor(x, custom)),
@@ -121,38 +122,36 @@ impl Compiler<'_> {
         self.ix[&kind].get(id)
     }
 
-    fn provenance(&mut self, p: &s::Provenance, custom: bool) -> c::Provenance {
-        c::Provenance {
-            confidence: p.confidence,
+    fn design(&mut self, d: &s::Design, custom: bool) -> c::Design {
+        let class_name = d.archetype.as_deref().and_then(|id| {
+            self.set.entries.iter().find_map(|e| match &e.entry {
+                Entry::Archetype(a) if e.id == id => Some(a.name.clone()),
+                _ => None,
+            })
+        });
+        c::Design {
+            archetype: d.archetype.as_deref().map(|a| self.st.id(a)),
+            class_name: class_name.map(|n| self.st.id(&n)),
+            note: self.st.id(&d.note),
             custom,
-            estimates: self.st.ids(&p.estimates),
-            sources: p
-                .sources
-                .iter()
-                .map(|x| c::Source {
-                    title: self.st.id(&x.title),
-                    url: self.st.id(&x.url),
-                    accessed: self.st.id(&x.accessed),
-                })
-                .collect(),
-            notes: p.notes.as_deref().map(|n| self.st.id(n)),
         }
     }
 
-    fn country(&mut self, x: &s::Country, custom: bool) -> c::Country {
-        c::Country {
+    fn nation(&mut self, x: &s::Nation, custom: bool) -> c::Nation {
+        c::Nation {
             id: self.st.id(&x.id),
             name: self.st.id(&x.name),
-            iso2: self.st.id(&x.iso2),
-            iso3: self.st.id(&x.iso3),
-            flag: self.st.id(&x.flag),
+            colour: self.st.id(&x.colour),
+            flag_pattern: x.flag.pattern,
+            flag_colours: self.st.ids(&x.flag.colours),
+            capital: x.capital.as_deref().map(|c| self.st.id(c)),
             doctrine: c::DoctrineIx(self.ix(Kind::Doctrine, &x.doctrine)),
             datalinks: x
                 .datalinks
                 .iter()
                 .map(|d| c::DatalinkIx(self.ix(Kind::Datalink, d)))
                 .collect(),
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -246,7 +245,7 @@ impl Compiler<'_> {
                 .orbit
                 .as_ref()
                 .map(|o| (self.st.id(&o.tle_line1), self.st.id(&o.tle_line2))),
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -287,7 +286,7 @@ impl Compiler<'_> {
                 .collect(),
             emcon_default: x.emcon_default,
             iads_capable: x.iads_capable,
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -346,7 +345,7 @@ impl Compiler<'_> {
                 location_sigma_m: p.location_sigma_km.map(km_to_m),
                 downlink_delay_s: p.downlink_delay_min.map(min_to_s),
             }),
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -393,7 +392,7 @@ impl Compiler<'_> {
             nav_resistant: x.nav_resistant,
             envelope: x.envelope.clone(),
             signature: x.signature.as_ref().map(Self::signature),
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -418,7 +417,7 @@ impl Compiler<'_> {
                 stand_off: compile_mode(&modes.stand_off),
             },
             effects: x.resolved_effects(),
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -430,7 +429,7 @@ impl Compiler<'_> {
             effect: x.effect,
             defeats: x.defeats.clone(),
             mass_kg: x.mass_kg,
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -443,7 +442,7 @@ impl Compiler<'_> {
             range_m: km_to_m(x.range_km),
             engage_on_remote: x.engage_on_remote,
             jam_resistance: x.jam_resistance,
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -477,7 +476,7 @@ impl Compiler<'_> {
             platform: c::PlatformIx(self.ix(Kind::Platform, &x.platform)),
             roles: self.st.ids(&x.roles),
             items,
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -486,15 +485,14 @@ impl Compiler<'_> {
             id: self.st.id(&x.id),
             name: self.st.id(&x.name),
             base_type: x.base_type,
-            country: c::CountryIx(self.ix(Kind::Country, &x.country)),
-            icao: x.icao.as_deref().map(|i| self.st.id(i)),
+            nation: c::NationIx(self.ix(Kind::Nation, &x.nation)),
             lat_rad: deg_to_rad(x.lat_deg),
             lon_rad: deg_to_rad(x.lon_deg),
             elevation_m: x.elevation_m,
             runway_length_m: x.runway_length_m,
             aircraft_capacity: x.aircraft_capacity,
             ship_berths: x.ship_berths,
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -509,8 +507,7 @@ impl Compiler<'_> {
     fn inventory(&mut self, x: &s::Inventory, custom: bool) -> c::Inventory {
         c::Inventory {
             id: self.st.id(&x.id),
-            country: c::CountryIx(self.ix(Kind::Country, &x.country)),
-            as_of: self.st.id(&x.as_of),
+            nation: c::NationIx(self.ix(Kind::Nation, &x.nation)),
             platforms: x
                 .platforms
                 .iter()
@@ -543,7 +540,7 @@ impl Compiler<'_> {
                     (c::BaseIx(self.ix(Kind::Base, &b.base)), m)
                 })
                 .collect(),
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -563,7 +560,7 @@ impl Compiler<'_> {
             reaction_time_s: x.reaction_time_s,
             iads_layers: self.st.ids(&x.iads_layers),
             strike_package: self.st.ids(&x.strike_package),
-            provenance: self.provenance(&x.provenance, custom),
+            design: self.design(&x.design, custom),
         }
     }
 
@@ -718,7 +715,15 @@ impl Compiler<'_> {
                 })
                 .collect(),
             ground: x.ground.clone(),
-            provenance: self.provenance(&x.provenance, custom),
+            design: match &x.design {
+                Some(d) => self.design(d, custom),
+                None => c::Design {
+                    archetype: None,
+                    class_name: None,
+                    note: self.st.id(""),
+                    custom,
+                },
+            },
         }
     }
 }

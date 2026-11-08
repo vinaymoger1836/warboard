@@ -6,4 +6,4 @@ name: Test fighter X (custom)
 overrides:
   mobility.max_speed_mach: 1.8
   stations[1].max_kg: 1200
-provenance: { confidence: estimate }
+design: { archetype: legacy, note: "Test entry." }

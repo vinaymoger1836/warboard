@@ -5,4 +5,4 @@ kind: loadout
 name: Bad
 platform: test-aam
 items: []
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { note: "Test entry." }

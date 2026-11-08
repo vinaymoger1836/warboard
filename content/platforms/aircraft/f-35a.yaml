@@ -33,21 +33,4 @@ countermeasures: { chaff-generic: 60, flare-generic: 60 }
 datalinks: [link-16]
 durability: { model: aircraft, p_kill_on_hit: 0.8 }
 turnaround_min: 60
-provenance:
-  confidence: medium
-  notes: >-
-    Front RCS 0.005 m2 is the assessment quoted in the Su-57 article; other aspects are estimates. Paired external stations are one station with capacity 2 (left + right).
-  estimates:
-    - mobility.cruise_speed_mach
-    - mobility.sustained_g
-    - mobility.min_runway_m
-    - signature
-    - fuel.burn_kg_h
-    - stations[0].max_kg
-    - stations[3].max_kg
-    - countermeasures
-    - durability
-    - turnaround_min
-  sources:
-    - { title: "Lockheed Martin F-35 Lightning II (specifications F-35A)", url: "https://en.wikipedia.org/wiki/Lockheed_Martin_F-35_Lightning_II", accessed: 2026-10-27 }
-    - { title: "Sukhoi Su-57 (specifications; RCS estimates incl. F-35)", url: "https://en.wikipedia.org/wiki/Sukhoi_Su-57", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

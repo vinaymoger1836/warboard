@@ -25,16 +25,4 @@ stations:
 sensors: [an-das-1-mts-b]
 durability: { model: aircraft, p_kill_on_hit: 0.9 }
 turnaround_min: 120
-provenance:
-  confidence: medium
-  notes: >-
-    Source: 4,000 lb fuel, 27 h endurance (burn derived from both), 6 pylons rated 1,500 / 600 / 200 lb each. Lynx SAR is not in the seed set.
-  estimates:
-    - mobility.sustained_g
-    - mobility.min_runway_m
-    - signature
-    - fuel.burn_kg_h
-    - durability
-    - turnaround_min
-  sources:
-    - { title: "General Atomics MQ-9 Reaper (specifications MQ-9A)", url: "https://en.wikipedia.org/wiki/General_Atomics_MQ-9_Reaper", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

@@ -3,15 +3,8 @@ id: kiel
 kind: base
 name: "Kiel naval base"
 base_type: port
-country: deu
+nation: deu
 lat_deg: 54.3233
 lon_deg: 10.1394
 ship_berths: 20
-provenance:
-  confidence: medium
-  notes: >-
-    Naval base from the curated list. Coordinates are the town's.
-  estimates:
-    - ship_berths
-  sources:
-    - { title: "Kiel", url: "https://en.wikipedia.org/wiki/Kiel", accessed: 2026-10-28 }
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

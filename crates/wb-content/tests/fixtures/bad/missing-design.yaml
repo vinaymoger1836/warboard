@@ -1,0 +1,8 @@
+# file: countermeasures/bad-design.yaml
+# expect: content/countermeasures/bad-design.yaml: design: is missing; every entry needs `design: { archetype, note }`
+id: bad-design
+kind: countermeasure
+name: Bad
+cm_type: flare
+effect: 0.3
+defeats: [ir]

@@ -2,7 +2,7 @@
 //! (doc 04 §1–3.3).
 
 use super::common::{
-    AarSystem, Domain, Provenance, TargetClass, no_aar, one, source_enum, source_type,
+    AarSystem, Design, Domain, TargetClass, no_aar, one, source_enum, source_type,
 };
 use std::collections::BTreeMap;
 
@@ -168,7 +168,7 @@ source_type! {
         /// Orbit of a satellite; required for `satellite/*`.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub orbit: Option<Orbit>,
-        pub provenance: Provenance,
+        pub design: Design,
     }
 
     /// A two-line element set (NORAD format, e.g. from CelesTrak), propagated

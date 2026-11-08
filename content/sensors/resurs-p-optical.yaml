@@ -8,13 +8,4 @@ payload:
   swath_km: 900
   gsd_m: 0.7
   downlink_delay_min: 45
-provenance:
-  confidence: low
-  notes: >-
-    Geoton-L1 optical camera, about 1 m panchromatic resolution, 38 km swath at nadir. Field of regard width is an estimate.
-  estimates:
-    - payload.swath_km
-    - payload.downlink_delay_min
-    - payload.gsd_m
-  sources:
-    - { title: "Resurs-P", url: "https://en.wikipedia.org/wiki/Resurs-P", accessed: 2026-10-29 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

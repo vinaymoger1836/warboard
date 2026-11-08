@@ -122,7 +122,7 @@ fn dem(west: i16, south: i16, cols: u16, rows: u16, base_m: i16, ridges: &[Ridge
     out
 }
 
-/// A one-block `.wbh3` / `.bin` file with no countries.
+/// A one-block `.wbh3` / `.bin` file with no nations.
 fn blocked(magic: &[u8; 4], cell: u64, block: &[u8]) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(magic);
@@ -167,7 +167,7 @@ pub fn ridge_pack(
     .map_err(|e| GeoError::Pack(e.to_string()))?;
     let res = h3o::Resolution::try_from(H3_RES).map_err(|e| GeoError::Pack(e.to_string()))?;
     let cell = u64::from(corner.to_cell(res));
-    // cell, class (open), elevation, slope, flags, country.
+    // cell, class (open), elevation, slope, flags, nation.
     let mut terrain = cell.to_le_bytes().to_vec();
     terrain.push(1);
     terrain.extend_from_slice(&base_m.to_le_bytes());

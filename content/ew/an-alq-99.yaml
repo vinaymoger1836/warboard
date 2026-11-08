@@ -5,15 +5,4 @@ modes:
   escort:       { jam_strength: 6, coverage_km: 150, sector_deg: 120 }
   stand_off:    { jam_strength: 7, coverage_km: 200, sector_deg: 120 }
 effects: [radar, datalink]
-provenance:
-  confidence: low
-  notes: >-
-    Frequency coverage 64 MHz-20 GHz and 6.8-10.8 kW output per pod are from the source; jamming power class and geometry are estimates.
-  estimates:
-    - modes.escort.jam_strength
-    - modes.stand_off.jam_strength
-    - modes.stand_off.coverage_km
-    - modes.stand_off.sector_deg
-  sources:
-    - { title: "AN/ALQ-99", url: "https://en.wikipedia.org/wiki/AN/ALQ-99", accessed: 2026-10-27 }
-    - { title: "Boeing EA-18G Growler (specifications)", url: "https://en.wikipedia.org/wiki/Boeing_EA-18G_Growler", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

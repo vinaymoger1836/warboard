@@ -3,15 +3,8 @@ id: gdynia
 kind: base
 name: "Gdynia naval port"
 base_type: port
-country: pol
+nation: pol
 lat_deg: 54.5175
 lon_deg: 18.54
 ship_berths: 15
-provenance:
-  confidence: medium
-  notes: >-
-    Naval base from the curated list. Coordinates are the town's.
-  estimates:
-    - ship_berths
-  sources:
-    - { title: "Gdynia", url: "https://en.wikipedia.org/wiki/Gdynia", accessed: 2026-10-28 }
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

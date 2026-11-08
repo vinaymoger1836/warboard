@@ -1,6 +1,6 @@
 # Default realism profile: every tuning constant of the engine (doc 02 §17).
-# Values marked in doc 02 are copied from it; the rest are reasoned values
-# listed under provenance.estimates until golden scenarios pin them.
+# Values marked in doc 02 are copied from it; the rest are reasoned game
+# values, tuned by the golden scenarios (doc 08 §3).
 id: default
 kind: realism
 name: Default realism
@@ -247,99 +247,3 @@ ground:                              # doc 02 §14 (Phase 11 placeholders)
   lanchester_coefficient: 0.05
   random_variation: 0.2
   defender_terrain_factor: { open: 1.0, forest: 1.5, urban: 2.0, mountain: 2.0 }
-
-provenance:
-  confidence: estimate
-  notes: >-
-    Design constants from docs/02-simulation-engine.md; the sources cover the
-    physical ones (Earth radius, 4/3-Earth radio horizon, proportional
-    navigation gain, Rayleigh miss distance). Estimates are tuned by the
-    golden scenarios (doc 08 §3).
-  estimates:
-    - passive.irst_aspect_factor
-    - passive.visual_range_km.mountain
-    - fusion.age_out_min.subsurface
-    - fusion.ellipse_growth_kt
-    - ew.nav_jam_cep_factor
-    - ew.datalink_latency_factor
-    - ew.seeker_jam
-    - ew.arm_memory_pk_factor
-    - endgame.aspect
-    - endgame.nominal_speed_fraction
-    - tewa.kill_assessment_s
-    - tewa.iads_autonomous_reaction_factor
-    - damage.ship_sink_delay_min
-    - damage.warhead_multiplier
-    - weapons.calibration
-    - weapons.tau_high_alt_m
-    - weapons.manoeuvre_energy_factor
-    - weapons.g_speed_exponent
-    - weapons.seeker_half_angle_deg
-    - weapons.datalink_update_s
-    - weapons.fuze_radius_m
-    - weapons.lethal_radius_m
-    - weapons.self_destruct_after_lost_s
-    - weapons.close_fraction
-    - weapons.cruise_alt_default_m
-    - weapons.max_flight_path_deg
-    - countermeasures
-    - damage.points_per_warhead_kg
-    - damage.ship_hits
-    - damage.propulsion_speed_factor
-    - damage.base_radius_km
-    - damage.base_components
-    - damage.munitions_store_loss_fraction
-    - roe
-    - ground
-    - movement.aircraft_climb_rate_mps
-    - movement.aircraft_descent_rate_mps
-    - movement.aircraft_accel_mps2
-    - movement.aircraft_sustained_g
-    - movement.aircraft_cruise_alt_m
-    - movement.cruise_alt_by_category_m
-    - movement.ship_accel_mps2
-    - movement.formation_spacing_m
-    - movement.waypoint_radius_m
-    - fuel.burn_altitude_factor
-    - fuel.ship_burn_speed_exponent
-    - fuel.descent_burn_fraction
-    - logistics.tanker_join_km
-    - logistics.landing_radius_km
-    - logistics.pattern_alt_m
-    - logistics.berth_radius_km
-    - logistics.turnaround_default_min
-    - bases.road_strip.max_slope_deg
-    - bases.heliport.aircraft_capacity
-    - radar.range_sigma_m
-    - radar.bearing_sigma_default_deg
-    - radar.group_resolve_fraction
-    - passive.visual_ref_size_m
-    - passive.visual_max_size_factor
-    - passive.irst_range_sigma_fraction
-    - passive.eo_detect_pixels
-    - passive.sonar_noise_db_per_doubling
-    - satellites.tasking_horizon_h
-    - satellites.pass_search_step_s
-    - fusion.contact_sigma_floor_m
-    - fusion.class_after_looks
-    - fusion.identify_at
-    - fusion.report_after_s
-    - fusion.esm_bearing_window_s
-    - fusion.esm_fix_min_angle_deg
-    - fusion.group_count_spread
-    - ew.emcon_blink_on_s
-    - ew.emcon_blink_period_s
-    - spatial
-    - earth.surface_target_height_m
-    - earth.ground_target_height_m
-    - bases.anchorage.ship_berths
-    - bases.air_base.match_radius_km
-    - bases.naval_base.match_radius_km
-    - bases.missile_site.setup_min
-  sources:
-    - { title: "Earth radius (IUGG mean radius R1)", url: "https://en.wikipedia.org/wiki/Earth_radius", accessed: 2026-10-27 }
-    - { title: "Radio horizon (4/3 effective Earth radius)", url: "https://en.wikipedia.org/wiki/Radio_horizon", accessed: 2026-10-27 }
-    - { title: "Proportional navigation", url: "https://en.wikipedia.org/wiki/Proportional_navigation", accessed: 2026-10-27 }
-    - { title: "Circular error probable (Rayleigh distribution)", url: "https://en.wikipedia.org/wiki/Circular_error_probable", accessed: 2026-10-27 }
-    - { title: "International Standard Atmosphere", url: "https://en.wikipedia.org/wiki/International_Standard_Atmosphere", accessed: 2026-10-28 }
-    - { title: "Speed of sound (dependence on temperature, γR of air)", url: "https://en.wikipedia.org/wiki/Speed_of_sound", accessed: 2026-10-28 }

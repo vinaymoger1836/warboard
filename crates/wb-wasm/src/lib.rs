@@ -69,7 +69,7 @@ impl Engine {
         self.sim.set_geo(None);
     }
 
-    /// Sides as JSON: `{ side, sides: [{ name, countries, player }] }`.
+    /// Sides as JSON: `{ side, sides: [{ name, nations, player }] }`.
     pub fn sides(&self) -> String {
         json(&serde_json::json!({
             "side": self.side,

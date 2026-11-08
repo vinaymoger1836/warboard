@@ -12,13 +12,4 @@ signature:
   visual_size_m: 12
 datalinks: [link-16]
 durability: { model: ground, damage_points: 100 }
-provenance:
-  confidence: low
-  notes: >-
-    Engagement Control Station of the Patriot fire unit.
-  estimates:
-    - mobility
-    - signature
-    - durability
-  sources:
-    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

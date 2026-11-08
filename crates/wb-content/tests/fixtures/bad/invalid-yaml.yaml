@@ -3,3 +3,4 @@
 id: bad-yaml
 kind: weapon
   name: [unclosed
+design: { archetype: legacy, note: "Test entry." }

@@ -15,18 +15,4 @@ radar:
   jam_resistance: 4
   erp_class_dbw: 80
   fire_channels: 0
-provenance:
-  confidence: low
-  notes: >-
-    Source names the Furke-2 as the corvette's air and surface search radar; no performance
-    figures are given there, so every value is an estimate.
-  estimates:
-    - radar.band
-    - radar.r_ref_km
-    - radar.max_range_km
-    - radar.scan_period_s
-    - radar.clutter_rejection
-    - radar.jam_resistance
-    - radar.erp_class_dbw
-  sources:
-    - { title: "Steregushchiy-class corvette", url: "https://en.wikipedia.org/wiki/Steregushchiy-class_corvette", accessed: 2026-10-29 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

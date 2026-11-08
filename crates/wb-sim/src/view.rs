@@ -330,7 +330,7 @@ pub mod string_kind {
     /// Contact label: type short name from `Type`, class name at `Class`,
     /// empty below (the UI writes `UNKNOWN AIR`).
     pub const CONTACT_TYPE: u8 = 2;
-    /// Satellite owner (country code, `USA`).
+    /// Satellite owner (nation code, `USA`).
     pub const OWNER: u8 = 3;
     /// Satellite payload label, `[OPTICAL 600km]`.
     pub const PAYLOAD: u8 = 4;
@@ -578,12 +578,12 @@ impl ViewEncoder {
             if let Some(label) = payload_label(rules, p.0) {
                 want(&mut self.sent, uid.0, string_kind::PAYLOAD, &label);
                 if let Some(a) = world.get::<Allegiance>(e) {
-                    let c = &rules.db.countries[a.country.0 as usize];
+                    let c = &rules.db.nations[a.nation.0 as usize];
                     want(
                         &mut self.sent,
                         uid.0,
                         string_kind::OWNER,
-                        &rules.db.str(c.iso3).to_uppercase(),
+                        &rules.db.str(c.id).to_uppercase(),
                     );
                 }
             }

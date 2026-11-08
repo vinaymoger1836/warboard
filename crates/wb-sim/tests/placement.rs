@@ -15,8 +15,8 @@ seed: 1
 start_utc: 2026-10-27T06:00:00Z
 start_mode: deploy
 sides:
-  - { name: NATO, countries: [pol, deu, fra, ita, usa], player: true }
-  - { name: Russia, countries: [rus] }
+  - { name: NATO, nations: [pol, deu, fra, ita, usa], player: true }
+  - { name: Russia, nations: [rus] }
 ";
 
 fn content() -> (Arc<wb_content::ContentDb>, [u8; 32]) {
@@ -58,7 +58,7 @@ fn naval_base_inland_is_rejected() {
 #[test]
 fn air_base_without_a_real_airfield_is_rejected() {
     let mut s = sim(None);
-    // Open country west of Bydgoszcz, no airfield within 3 km.
+    // Open nation west of Bydgoszcz, no airfield within 3 km.
     let err = place(&mut s, BaseKind::AirBase, 53.10, 17.40).unwrap_err();
     assert_eq!(
         err,
@@ -92,7 +92,7 @@ fn enemy_airfield_is_rejected() {
     // Chkalovsk, Kaliningrad.
     let err = place(&mut s, BaseKind::AirBase, 54.766, 20.397).unwrap_err();
     assert!(
-        err.ends_with("belongs to another country, not your side"),
+        err.ends_with("belongs to another nation, not your side"),
         "{err}"
     );
 }
@@ -156,10 +156,10 @@ name: ships
 seed: 1
 start_utc: 2026-10-27T06:00:00Z
 sides:
-  - { name: NATO, countries: [pol, deu, fra, ita, usa], player: true }
-  - { name: Russia, countries: [rus] }
+  - { name: NATO, nations: [pol, deu, fra, ita, usa], player: true }
+  - { name: Russia, nations: [rus] }
 units:
-  - { id: 50, name: Bergamini, platform: fremm-bergamini, country: ita, base: gdynia }
+  - { id: 50, name: Bergamini, platform: fremm-bergamini, nation: ita, base: gdynia }
 ";
     let (db, hash) = content();
     let mut s = Sim::from_yaml(yaml, db, hash, Some(Rc::new(geo))).expect("scenario builds");

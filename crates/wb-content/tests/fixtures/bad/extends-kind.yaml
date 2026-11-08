@@ -5,4 +5,4 @@ kind: platform
 custom: true
 extends: test-aam
 name: Bad
-provenance: { confidence: estimate }
+design: { archetype: legacy, note: "Test entry." }

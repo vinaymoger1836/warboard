@@ -15,16 +15,4 @@ radar:
   jam_resistance: 6
   erp_class_dbw: 90
   fire_channels: 0
-provenance:
-  confidence: low
-  notes: >-
-    Source: rotodome turning once every 10 s, low-flying targets seen at more than 250 mi
-    (400 km), higher ones further. The 50% range against 1 m2 is an estimate.
-  estimates:
-    - radar.r_ref_km
-    - radar.max_range_km
-    - radar.clutter_rejection
-    - radar.jam_resistance
-    - radar.erp_class_dbw
-  sources:
-    - { title: "Boeing E-3 Sentry (radar)", url: "https://en.wikipedia.org/wiki/Boeing_E-3_Sentry", accessed: 2026-10-29 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

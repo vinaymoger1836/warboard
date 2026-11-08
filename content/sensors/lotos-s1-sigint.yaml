@@ -9,14 +9,4 @@ payload:
   bands: [L, S, C, X]
   location_sigma_km: 5
   downlink_delay_min: 20
-provenance:
-  confidence: low
-  notes: >-
-    Electronic intelligence satellite of the Liana system. Footprint, bands and fix accuracy are estimates.
-  estimates:
-    - payload.swath_km
-    - payload.downlink_delay_min
-    - payload.bands
-    - payload.location_sigma_km
-  sources:
-    - { title: "Lotos-S", url: "https://en.wikipedia.org/wiki/Lotos-S", accessed: 2026-10-29 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

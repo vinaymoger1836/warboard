@@ -6,4 +6,4 @@ capacity_tracks: 500
 range_km: 500
 engage_on_remote: true
 jam_resistance: 0.5
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }

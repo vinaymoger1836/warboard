@@ -15,17 +15,17 @@ pub mod system;
 pub mod weapon;
 pub mod world;
 
-pub use common::{
-    AarSystem, Band, Confidence, CountermeasureType, Domain, Emcon, Provenance, Seeker, Source,
-    TargetClass,
-};
+pub use common::{AarSystem, Band, CountermeasureType, Design, Domain, Emcon, Seeker, TargetClass};
 pub use ew::{Countermeasure, Datalink, EwEffect, EwModes, EwSuite, EwType, JamMode};
 pub use platform::{Orbit, Platform, PlatformCategory, SensorMount, Station, StationKind};
 pub use realism::Realism;
 pub use sensor::{PayloadKind, Sensor, SensorRole, SensorType};
 pub use system::{Loadout, System};
 pub use weapon::{Weapon, WeaponCategory};
-pub use world::{Base, Country, Doctrine, Inventory};
+pub use world::{
+    Archetype, Base, CellOverride, Doctrine, Flag, FlagPattern, Inventory, Nation, NationSeed,
+    World,
+};
 
 use common::{source_enum, source_type};
 use std::collections::BTreeMap;
@@ -34,7 +34,9 @@ source_enum! {
     /// Entry kind; each lives in its own folder under `content/`.
     #[serde(rename_all = "snake_case")]
     pub enum Kind {
-        Country,
+        Nation,
+        World,
+        Archetype,
         Platform,
         System,
         Sensor,
@@ -51,8 +53,10 @@ source_enum! {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 13] = [
-        Kind::Country,
+    pub const ALL: [Kind; 15] = [
+        Kind::Nation,
+        Kind::World,
+        Kind::Archetype,
         Kind::Platform,
         Kind::System,
         Kind::Sensor,
@@ -69,7 +73,9 @@ impl Kind {
 
     pub fn as_str(self) -> &'static str {
         match self {
-            Kind::Country => "country",
+            Kind::Nation => "nation",
+            Kind::World => "world",
+            Kind::Archetype => "archetype",
             Kind::Platform => "platform",
             Kind::System => "system",
             Kind::Sensor => "sensor",
@@ -88,7 +94,9 @@ impl Kind {
     /// Top-level folder under `content/` (doc 04 §2).
     pub fn folder(self) -> &'static str {
         match self {
-            Kind::Country => "countries",
+            Kind::Nation => "nations",
+            Kind::World => "world",
+            Kind::Archetype => "archetypes",
             Kind::Platform => "platforms",
             Kind::System => "systems",
             Kind::Sensor => "sensors",
@@ -113,7 +121,7 @@ source_type! {
     /// Keys every entry may carry besides the fields of its kind.
     pub struct EntryMeta {
         pub kind: Kind,
-        /// A user-made variant rather than a real system; may have no sources.
+        /// A user-made variant of a catalogue entry (doc 04 §3.6).
         #[serde(default)]
         pub custom: bool,
         /// Id of the entry this one is based on (same kind). Its fields are
@@ -142,7 +150,9 @@ source_type! {
 /// A typed, resolved entry.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Entry {
-    Country(Country),
+    Nation(Nation),
+    World(World),
+    Archetype(Archetype),
     Platform(Platform),
     System(System),
     Sensor(Sensor),
@@ -159,21 +169,24 @@ pub enum Entry {
 }
 
 impl Entry {
-    pub fn provenance(&self) -> &Provenance {
+    /// The entry's design note; none for archetypes, worlds and (optionally)
+    /// realism profiles.
+    pub fn design(&self) -> Option<&Design> {
         match self {
-            Entry::Country(e) => &e.provenance,
-            Entry::Platform(e) => &e.provenance,
-            Entry::System(e) => &e.provenance,
-            Entry::Sensor(e) => &e.provenance,
-            Entry::Weapon(e) => &e.provenance,
-            Entry::EwSuite(e) => &e.provenance,
-            Entry::Countermeasure(e) => &e.provenance,
-            Entry::Datalink(e) => &e.provenance,
-            Entry::Loadout(e) => &e.provenance,
-            Entry::Base(e) => &e.provenance,
-            Entry::Inventory(e) => &e.provenance,
-            Entry::Doctrine(e) => &e.provenance,
-            Entry::Realism(e) => &e.provenance,
+            Entry::Nation(e) => Some(&e.design),
+            Entry::World(_) | Entry::Archetype(_) => None,
+            Entry::Platform(e) => Some(&e.design),
+            Entry::System(e) => Some(&e.design),
+            Entry::Sensor(e) => Some(&e.design),
+            Entry::Weapon(e) => Some(&e.design),
+            Entry::EwSuite(e) => Some(&e.design),
+            Entry::Countermeasure(e) => Some(&e.design),
+            Entry::Datalink(e) => Some(&e.design),
+            Entry::Loadout(e) => Some(&e.design),
+            Entry::Base(e) => Some(&e.design),
+            Entry::Inventory(e) => Some(&e.design),
+            Entry::Doctrine(e) => Some(&e.design),
+            Entry::Realism(e) => e.design.as_ref(),
         }
     }
 }

@@ -8,11 +8,11 @@ seed: 6
 start_utc: 2026-10-27T12:00:00Z
 start_mode: deploy
 sides:
-  - { name: NATO, countries: [pol], roe: alpha }
-  - { name: Russia, countries: [rus], roe: charlie, self_defence: false }
+  - { name: NATO, nations: [pol], roe: alpha }
+  - { name: Russia, nations: [rus], roe: charlie, self_defence: false }
 units:
-  - { id: 10, name: Husarz, platform: f-35a, country: pol, lat_deg: 55.0, lon_deg: 15.0, alt_m: 12000, heading_deg: 90, loadout: f-35a-air-superiority }
-  - { id: 20, name: Sokol, platform: su-35s, country: rus, lat_deg: 55.0, lon_deg: 17.6, alt_m: 12000, heading_deg: 270 }
+  - { id: 10, name: Husarz, platform: f-35a, nation: pol, lat_deg: 55.0, lon_deg: 15.0, alt_m: 12000, heading_deg: 90, loadout: f-35a-air-superiority }
+  - { id: 20, name: Sokol, platform: su-35s, nation: rus, lat_deg: 55.0, lon_deg: 17.6, alt_m: 12000, heading_deg: 270 }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: move, waypoints: [[18.0, 55.0]], alt_m: 12000 } }
   - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[14.0, 55.0]], alt_m: 12000 } }

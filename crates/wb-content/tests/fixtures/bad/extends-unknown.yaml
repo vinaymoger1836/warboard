@@ -5,4 +5,4 @@ kind: platform
 custom: true
 extends: f-99
 name: Bad
-provenance: { confidence: estimate }
+design: { archetype: legacy, note: "Test entry." }

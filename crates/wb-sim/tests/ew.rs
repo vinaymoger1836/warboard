@@ -22,11 +22,11 @@ seed: 42
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 sides:
-  - { name: Blue, countries: [tst], roe: alpha }
-  - { name: Red, countries: [opp], roe: alpha }
+  - { name: Blue, nations: [tst], roe: alpha }
+  - { name: Red, nations: [opp], roe: alpha }
 units:
-  - { id: 10, name: Fighter, platform: test-fighter, country: tst, lat_deg: 55.0, lon_deg: 10.4, alt_m: 8000, heading_deg: 270, loadout: test-fighter-sead }
-  - { id: 20, name: SAM-Radar, platform: test-sam-radar-unit, country: opp, lat_deg: 55.0, lon_deg: 10.0, alt_m: 0, heading_deg: 90 }
+  - { id: 10, name: Fighter, platform: test-fighter, nation: tst, lat_deg: 55.0, lon_deg: 10.4, alt_m: 8000, heading_deg: 270, loadout: test-fighter-sead }
+  - { id: 20, name: SAM-Radar, platform: test-sam-radar-unit, nation: opp, lat_deg: 55.0, lon_deg: 10.0, alt_m: 0, heading_deg: 90 }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: suppress, point: [10.0, 55.0], weapon: test-arm, count: 1 } }
   - { tick: 8, side: 1, type: SetEmcon, units: [20], emcon: off }
@@ -63,12 +63,12 @@ seed: 42
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 sides:
-  - { name: Blue, countries: [tst], roe: alpha }
-  - { name: Red, countries: [opp], roe: alpha }
+  - { name: Blue, nations: [tst], roe: alpha }
+  - { name: Red, nations: [opp], roe: alpha }
 units:
-  - { id: 10, name: Fighter, platform: test-fighter, country: tst, lat_deg: 55.0, lon_deg: 10.4, alt_m: 8000, heading_deg: 270, loadout: test-fighter-sead }
-  - { id: 20, name: SAM-Radar, platform: test-sam-radar-unit, country: opp, lat_deg: 55.0, lon_deg: 10.0, alt_m: 0, heading_deg: 90 }
-  - { id: 30, name: Jammer, platform: test-jammer-aircraft, country: opp, lat_deg: 55.0, lon_deg: 10.0, alt_m: 5000, heading_deg: 90, jammer: true, jammer_mode: stand_off }
+  - { id: 10, name: Fighter, platform: test-fighter, nation: tst, lat_deg: 55.0, lon_deg: 10.4, alt_m: 8000, heading_deg: 270, loadout: test-fighter-sead }
+  - { id: 20, name: SAM-Radar, platform: test-sam-radar-unit, nation: opp, lat_deg: 55.0, lon_deg: 10.0, alt_m: 0, heading_deg: 90 }
+  - { id: 30, name: Jammer, platform: test-jammer-aircraft, nation: opp, lat_deg: 55.0, lon_deg: 10.0, alt_m: 5000, heading_deg: 90, jammer: true, jammer_mode: stand_off }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: suppress, point: [10.0, 55.0], weapon: test-arm, count: 1 } }
   - { tick: 0, side: 1, type: AssignTask, units: [30], task: { kind: jam, centre: [10.0, 55.0], radius_km: 5, alt_m: 5000 } }
@@ -132,12 +132,12 @@ seed: 7
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 sides:
-  - { name: Blue, countries: [tst] }
-  - { name: Red, countries: [opp] }
+  - { name: Blue, nations: [tst] }
+  - { name: Red, nations: [opp] }
 units:
-  - { id: 10, name: Watcher, platform: test-fighter, country: tst, lat_deg: 55.0, lon_deg: 11.0, alt_m: 9000, heading_deg: 90 }
-  - { id: 30, name: Jammer, platform: test-jammer-aircraft, country: tst, lat_deg: 55.0, lon_deg: 11.4, alt_m: 10000, heading_deg: 90, jammer: true, jammer_mode: stand_off }
-  - { id: 20, name: Radar, platform: test-sam-radar-unit, country: opp, lat_deg: 55.0, lon_deg: 13.0, alt_m: 0, heading_deg: 270 }
+  - { id: 10, name: Watcher, platform: test-fighter, nation: tst, lat_deg: 55.0, lon_deg: 11.0, alt_m: 9000, heading_deg: 90 }
+  - { id: 30, name: Jammer, platform: test-jammer-aircraft, nation: tst, lat_deg: 55.0, lon_deg: 11.4, alt_m: 10000, heading_deg: 90, jammer: true, jammer_mode: stand_off }
+  - { id: 20, name: Radar, platform: test-sam-radar-unit, nation: opp, lat_deg: 55.0, lon_deg: 13.0, alt_m: 0, heading_deg: 270 }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [30], task: { kind: jam, centre: [11.4, 55.0], radius_km: 5, alt_m: 10000 } }
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: move, waypoints: [[11.0, 55.0]], alt_m: 9000 } }

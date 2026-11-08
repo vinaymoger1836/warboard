@@ -28,20 +28,4 @@ stations:
 countermeasures: { chaff-generic: 60, flare-generic: 60 }
 durability: { model: aircraft, p_kill_on_hit: 0.8 }
 turnaround_min: 60
-provenance:
-  confidence: medium
-  notes: >-
-    Source: 13 stations (8 under-wing, 5 under-fuselage), >9,000 kg payload, internal fuel about 4,500 kg, Mach 2.35 at 11 km (kept at 2.0 for a loaded aircraft). CAPTOR and PIRATE are not in the P1 seed set.
-  estimates:
-    - mobility.cruise_speed_mach
-    - mobility.max_speed_mach
-    - mobility.sustained_g
-    - mobility.min_runway_m
-    - signature
-    - fuel.burn_kg_h
-    - stations
-    - countermeasures
-    - durability
-    - turnaround_min
-  sources:
-    - { title: "Eurofighter Typhoon (specifications)", url: "https://en.wikipedia.org/wiki/Eurofighter_Typhoon", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

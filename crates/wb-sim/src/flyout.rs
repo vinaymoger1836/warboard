@@ -136,7 +136,7 @@ fn fly_rocket(rules: &Rules, wix: WeaponIx, alt: f64, v0: f64, out: &mut Flyout)
             },
             Allegiance {
                 side: 0,
-                country: wb_content::compiled::CountryIx(0),
+                nation: wb_content::compiled::NationIx(0),
             },
             Kinematics {
                 lat: from.lat,

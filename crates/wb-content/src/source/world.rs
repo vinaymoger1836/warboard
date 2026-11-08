@@ -1,6 +1,6 @@
-//! `country`, `base`, `inventory` and `doctrine`.
+//! `nation`, `world`, `archetype`, `base`, `inventory` and `doctrine`.
 
-use super::common::{Emcon, Provenance, source_enum, source_type};
+use super::common::{Design, Emcon, source_enum, source_type};
 use std::collections::BTreeMap;
 
 source_enum! {
@@ -9,6 +9,23 @@ source_enum! {
         AirBase,
         Port,
         AirBaseAndPort,
+    }
+
+    /// Flag layouts (doc 04 §3.0).
+    #[serde(rename_all = "snake_case")]
+    pub enum FlagPattern {
+        /// Off-centre cross.
+        NordicCross,
+        /// Two or three horizontal bands.
+        Horizontal,
+        /// Two or three vertical bands.
+        Vertical,
+        /// Diagonal split.
+        Diagonal,
+        /// Plain field with a centred disc.
+        Disc,
+        /// Plain field with a triangle at the hoist.
+        Chevron,
     }
 
     /// When a unit fires by default (doc 03 §5).
@@ -21,20 +38,80 @@ source_enum! {
 }
 
 source_type! {
+    /// A fictional nation (doc 11 §2.1, doc 04 §3.0).
     #[serde(deny_unknown_fields)]
-    pub struct Country {
-        /// Lower-case ISO 3166-1 alpha-3, e.g. `ita`.
+    pub struct Nation {
+        /// Three lower-case letters, e.g. `ald`; shown upper-case (`ALD`). Also
+        /// the territory code in the region packs.
         pub id: String,
         pub name: String,
-        pub iso2: String,
-        pub iso3: String,
-        /// Flag asset key (packages/symbols), e.g. `it`.
-        pub flag: String,
+        /// Map tint when neutral, `#RRGGBB`; coalition colours override it.
+        pub colour: String,
+        pub flag: Flag,
+        /// Capital's name (a place in `world/`); optional until places exist.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub capital: Option<String>,
         pub doctrine: String,
         /// Data link families its forces use.
         #[serde(default)]
         pub datalinks: Vec<String>,
-        pub provenance: Provenance,
+        pub design: Design,
+    }
+
+    /// A generated flag: a simple pattern in two or three colours.
+    #[serde(deny_unknown_fields)]
+    pub struct Flag {
+        pub pattern: FlagPattern,
+        /// `#RRGGBB`, two or three of them.
+        pub colours: Vec<String>,
+    }
+
+    /// A theatre: real terrain with generated borders (doc 11 §2.2).
+    #[serde(deny_unknown_fields)]
+    pub struct World {
+        pub id: String,
+        pub name: String,
+        /// Region pack whose terrain the theatre uses, e.g. `europe`.
+        pub terrain_pack: String,
+        /// Fixes the border growth.
+        pub seed: u64,
+        pub nations: Vec<NationSeed>,
+        /// Hand-edits after growth: cells given to a nation (or unclaimed).
+        /// Not `overrides`, which is the meta key for `extends` (doc 04 §3.6).
+        #[serde(default)]
+        pub border_overrides: Vec<CellOverride>,
+    }
+
+    #[serde(deny_unknown_fields)]
+    pub struct NationSeed {
+        pub nation: String,
+        /// `[lon, lat]` in degrees, on land.
+        pub seed_at: [f64; 2],
+        /// Relative growth weight; larger grows a larger region.
+        pub weight: f64,
+    }
+
+    #[serde(deny_unknown_fields)]
+    pub struct CellOverride {
+        /// Nation id; none makes the cells unclaimed.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub nation: Option<String>,
+        /// H3 cell indexes as hex strings.
+        pub cells: Vec<String>,
+    }
+
+    /// Class bands for the stats that decide engagements (doc 04 §4).
+    #[serde(deny_unknown_fields)]
+    pub struct Archetype {
+        pub id: String,
+        /// Class name shown in the UI, e.g. `Stealth multirole fighter`.
+        pub name: String,
+        /// Field path (as in `overrides`) → `[min, max]` in the entry's units.
+        /// Values outside a band are warnings, not errors.
+        #[serde(default)]
+        pub bands: BTreeMap<String, [f64; 2]>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub note: Option<String>,
     }
 
     #[serde(deny_unknown_fields)]
@@ -42,10 +119,8 @@ source_type! {
         pub id: String,
         pub name: String,
         pub base_type: BaseType,
-        /// Owner country id.
-        pub country: String,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub icao: Option<String>,
+        /// Owner nation id.
+        pub nation: String,
         pub lat_deg: f64,
         pub lon_deg: f64,
         #[serde(default)]
@@ -58,16 +133,14 @@ source_type! {
         pub aircraft_capacity: u32,
         #[serde(default)]
         pub ship_berths: u32,
-        pub provenance: Provenance,
+        pub design: Design,
     }
 
-    /// A country's forces at a date (doc 04 §3.6).
+    /// A nation's forces at war start (doc 04 §3.7).
     #[serde(deny_unknown_fields)]
     pub struct Inventory {
         pub id: String,
-        pub country: String,
-        /// `YYYY-MM-DD`.
-        pub as_of: String,
+        pub nation: String,
         /// Platform or system id → quantity.
         #[serde(default)]
         pub platforms: BTreeMap<String, u32>,
@@ -80,7 +153,7 @@ source_type! {
         /// Where the munitions are stored: each base's stock at war start.
         #[serde(default)]
         pub munition_basing: Vec<MunitionBasing>,
-        pub provenance: Provenance,
+        pub design: Design,
     }
 
     #[serde(deny_unknown_fields)]
@@ -97,7 +170,7 @@ source_type! {
         pub count: u32,
     }
 
-    /// AI profile per country (doc 03 §11). Weights are 0..1.
+    /// AI profile per nation (doc 03 §11). Weights are 0..1.
     #[serde(deny_unknown_fields)]
     pub struct Doctrine {
         pub id: String,
@@ -122,6 +195,6 @@ source_type! {
         /// Strike package template, e.g. `[sead, escort, strike, jammer]`.
         #[serde(default)]
         pub strike_package: Vec<String>,
-        pub provenance: Provenance,
+        pub design: Design,
     }
 }

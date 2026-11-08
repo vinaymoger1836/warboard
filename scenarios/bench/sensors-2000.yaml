@@ -9,18 +9,18 @@ start_utc: 2026-10-27T10:00:00Z
 force_fine_tick: true
 start_mode: deploy
 sides:
-  - { name: NATO, countries: [pol, deu, fra, ita, usa], player: true }
-  - { name: Russia, countries: [rus] }
+  - { name: NATO, nations: [pol, deu, fra, ita, usa], player: true }
+  - { name: Russia, nations: [rus] }
 generated_units:
   - count: 1000
     group_size: 4
     platforms: [f-35a, ea-18g, e-3a, fremm-bergamini, mq-9a]
-    country: pol
+    nation: pol
     area: [44.0, -2.0, 60.0, 26.0]
     patrol_radius_km: [20, 80]
   - count: 1000
     group_size: 4
     platforms: [su-35s, steregushchiy, su-57]
-    country: rus
+    nation: rus
     area: [44.0, 18.0, 62.0, 45.0]
     patrol_radius_km: [20, 80]

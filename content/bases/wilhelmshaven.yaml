@@ -3,15 +3,8 @@ id: wilhelmshaven
 kind: base
 name: "Wilhelmshaven naval base"
 base_type: port
-country: deu
+nation: deu
 lat_deg: 53.5286
 lon_deg: 8.1056
 ship_berths: 25
-provenance:
-  confidence: medium
-  notes: >-
-    Naval base from the curated list. Coordinates are the town's.
-  estimates:
-    - ship_berths
-  sources:
-    - { title: "Wilhelmshaven", url: "https://en.wikipedia.org/wiki/Wilhelmshaven", accessed: 2026-10-28 }
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

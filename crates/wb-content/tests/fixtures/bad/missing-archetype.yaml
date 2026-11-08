@@ -1,0 +1,9 @@
+# file: countermeasures/bad-archetype.yaml
+# expect: content/countermeasures/bad-archetype.yaml: design.archetype: is missing; catalogue entries name their class archetype
+id: bad-archetype
+kind: countermeasure
+name: Bad
+cm_type: flare
+effect: 0.3
+defeats: [ir]
+design: { note: "No archetype." }

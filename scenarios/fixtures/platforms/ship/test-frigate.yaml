@@ -16,4 +16,4 @@ countermeasures:
   test-chaff: 24
   test-flare: 12
 durability: { model: ship, damage_points: 300 }
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }

@@ -25,5 +25,4 @@ mass_kg: 650
 station_category: [test_canister, test_vls]
 signature:
   rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
-
+design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }

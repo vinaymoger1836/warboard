@@ -3,7 +3,7 @@
 
 use std::collections::BTreeSet;
 use wb_core::geo::LatLon;
-use wb_geo::{BytesSource, CountryCode, Geo, LosParams, Pack, PackSource, TerrainClass};
+use wb_geo::{BytesSource, Geo, LosParams, NationCode, Pack, PackSource, TerrainClass};
 
 const RES_ARCSEC: u16 = 15;
 const SAMPLES: usize = 3600 / RES_ARCSEC as usize + 1;
@@ -82,7 +82,7 @@ fn cell_at(lat: f64, lon: f64) -> u64 {
     u64::from(h3o::LatLng::new(lat, lon).unwrap().to_cell(res))
 }
 
-/// Interior cell owned by `pol` (country 1) and a border cell split at `SPLIT_LON` between
+/// Interior cell owned by `pol` (nation 1) and a border cell split at `SPLIT_LON` between
 /// `pol` (west) and `rus` (east).
 const INTERIOR: (f64, f64) = (54.2, 20.2);
 const BORDER: (f64, f64) = (54.6, 20.7);
@@ -126,8 +126,8 @@ fn terrain_and_territory() -> (Vec<u8>, Vec<u8>, f64) {
     let mut record = Vec::new();
     record.extend_from_slice(&2u16.to_le_bytes());
     record.extend_from_slice(&0u16.to_le_bytes());
-    for (country, x0, x1) in [(1u16, split - 0.2, split), (2u16, split, split + 0.2)] {
-        record.extend_from_slice(&country.to_le_bytes());
+    for (nation, x0, x1) in [(1u16, split - 0.2, split), (2u16, split, split + 0.2)] {
+        record.extend_from_slice(&nation.to_le_bytes());
         record.extend_from_slice(&1u16.to_le_bytes());
         record.extend_from_slice(&rect(x0, x1));
     }
@@ -154,8 +154,8 @@ fn geo() -> Geo {
     geo
 }
 
-fn code(s: &str) -> CountryCode {
-    CountryCode::new(s).unwrap()
+fn code(s: &str) -> NationCode {
+    NationCode::new(s).unwrap()
 }
 
 #[test]

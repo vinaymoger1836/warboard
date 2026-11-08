@@ -3,19 +3,10 @@ id: naples-international-airport-lirn
 kind: base
 name: "Naples International Airport"
 base_type: air_base
-country: ita
-icao: LIRN
+nation: ita
 lat_deg: 40.8860
 lon_deg: 14.2908
 elevation_m: 89.6
 runway_length_m: 2628
 aircraft_capacity: 12
-provenance:
-  confidence: medium
-  notes: >-
-    Imported from OurAirports (civil, hard runway at least 2,400 m).
-    Position, elevation and longest hard runway are from the source.
-  estimates:
-    - aircraft_capacity
-  sources:
-    - { title: "OurAirports: Naples International Airport (LIRN)", url: "https://ourairports.com/airports/LIRN/", accessed: 2026-10-28 }
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

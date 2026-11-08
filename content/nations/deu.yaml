@@ -1,0 +1,8 @@
+id: deu
+kind: nation
+name: Germany
+colour: "#5C7FA8"
+flag: { pattern: horizontal, colours: ["#5C7FA8", "#E6E8EB"] }
+doctrine: nato-default
+datalinks: [link-16]
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

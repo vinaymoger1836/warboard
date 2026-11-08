@@ -13,13 +13,4 @@ signature:
 stations:
   - { id: canisters, kind: launcher, categories: [patriot_mse_canister], capacity: 12 }
 durability: { model: ground, damage_points: 100 }
-provenance:
-  confidence: medium
-  notes: >-
-    Source: 12 PAC-3 MSE canisters (3 rows of 4), or mixes with PAC-3 and PAC-2.
-  estimates:
-    - mobility
-    - signature
-    - durability
-  sources:
-    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

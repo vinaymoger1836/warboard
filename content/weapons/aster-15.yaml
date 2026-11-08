@@ -30,19 +30,4 @@ signature:
   rcs_m2: { front: 0.08, side: 0.4, rear: 0.1, top: 0.4 }
   ir: { cruise: 0.5 }
   visual_size_m: 4.2
-provenance:
-  confidence: medium
-  estimates:
-    - signature
-    - profile.boost_s
-    - profile.coast_tau_s
-    - profile.min_speed_mach
-    - profile.min_range_km
-    - profile.max_g
-    - guidance.seeker_range_km
-    - guidance.seeker_resistance
-    - pk_base
-    - countermeasure_resistance
-    - envelope.min_alt_m
-  sources:
-    - { title: "Aster (missile family)", url: "https://en.wikipedia.org/wiki/Aster_(missile_family)", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

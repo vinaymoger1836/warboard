@@ -15,13 +15,13 @@ name: loadout lock
 seed: 5
 start_utc: 2026-10-27T06:00:00Z
 sides:
-  - { name: NATO, countries: [pol] }
-  - { name: Russia, countries: [rus] }
+  - { name: NATO, nations: [pol] }
+  - { name: Russia, nations: [rus] }
 base_stock:
   - { base: lask-air-base-eplk, munitions: { aim-120d: 4, gbu-31: 2 } }
 units:
-  - { id: 10, name: Husarz, platform: f-35a, country: pol, count: 2, base: lask-air-base-eplk, loadout: f-35a-air-superiority }
-  - { id: 20, name: Orzel, platform: f-35a, country: pol, lat_deg: 53.9, lon_deg: 18.6, alt_m: 8000, heading_deg: 90, loadout: f-35a-air-superiority }
+  - { id: 10, name: Husarz, platform: f-35a, nation: pol, count: 2, base: lask-air-base-eplk, loadout: f-35a-air-superiority }
+  - { id: 20, name: Orzel, platform: f-35a, nation: pol, lat_deg: 53.9, lon_deg: 18.6, alt_m: 8000, heading_deg: 90, loadout: f-35a-air-superiority }
 ";
 
 fn sim() -> (Sim, Arc<wb_content::ContentDb>) {

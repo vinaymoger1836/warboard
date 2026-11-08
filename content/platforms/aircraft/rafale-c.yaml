@@ -30,19 +30,4 @@ stations:
 countermeasures: { chaff-generic: 60, flare-generic: 60 }
 durability: { model: aircraft, p_kill_on_hit: 0.8 }
 turnaround_min: 60
-provenance:
-  confidence: medium
-  notes: >-
-    Source: 14 external hardpoints, 9,500 kg external fuel and ordnance, +9/-3.6 g. Reduced RCS is described only qualitatively. RBE2 radar, SPECTRA, MICA and Meteor are not in the P1 seed set.
-  estimates:
-    - mobility.cruise_speed_mach
-    - mobility.sustained_g
-    - mobility.min_runway_m
-    - signature
-    - fuel.burn_kg_h
-    - stations
-    - countermeasures
-    - durability
-    - turnaround_min
-  sources:
-    - { title: "Dassault Rafale (specifications)", url: "https://en.wikipedia.org/wiki/Dassault_Rafale", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

@@ -3,19 +3,10 @@ id: fassberg-air-base-eths
 kind: base
 name: "Faßberg Air Base"
 base_type: air_base
-country: deu
-icao: ETHS
+nation: deu
 lat_deg: 52.9194
 lon_deg: 10.1858
 elevation_m: 74.7
 runway_length_m: 2440
 aircraft_capacity: 24
-provenance:
-  confidence: medium
-  notes: >-
-    Imported from OurAirports (military by name or keywords).
-    Position, elevation and longest hard runway are from the source.
-  estimates:
-    - aircraft_capacity
-  sources:
-    - { title: "OurAirports: Faßberg Air Base (ETHS)", url: "https://ourairports.com/airports/ETHS/", accessed: 2026-10-28 }
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

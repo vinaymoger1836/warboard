@@ -9,14 +9,14 @@ content: scenarios/fixtures
 start_utc: 2026-10-27T10:00:00Z
 start_mode: garrisoned
 sides:
-  - { name: Blue, countries: [tst], roe: alpha }
-  - { name: Red, countries: [opp], roe: alpha }
+  - { name: Blue, nations: [tst], roe: alpha }
+  - { name: Red, nations: [opp], roe: alpha }
 units:
-  - { id: 10, name: Hunter, platform: test-fighter, country: tst, lat_deg: 55.40, lon_deg: 15.40, alt_m: 8000, heading_deg: 90, loadout: test-fighter-sead }
-  - { id: 20, name: Radar A, platform: test-sam-radar-unit, country: opp, lat_deg: 55.30, lon_deg: 16.00, heading_deg: 270 }
-  - { id: 30, name: Radar B, platform: test-sam-radar-unit, country: opp, lat_deg: 55.40, lon_deg: 16.05, heading_deg: 270 }
-  - { id: 40, name: Radar C, platform: test-sam-radar-unit, country: opp, lat_deg: 55.50, lon_deg: 16.00, heading_deg: 270 }
-  - { id: 50, name: Radar D, platform: test-sam-radar-unit, country: opp, lat_deg: 55.60, lon_deg: 16.05, heading_deg: 270 }
+  - { id: 10, name: Hunter, platform: test-fighter, nation: tst, lat_deg: 55.40, lon_deg: 15.40, alt_m: 8000, heading_deg: 90, loadout: test-fighter-sead }
+  - { id: 20, name: Radar A, platform: test-sam-radar-unit, nation: opp, lat_deg: 55.30, lon_deg: 16.00, heading_deg: 270 }
+  - { id: 30, name: Radar B, platform: test-sam-radar-unit, nation: opp, lat_deg: 55.40, lon_deg: 16.05, heading_deg: 270 }
+  - { id: 40, name: Radar C, platform: test-sam-radar-unit, nation: opp, lat_deg: 55.50, lon_deg: 16.00, heading_deg: 270 }
+  - { id: 50, name: Radar D, platform: test-sam-radar-unit, nation: opp, lat_deg: 55.60, lon_deg: 16.05, heading_deg: 270 }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: patrol_circle, centre: [15.40, 55.45], radius_km: 10, alt_m: 8000 } }
 golden:

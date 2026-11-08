@@ -3,19 +3,10 @@ id: landivisiau-air-base-lfrj
 kind: base
 name: "Landivisiau Air Base"
 base_type: air_base
-country: fra
-icao: LFRJ
+nation: fra
 lat_deg: 48.5303
 lon_deg: -4.1516
 elevation_m: 106.1
 runway_length_m: 2700
 aircraft_capacity: 24
-provenance:
-  confidence: medium
-  notes: >-
-    Imported from OurAirports (military by name or keywords).
-    Position, elevation and longest hard runway are from the source.
-  estimates:
-    - aircraft_capacity
-  sources:
-    - { title: "OurAirports: Landivisiau Air Base (LFRJ)", url: "https://ourairports.com/airports/LFRJ/", accessed: 2026-10-28 }
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

@@ -1,7 +1,6 @@
 id: tst-2026
 kind: inventory
-country: tst
-as_of: "2026-10-27"
+nation: tst
 platforms:
   test-frigate: 4
   test-corvette: 4
@@ -10,5 +9,4 @@ munitions:
   test-interceptor: 120
   test-asm: 64
   test-ciws: 50
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
-
+design: { note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }

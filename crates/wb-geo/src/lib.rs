@@ -50,12 +50,12 @@ impl GeoError {
     }
 }
 
-/// Country code as used in content (`pol`, `rus`): lower-case ISO 3166-1 alpha-3, or the
+/// Nation code as used in content (`pol`, `rus`): lower-case ISO 3166-1 alpha-3, or the
 /// Natural Earth code for units without one (`kos`). At most four ASCII bytes.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct CountryCode([u8; 4]);
+pub struct NationCode([u8; 4]);
 
-impl CountryCode {
+impl NationCode {
     pub fn new(code: &str) -> Result<Self, String> {
         Self::from_bytes(code.as_bytes())
     }
@@ -67,7 +67,7 @@ impl CountryCode {
             || !trimmed.iter().all(|b| b.is_ascii_lowercase())
         {
             return Err(format!(
-                "invalid country code {:?}",
+                "invalid nation code {:?}",
                 String::from_utf8_lossy(raw)
             ));
         }
@@ -82,15 +82,15 @@ impl CountryCode {
     }
 }
 
-impl fmt::Display for CountryCode {
+impl fmt::Display for NationCode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
 }
 
-impl fmt::Debug for CountryCode {
+impl fmt::Debug for NationCode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "CountryCode({})", self.as_str())
+        write!(f, "NationCode({})", self.as_str())
     }
 }
 
@@ -317,7 +317,7 @@ pub struct PointInfo {
     pub cell: Option<CellInfo>,
     pub class: TerrainClass,
     pub elevation_m: f64,
-    pub owner: Option<CountryCode>,
+    pub owner: Option<NationCode>,
 }
 
 /// The installed packs, finest first.
@@ -379,8 +379,8 @@ impl Geo {
         Ok(self.cell_info(p)?.map_or(TerrainClass::Water, |c| c.class))
     }
 
-    /// Country whose land, 12 nm sea or airspace contains the point (doc 05 §5).
-    pub fn territory_owner(&self, p: LatLon) -> Result<Option<CountryCode>, GeoError> {
+    /// Nation whose land, 12 nm sea or airspace contains the point (doc 05 §5).
+    pub fn territory_owner(&self, p: LatLon) -> Result<Option<NationCode>, GeoError> {
         let Some(i) = self.pack_at(p) else {
             return Ok(None);
         };
@@ -390,11 +390,11 @@ impl Geo {
             return Ok(None);
         };
         if !info.is_border() {
-            return Ok(info.country);
+            return Ok(info.nation);
         }
         let x = (rad_to_deg(p.lon) * cells::COORD_SCALE).round() as i64;
         let y = (rad_to_deg(p.lat) * cells::COORD_SCALE).round() as i64;
-        Ok(pk.territory.owner(cell, x, y)?.unwrap_or(info.country))
+        Ok(pk.territory.owner(cell, x, y)?.unwrap_or(info.nation))
     }
 
     /// Whether the point is territory of a coalition member. Neutral and unowned
@@ -402,7 +402,7 @@ impl Geo {
     pub fn is_friendly(
         &self,
         p: LatLon,
-        coalition: &BTreeSet<CountryCode>,
+        coalition: &BTreeSet<NationCode>,
     ) -> Result<bool, GeoError> {
         Ok(self
             .territory_owner(p)?
@@ -622,14 +622,14 @@ pub fn info_lines(geo: &Geo) -> Vec<String> {
         .map(|p| {
             let [w, s, e, n] = p.extent_deg();
             format!(
-                "{}: extent {w},{s},{e},{n}; DEM {}″, {} tiles, max {} m; H3 res {}, {} cells, {} countries; {} border cells",
+                "{}: extent {w},{s},{e},{n}; DEM {}″, {} tiles, max {} m; H3 res {}, {} cells, {} nations; {} border cells",
                 p.id(),
                 p.dem().res_arcsec(),
                 p.dem().tile_count(),
                 p.dem().max_m(),
                 p.h3_res(),
                 p.terrain().cell_count(),
-                p.terrain().country_count(),
+                p.terrain().nation_count(),
                 p.territory().cell_count()
             )
         })

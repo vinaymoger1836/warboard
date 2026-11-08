@@ -138,3 +138,38 @@ fn bad_fixtures_fail_with_expected_message() {
     }
     assert!(failures.is_empty(), "\n{}", failures.join("\n"));
 }
+
+#[test]
+fn values_outside_an_archetype_band_are_warnings() {
+    let mut files = good_files();
+    files.push(SourceFile {
+        path: "archetypes/test-flare-band.yaml".into(),
+        text: "id: test-flare-band
+kind: archetype
+name: Test flare
+bands:
+  effect: [0.5, 0.9]
+  mass_kg: [1, 2]
+".into(),
+    });
+    files.push(SourceFile {
+        path: "countermeasures/test-weak-flare.yaml".into(),
+        text: "id: test-weak-flare
+kind: countermeasure
+name: Weak flare
+cm_type: flare
+effect: 0.3
+defeats: [ir]
+design: { archetype: test-flare-band, note: \"Below the band on purpose.\" }
+".into(),
+    });
+    let set = load_files("content", files).expect("warnings do not fail the load");
+    let shown: Vec<String> = set.warnings.iter().map(|w| w.to_string()).collect();
+    assert_eq!(
+        shown,
+        vec![
+            "content/countermeasures/test-weak-flare.yaml: effect: 0.3 is outside the `test-flare-band` band [0.5, 0.9]; say why in design.note or move it inside"
+        ],
+        "mass_kg is absent from the entry, so its band is skipped"
+    );
+}

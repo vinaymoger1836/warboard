@@ -9,4 +9,4 @@ components:
   - { platform: test-sam-launcher-unit, count: 2, role: launcher, magazine: { test-interceptor: 4 } }
 emcon_default: on
 iads_capable: true
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }

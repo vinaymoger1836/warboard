@@ -13,14 +13,4 @@ signature:
 sensors:
   - { sensor: an-mpq-65-radar, height_m: 4 }
 durability: { model: ground, damage_points: 100 }
-provenance:
-  confidence: low
-  notes: >-
-    Patriot fire unit radar.
-  estimates:
-    - sensors[0].height_m
-    - mobility
-    - signature
-    - durability
-  sources:
-    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

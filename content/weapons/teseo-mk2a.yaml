@@ -26,17 +26,4 @@ signature:
   rcs_m2: { front: 0.1, side: 0.6, rear: 0.15, top: 0.6 }
   ir: { cruise: 0.3 }
   visual_size_m: 4.5
-provenance:
-  confidence: medium
-  estimates:
-    - signature
-    - profile.min_range_km
-    - profile.cruise_alt_m
-    - profile.terminal_alt_m
-    - guidance.seeker_range_km
-    - guidance.seeker_resistance
-    - pk_base
-    - countermeasure_resistance
-  sources:
-    - { title: "Otomat (Teseo Mk2/A)", url: "https://en.wikipedia.org/wiki/Otomat", accessed: 2026-10-27 }
-    - { title: "FREMM multipurpose frigate (Italian GP variant)", url: "https://en.wikipedia.org/wiki/FREMM_multipurpose_frigate", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

@@ -27,20 +27,4 @@ signature:
   rcs_m2: { front: 0.05, side: 0.3, rear: 0.08, top: 0.3 }
   ir: { cruise: 0.6 }
   visual_size_m: 4.1
-provenance:
-  confidence: low
-  notes: >-
-    Source: 1030 lb, 68 kg warhead, passive radar homing with GPS/INS and millimetre-wave active radar, about 225 km (estimate). Speed is the AGM-88 figure.
-  estimates:
-    - signature
-    - profile.boost_s
-    - profile.max_speed_mach
-    - profile.coast_tau_s
-    - profile.min_speed_mach
-    - profile.max_range_km
-    - profile.min_range_km
-    - profile.max_g
-    - guidance.seeker_resistance
-    - pk_base
-  sources:
-    - { title: "AGM-88 HARM (AGM-88G AARGM-ER)", url: "https://en.wikipedia.org/wiki/AGM-88_HARM", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

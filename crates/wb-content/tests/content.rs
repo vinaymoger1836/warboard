@@ -1,9 +1,9 @@
 //! The real `content/` folder: validates, builds deterministically, decodes
-//! to the same database, converts units correctly, carries provenance.
+//! to the same database, converts units correctly, carries design notes.
 
 use std::path::Path;
 use wb_content::compiled::{ContentDb, StrId};
-use wb_content::source::Confidence;
+use wb_content::source::Kind;
 use wb_content::{ContentSet, compile, decode, encode, load_dir};
 
 fn content() -> ContentSet {
@@ -74,29 +74,20 @@ fn units_are_converted_to_si() {
 }
 
 #[test]
-fn every_entry_has_sources_and_confidence() {
+fn every_entry_has_a_design_note_and_catalogue_entries_an_archetype() {
     let set = content();
     for e in &set.entries {
-        let p = e.entry.provenance();
-        assert!(!p.sources.is_empty() || e.custom, "{}: no sources", e.file);
-        for s in &p.sources {
-            assert!(s.url.starts_with("https://"), "{}: {}", e.file, s.url);
+        if matches!(e.kind, Kind::Archetype | Kind::World | Kind::Realism) {
+            continue;
         }
-        // Low-trust entries must say which fields are guesses.
-        if matches!(p.confidence, Confidence::Low | Confidence::Estimate) && e.id != "default" {
-            assert!(
-                !p.estimates.is_empty(),
-                "{}: low confidence but no estimates listed",
-                e.file
-            );
-        }
+        let d = e
+            .entry
+            .design()
+            .unwrap_or_else(|| panic!("{}: no design", e.file));
+        assert!(!d.note.trim().is_empty(), "{}: empty design note", e.file);
     }
-    // The same holds in the compiled pack.
+    // The compiled pack carries the archetype's class name.
     let db = compile(&set);
-    assert!(db.weapons.iter().all(|w| !w.provenance.sources.is_empty()));
-    assert!(
-        db.platforms
-            .iter()
-            .all(|p| !p.provenance.sources.is_empty() || p.provenance.custom)
-    );
+    assert!(db.weapons.iter().all(|w| w.design.class_name.is_some()));
+    assert!(db.platforms.iter().all(|p| p.design.class_name.is_some()));
 }

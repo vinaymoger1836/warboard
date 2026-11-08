@@ -1,0 +1,9 @@
+# file: countermeasures/bad-note.yaml
+# expect: content/countermeasures/bad-note.yaml: design.note: must not be empty
+id: bad-note
+kind: countermeasure
+name: Bad
+cm_type: flare
+effect: 0.3
+defeats: [ir]
+design: { archetype: legacy, note: " " }

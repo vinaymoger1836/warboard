@@ -11,4 +11,4 @@ shots_per_target: 2
 cap_aircraft: 2
 cap_rotation_min: 90
 reaction_time_s: 60
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { note: "Test entry." }

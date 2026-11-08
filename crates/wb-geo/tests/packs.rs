@@ -9,7 +9,7 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 use wb_core::geo::LatLon;
-use wb_geo::{CountryCode, Geo, LosParams, Pack};
+use wb_geo::{Geo, LosParams, NationCode, Pack};
 
 fn geo() -> Geo {
     let root = std::env::var_os("WB_PACKS")
@@ -94,9 +94,9 @@ fn finland_russia_border() {
     // at its Natural Earth vertex 60.8594°N 28.3359°E.
     assert_owner(&g, "Finnish side", FIN_SIDE.0, FIN_SIDE.1, Some("fin"));
     assert_owner(&g, "Russian side", RUS_SIDE.0, RUS_SIDE.1, Some("rus"));
-    let nato: BTreeSet<CountryCode> = ["fin", "pol", "swe"]
+    let nato: BTreeSet<NationCode> = ["fin", "pol", "swe"]
         .into_iter()
-        .map(|c| CountryCode::new(c).unwrap())
+        .map(|c| NationCode::new(c).unwrap())
         .collect();
     assert!(
         g.is_friendly(LatLon::from_deg(FIN_SIDE.0, FIN_SIDE.1), &nato)

@@ -360,15 +360,14 @@ pub fn system_magazine(rules: &Rules, p: &Platform, rounds: &[(WeaponIx, u32)]) 
     Magazine::full(None, items)
 }
 
-/// Munitions at a real base at war start: its `munition_basing` in the
-/// latest inventory of the base's country.
+/// Munitions at a content base at war start: its `munition_basing` in the
+/// inventory of the base's nation (one per nation).
 pub fn initial_stock(rules: &Rules, base: BaseIx) -> BTreeMap<WeaponIx, u32> {
     let db = &rules.db;
-    let country = db.bases[base.0 as usize].country;
+    let nation = db.bases[base.0 as usize].nation;
     db.inventories
         .iter()
-        .filter(|i| i.country == country)
-        .max_by(|a, b| db.str(a.as_of).cmp(db.str(b.as_of)))
+        .find(|i| i.nation == nation)
         .and_then(|inv| inv.munition_basing.iter().find(|(b, _)| *b == base))
         .map(|(_, m)| m.iter().copied().filter(|(_, n)| *n > 0).collect())
         .unwrap_or_default()

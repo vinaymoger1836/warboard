@@ -1,7 +1,6 @@
 id: rus-2026
 kind: inventory
-country: rus
-as_of: 2026-10-27
+nation: rus
 munitions:
   r-77-1: 96
   kh-35u: 24
@@ -10,15 +9,4 @@ munitions:
 munition_basing:
   - { base: chernyakhovsk-naval-air-base-ru-0060, munitions: { r-77-1: 48, kh-35u: 16 } }
   - { base: baltiysk, munitions: { kh-35: 16, 9m96: 24 } }
-provenance:
-  confidence: estimate
-  notes: >-
-    Game placeholders. No public source gives munition stocks per base; the
-    counts are sized for a few sorties per aircraft or a reload per ship and
-    are all estimates.
-  estimates:
-    - munitions
-    - munition_basing
-  sources:
-    - { title: "Russian Aerospace Forces", url: "https://en.wikipedia.org/wiki/Russian_Aerospace_Forces", accessed: 2026-11-02 }
-    - { title: "Baltic Fleet", url: "https://en.wikipedia.org/wiki/Baltic_Fleet", accessed: 2026-11-02 }
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

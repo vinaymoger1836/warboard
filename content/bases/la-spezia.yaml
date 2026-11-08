@@ -3,15 +3,8 @@ id: la-spezia
 kind: base
 name: "La Spezia naval base"
 base_type: port
-country: ita
+nation: ita
 lat_deg: 44.1
 lon_deg: 9.8167
 ship_berths: 20
-provenance:
-  confidence: medium
-  notes: >-
-    Naval base from the curated list. Coordinates are the page's.
-  estimates:
-    - ship_berths
-  sources:
-    - { title: "La Spezia Naval Base", url: "https://en.wikipedia.org/wiki/La_Spezia_Naval_Base", accessed: 2026-10-28 }
+design: { note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

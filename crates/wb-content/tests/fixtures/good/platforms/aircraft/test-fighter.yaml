@@ -15,4 +15,4 @@ countermeasures: { test-chaff: 30 }
 datalinks: [test-link]
 durability: { model: aircraft, p_kill_on_hit: 0.8 }
 turnaround_min: 60
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { archetype: legacy, note: "Test entry." }

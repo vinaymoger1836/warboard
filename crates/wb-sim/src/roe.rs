@@ -19,7 +19,7 @@
 use bevy_ecs::prelude::*;
 use core::f64::consts::FRAC_PI_4;
 use serde::{Deserialize, Serialize};
-use wb_content::compiled::{CountryIx, WeaponIx};
+use wb_content::compiled::{NationIx, WeaponIx};
 use wb_core::geo::{LatLon, destination_point};
 use wb_core::math::{atan2, cos, sin, sqrt};
 use wb_core::units::rad_to_deg;
@@ -36,7 +36,7 @@ use crate::world::{Sides, entity};
 /// One test territory polygon (ADR-030): `[lon, lat]` degrees.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TerritoryArea {
-    pub country: CountryIx,
+    pub nation: NationIx,
     pub polygon: Vec<[f64; 2]>,
 }
 
@@ -58,23 +58,23 @@ fn inside(poly: &[[f64; 2]], lon: f64, lat: f64) -> bool {
     c
 }
 
-/// The country whose territory (land, 12 nm, airspace) holds `p`.
-pub fn owner(world: &World, rules: &Rules, p: LatLon) -> Option<CountryIx> {
+/// The nation whose territory (land, 12 nm, airspace) holds `p`.
+pub fn owner(world: &World, rules: &Rules, p: LatLon) -> Option<NationIx> {
     if let Some(geo) = world.get_non_send::<GeoRes>().and_then(|g| g.0.clone())
         && let Ok(Some(code)) = geo.territory_owner(p)
         && let Some(i) = rules
             .db
-            .countries
+            .nations
             .iter()
             .position(|c| rules.db.str(c.id) == code.as_str())
     {
-        return Some(CountryIx(i as u32));
+        return Some(NationIx(i as u32));
     }
     let (lon, lat) = (rad_to_deg(p.lon), rad_to_deg(p.lat));
     world.get_resource::<TestTerritory>().and_then(|t| {
         t.0.iter()
             .find(|a| inside(&a.polygon, lon, lat))
-            .map(|a| a.country)
+            .map(|a| a.nation)
     })
 }
 
@@ -83,7 +83,7 @@ pub fn own_territory(world: &World, rules: &Rules, side: u8, p: LatLon) -> bool 
     owner(world, rules, p).is_some_and(|c| {
         world
             .resource::<Sides>()
-            .country_ix
+            .nation_ix
             .get(usize::from(side))
             .is_some_and(|cs| cs.binary_search(&c).is_ok())
     })

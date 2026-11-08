@@ -8,13 +8,4 @@ payload:
   swath_km: 1000
   gsd_m: 0.31
   downlink_delay_min: 30
-provenance:
-  confidence: low
-  notes: >-
-    0.31 m panchromatic resolution at nadir, 13.1 km swath at nadir; agile pointing widens the strip it can reach. That width is an estimate.
-  estimates:
-    - payload.swath_km
-    - payload.downlink_delay_min
-    - payload.gsd_m
-  sources:
-    - { title: "WorldView-3", url: "https://en.wikipedia.org/wiki/WorldView-3", accessed: 2026-10-29 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

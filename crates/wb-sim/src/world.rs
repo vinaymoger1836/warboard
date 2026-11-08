@@ -3,20 +3,20 @@
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use wb_content::compiled::CountryIx;
+use wb_content::compiled::NationIx;
 use wb_core::UnitId;
 
 /// First id the engine allocates itself (bases, split groups, generated
 /// units). Scenario ids must stay below it.
 pub const FIRST_ENGINE_ID: u32 = 1_000_000;
 
-/// One side of the war: a coalition of countries.
+/// One side of the war: a coalition of nations.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 pub struct SideInfo {
     pub name: String,
-    /// Content country ids, e.g. `pol`.
-    pub countries: Vec<String>,
+    /// Content nation ids, e.g. `pol`.
+    pub nations: Vec<String>,
     pub player: bool,
     /// Side default ROE and self-defence (doc 03 §7).
     pub roe: crate::components::Roe,
@@ -26,15 +26,15 @@ pub struct SideInfo {
 #[derive(Resource, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Sides {
     pub sides: Vec<SideInfo>,
-    /// Countries per side as content indices, sorted.
-    pub country_ix: Vec<Vec<CountryIx>>,
+    /// Nations per side as content indices, sorted.
+    pub nation_ix: Vec<Vec<NationIx>>,
 }
 
 impl Sides {
-    pub fn side_of(&self, country: CountryIx) -> Option<u8> {
-        self.country_ix
+    pub fn side_of(&self, nation: NationIx) -> Option<u8> {
+        self.nation_ix
             .iter()
-            .position(|cs| cs.binary_search(&country).is_ok())
+            .position(|cs| cs.binary_search(&nation).is_ok())
             .map(|i| i as u8)
     }
 

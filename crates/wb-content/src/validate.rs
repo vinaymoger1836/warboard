@@ -1,12 +1,11 @@
 //! Cross-entry validation: references, ranges, units, station compatibility,
-//! provenance. Collects every error rather than stopping at the first.
+//! design notes and archetypes. Collects every error rather than stopping at
+//! the first.
 
 use crate::load::{ContentError, ContentSet, LoadedEntry, get_path};
 use crate::source::platform::{Durability, StationKind};
 use crate::source::world::BaseType;
-use crate::source::{
-    Domain, Entry, Kind, Platform, Provenance, Seeker, SensorType, Station, Weapon,
-};
+use crate::source::{Design, Domain, Entry, Kind, Platform, Seeker, SensorType, Station, Weapon};
 use serde_yaml::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -30,32 +29,69 @@ pub(crate) fn validate(set: &ContentSet) -> Vec<ContentError> {
             errors: &mut errors,
         };
         cx.units(&e.value, String::new(), false);
-        cx.provenance(e.entry.provenance());
+        if let Some(d) = e.entry.design() {
+            cx.design(d);
+        }
         match &e.entry {
-            Entry::Country(c) => {
-                cx.reference("doctrine", &c.doctrine, &[Kind::Doctrine]);
-                for (i, d) in c.datalinks.iter().enumerate() {
+            Entry::Nation(n) => {
+                cx.reference("doctrine", &n.doctrine, &[Kind::Doctrine]);
+                for (i, d) in n.datalinks.iter().enumerate() {
                     cx.reference(&format!("datalinks[{i}]"), d, &[Kind::Datalink]);
                 }
-                if c.iso2.len() != 2 || !c.iso2.bytes().all(|b| b.is_ascii_uppercase()) {
-                    cx.err(
-                        "iso2",
-                        format!("`{}` must be two upper-case letters", c.iso2),
-                    );
+                if n.id.len() != 3 || !n.id.bytes().all(|b| b.is_ascii_lowercase()) {
+                    cx.err("id", format!("`{}` must be three lower-case letters", n.id));
                 }
-                if c.iso3.len() != 3 || !c.iso3.bytes().all(|b| b.is_ascii_uppercase()) {
-                    cx.err(
-                        "iso3",
-                        format!("`{}` must be three upper-case letters", c.iso3),
-                    );
-                } else if c.id != c.iso3.to_ascii_lowercase() {
-                    cx.err(
-                        "id",
-                        format!(
-                            "must be the lower-case iso3 code `{}`",
-                            c.iso3.to_ascii_lowercase()
-                        ),
-                    );
+                cx.colour("colour", &n.colour);
+                if !(2..=3).contains(&n.flag.colours.len()) {
+                    cx.err("flag.colours", "must list two or three colours".into());
+                }
+                for (i, c) in n.flag.colours.iter().enumerate() {
+                    cx.colour(&format!("flag.colours[{i}]"), c);
+                }
+            }
+            Entry::World(w) => {
+                cx.non_empty("nations", w.nations.len());
+                let mut seen = BTreeSet::new();
+                for (i, n) in w.nations.iter().enumerate() {
+                    let path = format!("nations[{i}]");
+                    cx.reference(&format!("{path}.nation"), &n.nation, &[Kind::Nation]);
+                    if !seen.insert(n.nation.as_str()) {
+                        cx.err(
+                            &format!("{path}.nation"),
+                            format!("`{}` is listed twice", n.nation),
+                        );
+                    }
+                    let [lon, lat] = n.seed_at;
+                    if !(-180.0..=180.0).contains(&lon) || !(-90.0..=90.0).contains(&lat) {
+                        cx.err(
+                            &format!("{path}.seed_at"),
+                            "must be [lon, lat] in degrees".into(),
+                        );
+                    }
+                    cx.positive(&format!("{path}.weight"), n.weight);
+                }
+                for (i, o) in w.border_overrides.iter().enumerate() {
+                    if let Some(n) = &o.nation {
+                        cx.reference(&format!("border_overrides[{i}].nation"), n, &[Kind::Nation]);
+                    }
+                    for (j, c) in o.cells.iter().enumerate() {
+                        if c.is_empty() || u64::from_str_radix(c, 16).is_err() {
+                            cx.err(
+                                &format!("border_overrides[{i}].cells[{j}]"),
+                                format!("`{c}` is not an H3 cell index in hex"),
+                            );
+                        }
+                    }
+                }
+            }
+            Entry::Archetype(a) => {
+                for (path, [lo, hi]) in &a.bands {
+                    if !(lo.is_finite() && hi.is_finite()) || lo > hi {
+                        cx.err(
+                            &format!("bands.{path}"),
+                            format!("must be [min, max] with min <= max (got [{lo}, {hi}])"),
+                        );
+                    }
                 }
             }
             Entry::Platform(p) => cx.platform(p),
@@ -117,7 +153,7 @@ pub(crate) fn validate(set: &ContentSet) -> Vec<ContentError> {
             }
             Entry::Loadout(l) => cx.loadout(l),
             Entry::Base(b) => {
-                cx.reference("country", &b.country, &[Kind::Country]);
+                cx.reference("nation", &b.nation, &[Kind::Nation]);
                 if !(-90.0..=90.0).contains(&b.lat_deg) {
                     cx.err(
                         "lat_deg",
@@ -268,7 +304,7 @@ impl<'a> Cx<'a, '_> {
             Value::Mapping(m) => {
                 for (k, child) in m {
                     let Some(k) = k.as_str() else { continue };
-                    if path.is_empty() && k == "provenance" {
+                    if path.is_empty() && (k == "design" || k == "bands") {
                         continue;
                     }
                     let unit = in_unit_field || has_unit_suffix(k);
@@ -289,40 +325,40 @@ impl<'a> Cx<'a, '_> {
         }
     }
 
-    fn provenance(&mut self, p: &Provenance) {
-        if p.sources.is_empty() && !self.entry.custom {
+    fn design(&mut self, d: &Design) {
+        if d.note.trim().is_empty() {
             self.err(
-                "provenance.sources",
-                "is empty; add at least one public source (only `custom: true` entries may have none)".into(),
+                "design.note",
+                "must not be empty; say what the entry is for".into(),
             );
         }
-        for (i, s) in p.sources.iter().enumerate() {
-            if s.title.trim().is_empty() {
-                self.err(
-                    &format!("provenance.sources[{i}].title"),
-                    "must not be empty".into(),
-                );
+        let catalogue = matches!(
+            self.entry.kind,
+            Kind::Platform
+                | Kind::System
+                | Kind::Sensor
+                | Kind::Weapon
+                | Kind::EwSuite
+                | Kind::Countermeasure
+                | Kind::Datalink
+        );
+        match &d.archetype {
+            Some(a) => {
+                self.reference("design.archetype", a, &[Kind::Archetype]);
             }
-            if !(s.url.starts_with("https://") || s.url.starts_with("http://")) {
-                self.err(
-                    &format!("provenance.sources[{i}].url"),
-                    format!("`{}` must be an http(s) URL", s.url),
-                );
-            }
-            if !valid_date(&s.accessed) {
-                self.err(
-                    &format!("provenance.sources[{i}].accessed"),
-                    format!("`{}` must be a date like 2026-10-27", s.accessed),
-                );
-            }
+            None if catalogue => self.err(
+                "design.archetype",
+                "is missing; catalogue entries name their class archetype (doc 04 §4)".into(),
+            ),
+            None => {}
         }
-        for (i, path) in p.estimates.iter().enumerate() {
-            if get_path(&self.entry.value, path).is_none() {
-                self.err(
-                    &format!("provenance.estimates[{i}]"),
-                    format!("`{path}` is not a field of this entry"),
-                );
-            }
+    }
+
+    /// `#RRGGBB`.
+    fn colour(&mut self, path: &str, c: &str) {
+        let b = c.as_bytes();
+        if b.len() != 7 || b[0] != b'#' || !b[1..].iter().all(u8::is_ascii_hexdigit) {
+            self.err(path, format!("`{c}` must be a colour like #5C7FA8"));
         }
     }
 
@@ -782,13 +818,7 @@ impl<'a> Cx<'a, '_> {
     }
 
     fn inventory(&mut self, inv: &crate::source::Inventory) {
-        self.reference("country", &inv.country, &[Kind::Country]);
-        if !valid_date(&inv.as_of) {
-            self.err(
-                "as_of",
-                format!("`{}` must be a date like 2026-10-27", inv.as_of),
-            );
-        }
+        self.reference("nation", &inv.nation, &[Kind::Nation]);
         for id in inv.platforms.keys() {
             self.reference(
                 &format!("platforms.{id}"),
@@ -825,13 +855,13 @@ impl<'a> Cx<'a, '_> {
             let path = format!("munition_basing[{i}]");
             if let Some(e) = self.reference(&format!("{path}.base"), &b.base, &[Kind::Base])
                 && let Entry::Base(base) = &e.entry
-                && base.country != inv.country
+                && base.nation != inv.nation
             {
                 self.err(
                     &format!("{path}.base"),
                     format!(
                         "`{}` belongs to `{}`, not to `{}`",
-                        b.base, base.country, inv.country
+                        b.base, base.nation, inv.nation
                     ),
                 );
             }
@@ -1101,7 +1131,7 @@ impl<'a> Cx<'a, '_> {
                 ),
                 Some(b) if b.site != SiteRule::Terrain && b.match_radius_km <= 0.0 => self.err(
                     &format!("bases.{}.match_radius_km", key(&kind)),
-                    "must be positive for real_airfield and real_port sites".into(),
+                    "must be positive for preset sites".into(),
                 ),
                 Some(_) => {}
             }
@@ -1119,23 +1149,48 @@ pub(crate) fn cells(st: &Station, w: &Weapon, count: u32) -> u32 {
     crate::compiled::station_cells(st.kind, w.rounds_per_cell, count)
 }
 
-/// `YYYY-MM-DD` with a plausible month and day.
-fn valid_date(s: &str) -> bool {
-    let b = s.as_bytes();
-    if b.len() != 10 || b[4] != b'-' || b[7] != b'-' {
-        return false;
-    }
-    let num = |r: std::ops::Range<usize>| s[r].parse::<u32>().ok();
-    matches!(
-        (num(0..4), num(5..7), num(8..10)),
-        (Some(y), Some(m), Some(d)) if y >= 1900 && (1..=12).contains(&m) && (1..=31).contains(&d)
-    )
-}
-
 /// The YAML spelling of an enum used as a map key.
 fn key<T: serde::Serialize>(k: &T) -> String {
     serde_yaml::to_value(k)
         .ok()
         .and_then(|v| v.as_str().map(str::to_owned))
         .unwrap_or_default()
+}
+
+/// Values outside their archetype's bands (doc 04 §4). A band whose path the
+/// entry does not have is skipped: archetypes are shared by entries that fill
+/// different optional fields.
+pub(crate) fn band_warnings(set: &ContentSet) -> Vec<ContentError> {
+    let archetypes: BTreeMap<&str, &crate::source::Archetype> = set
+        .entries
+        .iter()
+        .filter_map(|e| match &e.entry {
+            Entry::Archetype(a) => Some((e.id.as_str(), a)),
+            _ => None,
+        })
+        .collect();
+    let mut out = Vec::new();
+    for e in &set.entries {
+        let Some(id) = e.entry.design().and_then(|d| d.archetype.as_deref()) else {
+            continue;
+        };
+        let Some(a) = archetypes.get(id) else {
+            continue;
+        };
+        for (path, [lo, hi]) in &a.bands {
+            let Some(v) = get_path(&e.value, path).and_then(Value::as_f64) else {
+                continue;
+            };
+            if v < *lo || v > *hi {
+                out.push(ContentError {
+                    file: e.file.clone(),
+                    path: path.clone(),
+                    message: format!(
+                        "{v} is outside the `{id}` band [{lo}, {hi}]; say why in design.note or move it inside"
+                    ),
+                });
+            }
+        }
+    }
+    out
 }

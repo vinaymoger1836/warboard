@@ -14,17 +14,4 @@ radar:
   jam_resistance: 6
   erp_class_dbw: 75
   fire_channels: 8
-provenance:
-  confidence: low
-  notes: >-
-    Source gives track-while-scan beyond 150 km; taken as the 50% range against 1 m2.
-  estimates:
-    - radar.r_ref_km
-    - radar.scan_period_s
-    - radar.clutter_rejection
-    - radar.jam_resistance
-    - radar.erp_class_dbw
-    - radar.fire_channels
-  sources:
-    - { title: "AN/APG-81", url: "https://en.wikipedia.org/wiki/AN/APG-81", accessed: 2026-10-27 }
-    - { title: "Lockheed Martin F-35 Lightning II (specifications F-35A)", url: "https://en.wikipedia.org/wiki/Lockheed_Martin_F-35_Lightning_II", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

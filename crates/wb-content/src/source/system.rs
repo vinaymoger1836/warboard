@@ -1,6 +1,6 @@
 //! `system` (composite systems deployed as a site or group) and `loadout`.
 
-use super::common::{Emcon, Provenance, source_enum, source_type};
+use super::common::{Design, Emcon, source_enum, source_type};
 use std::collections::BTreeMap;
 
 source_enum! {
@@ -42,7 +42,7 @@ source_type! {
         /// Can join an IADS network and share tracks.
         #[serde(default)]
         pub iads_capable: bool,
-        pub provenance: Provenance,
+        pub design: Design,
     }
 
     #[serde(deny_unknown_fields)]
@@ -65,7 +65,7 @@ source_type! {
         #[serde(default)]
         pub roles: Vec<String>,
         pub items: Vec<LoadoutItem>,
-        pub provenance: Provenance,
+        pub design: Design,
     }
 
     #[serde(deny_unknown_fields)]

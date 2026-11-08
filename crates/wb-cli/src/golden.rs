@@ -65,7 +65,7 @@ struct Variant {
     /// Scripted targets left out.
     #[serde(default)]
     drop_targets: Vec<u32>,
-    /// Units whose platform (and country) is swapped, so one target id
+    /// Units whose platform (and nation) is swapped, so one target id
     /// stands for different types across variants (G2).
     #[serde(default)]
     replace: Vec<Replace>,
@@ -80,7 +80,7 @@ struct Replace {
     unit: u32,
     platform: String,
     #[serde(default)]
-    country: Option<String>,
+    nation: Option<String>,
 }
 
 /// One measured quantity of a run.
@@ -447,8 +447,8 @@ fn apply_variant(s: &mut Scenario, v: &Variant) {
     for r in &v.replace {
         for u in s.units.iter_mut().filter(|u| u.id == r.unit) {
             u.platform = Some(r.platform.clone());
-            if let Some(c) = &r.country {
-                u.country = Some(c.clone());
+            if let Some(c) = &r.nation {
+                u.nation = Some(c.clone());
             }
         }
     }

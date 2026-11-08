@@ -8,13 +8,4 @@ payload:
   swath_km: 900
   gsd_m: 0.8
   downlink_delay_min: 20
-provenance:
-  confidence: low
-  notes: >-
-    X-band SAR of the second-generation satellites, sub-metre spotlight imaging. The swath is the strip the satellite can point at along its track (field of regard), an estimate.
-  estimates:
-    - payload.swath_km
-    - payload.downlink_delay_min
-    - payload.gsd_m
-  sources:
-    - { title: "COSMO-SkyMed", url: "https://en.wikipedia.org/wiki/COSMO-SkyMed", accessed: 2026-10-29 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

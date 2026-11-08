@@ -22,14 +22,4 @@ stations:
 sensors:
   - { sensor: furke-2, height_m: 25 }
 durability: { model: ship, damage_points: 2200 }
-provenance:
-  confidence: medium
-  notes: >-
-    Source: 2,200 t full load, 104.5 m, 27 kn, 3,800 nmi at 14 kn, 90 crew, 12 Redut cells, 2 x 4 Kh-35. Furke-2 search radar (height on the mast is an estimate); the Zaslon radar is not in the seed set.
-  estimates:
-    - mobility.turn_radius_m
-    - signature
-    - durability
-    - sensors[0].height_m
-  sources:
-    - { title: "Steregushchiy-class corvette", url: "https://en.wikipedia.org/wiki/Steregushchiy-class_corvette", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

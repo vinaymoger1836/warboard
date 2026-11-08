@@ -8,12 +8,12 @@ seed: 9
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 sides:
-  - { name: NATO, countries: [ita], roe: charlie, self_defence: true }
-  - { name: Russia, countries: [rus], roe: alpha }
+  - { name: NATO, nations: [ita], roe: charlie, self_defence: true }
+  - { name: Russia, nations: [rus], roe: alpha }
 units:
-  - { id: 10, name: Bergamini, platform: fremm-bergamini, country: ita, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 90, loadout: fremm-bergamini-standard }
-  - { id: 20, name: Sokol, platform: su-35s, country: rus, count: 2, lat_deg: 55.5, lon_deg: 19.6, alt_m: 6000, heading_deg: 270, loadout: su-35s-anti-ship }
-  - { id: 30, name: Steregushchiy, platform: steregushchiy, country: rus, lat_deg: 55.5, lon_deg: 17.6, heading_deg: 270, loadout: steregushchiy-standard }
+  - { id: 10, name: Bergamini, platform: fremm-bergamini, nation: ita, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 90, loadout: fremm-bergamini-standard }
+  - { id: 20, name: Sokol, platform: su-35s, nation: rus, count: 2, lat_deg: 55.5, lon_deg: 19.6, alt_m: 6000, heading_deg: 270, loadout: su-35s-anti-ship }
+  - { id: 30, name: Steregushchiy, platform: steregushchiy, nation: rus, lat_deg: 55.5, lon_deg: 17.6, heading_deg: 270, loadout: steregushchiy-standard }
 orders:
   - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[18.2, 55.5]] } }
   - { tick: 0, side: 1, type: AssignTask, units: [30], task: { kind: move, waypoints: [[17.35, 55.5]] } }

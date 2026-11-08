@@ -10,12 +10,12 @@ content: scenarios/fixtures
 start_utc: 2026-10-27T10:00:00Z
 start_mode: deploy
 sides:
-  - { name: Blue, countries: [tst] }
-  - { name: Red, countries: [opp] }
+  - { name: Blue, nations: [tst] }
+  - { name: Red, nations: [opp] }
 units:
-  - { id: 10, name: SAM-Radar, platform: test-sam-radar-unit, country: tst, lat_deg: 55.0, lon_deg: 10.0, alt_m: 0, heading_deg: 90 }
-  - { id: 20, name: Inbound, platform: test-fighter, country: opp, lat_deg: 55.0, lon_deg: 13.5, alt_m: 9000, heading_deg: 270 }
-  - { id: 30, name: Jammer, platform: test-jammer-aircraft, country: opp, lat_deg: 55.0, lon_deg: 11.5, alt_m: 10000, heading_deg: 90, jammer: true, jammer_mode: stand_off }
+  - { id: 10, name: SAM-Radar, platform: test-sam-radar-unit, nation: tst, lat_deg: 55.0, lon_deg: 10.0, alt_m: 0, heading_deg: 90 }
+  - { id: 20, name: Inbound, platform: test-fighter, nation: opp, lat_deg: 55.0, lon_deg: 13.5, alt_m: 9000, heading_deg: 270 }
+  - { id: 30, name: Jammer, platform: test-jammer-aircraft, nation: opp, lat_deg: 55.0, lon_deg: 11.5, alt_m: 10000, heading_deg: 90, jammer: true, jammer_mode: stand_off }
 orders:
   - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[10.0, 55.0]], alt_m: 9000 } }
   - { tick: 0, side: 1, type: AssignTask, units: [30], task: { kind: jam, centre: [11.5, 55.0], radius_km: 5, alt_m: 10000 } }

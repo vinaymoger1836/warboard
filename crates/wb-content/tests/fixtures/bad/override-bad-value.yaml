@@ -7,4 +7,4 @@ extends: test-fighter
 name: Bad
 overrides:
   mobility.max_speed_mach: fast
-provenance: { confidence: estimate }
+design: { archetype: legacy, note: "Test entry." }

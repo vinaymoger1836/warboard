@@ -29,24 +29,4 @@ signature:
   rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
   ir: { cruise: 0.8 }
   visual_size_m: 5.2
-provenance:
-  confidence: low
-  notes: >-
-    Source: hit-to-kill, active radar seeker, 36 km altitude, aerial range 120 km and ballistic 60 km (both marked as estimates there); mass and speed are listed as unknown.
-  estimates:
-    - signature
-    - profile.boost_s
-    - profile.max_speed_mach
-    - profile.coast_tau_s
-    - profile.min_speed_mach
-    - profile.max_range_km
-    - profile.min_range_km
-    - profile.max_g
-    - guidance.seeker_range_km
-    - guidance.seeker_resistance
-    - pk_base
-    - countermeasure_resistance
-    - mass_kg
-    - envelope.min_alt_m
-  sources:
-    - { title: "MIM-104 Patriot (radar, launchers, missile table)", url: "https://en.wikipedia.org/wiki/MIM-104_Patriot", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

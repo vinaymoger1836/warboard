@@ -7,4 +7,4 @@ modes:
     coverage_km: 200
     sector_deg: 60
 effects: [radar, datalink, navigation]
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }

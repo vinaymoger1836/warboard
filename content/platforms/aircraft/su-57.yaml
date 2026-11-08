@@ -27,19 +27,4 @@ stations:
 countermeasures: { chaff-generic: 60, flare-generic: 60 }
 durability: { model: aircraft, p_kill_on_hit: 0.75 }
 turnaround_min: 75
-provenance:
-  confidence: low
-  notes: >-
-    Source: 6 internal + 6 external hardpoints, 7,500 kg payload, RCS estimates of 0.1-0.5 m2 and 0.1-1 m2 (front taken as 0.3). The N036 radar is not in the P1 seed set.
-  estimates:
-    - mobility.cruise_speed_mach
-    - mobility.sustained_g
-    - mobility.min_runway_m
-    - signature
-    - fuel.burn_kg_h
-    - stations
-    - countermeasures
-    - durability
-    - turnaround_min
-  sources:
-    - { title: "Sukhoi Su-57 (specifications; RCS estimates incl. F-35)", url: "https://en.wikipedia.org/wiki/Sukhoi_Su-57", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

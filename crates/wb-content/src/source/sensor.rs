@@ -1,6 +1,6 @@
 //! `sensor`: radars, ESM, IRST, EO/IR, visual and sonar (doc 02 §7).
 
-use super::common::{Band, Provenance, source_enum, source_type};
+use super::common::{Band, Design, source_enum, source_type};
 
 source_enum! {
     #[serde(rename_all = "snake_case")]
@@ -67,7 +67,7 @@ source_type! {
         pub visual: Option<Visual>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub payload: Option<Payload>,
-        pub provenance: Provenance,
+        pub design: Design,
     }
 
     /// Radar model of doc 02 §7.1.

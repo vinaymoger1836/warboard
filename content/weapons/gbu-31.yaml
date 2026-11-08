@@ -21,15 +21,4 @@ signature:
   rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
   ir: { cruise: 0.05 }
   visual_size_m: 3.9
-provenance:
-  confidence: medium
-  notes: >-
-    Mk 84 is 925 kg with 429 kg filling; the kit adds about 20 kg (estimate). CEP 11 m is the demonstration figure in the source.
-  estimates:
-    - signature
-    - profile.max_speed_mach
-    - lethal_radius_m
-    - mass_kg
-  sources:
-    - { title: "Joint Direct Attack Munition", url: "https://en.wikipedia.org/wiki/Joint_Direct_Attack_Munition", accessed: 2026-10-27 }
-    - { title: "Mark 84 bomb", url: "https://en.wikipedia.org/wiki/Mark_84_bomb", accessed: 2026-10-27 }
+design: { archetype: legacy, note: "Real-world entry kept until PF step 3 replaces it with the starter catalogue." }

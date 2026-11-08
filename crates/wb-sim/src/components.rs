@@ -10,7 +10,7 @@ use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use wb_content::compiled::{
-    BaseIx, CountermeasureIx, CountryIx, LoadoutIx, PlatformIx, SystemIx, WeaponIx,
+    BaseIx, CountermeasureIx, LoadoutIx, NationIx, PlatformIx, SystemIx, WeaponIx,
 };
 use wb_content::source::Emcon;
 use wb_content::source::realism::{BaseComponentKind, BaseKind, Subsystem};
@@ -44,11 +44,11 @@ impl Kinematics {
     }
 }
 
-/// Side index (into `Sides`) and country of a platform, group or base.
+/// Side index (into `Sides`) and nation of a platform, group or base.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Allegiance {
     pub side: u8,
-    pub country: CountryIx,
+    pub nation: NationIx,
 }
 
 /// The content platform an entity is built from.
@@ -418,7 +418,7 @@ pub struct Evade {
     pub until_ms: u64,
 }
 
-/// Launch doctrine of a group, overriding its country's (doc 03 §5).
+/// Launch doctrine of a group, overriding its nation's (doc 03 §5).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DoctrineOverride {
     pub launch: Option<LaunchDoctrine>,

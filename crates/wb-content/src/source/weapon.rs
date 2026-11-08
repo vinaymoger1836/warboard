@@ -1,7 +1,7 @@
 //! `weapon`: missiles, bombs, shells, rockets, torpedoes (doc 02 §10–11).
 
 use super::common::{
-    CountermeasureType, Domain, Provenance, Seeker, TargetClass, one, source_enum, source_type,
+    CountermeasureType, Design, Domain, Seeker, TargetClass, one, source_enum, source_type,
 };
 use super::platform::Signature;
 use std::collections::BTreeMap;
@@ -108,7 +108,7 @@ source_type! {
         /// How sensors see the weapon in flight (RCS, IR, size).
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub signature: Option<Signature>,
-        pub provenance: Provenance,
+        pub design: Design,
     }
 
     #[serde(deny_unknown_fields)]

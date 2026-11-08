@@ -7,12 +7,12 @@ seed: 5
 start_utc: 2026-10-27T16:00:00Z
 start_mode: deploy
 sides:
-  - { name: NATO, countries: [ita, usa] }
-  - { name: Russia, countries: [rus] }
+  - { name: NATO, nations: [ita, usa] }
+  - { name: Russia, nations: [rus] }
 units:
-  - { id: 10, name: CSG-1, platform: csg-1, country: ita }
-  - { id: 12, name: WorldView-3, platform: worldview-3, country: usa }
-  - { id: 20, name: Soobrazitelny, platform: steregushchiy, country: rus, lat_deg: 54.9, lon_deg: 19.6 }
+  - { id: 10, name: CSG-1, platform: csg-1, nation: ita }
+  - { id: 12, name: WorldView-3, platform: worldview-3, nation: usa }
+  - { id: 20, name: Soobrazitelny, platform: steregushchiy, nation: rus, lat_deg: 54.9, lon_deg: 19.6 }
 orders:
   - { tick: 0, side: 0, type: TaskSatellite, satellite: 10, centre: [19.6, 54.9], radius_km: 20 }
   - { tick: 0, side: 0, type: TaskSatellite, satellite: 12, centre: [19.6, 54.9], radius_km: 20 }

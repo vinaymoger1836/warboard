@@ -1,10 +1,10 @@
 //! Readers for the two H3-keyed files (doc 05 §2.2): `.wbh3` terrain cells and the
-//! territory border-cell rings. Both share one layout: header, country table, block index,
+//! territory border-cell rings. Both share one layout: header, nation table, block index,
 //! zstd blocks of cells sorted by H3 index.
 
 use crate::codec::{Lru, Reader, zstd};
 use crate::source::{PackSource, read_range};
-use crate::{CountryCode, GeoError, TerrainClass};
+use crate::{GeoError, NationCode, TerrainClass};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -24,12 +24,12 @@ struct BlockEntry {
     count: u32,
 }
 
-/// Header, country table and block index shared by both files.
+/// Header, nation table and block index shared by both files.
 struct Blocked {
     src: Box<dyn PackSource>,
     res: u8,
     cell_count: u64,
-    codes: Vec<Option<CountryCode>>,
+    codes: Vec<Option<NationCode>>,
     blocks: Vec<BlockEntry>,
 }
 
@@ -52,8 +52,8 @@ impl Blocked {
         let cell_count = r.u64()?;
         let block_count = r.u32()? as usize;
         let _block_size = r.u32()?;
-        let country_count = usize::from(r.u16()?);
-        let table = read_range(src.as_ref(), HEADER_LEN as u64, country_count * 4)?;
+        let nation_count = usize::from(r.u16()?);
+        let table = read_range(src.as_ref(), HEADER_LEN as u64, nation_count * 4)?;
         let codes = table
             .as_chunks::<4>()
             .0
@@ -63,12 +63,12 @@ impl Blocked {
                 if i == 0 {
                     Ok(None)
                 } else {
-                    CountryCode::from_bytes(c).map(Some)
+                    NationCode::from_bytes(c).map(Some)
                 }
             })
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| GeoError::format(src.name(), e))?;
-        let index_at = (HEADER_LEN + country_count * 4) as u64;
+        let index_at = (HEADER_LEN + nation_count * 4) as u64;
         let raw = read_range(src.as_ref(), index_at, block_count * ENTRY_LEN)?;
         let mut r = Reader::new(src.name(), &raw);
         let mut blocks = Vec::with_capacity(block_count);
@@ -108,11 +108,11 @@ impl Blocked {
         zstd(self.src.name(), &blob, expected_len)
     }
 
-    fn code(&self, index: u16) -> Result<Option<CountryCode>, GeoError> {
+    fn code(&self, index: u16) -> Result<Option<NationCode>, GeoError> {
         self.codes.get(usize::from(index)).copied().ok_or_else(|| {
             GeoError::format(
                 self.src.name(),
-                format!("country index {index} out of range"),
+                format!("nation index {index} out of range"),
             )
         })
     }
@@ -127,7 +127,7 @@ pub struct CellInfo {
     pub slope_deg: f64,
     pub flags: u8,
     /// Owner at the cell centre; for border cells use the exact territory lookup.
-    pub country: Option<CountryCode>,
+    pub nation: Option<NationCode>,
 }
 
 impl CellInfo {
@@ -173,7 +173,7 @@ impl TerrainFile {
         self.file.cell_count
     }
 
-    pub fn country_count(&self) -> usize {
+    pub fn nation_count(&self) -> usize {
         self.file.codes.len() - 1
     }
 
@@ -192,7 +192,7 @@ impl TerrainFile {
         let elev_at = class_at + n;
         let slope_at = elev_at + 2 * n;
         let flags_at = slope_at + n;
-        let country_at = flags_at + n;
+        let nation_at = flags_at + n;
         let class = TerrainClass::from_u8(raw[class_at + i]).ok_or_else(|| {
             GeoError::format(
                 self.file.src.name(),
@@ -200,14 +200,14 @@ impl TerrainFile {
             )
         })?;
         let elevation_m = i16::from_le_bytes([raw[elev_at + 2 * i], raw[elev_at + 2 * i + 1]]);
-        let country = u16::from_le_bytes([raw[country_at + 2 * i], raw[country_at + 2 * i + 1]]);
+        let nation = u16::from_le_bytes([raw[nation_at + 2 * i], raw[nation_at + 2 * i + 1]]);
         Ok(Some(CellInfo {
             cell,
             class,
             elevation_m,
             slope_deg: f64::from(raw[slope_at + i]) * 0.5,
             flags: raw[flags_at + i],
-            country: self.file.code(country)?,
+            nation: self.file.code(nation)?,
         }))
     }
 
@@ -262,13 +262,8 @@ impl TerritoryFile {
     }
 
     /// Owner of the point (`x`, `y` = lon, lat in 1e-7 degrees) inside a border cell.
-    /// `Ok(None)` if the cell is not a border cell; `Ok(Some(None))` if no country owns the point.
-    pub fn owner(
-        &self,
-        cell: u64,
-        x: i64,
-        y: i64,
-    ) -> Result<Option<Option<CountryCode>>, GeoError> {
+    /// `Ok(None)` if the cell is not a border cell; `Ok(Some(None))` if no nation owns the point.
+    pub fn owner(&self, cell: u64, x: i64, y: i64) -> Result<Option<Option<NationCode>>, GeoError> {
         let Some(bi) = self.file.block_for(cell) else {
             return Ok(None);
         };
@@ -283,7 +278,7 @@ impl TerritoryFile {
         // Cells straddling 180° store rings east of it (longitudes above 180°).
         let x = if shifted && x < 0 { x + FULL_TURN } else { x };
         for _ in 0..pieces {
-            let country = r.u16()?;
+            let nation = r.u16()?;
             let rings = r.u16()?;
             let mut inside = false;
             for _ in 0..rings {
@@ -294,7 +289,7 @@ impl TerritoryFile {
                 }
             }
             if inside {
-                return Ok(Some(self.file.code(country)?));
+                return Ok(Some(self.file.code(nation)?));
             }
         }
         Ok(Some(None))

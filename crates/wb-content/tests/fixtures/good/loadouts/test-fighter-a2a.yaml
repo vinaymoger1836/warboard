@@ -6,4 +6,4 @@ roles: [air_superiority]
 items:
   - { station: bay, weapon: test-aam, count: 2 }
   - { station: pylon, weapon: test-bomb, count: 1 }
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { note: "Test entry." }

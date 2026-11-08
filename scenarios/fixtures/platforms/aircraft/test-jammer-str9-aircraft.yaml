@@ -19,4 +19,4 @@ signature:
 ew:
   - test-jammer-str9
 durability: { model: aircraft, p_kill_on_hit: 0.85 }
-provenance: { confidence: low, sources: [{ title: "Test fixture", url: "https://example.org/fixture", accessed: 2026-10-27 }] }
+design: { archetype: legacy, note: "Generic test fixture (ADR-035); archetype assigned in PF step 2." }

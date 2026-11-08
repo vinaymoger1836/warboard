@@ -7,26 +7,26 @@ name: Baltic demo
 seed: 2026
 start_utc: 2026-10-27T06:00:00Z
 sides:
-  - { name: NATO, countries: [pol, deu, fra, ita, usa], player: true }
-  - { name: Russia, countries: [rus] }
+  - { name: NATO, nations: [pol, deu, fra, ita, usa], player: true }
+  - { name: Russia, nations: [rus] }
 units:
-  - { id: 10, name: Husarz, platform: f-35a, country: pol, count: 2, base: lask-air-base-eplk, loadout: f-35a-air-superiority }
-  - { id: 20, name: Rafale, platform: rafale-c, country: fra, count: 3, base: powidz-military-air-base-eppw }
-  - { id: 30, name: Phenix, platform: a330-mrtt, country: fra, base: lask-air-base-eplk }
-  - { id: 40, name: Reaper, platform: mq-9a, country: usa, base: miroslawiec-military-air-base-epmi }
-  - { id: 50, name: Bergamini, platform: fremm-bergamini, country: ita, base: kiel }
-  - { id: 60, name: Typhoon, platform: eurofighter-typhoon, country: deu, count: 4, base: hohn-air-base-etnh }
-  - { id: 70, name: Growler, platform: ea-18g, country: usa, count: 2, lat_deg: 54.6, lon_deg: 17.2, alt_m: 9000, heading_deg: 90 }
-  - { id: 80, name: CSG-1, platform: csg-1, country: ita }
-  - { id: 82, name: WorldView-3, platform: worldview-3, country: usa }
-  - { id: 84, name: SAR-Lupe 2, platform: sar-lupe-2, country: deu }
+  - { id: 10, name: Husarz, platform: f-35a, nation: pol, count: 2, base: lask-air-base-eplk, loadout: f-35a-air-superiority }
+  - { id: 20, name: Rafale, platform: rafale-c, nation: fra, count: 3, base: powidz-military-air-base-eppw }
+  - { id: 30, name: Phenix, platform: a330-mrtt, nation: fra, base: lask-air-base-eplk }
+  - { id: 40, name: Reaper, platform: mq-9a, nation: usa, base: miroslawiec-military-air-base-epmi }
+  - { id: 50, name: Bergamini, platform: fremm-bergamini, nation: ita, base: kiel }
+  - { id: 60, name: Typhoon, platform: eurofighter-typhoon, nation: deu, count: 4, base: hohn-air-base-etnh }
+  - { id: 70, name: Growler, platform: ea-18g, nation: usa, count: 2, lat_deg: 54.6, lon_deg: 17.2, alt_m: 9000, heading_deg: 90 }
+  - { id: 80, name: CSG-1, platform: csg-1, nation: ita }
+  - { id: 82, name: WorldView-3, platform: worldview-3, nation: usa }
+  - { id: 84, name: SAR-Lupe 2, platform: sar-lupe-2, nation: deu }
   # Russia
-  - { id: 200, name: Triumf, system: s-400-battalion, country: rus, lat_deg: 54.62, lon_deg: 20.25, heading_deg: 270 }
-  - { id: 230, name: Soobrazitelny, platform: steregushchiy, country: rus, lat_deg: 54.85, lon_deg: 19.55, heading_deg: 300 }
-  - { id: 240, name: Flanker, platform: su-35s, country: rus, count: 2, base: chernyakhovsk-naval-air-base-ru-0060 }
-  - { id: 250, name: Kondor-FKA 1, platform: kondor-fka-1, country: rus }
-  - { id: 252, name: Resurs-P 4, platform: resurs-p-4, country: rus }
-  - { id: 254, name: Cosmos 2549, platform: cosmos-2549, country: rus }
+  - { id: 200, name: Triumf, system: s-400-battalion, nation: rus, lat_deg: 54.62, lon_deg: 20.25, heading_deg: 270 }
+  - { id: 230, name: Soobrazitelny, platform: steregushchiy, nation: rus, lat_deg: 54.85, lon_deg: 19.55, heading_deg: 300 }
+  - { id: 240, name: Flanker, platform: su-35s, nation: rus, count: 2, base: chernyakhovsk-naval-air-base-ru-0060 }
+  - { id: 250, name: Kondor-FKA 1, platform: kondor-fka-1, nation: rus }
+  - { id: 252, name: Resurs-P 4, platform: resurs-p-4, nation: rus }
+  - { id: 254, name: Cosmos 2549, platform: cosmos-2549, nation: rus }
 orders:
   - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: patrol_route, waypoints: [[17.5, 55.0], [19.0, 55.6], [19.2, 54.95]], loop: true } }
   # P5: the F-35s may shoot from max range, so under the default ROE (Charlie) they

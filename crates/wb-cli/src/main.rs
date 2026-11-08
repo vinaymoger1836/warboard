@@ -175,14 +175,19 @@ fn main() -> anyhow::Result<()> {
     }
 }
 
-/// Loads and validates content; prints every error before failing.
+/// Loads and validates content; prints every error before failing, and every
+/// archetype band warning (doc 04 §4).
 fn load_content(dir: &Path) -> anyhow::Result<wb_content::ContentSet> {
-    wb_content::load_dir(dir).map_err(|errors| {
+    let set = wb_content::load_dir(dir).map_err(|errors| {
         for e in &errors {
             eprintln!("{e}");
         }
         anyhow::anyhow!("{} content error(s) in {}", errors.len(), dir.display())
-    })
+    })?;
+    for w in &set.warnings {
+        eprintln!("warning: {w}");
+    }
+    Ok(set)
 }
 
 /// `12 platform, 13 weapon, …` in kind order.
