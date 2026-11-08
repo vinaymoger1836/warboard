@@ -96,3 +96,4 @@ export function ForcesPanel({ bridge }: { bridge: EngineBridge }) {
     </aside>
   );
 }
+
