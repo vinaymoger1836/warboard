@@ -6,7 +6,7 @@
 //! units and the determinism probe (P0), `force_fine_tick` and
 //! `generated_units` (benchmarks), `golden` (bands read by `wb golden`),
 //! `scripted_targets` and `test_terrain` (P4 goldens and tests), `base_stock`
-//! (P5: munitions at real bases instead of the inventory's).
+//! (P5: munitions at preset bases instead of the inventory's).
 //!
 //! A unit is a group of `count` platforms, a composite `system` (its
 //! components as one stationary group), or a satellite (a platform with an
@@ -70,7 +70,7 @@ pub enum ScenarioError {
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum StartMode {
-    /// Real bases of each side's nations are active at start (doc 03 §2).
+    /// Preset bases of each side's nations are active at start (doc 03 §2).
     #[default]
     Garrisoned,
     /// No bases; place them with `PlaceBase` orders.
@@ -107,7 +107,7 @@ pub struct Scenario {
     /// Test-only terrain built in memory; replaces the region packs.
     #[serde(default)]
     pub test_terrain: Option<TestTerrain>,
-    /// Munitions at real bases, replacing the inventory's `munition_basing`
+    /// Munitions at preset bases, replacing the inventory's `munition_basing`
     /// (tests and goldens).
     #[serde(default)]
     pub base_stock: Vec<BaseStockSpec>,
@@ -182,7 +182,7 @@ pub struct ScenarioUnit {
     pub heading_deg: f64,
     #[serde(default)]
     pub speed_mps: Option<f64>,
-    /// Content system id (S-400 battalion): its components as one group at
+    /// Content system id (e.g. `lr-sam-bastra`): its components as one group at
     /// the unit's position, instead of `platform`.
     #[serde(default)]
     pub system: Option<String>,
@@ -405,7 +405,7 @@ impl Scenario {
         }
 
         if self.start_mode == StartMode::Garrisoned {
-            spawn_real_bases(&mut world, &rules);
+            spawn_preset_bases(&mut world, &rules);
         }
         for b in &self.base_stock {
             set_stock(&mut world, &rules, b)?;
@@ -854,7 +854,7 @@ fn nation(rules: &Rules, id: &str) -> Option<NationIx> {
 }
 
 /// Garrisoned start: every content base of a side's nation, in content order.
-fn spawn_real_bases(world: &mut World, rules: &Rules) {
+fn spawn_preset_bases(world: &mut World, rules: &Rules) {
     let sides = world.resource::<Sides>().clone();
     for (i, b) in rules.db.bases.iter().enumerate() {
         let Some(side) = sides.side_of(b.nation) else {

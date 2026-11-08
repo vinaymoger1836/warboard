@@ -95,6 +95,14 @@ enum ContentCommand {
         #[arg(long, default_value = "build/content.wbpack")]
         out: PathBuf,
     },
+    /// Scan text files for real names on the denylist (doc 11 §3.1); fails on any hit.
+    Denylist {
+        /// Folders or files to scan.
+        #[arg(default_values = ["content", "scenarios", "crates", "apps", "docs"])]
+        paths: Vec<PathBuf>,
+        #[arg(long, default_value = "content/denylist.txt")]
+        list: PathBuf,
+    },
     /// Write the JSON Schema of the source format.
     Schema {
         #[arg(
@@ -165,6 +173,7 @@ fn main() -> anyhow::Result<()> {
             println!("{}", header.hash_hex());
             Ok(())
         }
+        Command::Content(ContentCommand::Denylist { paths, list }) => denylist(&paths, &list),
         Command::Geo(cmd) => geo::run(cmd),
         Command::Content(ContentCommand::Schema { out }) => {
             let json = serde_json::to_string_pretty(&wb_content::schema::content_schema())?;
@@ -295,4 +304,87 @@ fn run(a: RunArgs) -> anyhow::Result<()> {
         println!("{}", sim.state_hash_hex());
     }
     Ok(())
+}
+
+/// Folders never scanned: build output, dependencies and generated code.
+const SKIP_DIRS: [&str; 8] = [
+    "target",
+    "node_modules",
+    "pkg",
+    "dist",
+    "build",
+    "generated",
+    ".git",
+    ".vite",
+];
+const TEXT_EXT: [&str; 16] = [
+    "rs", "ts", "tsx", "js", "mjs", "cjs", "json", "yaml", "yml", "md", "txt", "toml", "css",
+    "html", "sh", "py",
+];
+
+fn denylist(paths: &[PathBuf], list: &Path) -> anyhow::Result<()> {
+    let text =
+        std::fs::read_to_string(list).map_err(|e| anyhow::anyhow!("{}: {e}", list.display()))?;
+    let deny = wb_content::denylist::Denylist::parse(&text);
+    let mut files = Vec::new();
+    for p in paths {
+        collect_text(p, true, &mut files);
+    }
+    files.sort();
+    let mut hits = 0usize;
+    let skip = std::fs::canonicalize(list).ok();
+    for f in &files {
+        if std::fs::canonicalize(f).ok() == skip {
+            continue;
+        }
+        let Ok(body) = std::fs::read_to_string(f) else {
+            continue;
+        };
+        for h in deny.find(&body) {
+            println!(
+                "{}:{}: `{}` is a real name (doc 11 §3.1)",
+                f.display().to_string().replace('\\', "/"),
+                h.line,
+                h.term
+            );
+            hits += 1;
+        }
+    }
+    eprintln!(
+        "denylist: {} terms, {} files, {hits} hits",
+        deny.len(),
+        files.len()
+    );
+    if hits > 0 {
+        anyhow::bail!("{hits} real names found");
+    }
+    Ok(())
+}
+
+/// Text files under `p`. Build and dependency folders are skipped below the
+/// top level; a folder named on the command line (e.g. `apps/game/dist`) is read.
+fn collect_text(p: &Path, top: bool, out: &mut Vec<PathBuf>) {
+    if p.is_dir() {
+        if !top
+            && p.file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| SKIP_DIRS.contains(&n))
+        {
+            return;
+        }
+        let Ok(read) = std::fs::read_dir(p) else {
+            return;
+        };
+        let mut entries: Vec<_> = read.filter_map(|e| e.ok().map(|e| e.path())).collect();
+        entries.sort();
+        for e in entries {
+            collect_text(&e, false, out);
+        }
+    } else if p
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| TEXT_EXT.contains(&e))
+    {
+        out.push(p.to_path_buf());
+    }
 }

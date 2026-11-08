@@ -182,13 +182,13 @@ mod tests {
     }
 
     #[test]
-    fn london_to_paris() {
+    fn mid_latitude_reference_pair() {
         // Reference great-circle distance on a 6371.0088 km sphere ≈ 343.9 km.
-        let london = LatLon::from_deg(51.5074, -0.1278);
-        let paris = LatLon::from_deg(48.8566, 2.3522);
-        let d = distance_m(london, paris);
+        let a = LatLon::from_deg(51.5074, -0.1278);
+        let b_pt = LatLon::from_deg(48.8566, 2.3522);
+        let d = distance_m(a, b_pt);
         assert!(close(d, 343_900.0, 1_000.0), "{d}");
-        let b = rad_to_deg(initial_bearing(london, paris));
+        let b = rad_to_deg(initial_bearing(a, b_pt));
         assert!(close(b, 148.1, 0.5), "{b}");
     }
 

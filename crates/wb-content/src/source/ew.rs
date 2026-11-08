@@ -9,7 +9,7 @@ source_enum! {
         Escort,
         StandOff,
         Comms,
-        Gps,
+        Satnav,
     }
 
     #[serde(rename_all = "snake_case")]

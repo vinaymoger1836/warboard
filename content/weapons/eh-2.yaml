@@ -14,7 +14,7 @@ profile:
   min_range_km: 5
   max_g: 20
 guidance:
-  midcourse: [inertial, gps]
+  midcourse: [inertial, satnav]
   terminal: anti_radiation
   seeker_resistance: 0.7
 warhead_kg: 60

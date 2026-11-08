@@ -12,7 +12,7 @@ profile:
   cruise_alt_m: 15
   terminal_alt_m: 4
 guidance:
-  midcourse: [inertial, gps]
+  midcourse: [inertial, satnav]
   terminal: active_radar
   seeker_range_km: 30
   seeker_resistance: 0.5

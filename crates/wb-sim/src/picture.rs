@@ -598,7 +598,7 @@ pub fn bearing_to(c: &Contact, p: LatLon) -> Option<f64> {
 }
 
 impl TypeRef {
-    /// Label form of the type (`S-400`, `Su-35S`).
+    /// Label form of the type (`Bastra`, `HF-4 Corvan`).
     pub fn short_name<'a>(&self, rules: &'a Rules) -> &'a str {
         let db = &rules.db;
         match *self {

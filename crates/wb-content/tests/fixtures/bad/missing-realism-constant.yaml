@@ -76,7 +76,7 @@ fusion:                              # doc 02 §8
 ew:                                  # doc 02 §9
   sidelobe_gain_db: -30
   main_beam_gain_db: 0
-  gps_jam_cep_factor: 5
+  satnav_jam_cep_factor: 5
   comms_jam_latency_factor: 3
   seeker_jam_effect: 0.5
   arm_memory_pk_factor: 0.5

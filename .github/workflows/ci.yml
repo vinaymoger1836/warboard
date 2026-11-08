@@ -35,6 +35,8 @@ jobs:
         run: bash scripts/lint-canary.sh
       - name: Content check
         run: cargo run -q -p wb-cli -- content check
+      - name: Denylist over content, scenarios, crates, apps and docs (doc 11 §3.1)
+        run: cargo run -q -p wb-cli -- content denylist
       - name: Content build twice, same hash
         run: |
           a=$(cargo run -q -p wb-cli -- content build --out build/a.wbpack)

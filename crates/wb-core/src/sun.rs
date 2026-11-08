@@ -38,14 +38,15 @@ mod tests {
         assert!((el + 66.56).abs() < 0.5, "midnight {el}");
     }
 
-    /// Baltic in late October: day at noon, night at 22:00 UTC.
+    /// Theatre North (54.7°N 20.5°E) in late October: day at noon, night at
+    /// 22:00 UTC.
     #[test]
-    fn baltic_october() {
-        let kaliningrad = LatLon::from_deg(54.7, 20.5);
+    fn theatre_north_october() {
+        let site = LatLon::from_deg(54.7, 20.5);
         let noon = 1_793_102_400_000.0; // 2026-10-27T12:00:00Z, 1.5 h after local noon
-        let el = sun_elevation(kaliningrad, noon) / DEG;
+        let el = sun_elevation(site, noon) / DEG;
         assert!((15.0..25.0).contains(&el), "noon {el}");
         let night = noon + 10.0 * 3_600_000.0;
-        assert!(sun_elevation(kaliningrad, night) < -30.0 * DEG);
+        assert!(sun_elevation(site, night) < -30.0 * DEG);
     }
 }

@@ -102,7 +102,9 @@ fn collect_yaml(
     for p in paths {
         if p.is_dir() {
             collect_yaml(root, &p, files, errors);
-        } else if p.extension().is_some_and(|e| e == "yaml" || e == "yml") {
+        } else if p.extension().is_some_and(|e| e == "yaml" || e == "yml")
+            || (dir == root && p.file_name().is_some_and(|n| n == crate::denylist::FILE))
+        {
             let rel = p
                 .strip_prefix(root)
                 .unwrap_or(&p)
@@ -143,6 +145,12 @@ pub fn load_files(
     let mut errors = Vec::new();
     let mut manifest = None;
     let mut raws: BTreeMap<String, Raw> = BTreeMap::new();
+    // Real names refused in every entry file (doc 11 §3.1).
+    let denylist = files
+        .iter()
+        .find(|f| f.path == crate::denylist::FILE)
+        .map(|f| crate::denylist::Denylist::parse(&f.text))
+        .unwrap_or_default();
 
     for f in &files {
         let file = display(&f.path);
@@ -151,6 +159,20 @@ pub fn load_files(
             path: path.to_owned(),
             message,
         };
+        if f.path == crate::denylist::FILE {
+            continue;
+        }
+        for hit in denylist.find(&f.text) {
+            errors.push(err(
+                "",
+                format!(
+                    "line {}: `{}` is a real name (on {}, doc 11 §3.1)",
+                    hit.line,
+                    hit.term,
+                    crate::denylist::FILE
+                ),
+            ));
+        }
         if f.path == MANIFEST {
             match parse_yaml(&f.text)
                 .map_err(|e| (String::new(), e))

@@ -294,7 +294,7 @@ source_type! {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub main_beam_gain_db: Option<f64>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        pub gps_jam_cep_factor: Option<f64>,
+        pub satnav_jam_cep_factor: Option<f64>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub comms_jam_latency_factor: Option<f64>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -539,7 +539,7 @@ source_type! {
         pub max_slope_deg: Option<f64>,
         /// Activation time after placement.
         pub setup_min: f64,
-        /// Capacity of a placed base (real bases use their own figures).
+        /// Capacity of a placed base (preset bases use their own figures).
         #[serde(default)]
         pub aircraft_capacity: u32,
         #[serde(default)]

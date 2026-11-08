@@ -450,7 +450,7 @@ fn mode(w: &Weapon) -> Mode {
 
 /// Seekers that lock a target (the others fly to coordinates).
 fn locks(s: Seeker) -> bool {
-    !matches!(s, Seeker::GpsIns | Seeker::None)
+    !matches!(s, Seeker::SatnavIns | Seeker::None)
 }
 
 /// Seekers that need the shooter's track until impact.

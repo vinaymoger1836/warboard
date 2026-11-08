@@ -1,0 +1,81 @@
+# Real names that must not appear in content, scenarios, code, UI text or docs
+# (doc 11 §3.1, CLAUDE.md rule 6). One term per line; matched without regard to case
+# and only as a whole word (the characters around it are not letters or digits).
+# A guard against slips, not a catalogue: a few dozen common items.
+# `wb content check` applies it to every entry; CI runs `wb content denylist` over
+# content/, scenarios/, crates/, apps/ and docs/.
+
+# Countries, regions and seas of the theatre's terrain
+Russia
+Russian
+Poland
+Sweden
+Swedish
+Finland
+Finnish
+Germany
+Denmark
+Danish
+Norway
+Norwegian
+Estonia
+Latvia
+Lithuania
+Belarus
+Ukraine
+Kaliningrad
+Gotland
+Vistula
+Bornholm
+Baltic
+Scandinavia
+# Cities
+Moscow
+Stockholm
+Warsaw
+Helsinki
+Berlin
+Copenhagen
+Riga
+Tallinn
+Vilnius
+Oslo
+Gdansk
+Visby
+# Alliances and armed forces
+NATO
+USAF
+US Navy
+Bundeswehr
+# Weapon systems, aircraft, data links
+S-300
+S-400
+Pantsir
+Iskander
+Kalibr
+Tomahawk
+Harpoon
+Aegis
+AMRAAM
+AIM-120
+AIM-120D
+AIM-9
+F-16
+F-22
+F-35
+F-35A
+Su-27
+Su-35
+Su-35S
+Su-57
+MiG-29
+MiG-31
+Gripen
+Rafale
+Eurofighter
+KC-135
+E-3A
+MQ-9
+Global Hawk
+Link 16
+link-16

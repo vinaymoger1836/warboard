@@ -23,13 +23,13 @@ source_enum! {
 }
 
 source_type! {
-    /// A composite system such as an S-400 battalion (doc 04 §3.4). Each
+    /// A composite system such as an LR-SAM Bastra battalion (doc 04 §3.4). Each
     /// component is its own damageable entity on the map.
     #[serde(deny_unknown_fields)]
     pub struct System {
         pub id: String,
         pub name: String,
-        /// Short form for map labels (`S-400`); the name when absent.
+        /// Short form for map labels (`Bastra`); the name when absent.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub short_name: Option<String>,
         pub deploy_as: DeployAs,

@@ -718,11 +718,11 @@ impl<'a> Cx<'a, '_> {
         if let Some(e) = w.guidance.seeker_resistance() {
             self.probability("guidance.seeker_resistance", e);
         }
-        let unguided = matches!(w.guidance.terminal, Seeker::GpsIns | Seeker::None);
+        let unguided = matches!(w.guidance.terminal, Seeker::SatnavIns | Seeker::None);
         if unguided && w.cep_m.is_none() {
             self.err(
                 "cep_m",
-                "is required for GPS/INS and unguided weapons".into(),
+                "is required for satellite-navigation/INS and unguided weapons".into(),
             );
         }
         if !unguided && w.pk_base.is_empty() {
@@ -1086,7 +1086,7 @@ impl<'a> Cx<'a, '_> {
             Seeker::Ir,
             Seeker::ImagingIr,
             Seeker::AntiRadiation,
-            Seeker::GpsIns,
+            Seeker::SatnavIns,
             Seeker::Laser,
             Seeker::Command,
             Seeker::None,

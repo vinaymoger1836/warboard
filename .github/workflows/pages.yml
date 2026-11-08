@@ -51,12 +51,8 @@ jobs:
           WB_SCENARIO: scenarios/hosted-test.yaml
           WB_CONTENT_PACK: build/fixtures.wbpack
           VITE_PACKS_URL: ${{ env.PACKS_URL }}
-      - name: The hosted bundle carries no real-world demo
-        run: |
-          if grep -rIl -e 'Baltic demo' -e 'demo-baltic' apps/game/dist; then
-            echo "The Baltic demo was bundled; check WB_SCENARIO" >&2
-            exit 1
-          fi
+      - name: The hosted bundle carries no real names (doc 11 §3.1)
+        run: cargo run -q -p wb-cli -- content denylist apps/game/dist
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: apps/game/dist

@@ -6,6 +6,7 @@
 
 pub mod compile;
 pub mod compiled;
+pub mod denylist;
 pub mod load;
 pub mod pack;
 #[cfg(feature = "schema")]

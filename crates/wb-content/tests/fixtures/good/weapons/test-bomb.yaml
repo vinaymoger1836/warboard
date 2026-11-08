@@ -4,7 +4,7 @@ name: Test bomb
 category: bomb
 targets: [ground]
 profile: { kind: glide, max_speed_mach: 0.9, max_range_km: 20 }
-guidance: { midcourse: [gps], terminal: gps_ins }
+guidance: { midcourse: [satnav], terminal: satnav_ins }
 warhead_kg: 400
 cep_m: 10
 mass_kg: 900

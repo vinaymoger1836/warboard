@@ -142,7 +142,7 @@ endgame:                             # doc 02 §11
     anti_radiation:    { head_on: 1.0, beam: 1.0, tail: 1.0 }
     command:           { head_on: 1.0, beam: 0.75, tail: 0.85 }
     laser:             { head_on: 1.0, beam: 1.0, tail: 1.0 }
-    gps_ins:           { head_on: 1.0, beam: 1.0, tail: 1.0 }
+    satnav_ins:           { head_on: 1.0, beam: 1.0, tail: 1.0 }
     none:              { head_on: 1.0, beam: 1.0, tail: 1.0 }
   cep_distribution: rayleigh
 

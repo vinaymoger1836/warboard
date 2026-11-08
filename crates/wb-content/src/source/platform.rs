@@ -133,7 +133,7 @@ source_type! {
     pub struct Platform {
         pub id: String,
         pub name: String,
-        /// Short form for map labels (`Su-35S`, `KH-11`); the name when absent.
+        /// Short form for map labels (`HF-4 Corvan`, `SAR-1`); the name when absent.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub short_name: Option<String>,
         pub category: PlatformCategory,
@@ -171,7 +171,7 @@ source_type! {
         pub design: Design,
     }
 
-    /// A two-line element set (NORAD format, e.g. from CelesTrak), propagated
+    /// A two-line element set (the standard TLE format, authored in content), propagated
     /// with SGP4.
     #[serde(deny_unknown_fields)]
     pub struct Orbit {

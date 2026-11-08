@@ -3,7 +3,7 @@ import { isAircraft, isBase, isShip } from './icons';
 
 export interface LabelInput {
   symbol: number;
-  /** Platform type name, e.g. `F-35A Lightning II`. */
+  /** Platform type name, e.g. `MF-4 Sellis`. */
   typeName: string;
   /** Unit, group or base name. */
   name: string;

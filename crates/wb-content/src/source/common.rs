@@ -107,7 +107,7 @@ source_enum! {
         Ir,
         ImagingIr,
         AntiRadiation,
-        GpsIns,
+        SatnavIns,
         Laser,
         Command,
         None,

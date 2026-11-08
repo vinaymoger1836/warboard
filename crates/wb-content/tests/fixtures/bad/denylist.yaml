@@ -1,0 +1,16 @@
+# file: denylist.txt
+Grey Fleet
+XR-40
+# file: datalinks/real-link.yaml
+# expect: content/datalinks/real-link.yaml: line 3: `XR-40` is a real name (on denylist.txt, doc 11 §3.1)
+# expect: content/datalinks/real-link.yaml: line 10: `Grey Fleet` is a real name (on denylist.txt, doc 11 §3.1)
+id: real-link
+kind: datalink
+name: xr-40 link, not xr-40a
+latency_s: 2
+capacity_tracks: 100
+range_km: 300
+engage_on_remote: true
+jam_resistance: 0.5
+design: { archetype: test-class, note: "Test entry." }
+# Copied from the GREY FLEET manual; mid-greyfleet is not a hit.

@@ -2,7 +2,7 @@
 //! realism profile (`bases`); this file only applies them and explains
 //! rejections in plain English.
 //!
-//! Real airfields and ports are content bases, so those rules need no region
+//! Preset air and naval bases are content bases (doc 11 §2.5), so those rules need no region
 //! pack. Terrain, territory, coast and slope rules read the packs; without
 //! them such placements are rejected rather than guessed.
 

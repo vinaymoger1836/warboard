@@ -80,7 +80,7 @@ pub struct ContactSourceView {
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 pub struct ContactDetails {
     pub contact_id: u32,
-    /// `S-400`, `Su-35S`, `corvette`; empty below class.
+    /// `Bastra`, `HF-4 Corvan`, `corvette`; empty below class.
     pub label: String,
     /// Below `Precise` or stale: "(our estimate)".
     pub estimated: bool,

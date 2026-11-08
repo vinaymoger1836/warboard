@@ -128,7 +128,7 @@ fn setup(db: &Arc<wb_content::ContentDb>, hash: [u8; 32], wix: WeaponIx, range_m
 /// coordinates.
 fn wb_sim_seeks(w: &Weapon) -> bool {
     use wb_content::source::Seeker;
-    !matches!(w.guidance.terminal, Seeker::GpsIns | Seeker::None)
+    !matches!(w.guidance.terminal, Seeker::SatnavIns | Seeker::None)
 }
 
 /// Runs until the weapon's flight ends.

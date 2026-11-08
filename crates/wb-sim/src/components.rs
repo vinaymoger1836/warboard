@@ -440,7 +440,7 @@ pub struct Group {
     /// Take off as soon as every member is ready (a new task while at base).
     pub launch: bool,
     pub behaviour: Behaviour,
-    /// The composite system (S-400 battalion) the group was deployed as.
+    /// The composite system (e.g. a Bastra battalion) the group was deployed as.
     pub system: Option<SystemIx>,
     pub evade: Option<Evade>,
     pub doctrine: DoctrineOverride,
@@ -576,7 +576,7 @@ pub enum WeaponTarget {
     /// A contact of the shooter's side; `key` is its truth key (the target's
     /// group or the target), engine-internal.
     Track { contact: ContactId, key: UnitId },
-    /// Coordinates (GPS/INS weapons, strikes on a point).
+    /// Coordinates (satellite-navigation/INS weapons, strikes on a point).
     Point { at: LatLon, alt_m: f64 },
     /// A truth unit, with perfect midcourse updates: tests and calibration
     /// only, never from an order.

@@ -46,7 +46,7 @@ source_enum! {
     pub enum Midcourse {
         Inertial,
         Datalink,
-        Gps,
+        Satnav,
         TerrainMatching,
         Command,
     }
@@ -83,7 +83,7 @@ source_type! {
         /// 0 = fooled like anything else, 1 = immune.
         #[serde(default)]
         pub countermeasure_resistance: BTreeMap<CountermeasureType, f64>,
-        /// Circular error probable for GPS/INS and unguided weapons.
+        /// Circular error probable for satellite-navigation/INS and unguided weapons.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub cep_m: Option<f64>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -99,7 +99,7 @@ source_type! {
         /// May fire on a networked track without its own fire-control track.
         #[serde(default)]
         pub engage_on_remote: bool,
-        /// Resists satellite navigation / GPS jamming (doc 02 §9).
+        /// Resists satellite navigation jamming (doc 02 §9).
         #[serde(default)]
         pub nav_resistant: bool,
         /// Target altitude limits (surface-to-air and air-to-air).

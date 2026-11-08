@@ -117,7 +117,7 @@ Runner image: `ubuntu-24.04`.
 | `build/content.wbpack` | P1 seed set, 67 entries: 22,401 bytes. P2 with 312 imported bases, 379 entries: 85,086 bytes. P3, schema 2 (realism `movement`, `fuel`, `bases`): 86,607 bytes. P4, schema 3, 395 entries (10 sensors and 6 satellites added): 94,258 bytes. P5, schema 4, 397 entries (weapons, loadouts, countermeasures, realism `weapons`, `endgame`, `damage`, `roe`): 97,300 bytes |
 | App shell (`apps/game/dist`) | P2: main chunk 1.97 MB (557 KB gzip), MapLibre worker 519 KB, fonts 2.3 MB (glyph PBFs 2.1 MB). P3: main chunk 2.16 MB, plus the content pack (87 KB) and the WASM engine (2.07 MB) as assets. P4: main chunk 2.17 MB, content pack 94 KB, engine 2.66 MB. P5: main chunk 2.18 MB (611 KB gzip), content pack 97 KB, engine 3.42 MB |
 | Side view (`SideView` v1) | P3 benchmark, 2,000 platforms + 500 groups + 316 bases: 93,880 bytes per view. P5 (v3): `patrol-2000` 98,248 bytes, `sensors-2000` 55,288 bytes |
-| `.wbsave` | P3 `scenarios/save-load.yaml` at tick 900 (≈ 150 entities with all bases, events): 17,109 bytes. P4 `scenarios/demo-baltic.yaml` at tick 1800, with contacts on both sides: 26,395 bytes |
+| `.wbsave` | P3 `scenarios/save-load.yaml` at tick 900 (≈ 150 entities with all bases, events): 17,109 bytes. P4 demo war (removed in PF) at tick 1800, with contacts on both sides: 26,395 bytes |
 
 ## Formats
 
