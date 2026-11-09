@@ -230,11 +230,15 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
 }
 
 pub fn state_hash(world: &World) -> [u8; 32] {
-    let bytes = postcard::to_stdvec(&capture(world)).expect("snapshot serializes");
+    hash_of(&postcard::to_stdvec(&capture(world)).expect("snapshot serializes"))
+}
+
+/// The state hash of a postcard-encoded snapshot.
+pub fn hash_of(snapshot_bytes: &[u8]) -> [u8; 32] {
     let mut h = blake3::Hasher::new();
     h.update(MAGIC);
     h.update(&[FORMAT_VERSION]);
-    h.update(&bytes);
+    h.update(snapshot_bytes);
     *h.finalize().as_bytes()
 }
 

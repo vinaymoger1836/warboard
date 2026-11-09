@@ -186,9 +186,14 @@ pub enum EventKind {
         /// A damaged aircraft aborts its mission.
         aborted: bool,
     },
+    /// An own unit was lost. `platform` is its content id, `cause` plain
+    /// English from what the side knows (shot down, sunk, destroyed).
     UnitDestroyed {
         unit: UnitId,
         name: String,
+        #[cfg_attr(feature = "ts", ts(optional))]
+        platform: Option<String>,
+        cause: String,
     },
     BaseComponentDamaged {
         base: UnitId,

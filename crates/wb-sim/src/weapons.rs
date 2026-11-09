@@ -703,6 +703,9 @@ pub fn fly(world: &mut World) {
 /// Records a hit for the truth review only (no side sees it).
 fn truth_hit(world: &mut World, rules: &Rules, id: UnitId, f: &WeaponFlight, side: u8, t: UnitId) {
     let Some(te) = entity(world, t) else { return };
+    if world.get::<WeaponFlight>(te).is_some() {
+        return;
+    }
     let target_side = world.get::<Allegiance>(te).map_or(0, |a| a.side);
     let target_name = world
         .get::<crate::components::Identity>(te)

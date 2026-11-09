@@ -272,6 +272,23 @@ pub fn destroy(world: &mut World, unit: UnitId) {
     let name = world
         .get::<Identity>(e)
         .map_or_else(String::new, |i| i.name.clone());
+    let (platform, cause) = {
+        let rules = world.resource::<Rules>();
+        match world.get::<PlatformRef>(e).map(|p| rules.platform(p.0)) {
+            Some(p) => (
+                Some(rules.db.str(p.id).to_owned()),
+                match p.domain {
+                    wb_content::source::Domain::Air => "shot down",
+                    wb_content::source::Domain::Surface | wb_content::source::Domain::Subsurface => {
+                        "sunk"
+                    }
+                    _ => "destroyed",
+                }
+                .to_owned(),
+            ),
+            None => (None, "destroyed".to_owned()),
+        }
+    };
     let was_c2 = world
         .get::<SystemMemberRole>(e)
         .is_some_and(|r| r.0 == wb_content::source::system::ComponentRole::C2);
@@ -340,7 +357,16 @@ pub fn destroy(world: &mut World, unit: UnitId) {
     world.despawn(e);
     world.resource_mut::<UnitIndex>().0.remove(&unit);
     crate::picture::forget(&mut world.resource_mut::<SidePictures>(), unit);
-    emit(world, side, EventKind::UnitDestroyed { unit, name });
+    emit(
+        world,
+        side,
+        EventKind::UnitDestroyed {
+            unit,
+            name,
+            platform,
+            cause,
+        },
+    );
 }
 
 /// Logistics upkeep: ships whose sink time came sink, base components whose

@@ -17,7 +17,9 @@ use crate::snapshot::Snapshot;
 pub const MAGIC: [u8; 4] = *b"WBSG";
 /// 2 (after P6b): the snapshot gained combat state, effects and the jammer state since 1;
 /// older saves are refused with this reason instead of a decode error.
-pub const SAVE_VERSION: u16 = 2;
+/// 3 (P7): operations and the war state in the snapshot, the order log's
+/// submit ticks, replay checkpoints.
+pub const SAVE_VERSION: u16 = 3;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
@@ -44,6 +46,8 @@ pub struct SaveBody {
     pub snapshot: Snapshot,
     pub order_log: Vec<QueuedOrder>,
     pub events: Vec<Event>,
+    /// Replay checkpoints, pruned (doc 04 §7.1).
+    pub checkpoints: Vec<crate::replay::Checkpoint>,
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -550,13 +550,13 @@ fn find_cycle(edges: &[BTreeSet<u32>]) -> Option<Vec<u32>> {
         mark[i as usize] = 1;
         stack.push(i);
         for &j in &edges[i as usize] {
-            match mark[j as usize] {
-                1 => {
-                    stack.push(j);
-                    return true;
-                }
-                0 if visit(j, edges, mark, stack) => return true,
-                _ => {}
+            let m = mark[j as usize];
+            if m == 1 {
+                stack.push(j);
+                return true;
+            }
+            if m == 0 && visit(j, edges, mark, stack) {
+                return true;
             }
         }
         stack.pop();
@@ -1009,11 +1009,11 @@ pub fn validate(world: &World, side: u8, cmd: &OpCommand) -> Result<(), String> 
             .filter(|o| o.side == side)
             .ok_or_else(|| format!("Unknown operation {id}"))
     };
-    let phase = |op: &Operation, p: u32| {
+    fn phase(op: &Operation, p: u32) -> Result<&Phase, String> {
         op.phases
             .get(p as usize)
             .ok_or_else(|| format!("{} has no phase {}", op.name, p + 1))
-    };
+    }
     match cmd {
         OpCommand::Create { replace, .. } => {
             if let Some(r) = replace {
@@ -1543,7 +1543,7 @@ pub fn describe(o: &Operation, c: &Cond) -> String {
             .map(|x| describe(o, x))
             .collect::<Vec<_>>()
             .join(" or "),
-        Cond::Start { delay_ms } => format!("H+{}", mins(*delay_ms).replace(" min", "")) + " min",
+        Cond::Start { delay_ms } => format!("H+{}", mins(*delay_ms)),
         Cond::AtTime { at_ms } => format!("at T+{}", crate::reports::fmt_t(*at_ms)),
         Cond::PhaseStarted { phase: q, delay_ms } => format!("with {}{}", phase(*q), plus(*delay_ms)),
         Cond::PhaseEnded { phase: q, delay_ms } => format!("after {}{}", phase(*q), plus(*delay_ms)),

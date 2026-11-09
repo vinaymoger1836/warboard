@@ -96,6 +96,8 @@ pub struct Sim {
     geo: Option<Rc<Geo>>,
     /// `(tick, state hash)` every `hash_checkpoint_ticks` (desync checks).
     checkpoints: Vec<(u64, [u8; 32])>,
+    /// Replay checkpoints every 10 sim minutes (P7).
+    recorder: replay::Recorder,
 }
 
 impl Sim {
@@ -112,13 +114,8 @@ impl Sim {
             None => geo,
         };
         let world = scenario.build(rules, geo.as_deref())?;
-        let mut sim = Self {
-            world,
-            accum_ms: 0.0,
-            geo: None,
-            checkpoints: Vec::new(),
-        };
-        sim.set_geo(geo);
+        let mut sim = Self::from_world(world, geo);
+        sim.recorder.start(&sim.world);
         Ok(sim)
     }
 
@@ -151,14 +148,42 @@ impl Sim {
         let mut world = snapshot::restore(body.snapshot, Rules::new(content, content_hash));
         world.resource_mut::<orders::OrderLog>().0 = body.order_log;
         world.resource_mut::<events::EventLog>().0 = body.events;
+        let mut sim = Self::from_world(world, geo);
+        sim.recorder.checkpoints = body.checkpoints;
+        sim.recorder.start(&sim.world);
+        Ok(sim)
+    }
+
+    /// A sim around a built world (replays; no checkpoints recorded).
+    pub fn from_world(world: World, geo: Option<Rc<Geo>>) -> Self {
         let mut sim = Self {
             world,
             accum_ms: 0.0,
             geo: None,
             checkpoints: Vec::new(),
+            recorder: replay::Recorder::default(),
         };
         sim.set_geo(geo);
-        Ok(sim)
+        sim
+    }
+
+    /// Replay checkpoints taken so far.
+    pub fn recorder(&self) -> &replay::Recorder {
+        &self.recorder
+    }
+
+    /// Stops (or restarts) taking replay checkpoints; benchmarks and Monte
+    /// Carlo runs turn them off.
+    pub fn set_recording(&mut self, on: bool) {
+        if on {
+            self.recorder.start(&self.world);
+        } else {
+            self.recorder.on = false;
+        }
+    }
+
+    pub(crate) fn geo_rc(&self) -> Option<Rc<Geo>> {
+        self.geo.clone()
     }
 
     /// Writes a `.wbsave`. `created_utc_ms` is the client's wall clock (only
@@ -179,6 +204,7 @@ impl Sim {
             snapshot: snap,
             order_log: self.world.resource::<orders::OrderLog>().0.clone(),
             events: self.world.resource::<events::EventLog>().0.clone(),
+            checkpoints: self.recorder.checkpoints.clone(),
         };
         save::encode(&header, &body)
     }
@@ -217,6 +243,7 @@ impl Sim {
             let h = snapshot::state_hash(&self.world);
             self.checkpoints.push((tick, h));
         }
+        self.recorder.after_tick(&self.world);
     }
 
     /// Runs exactly `n` ticks.
