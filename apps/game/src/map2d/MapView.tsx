@@ -129,6 +129,11 @@ export function MapView({ packs, bridge, coalition, places, geoReady, terrainOve
     const done = (tool: Tool) => {
       const s = ui.get();
       ui.set({ tool: null });
+      // Drawing for the operation planner: hand the route over, order nothing.
+      if (s.capture) {
+        ui.set({ capture: false, planTool: tool });
+        return;
+      }
       const d = s.details;
       if (d?.kind !== 'group') return;
       if (tool.kind === 'route') {

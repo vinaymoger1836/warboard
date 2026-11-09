@@ -1,7 +1,7 @@
 // UI state (doc 06 §1 `store`): selection, ring toggles, drawing tool, alerts and the event
 // log. Not the simulation. A tiny external store read with useSyncExternalStore, so map
 // layers (outside React) and panels share it.
-import type { ContactDetails, Details, Event } from '@warboard/protocol';
+import type { ContactDetails, Details, Event, OperationSpec } from '@warboard/protocol';
 import { useSyncExternalStore } from 'react';
 
 export type LonLat = [number, number];
@@ -17,6 +17,17 @@ export type Tool =
   | { kind: 'route'; patrol: boolean; points: LonLat[] }
   | { kind: 'circle'; centre: LonLat | null; radiusKm: number }
   | { kind: 'strike'; aim: StrikeAim | null };
+
+/** A route of an operation's phase drawn on the map (doc 03 §8, doc 10 §6). */
+export interface PlanRoute {
+  /** 1-based phase number, for the labels. */
+  phase: number;
+  kind: string;
+  route: LonLat[];
+  radiusKm?: number;
+  /** The phase is running (drawn at full strength) or the plan is being edited. */
+  active: boolean;
+}
 
 export interface EventLine {
   key: number;
@@ -47,6 +58,15 @@ export interface UiState {
   intel: EventLine[];
   /** Click-to-locate: the map centres on `locate.id` (a contact id if `contact`) when `seq` changes. */
   locate: { id: number; seq: number; contact: boolean } | null;
+  /** Routes of the operation open in the planner. */
+  planRoutes: PlanRoute[];
+  /** The drawing tool is working for the planner: its result goes to `planTool`, not to an order. */
+  capture: boolean;
+  planTool: Tool | null;
+  /** The operation planner's draft (doc 03 §8); `replace` is the planned operation it edits. */
+  planner: { draft: OperationSpec; replace: number | null } | null;
+  /** Reports panel open (doc 03 §12). */
+  reportsOpen: boolean;
 }
 
 const MAX_EVENTS = 500;
@@ -66,6 +86,11 @@ let state: UiState = {
   alerts: [],
   intel: [],
   locate: null,
+  planRoutes: [],
+  capture: false,
+  planTool: null,
+  planner: null,
+  reportsOpen: false,
 };
 const listeners = new Set<() => void>();
 let nextKey = 1;

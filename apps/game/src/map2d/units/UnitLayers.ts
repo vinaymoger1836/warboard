@@ -28,7 +28,7 @@ import {
 } from '@warboard/symbols';
 import type { Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
 import type { EngineBridge } from '../../bridge';
-import { type LonLat, type Tool, ui } from '../../store';
+import { type LonLat, type PlanRoute, type Tool, ui } from '../../store';
 import type { LayerHub } from '../layerHub';
 import { effectLayers, haloLayer } from './effectLayers';
 import { destination, distance, geodesicCircle } from './geo';
@@ -592,6 +592,7 @@ export class UnitLayers {
     const waypoints: { position: LonLat; text: string }[] = [];
     if (details && selected) this.selectionOverlays(details, selected.position, paths, texts, waypoints);
     if (state.tool) this.toolOverlays(state.tool, paths, waypoints);
+    this.planOverlays(state.planRoutes, paths, waypoints);
 
     // Targeted glow (doc 10 §5): own units the engine flags (a weapon of our picture is judged
     // aimed at them), and contacts one of our own offensive weapons is flying at. Both come from
@@ -1001,6 +1002,29 @@ export class UnitLayers {
     }
     if ((t.mode === 'return' || t.mode === 'at_base') && t.base && t.mode === 'return') {
       paths.push({ path: [pos, [t.base.lon_deg, t.base.lat_deg]], color: c('weapon.offensive'), width: 2, dashed: false });
+    }
+  }
+
+  /** Routes of the operation open in the planner (doc 03 §8): amber routes, dashed orbits, `P3 WP 1` labels. */
+  private planOverlays(routes: PlanRoute[], paths: Path[], waypoints: { position: LonLat; text: string }[]): void {
+    for (const r of routes) {
+      const a = r.active ? 1 : 0.55;
+      const first = r.route[0];
+      if (!first) continue;
+      const target = r.kind === 'strike' || r.kind === 'suppress' || r.kind === 'fire';
+      if (target) {
+        waypoints.push({ position: first, text: `P${r.phase} TARGET` });
+        if (r.radiusKm) paths.push({ path: geodesicCircle(first, r.radiusKm * 1000), color: c('weapon.offensive', a * 0.6), width: 1, dashed: true });
+      } else if (r.radiusKm && r.route.length === 1) {
+        paths.push({ path: geodesicCircle(first, r.radiusKm * 1000), color: c('waypoint', a), width: 1.5, dashed: true });
+        waypoints.push({ position: first, text: `P${r.phase} ${r.kind.replace('_', ' ').toUpperCase()}` });
+      } else {
+        if (r.route.length > 1) {
+          const loop = r.kind === 'patrol_route' || r.kind === 'tanker_track';
+          paths.push({ path: loop ? [...r.route, first] : r.route, color: c('weapon.offensive', a), width: 2, dashed: false });
+        }
+        r.route.forEach((p, i) => waypoints.push({ position: p, text: `P${r.phase} WP ${i + 1}` }));
+      }
     }
   }
 

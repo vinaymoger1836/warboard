@@ -157,6 +157,27 @@ async function handle(req: WorkerRequest): Promise<{ data: ReplyData[WorkerReque
       return {
         data: JSON.parse(engine.order(JSON.stringify({ ...req.order, tick: engine.tick() }))) as ReplyData['order'],
       };
+    case 'operations':
+      if (!engine) throw new Error('No war is running');
+      return { data: JSON.parse(engine.operations()) as ReplyData['operations'] };
+    case 'checkOperation':
+      if (!engine) throw new Error('No war is running');
+      return { data: JSON.parse(engine.check_operation(JSON.stringify(req.spec))) as ReplyData['checkOperation'] };
+    case 'report':
+      if (!engine) throw new Error('No war is running');
+      return { data: JSON.parse(engine.report(req.truth, 'json')) as ReplyData['report'] };
+    case 'reportText':
+      if (!engine) throw new Error('No war is running');
+      return { data: engine.report(req.truth, req.format) };
+    case 'replayStart':
+      if (!engine) throw new Error('No war is running');
+      return { data: JSON.parse(engine.replay_start()) as ReplyData['replayStart'] };
+    case 'replaySeek':
+      if (!engine) throw new Error('No war is running');
+      return { data: JSON.parse(engine.replay_seek(req.tick)) as ReplyData['replaySeek'] };
+    case 'replayStop':
+      if (!engine) throw new Error('No war is running');
+      return { data: JSON.parse(engine.replay_stop()) as ReplyData['replayStop'] };
     case 'save':
       return { data: await saveTo(req.slot) };
     case 'load': {

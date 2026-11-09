@@ -44,6 +44,28 @@ export {
   type WeaponColumns,
 } from './sideview';
 
+// Operations, reports and replay (P7).
+export type { AreaSpec } from './generated/AreaSpec';
+export type { CondSpec } from './generated/CondSpec';
+export type { ContactLevel } from './generated/ContactLevel';
+export type { Domain } from './generated/Domain';
+export type { Issue } from './generated/Issue';
+export type { OperationSpec } from './generated/OperationSpec';
+export type { OperationView } from './generated/OperationView';
+export type { OpState } from './generated/OpState';
+export type { PhaseSpec } from './generated/PhaseSpec';
+export type { PhaseState } from './generated/PhaseState';
+export type { PhaseTally } from './generated/PhaseTally';
+export type { PhaseTaskSpec } from './generated/PhaseTaskSpec';
+export type { PhaseTaskView } from './generated/PhaseTaskView';
+export type { PhaseView } from './generated/PhaseView';
+export type { Report } from './generated/Report';
+export type { SalvoLine } from './generated/SalvoLine';
+export type { Severity } from './generated/Severity';
+export type { Stamp } from './generated/Stamp';
+export type { Totals } from './generated/Totals';
+export type { TruthReview } from './generated/TruthReview';
+
 // Rules of engagement (P5): the approval queue.
 export type { ApprovalView } from './generated/ApprovalView';
 

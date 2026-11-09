@@ -3,13 +3,29 @@ import type {
   ContactDetails,
   Details,
   Event,
+  Issue,
+  OperationSpec,
+  OperationView,
   Order,
   OrderAck,
   PlaceKind,
+  Report,
   SaveHeader,
   SideInfo,
   TickReport,
 } from '@warboard/protocol';
+
+/** Replay state (doc 03 §12): where the replay sim is and the checkpoints it can seek from. */
+export type ReplayInfo =
+  | { active: false }
+  | {
+      active: true;
+      tick: number;
+      sim_time_ms: number;
+      end_tick: number;
+      end_ms: number;
+      checkpoints: { tick: number; sim_time_ms: number }[];
+    };
 
 /** The three engine files of an installed pack, by OPFS file name. */
 export interface PackFiles {
@@ -33,6 +49,17 @@ export type WorkerRequest =
   /** Ground track of an own satellite, minutes before and after now. */
   | { type: 'groundTrack'; id: number; beforeMin: number; afterMin: number }
   | { type: 'order'; order: Order }
+  /** The side's operations (doc 03 §8). */
+  | { type: 'operations' }
+  /** Planner validation of a plan (doc 03 §8). */
+  | { type: 'checkOperation'; spec: OperationSpec }
+  /** After-action report; `truth` once the war has ended (doc 03 §12). */
+  | { type: 'report'; truth: boolean }
+  /** The same report as printable HTML or one CSV table (`csv:<table>`). */
+  | { type: 'reportText'; truth: boolean; format: string }
+  | { type: 'replayStart' }
+  | { type: 'replaySeek'; tick: number }
+  | { type: 'replayStop' }
   | { type: 'save'; slot: string }
   | { type: 'load'; slot: string }
   | { type: 'exportSave'; slot: string }
@@ -63,6 +90,13 @@ export interface ReplyData {
   /** `[lon, lat]` points every minute. */
   groundTrack: [number, number][];
   order: OrderReply;
+  operations: OperationView[];
+  checkOperation: Issue[];
+  report: Report;
+  reportText: string;
+  replayStart: ReplayInfo;
+  replaySeek: ReplayInfo;
+  replayStop: ReplayInfo;
   save: SaveHeader;
   load: null;
   exportSave: ArrayBuffer;
