@@ -292,6 +292,40 @@ pub enum Command {
     DenyEngagement {
         request: u32,
     },
+    /// A new operation (doc 03 §8), state planned; `replace` swaps out a
+    /// planned one (the planner's edit). The operation's id is the order's
+    /// sequence number (the acknowledgement's `seq`).
+    CreateOperation {
+        operation: crate::operations::OperationSpec,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        replace: Option<u32>,
+    },
+    StartOperation {
+        operation: u32,
+    },
+    PauseOperation {
+        operation: u32,
+    },
+    ResumeOperation {
+        operation: u32,
+    },
+    /// Running phases abort (aircraft home, ships stop), waiting ones are cancelled.
+    AbortOperation {
+        operation: u32,
+    },
+    /// The player's Go for a phase with a manual trigger; `phase` is 0-based.
+    PhaseGo {
+        operation: u32,
+        phase: u32,
+    },
+    /// Ends a running phase now (a manual end).
+    EndPhase {
+        operation: u32,
+        phase: u32,
+    },
+    /// Ends the war: the truth review unlocks (doc 03 §12–13).
+    EndWar,
     /// Launch doctrine of groups, overriding their nation's (doc 03 §5).
     SetDoctrine {
         units: Vec<u32>,
@@ -380,6 +414,8 @@ pub enum Resolved {
         shots_per_target: Option<u32>,
         salvo: Option<u32>,
     },
+    Operation(crate::operations::OpCommand),
+    EndWar,
 }
 
 /// Members of one group an order applies to; all members means the group
@@ -394,6 +430,8 @@ pub struct GroupPick {
 pub struct QueuedOrder {
     pub seq: u64,
     pub tick: u64,
+    /// The tick it was submitted before: a replay queues it again then.
+    pub submitted: u64,
     pub side: u8,
     pub cmd: Resolved,
 }
@@ -425,8 +463,19 @@ pub struct OrderAck {
 
 /// Validates and queues an order.
 pub fn submit(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<OrderAck, String> {
-    let cmd = validate(world, geo, order)?;
+    let mut cmd = validate(world, geo, order)?;
+    let seq = world.resource::<OrderQueue>().next_seq;
+    if let Resolved::Operation(crate::operations::OpCommand::Create { op, .. }) = &mut cmd {
+        op.id = seq as u32;
+    }
     let note = match &cmd {
+        Resolved::Operation(crate::operations::OpCommand::Start { op }) => {
+            let ops = world.resource::<crate::operations::Operations>();
+            ops.get(*op).map(|o| {
+                let n = o.phases.len();
+                format!("{} starts with {n} phase{}", o.name, if n == 1 { "" } else { "s" })
+            })
+        }
         Resolved::TaskSatellite {
             tasking, report_ms, ..
         } => {
@@ -445,12 +494,13 @@ pub fn submit(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Ord
         }),
         _ => None,
     };
+    let submitted = world.resource::<SimClock>().tick;
     let mut q = world.resource_mut::<OrderQueue>();
-    let seq = q.next_seq;
-    q.next_seq += 1;
+    q.next_seq = seq + 1;
     let queued = QueuedOrder {
         seq,
         tick: order.tick,
+        submitted,
         side: order.side,
         cmd,
     };
@@ -585,6 +635,47 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
                 shots_per_target: *shots_per_target,
                 salvo: *salvo,
             })
+        }
+        Command::CreateOperation { operation, replace } => {
+            let op = crate::operations::build(world, geo, side, 0, operation)?;
+            let cmd = crate::operations::OpCommand::Create {
+                op: Box::new(op),
+                replace: *replace,
+            };
+            crate::operations::validate(world, side, &cmd)?;
+            Ok(Resolved::Operation(cmd))
+        }
+        Command::StartOperation { operation }
+        | Command::PauseOperation { operation }
+        | Command::ResumeOperation { operation }
+        | Command::AbortOperation { operation } => {
+            use crate::operations::OpCommand as C;
+            let op = *operation;
+            let cmd = match &order.command {
+                Command::StartOperation { .. } => C::Start { op },
+                Command::PauseOperation { .. } => C::Pause { op },
+                Command::ResumeOperation { .. } => C::Resume { op },
+                _ => C::Abort { op },
+            };
+            crate::operations::validate(world, side, &cmd)?;
+            Ok(Resolved::Operation(cmd))
+        }
+        Command::PhaseGo { operation, phase } | Command::EndPhase { operation, phase } => {
+            use crate::operations::OpCommand as C;
+            let (op, phase) = (*operation, *phase);
+            let cmd = if matches!(order.command, Command::PhaseGo { .. }) {
+                C::Go { op, phase }
+            } else {
+                C::EndPhase { op, phase }
+            };
+            crate::operations::validate(world, side, &cmd)?;
+            Ok(Resolved::Operation(cmd))
+        }
+        Command::EndWar => {
+            if world.resource::<crate::reports::War>().ended.is_some() {
+                return Err("The war has already ended".to_owned());
+            }
+            Ok(Resolved::EndWar)
         }
         Command::PlaceBase {
             kind,
@@ -1479,6 +1570,8 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
             }
         }
         Resolved::Decide { request, approve } => crate::roe::decide(world, side, request, approve),
+        Resolved::Operation(cmd) => crate::operations::apply(world, side, cmd),
+        Resolved::EndWar => crate::reports::end_war(world),
         Resolved::Doctrine {
             groups,
             launch,

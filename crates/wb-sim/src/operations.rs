@@ -937,7 +937,7 @@ pub fn check(world: &mut World, geo: Option<&Geo>, side: u8, spec: &OperationSpe
                     .unwrap_or(out_m);
                 let alt = rules.cruise_alt_m(pl);
                 let need = rules.fuel_for_distance(pl, out_m + back_m, alt)
-                    * (1.0 + rules.realism().fuel.reserve_fraction);
+                    * (1.0 + rules.realism().logistics.fuel_reserve_fraction);
                 if need > f.kg {
                     let text = format!(
                         "{} needs about {:.0} kg of fuel to reach the task and return, has {:.0} kg",

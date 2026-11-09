@@ -232,6 +232,41 @@ pub enum EventKind {
         group: UnitId,
         delay_s: f64,
     },
+    /// An operation was created, started, paused, resumed or ended (doc 03 §8).
+    OperationChanged {
+        operation: u32,
+        name: String,
+        state: crate::operations::OpState,
+        #[cfg_attr(feature = "ts", ts(optional))]
+        reason: Option<String>,
+    },
+    /// A phase of an operation started; `phase` is 0-based.
+    PhaseStarted {
+        operation: u32,
+        phase: u32,
+        name: String,
+    },
+    /// A phase ended (done or aborted) or was cancelled, and why.
+    PhaseEnded {
+        operation: u32,
+        phase: u32,
+        name: String,
+        state: crate::operations::PhaseState,
+        reason: String,
+    },
+    /// The side ended the war (`EndWar`): the truth review unlocks (doc 03 §12).
+    WarEnded,
+    /// Truth only (no side sees it, `sides` 0): a weapon hit a unit. The truth
+    /// review after the war reads it; side reports never do (CLAUDE.md rule 1).
+    TruthHit {
+        weapon: UnitId,
+        weapon_type: String,
+        shooter: UnitId,
+        shooter_side: u8,
+        target: UnitId,
+        target_side: u8,
+        target_name: String,
+    },
     /// A salvo finished: counts of hits, misses, intercepts, decoys and jammed.
     SalvoReport {
         salvo: u32,
@@ -314,6 +349,8 @@ pub enum SlowCause {
     HostileContact,
     LaunchAgainstUs,
     RoeRequest,
+    /// A phase of an operation started (doc 03 §9).
+    PhaseStart,
 }
 
 /// What happened to an approval request.
@@ -350,6 +387,19 @@ impl EventLog {
             .iter()
             .filter(move |e| e.sides & (1 << side) != 0)
     }
+}
+
+/// Appends a truth-only event (no side may see it; the truth review reads
+/// it after the war).
+pub fn emit_truth(world: &mut World, kind: EventKind) {
+    let clock = world.resource::<SimClock>();
+    let ev = Event {
+        tick: clock.tick,
+        sim_time_ms: clock.sim_time_ms,
+        sides: 0,
+        kind,
+    };
+    world.resource_mut::<EventLog>().0.push(ev);
 }
 
 /// Appends an event at the current tick.

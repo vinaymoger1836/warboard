@@ -686,7 +686,10 @@ pub fn fly(world: &mut World) {
                     target,
                 );
                 match (outcome, target, f.target) {
-                    (Outcome::Hit, Some(t), _) => crate::damage::hit(world, &rules, seed, id, w, t),
+                    (Outcome::Hit, Some(t), _) => {
+                        truth_hit(world, &rules, id, &f, side, t);
+                        crate::damage::hit(world, &rules, seed, id, w, t);
+                    }
                     (_, _, WeaponTarget::Point { .. }) => {
                         crate::damage::burst(world, &rules, seed, id, w, burst);
                     }
@@ -695,6 +698,28 @@ pub fn fly(world: &mut World) {
             }
         }
     }
+}
+
+/// Records a hit for the truth review only (no side sees it).
+fn truth_hit(world: &mut World, rules: &Rules, id: UnitId, f: &WeaponFlight, side: u8, t: UnitId) {
+    let Some(te) = entity(world, t) else { return };
+    let target_side = world.get::<Allegiance>(te).map_or(0, |a| a.side);
+    let target_name = world
+        .get::<crate::components::Identity>(te)
+        .map_or_else(String::new, |i| i.name.clone());
+    let w = &rules.db.weapons[f.weapon.0 as usize];
+    crate::events::emit_truth(
+        world,
+        EventKind::TruthHit {
+            weapon: id,
+            weapon_type: rules.db.str(w.id).to_owned(),
+            shooter: f.shooter,
+            shooter_side: side,
+            target: t,
+            target_side,
+            target_name,
+        },
+    );
 }
 
 /// How a flight ended.

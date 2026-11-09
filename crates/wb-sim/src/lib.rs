@@ -17,12 +17,15 @@ pub mod events;
 pub mod flyout;
 pub mod fuel;
 pub mod movement;
+pub mod operations;
 pub mod orders;
 pub mod picture;
 pub mod placement;
 pub mod probe;
 #[cfg(feature = "ts")]
 pub mod protocol;
+pub mod replay;
+pub mod reports;
 pub mod roe;
 pub mod rules;
 pub mod satellites;
@@ -61,6 +64,7 @@ pub type Stage = (&'static str, fn(&mut World));
 /// check `SimClock::due` themselves).
 pub const STAGES: &[Stage] = &[
     ("orders", orders::apply_due),
+    ("operations", operations::run),
     ("tick_len", clock::choose_tick_len),
     ("tasks", tasks::run),
     ("movement", movement::integrate),
