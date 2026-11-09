@@ -179,7 +179,11 @@ impl Engine {
     /// (`NationInventory[]`).
     pub fn inventory(&self) -> String {
         let rules = self.sim.world().resource::<wb_sim::Rules>();
-        json(&wb_sim::inventory::inventory(rules, self.sim.sides(), self.side))
+        json(&wb_sim::inventory::inventory(
+            rules,
+            self.sim.sides(),
+            self.side,
+        ))
     }
 
     /// Open ROE approval requests of this side, JSON (`ApprovalView[]`).

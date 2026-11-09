@@ -47,7 +47,11 @@ fn enum_name<T: Serialize>(v: &T) -> String {
 /// Inventories of the nations on `side`, in the side's nation order.
 pub fn inventory(rules: &Rules, sides: &Sides, side: u8) -> Vec<NationInventory> {
     let db = &rules.db;
-    let class = |d: &Design| d.class_name.map(|c| db.str(c).to_owned()).unwrap_or_default();
+    let class = |d: &Design| {
+        d.class_name
+            .map(|c| db.str(c).to_owned())
+            .unwrap_or_default()
+    };
     let Some(s) = sides.sides.get(usize::from(side)) else {
         return Vec::new();
     };
@@ -121,7 +125,9 @@ pub fn inventory(rules: &Rules, sides: &Sides, side: u8) -> Vec<NationInventory>
             Some(NationInventory {
                 nation: code.to_uppercase(),
                 name: db.str(nation.name).to_owned(),
-                note: inv.map(|i| db.str(i.design.note).to_owned()).unwrap_or_default(),
+                note: inv
+                    .map(|i| db.str(i.design.note).to_owned())
+                    .unwrap_or_default(),
                 forces,
                 munitions,
             })

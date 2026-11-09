@@ -79,12 +79,20 @@ pub struct TestBench {
 #[wasm_bindgen]
 impl TestBench {
     /// `seeds` overrides the block's seed count when non-zero.
-    pub fn create(scenario_yaml: &str, content_pack: &[u8], seeds: u32) -> Result<TestBench, JsError> {
+    pub fn create(
+        scenario_yaml: &str,
+        content_pack: &[u8],
+        seeds: u32,
+    ) -> Result<TestBench, JsError> {
         let scenario =
             Scenario::from_yaml(scenario_yaml).map_err(|e| JsError::new(&e.to_string()))?;
         let bench = Bench::new(scenario).map_err(|e| JsError::new(&e.to_string()))?;
         let (h, db) = wb_content::decode(content_pack).map_err(|e| JsError::new(&e.to_string()))?;
-        let seeds = if seeds > 0 { u64::from(seeds) } else { bench.seeds() };
+        let seeds = if seeds > 0 {
+            u64::from(seeds)
+        } else {
+            bench.seeds()
+        };
         Ok(TestBench {
             bench,
             db: Arc::new(db),

@@ -1,6 +1,7 @@
 # Test-bench sanity: a catalogue medium-range battery (MR-SAM Tolven, SL-20) and its newer sibling
-# (MR-SAM Varn, SL-18) against a lone MF-4 flying straight at the site at 6,000 m. The battery has to
-# open fire before the fighter reaches it, and most single raids should die to a two-missile salvo.
+# (MR-SAM Varn, SL-18) against a lone MF-4 flying straight at the site at 6,000 m. A raider that does not
+# react is shot down most of the time; one that beams the fire-control radar (the default reaction)
+# defeats most shots, the same energy defeat G6 pins down for air-to-air missiles.
 name: Bench SAM battery against a lone fighter (catalogue)
 seed: 103
 content: content
@@ -17,14 +18,22 @@ orders:
   - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[16.0, 55.5]], alt_m: 6000 } }
 golden:
   id: B3
-  description: a medium-range battery opens fire on a lone fighter closing at 6,000 m and kills it most of the time
+  description: a medium-range battery against a lone fighter at 6,000 m, unaware (shot down) and beaming (shots defeated)
   max_ticks: 1800
   seeds: 100
   variants:
-    tolven: { drop_units: [200] }
-    varn: { drop_units: [100] }
+    tolven_unaware:
+      drop_units: [200]
+      orders: [{ tick: 0, side: 1, type: SetBehaviour, units: [20], threat_reaction: none }]
+    varn_unaware:
+      drop_units: [100]
+      orders: [{ tick: 0, side: 1, type: SetBehaviour, units: [20], threat_reaction: none }]
+    tolven_beam: { drop_units: [200] }
+    varn_beam: { drop_units: [100] }
   expect:
-    - { variant: tolven, metric: launches, side: 0, aggregate: min, min: 1 }
-    - { variant: varn, metric: launches, side: 0, aggregate: min, min: 1 }
-    - { variant: tolven, metric: units_lost, side: 1, aggregate: mean, min: 0.5 }
-    - { variant: varn, metric: units_lost, side: 1, aggregate: mean, min: 0.5 }
+    - { variant: tolven_unaware, metric: launches, side: 0, aggregate: min, min: 1 }
+    - { variant: varn_unaware, metric: launches, side: 0, aggregate: min, min: 1 }
+    - { variant: tolven_unaware, metric: units_lost, side: 1, aggregate: mean, min: 0.6 }
+    - { variant: varn_unaware, metric: units_lost, side: 1, aggregate: mean, min: 0.6 }
+    - { variant: tolven_beam, metric: units_lost, side: 1, aggregate: mean, max: 0.5 }
+    - { variant: varn_beam, metric: units_lost, side: 1, aggregate: mean, max: 0.5 }

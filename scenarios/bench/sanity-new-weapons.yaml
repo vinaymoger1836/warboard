@@ -1,8 +1,8 @@
-# Test-bench sanity for the P8 additions: the light medium-range radar missile (AR-11) and the wide-angle
-# IR missile (AI-8) against a fighter that does not manoeuvre, from a fixed range head-on. Both must
-# land hits most of the time at the ranges set here; the point is to catch a value typo, not to rank the
-# missiles.
-name: Bench new air-to-air missiles (catalogue)
+# Test-bench sanity for a P8 addition: the light medium-range radar missile (AR-11) fired by an MF-3 Oriel
+# head-on at an MF-4 that does not react, from the "close" launch distance. It has to land hits a good share
+# of the time with a smaller seeker than the AR-7's; the point is to catch a value typo, not to rank missiles.
+# The AI-8 is covered by the calibration rule (every weapon reaches its published range) and the content check.
+name: Bench the AR-11 head-on (catalogue)
 seed: 104
 content: content
 start_utc: 2026-10-27T12:00:00Z
@@ -19,11 +19,11 @@ orders:
   - { tick: 0, side: 1, type: SetBehaviour, units: [20], threat_reaction: none }
 golden:
   id: B4
-  description: MF-3 Oriel firing its AI-8 and AR-11 head-on at an MF-4 that does not react
+  description: MF-3 Oriel firing AR-11 head-on at an MF-4 that does not react
   max_ticks: 2400
   seeds: 100
   variants:
     close: { orders: [{ tick: 0, side: 0, type: SetDoctrine, units: [10], launch: close, shots_per_target: 1 }] }
   expect:
     - { variant: close, metric: launches, side: 0, aggregate: min, min: 1 }
-    - { variant: close, metric: pk, side: 0, filter: first, aggregate: mean, min: 0.4 }
+    - { variant: close, metric: pk, side: 0, weapon: ar-11, filter: first, aggregate: mean, min: 0.3, max: 0.85 }

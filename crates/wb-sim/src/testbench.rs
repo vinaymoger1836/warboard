@@ -488,8 +488,8 @@ impl Bench {
                 };
                 value = value.map(|v| v / q);
             }
-            let ok = value
-                .is_some_and(|v| e.min.is_none_or(|m| v >= m) && e.max.is_none_or(|m| v <= m));
+            let ok =
+                value.is_some_and(|v| e.min.is_none_or(|m| v >= m) && e.max.is_none_or(|m| v <= m));
             let mut label = format!("{:?}({})", e.what.metric, e.variant);
             if let Some(o) = &e.over {
                 label += &format!(" / {:?}", o.metric);
