@@ -22,10 +22,12 @@ fn rising_sun() -> Sim {
 #[test]
 fn debug_picture() {
     let mut sim = rising_sun();
-    for t in [600u64, 1200, 2400] { sim.run_ticks(t - sim.clock().tick); println!("tick {t}");
+    for t in [400u64, 1200, 2400] { sim.run_ticks(t - sim.clock().tick); println!("tick {t}");
     let pics = sim.world().resource::<wb_sim::picture::SidePictures>();
     for c in pics.sides[0].contacts.values() {
-        println!("{:?} {:?} {:?} lost={} q={:?} est={:?} src={:?}", c.id, c.domain, c.level, c.lost, c.quality, c.est.map(|e| (e.at.lat_deg(), e.at.lon_deg(), e.a_m)), c.sources.iter().map(|s| s.observer).collect::<Vec<_>>());
+        println!("{:?} {:?} {:?} truth={:?} est={:?}", c.id, c.domain, c.level, c.truth, c.est.map(|e| (e.at.lat_deg(), e.at.lon_deg(), e.a_m)));
+        let tgt = wb_core::geo::LatLon::from_deg(55.26, 18.85);
+        for b in c.bearings.iter().take(0) { println!("   origin {:.3},{:.3} brg {:.1} true-to-SAM {:.1} sigma {:.4}", b.origin.lat_deg(), b.origin.lon_deg(), b.bearing.to_degrees(), wb_core::geo::initial_bearing(b.origin, tgt).to_degrees(), b.sigma); }
     }
     }
 }

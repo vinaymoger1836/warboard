@@ -275,55 +275,67 @@ impl SidePictures {
     }
 }
 
-/// Least-squares-free two-bearing fix: the pair with the widest crossing
-/// angle (≥ `min_angle`), intersected on a local flat plane at the first
-/// origin. Returns the estimate and its ellipse.
+/// Least-squares-free two-bearing fix: of the pairs whose crossing angle is
+/// at least `min_angle` and whose baseline, across the bearing, really opens
+/// half of it at the fix (so the crossing comes from geometry, not from
+/// bearing noise), the
+/// one with the widest crossing, intersected on a local flat plane at the
+/// first origin. Returns the estimate and its ellipse.
 fn bearing_fix(bearings: &[Bearing], min_angle: f64) -> Option<Measured> {
-    let mut best: Option<(f64, usize, usize)> = None;
+    const R: f64 = 6_371_008.8;
+    let mut best: Option<(f64, Measured)> = None;
     for i in 0..bearings.len() {
         for j in i + 1..bearings.len() {
-            let d = crate::movement::angle_diff(bearings[i].bearing, bearings[j].bearing).abs();
+            let (b1, b2) = (bearings[i], bearings[j]);
+            let d = crate::movement::angle_diff(b1.bearing, b2.bearing).abs();
             let cross = d.min(core::f64::consts::PI - d);
-            if cross >= min_angle && best.is_none_or(|b| cross > b.0) {
-                best = Some((cross, i, j));
+            if cross < min_angle || best.as_ref().is_some_and(|b| cross <= b.0) {
+                continue;
             }
+            // Local east/north metres around b1's origin.
+            let k = cos(b1.origin.lat);
+            let o2 = (
+                (b2.origin.lon - b1.origin.lon) * k * R,
+                (b2.origin.lat - b1.origin.lat) * R,
+            );
+            let d1 = (sin(b1.bearing), cos(b1.bearing));
+            let d2 = (sin(b2.bearing), cos(b2.bearing));
+            let den = d1.0 * d2.1 - d1.1 * d2.0;
+            if den.abs() < 1e-9 {
+                continue;
+            }
+            let t1 = (o2.0 * d2.1 - o2.1 * d2.0) / den;
+            let t2 = (o2.0 * d1.1 - o2.1 * d1.0) / den;
+            if t1 <= 0.0 || t2 <= 0.0 {
+                continue;
+            }
+            // The baseline across the first bearing must open at least half
+            // the crossing angle at the fix; along it, it adds nothing.
+            let across = (o2.0 * d1.1 - o2.1 * d1.0).abs();
+            if across < t1.max(t2) * sin(min_angle) * 0.5 {
+                continue;
+            }
+            let at = destination_point(b1.origin, b1.bearing, t1);
+            let s1 = t1 * b1.sigma;
+            let s2 = t2 * b2.sigma;
+            let a = (s1 * s1 + s2 * s2).sqrt() / sin(cross).max(0.05);
+            let b = s1.min(s2).max(1.0);
+            let mid = atan2(d1.0 + d2.0, d1.1 + d2.1);
+            best = Some((
+                cross,
+                Measured {
+                    at,
+                    alt_m: 0.0,
+                    heading: 0.0,
+                    speed_mps: 0.0,
+                    a_m: a.max(b),
+                    b_m: b,
+                    rot: normalize_bearing(mid),
+                },
+            ));
         }
     }
-    let (cross, i, j) = best?;
-    let (b1, b2) = (bearings[i], bearings[j]);
-    // Local east/north metres around b1's origin.
-    const R: f64 = 6_371_008.8;
-    let k = cos(b1.origin.lat);
-    let o2 = (
-        (b2.origin.lon - b1.origin.lon) * k * R,
-        (b2.origin.lat - b1.origin.lat) * R,
-    );
-    let d1 = (sin(b1.bearing), cos(b1.bearing));
-    let d2 = (sin(b2.bearing), cos(b2.bearing));
-    let den = d1.0 * d2.1 - d1.1 * d2.0;
-    if den.abs() < 1e-9 {
-        return None;
-    }
-    let t1 = (o2.0 * d2.1 - o2.1 * d2.0) / den;
-    let t2 = (o2.0 * d1.1 - o2.1 * d1.0) / den;
-    if t1 <= 0.0 || t2 <= 0.0 {
-        return None;
-    }
-    let at = destination_point(b1.origin, b1.bearing, t1);
-    let s1 = t1 * b1.sigma;
-    let s2 = t2 * b2.sigma;
-    let a = (s1 * s1 + s2 * s2).sqrt() / sin(cross).max(0.05);
-    let b = s1.min(s2).max(1.0);
-    let mid = atan2(d1.0 + d2.0, d1.1 + d2.1);
-    Some(Measured {
-        at,
-        alt_m: 0.0,
-        heading: 0.0,
-        speed_mps: 0.0,
-        a_m: a.max(b),
-        b_m: b,
-        rot: normalize_bearing(mid),
-    })
+    best.map(|b| b.1)
 }
 
 /// Events to emit after fusing.
@@ -421,8 +433,11 @@ fn fuse(pics: &mut SidePictures, rules: &Rules, seed: u64, det: Detection, out: 
         if c.bearings.len() > 16 {
             c.bearings.remove(0);
         }
-        let stale = c.est.is_none() || c.ellipse(rules, det.at_ms).is_some_and(|e| e.0 > 50_000.0);
-        if stale && let Some(fix) = bearing_fix(&c.bearings, fusion.esm_fix_min_angle_rad) {
+        let aged = c.ellipse(rules, det.at_ms).map(|e| e.0);
+        let stale = c.est.is_none() || aged.is_some_and(|a| a > 50_000.0);
+        if let Some(fix) = bearing_fix(&c.bearings, fusion.esm_fix_min_angle_rad)
+            && (stale || aged.is_some_and(|a| fix.a_m < a))
+        {
             c.est = Some(fix);
         }
     }
