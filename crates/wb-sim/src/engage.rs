@@ -746,7 +746,8 @@ fn offensive(
                     && (w.targets.contains(&Domain::Ground)
                         || w.targets.contains(&Domain::Surface))
                     && range >= w.profile.min_range_m
-                    && range <= rules.flyout(*wix).max_range(0.0);
+                    // A point does not move: doctrine against a still target.
+                    && range <= doctrine_range(rules, *wix, doc, 0.0, 0.0);
                 if !usable {
                     continue;
                 }

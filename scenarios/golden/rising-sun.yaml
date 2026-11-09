@@ -31,10 +31,12 @@ units:
   - { id: 30, name: Frigate, platform: test-frigate, nation: tst, lat_deg: 55.15, lon_deg: 17.45, heading_deg: 70, loadout: test-frigate-standard }
   - { id: 40, name: Strikers, platform: test-fighter, nation: tst, count: 2, base: test-airbase, loadout: test-fighter-sead }
   # Red: two corvettes and a SAM site in the eastern gulf.
-  - { id: 100, name: Corvette 1, platform: test-corvette, nation: opp, lat_deg: 55.20, lon_deg: 18.40, heading_deg: 270, loadout: test-corvette-standard }
-  - { id: 110, name: Corvette 2, platform: test-corvette, nation: opp, lat_deg: 55.32, lon_deg: 18.42, heading_deg: 270, loadout: test-corvette-standard }
-  - { id: 200, name: SAM site, system: test-sam-site, nation: opp, lat_deg: 55.26, lon_deg: 18.85, heading_deg: 270 }
+  - { id: 100, name: Red corvette A, platform: test-corvette, nation: opp, lat_deg: 55.20, lon_deg: 18.40, heading_deg: 270, loadout: test-corvette-standard }
+  - { id: 110, name: Red corvette B, platform: test-corvette, nation: opp, lat_deg: 55.32, lon_deg: 18.42, heading_deg: 270, loadout: test-corvette-standard }
+  - { id: 200, name: Red SAM battery, system: test-sam-site, nation: opp, lat_deg: 55.26, lon_deg: 18.85, heading_deg: 270 }
 orders:
+  # The strikers fire their ARMs inside half range (doc 03 §5 launch doctrine).
+  - { tick: 0, side: 0, type: SetDoctrine, units: [40], launch: close }
   - tick: 0
     side: 0
     type: CreateOperation

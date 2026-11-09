@@ -297,6 +297,9 @@ pub struct PhaseTask {
     pub target: Option<ContactId>,
     /// A group of the task reported `StrikeAborted`.
     pub aborted: bool,
+    /// Groups seen away from base since the phase started: only they can be
+    /// "home" again.
+    pub away: Vec<UnitId>,
 }
 
 /// Weapon results of a phase, from its side's events.
@@ -666,6 +669,7 @@ pub fn build(
                 missions: Vec::new(),
                 target: None,
                 aborted: false,
+                away: Vec::new(),
             });
         }
         phases.push(Phase {
@@ -1176,6 +1180,21 @@ pub fn run(world: &mut World) {
     }
     let mut ops = std::mem::take(&mut *world.resource_mut::<Operations>());
     tally(world, &mut ops);
+    for t in ops
+        .ops
+        .iter_mut()
+        .flat_map(|o| o.phases.iter_mut())
+        .filter(|p| p.state == PhaseState::Running)
+        .flat_map(|p| p.tasks.iter_mut())
+    {
+        for gid in &t.groups {
+            if !t.away.contains(gid)
+                && group_of(world, *gid).is_some_and(|g| !matches!(g.mode, Mode::AtBase { .. }))
+            {
+                t.away.push(*gid);
+            }
+        }
+    }
     let stamp = now(world);
     let mut events: Vec<(u8, EventKind)> = Vec::new();
     for i in 0..ops.ops.len() {
@@ -1610,7 +1629,7 @@ fn arrived(world: &World, t: &PhaseTask) -> bool {
                 Task::Rtb { .. } | Task::Land { .. } | Task::Transfer { .. } => {
                     matches!(g.mode, Mode::AtBase { .. })
                 }
-                _ => g.on_station || matches!(g.mode, Mode::AtBase { .. }),
+                _ => g.on_station || (t.away.contains(gid) && matches!(g.mode, Mode::AtBase { .. })),
             }
         })
 }
@@ -1632,7 +1651,8 @@ fn task_done(world: &World, t: &PhaseTask) -> bool {
             if g.task.kind() != t.task.kind() {
                 return true;
             }
-            let home = matches!(g.mode, Mode::Return { .. } | Mode::AtBase { .. });
+            let home = matches!(g.mode, Mode::Return { .. })
+                || (t.away.contains(gid) && matches!(g.mode, Mode::AtBase { .. }));
             match &g.task {
                 Task::Move { waypoints, .. } => g.wp as usize >= waypoints.len(),
                 Task::PatrolRoute {
