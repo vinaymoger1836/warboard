@@ -1,0 +1,15 @@
+id: orbit-sig-3
+kind: platform
+name: Orbit SIG-3
+short_name: Orbit SIG-3
+category: satellite/sigint
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [sig-1-esm]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 90008U 26908A   26300.50000000  .00000400  00000+0  50000-4 0  9990"
+  tle_line2: "2 90008  63.4000 345.0000 0001300  90.0000 270.0000 14.78000000    17"
+design: { archetype: satellite-imaging, note: "Second signals-intelligence satellite: doubles the revisit rate of the SIG-1" }

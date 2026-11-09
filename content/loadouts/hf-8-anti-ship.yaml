@@ -1,0 +1,10 @@
+id: hf-8-anti-ship
+kind: loadout
+name: Anti-ship
+platform: hf-8
+roles: [anti_ship]
+items:
+  - { station: fuselage, weapon: ar-14, count: 4 }
+  - { station: wing_inner, weapon: as-8-spire, count: 2 }
+  - { station: wingtip, weapon: ai-5, count: 2 }
+design: { note: Two supersonic anti-ship missiles }

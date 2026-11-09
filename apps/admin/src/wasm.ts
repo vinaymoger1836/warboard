@@ -1,6 +1,6 @@
 // wb-content compiled to WebAssembly (ADR-010): the same check and compiler as
 // `wb content check` and `wb content build`.
-import init, { build_content_pack, check_content, content_pack_info } from '@warboard/wb-wasm';
+import init, { TestBench, build_content_pack, check_content, content_pack_info } from '@warboard/wb-wasm';
 import wasmUrl from '@warboard/wb-wasm/wb_wasm_bg.wasm?url';
 
 export interface Problem {
@@ -63,4 +63,71 @@ export async function buildPack(contents: Record<string, string>): Promise<{ byt
   await wasmReady();
   const bytes = build_content_pack(files(contents));
   return { bytes, info: JSON.parse(content_pack_info(bytes)) as PackInfo };
+}
+
+// ---- Test bench ------------------------------------------------------------------------
+
+export interface BenchInfo {
+  id: string;
+  description: string | null;
+  variants: string[];
+  seeds: number;
+  max_ticks: number;
+}
+
+export interface BenchRun {
+  variant: string;
+  n: number;
+  ticks: number;
+  sim_time_ms: number;
+  hash: string;
+}
+
+export interface BenchCheck {
+  variant: string;
+  metric: string;
+  subject: string;
+  label: string;
+  aggregate: string;
+  /** Per-seed values (null: the metric never happened in that run). */
+  values: (number | null)[];
+  value: number | null;
+  min: number | null;
+  max: number | null;
+  ok: boolean;
+}
+
+export interface BenchReport {
+  runs: BenchRun[];
+  checks: BenchCheck[];
+}
+
+/** A test-bench scenario running seed by seed against the edited content (ADR-045). */
+export class Bench {
+  private constructor(private readonly tb: TestBench) {}
+
+  static async create(scenarioYaml: string, pack: Uint8Array, seeds: number): Promise<Bench> {
+    await wasmReady();
+    return new Bench(TestBench.create(scenarioYaml, pack, seeds));
+  }
+
+  info(): BenchInfo {
+    return JSON.parse(this.tb.info()) as BenchInfo;
+  }
+
+  remaining(): number {
+    return this.tb.remaining();
+  }
+
+  step(n: number): number {
+    return this.tb.step(n);
+  }
+
+  report(): BenchReport {
+    return JSON.parse(this.tb.report()) as BenchReport;
+  }
+
+  free(): void {
+    this.tb.free();
+  }
 }

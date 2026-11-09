@@ -1,0 +1,13 @@
+id: mr-sam-varn
+kind: system
+name: MR-SAM Varn battery
+short_name: Varn
+deploy_as: site
+setup_min: 5
+components:
+  - { platform: varn-radar-vehicle, count: 1, role: fire_control }
+  - { platform: varn-cp, count: 1, role: c2 }
+  - { platform: varn-launcher, count: 4, role: launcher, magazine: { sl-18: 6 } }
+emcon_default: blink
+iads_capable: true
+design: { archetype: sam-medium-range, note: "Medium-range battery with longer reach than the Tolven and lighter warheads" }

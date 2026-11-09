@@ -1,0 +1,9 @@
+id: rw-8-escort
+kind: loadout
+name: Escort
+platform: rw-8
+roles: [close_support, air_superiority]
+items:
+  - { station: stub_l, weapon: ag-1, count: 2 }
+  - { station: stub_r, weapon: ai-7, count: 2 }
+design: { note: Two missiles and two light IR missiles }

@@ -1,0 +1,14 @@
+id: lr-sam-kessen
+kind: system
+name: LR-SAM Kessen battalion
+short_name: Kessen
+deploy_as: site
+setup_min: 5
+components:
+  - { platform: kessen-sr-vehicle, count: 1, role: surveillance }
+  - { platform: kessen-er-vehicle, count: 1, role: fire_control }
+  - { platform: kessen-cp, count: 1, role: c2 }
+  - { platform: kessen-launcher, count: 6, role: launcher, magazine: { sl-45: 4 } }
+emcon_default: blink
+iads_capable: true
+design: { archetype: sam-long-range, note: "Long-range battalion with two guidance channels more than the Bastra and a slightly shorter reach" }

@@ -1,0 +1,10 @@
+id: mf-5-air-b
+kind: loadout
+name: Air (older missiles)
+platform: mf-5
+roles: [air_superiority]
+items:
+  - { station: wing_inner, weapon: ar-4, count: 2 }
+  - { station: wing_mid, weapon: ar-4, count: 2 }
+  - { station: wingtip, weapon: ai-1, count: 2 }
+design: { note: Four semi-active and two old IR missiles }

@@ -1,0 +1,13 @@
+id: sr-sam-pell
+kind: system
+name: SR-SAM Pell battery
+short_name: Pell
+deploy_as: site
+setup_min: 3
+components:
+  - { platform: pell-radar-vehicle, count: 1, role: fire_control }
+  - { platform: pell-cp, count: 1, role: c2 }
+  - { platform: pell-launcher, count: 4, role: launcher, magazine: { sl-9: 4 } }
+emcon_default: blink
+iads_capable: true
+design: { archetype: sam-short-range, note: "Short-range IR battery with a little more reach than the Ketta" }

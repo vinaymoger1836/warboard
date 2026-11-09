@@ -1,0 +1,16 @@
+id: gr-250-site
+kind: platform
+name: GR-250 surveillance radar
+short_name: GR-250
+category: ground/radar
+target_class: radar_site
+mobility:
+  road_speed_kmh: 40
+  offroad_speed_kmh: 15
+signature:
+  rcs_m2: { front: 60, side: 120, rear: 60, top: 180 }
+  visual_size_m: 16
+sensors:
+  - { sensor: gr-250-radar, height_m: 15 }
+durability: { model: ground, damage_points: 120 }
+design: { archetype: ground-radar-site, note: "Long-range search radar: less reach than the GR-300, easier to move" }

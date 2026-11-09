@@ -1,0 +1,13 @@
+id: cb-6-hale
+kind: system
+name: CB-6 Hale coastal battery
+short_name: Hale
+deploy_as: site
+setup_min: 10
+components:
+  - { platform: hale-radar-vehicle, count: 1, role: fire_control }
+  - { platform: hale-cp, count: 1, role: c2 }
+  - { platform: hale-launcher, count: 4, role: launcher, magazine: { as-15: 2 } }
+emcon_default: off
+iads_capable: false
+design: { archetype: coastal-battery, note: "Coastal battery with a shorter-ranged missile than the CB-2 and a better radar" }

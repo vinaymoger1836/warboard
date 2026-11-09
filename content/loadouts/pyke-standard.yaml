@@ -1,0 +1,10 @@
+id: pyke-standard
+kind: loadout
+name: Standard
+platform: pyke
+roles: [anti_ship]
+items:
+  - { station: ashm, weapon: as-3, count: 4 }
+  - { station: sam, weapon: sl-14, count: 8 }
+  - { station: gun, weapon: cg-20, count: 1 }
+design: { note: Four light anti-ship missiles }

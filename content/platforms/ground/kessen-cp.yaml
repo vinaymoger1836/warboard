@@ -1,0 +1,14 @@
+id: kessen-cp
+kind: platform
+name: Kessen command post
+short_name: Kessen CP
+category: ground/c2
+target_class: c2_node
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 15, side: 30, rear: 15, top: 45 }
+  visual_size_m: 12
+durability: { model: ground, damage_points: 80 }
+design: { archetype: ground-command-post, note: "Links the battalion to the air-defence network" }

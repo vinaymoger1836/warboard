@@ -1,0 +1,16 @@
+id: pell-radar-vehicle
+kind: platform
+name: Pell radar vehicle
+short_name: Pell SR
+category: ground/radar
+target_class: radar_site
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 10, side: 20, rear: 10, top: 30 }
+  visual_size_m: 8
+sensors:
+  - { sensor: pell-sr, height_m: 8 }
+durability: { model: ground, damage_points: 50 }
+design: { archetype: ground-radar-vehicle, note: Search and tracking radar }

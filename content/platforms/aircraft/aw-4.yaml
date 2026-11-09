@@ -1,0 +1,27 @@
+id: aw-4
+kind: platform
+name: AW-4 Beacon
+short_name: AW-4
+category: aircraft/aew
+target_class: aew
+crew: 12
+mobility:
+  cruise_speed_mach: 0.6
+  max_speed_mach: 0.72
+  ceiling_m: 11000
+  sustained_g: 1.5
+  min_runway_m: 2400
+signature:
+  rcs_m2: { front: 50, side: 150, rear: 50, top: 300 }
+  ir: { cruise: 2.0 }
+  visual_size_m: 45.0
+fuel:
+  internal_kg: 48000
+  burn_kg_h: { cruise: 6000 }
+  aar: boom
+sensors: [ar-200]
+countermeasures: { cm-chaff: 60, cm-flare: 60 }
+datalinks: [weave, tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 120
+design: { archetype: aew-aircraft, note: "Compact early-warning aircraft: shorter reach than the AW-1" }

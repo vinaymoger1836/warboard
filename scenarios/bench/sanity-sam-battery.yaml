@@ -1,0 +1,30 @@
+# Test-bench sanity: a catalogue medium-range battery (MR-SAM Tolven, SL-20) and its newer sibling
+# (MR-SAM Varn, SL-18) against a lone MF-4 flying straight at the site at 6,000 m. The battery has to
+# open fire before the fighter reaches it, and most single raids should die to a two-missile salvo.
+name: Bench SAM battery against a lone fighter (catalogue)
+seed: 103
+content: content
+start_utc: 2026-10-27T10:00:00Z
+start_mode: deploy
+sides:
+  - { name: Blue, nations: [ald], roe: alpha }
+  - { name: Red, nations: [vsm], roe: charlie, self_defence: false }
+units:
+  - { id: 100, name: Tolven battery, system: mr-sam-tolven, nation: ald, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 0 }
+  - { id: 200, name: Varn battery, system: mr-sam-varn, nation: ald, lat_deg: 55.5, lon_deg: 17.0, heading_deg: 0 }
+  - { id: 20, name: Raider, platform: mf-4, nation: vsm, lat_deg: 55.5, lon_deg: 19.0, alt_m: 6000, heading_deg: 270 }
+orders:
+  - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[16.0, 55.5]], alt_m: 6000 } }
+golden:
+  id: B3
+  description: a medium-range battery opens fire on a lone fighter closing at 6,000 m and kills it most of the time
+  max_ticks: 1800
+  seeds: 100
+  variants:
+    tolven: { drop_units: [200] }
+    varn: { drop_units: [100] }
+  expect:
+    - { variant: tolven, metric: launches, side: 0, aggregate: min, min: 1 }
+    - { variant: varn, metric: launches, side: 0, aggregate: min, min: 1 }
+    - { variant: tolven, metric: units_lost, side: 1, aggregate: mean, min: 0.5 }
+    - { variant: varn, metric: units_lost, side: 1, aggregate: mean, min: 0.5 }

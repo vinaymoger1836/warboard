@@ -1,0 +1,33 @@
+id: hf-8
+kind: platform
+name: HF-8 Torvane
+short_name: HF-8
+category: aircraft/fighter
+target_class: fighter
+crew: 2
+mobility:
+  cruise_speed_mach: 0.85
+  max_speed_mach: 1.8
+  ceiling_m: 15500
+  sustained_g: 6.5
+  min_runway_m: 2000
+signature:
+  rcs_m2: { front: 8, side: 20, rear: 10, top: 28 }
+  ir: { cruise: 1.4, afterburner: 4.0 }
+  visual_size_m: 22.0
+fuel:
+  internal_kg: 11800
+  burn_kg_h: { cruise: 3000, military: 6200, afterburner: 17000 }
+  aar: probe
+stations:
+  - { id: fuselage, kind: external, categories: [aam_medium, bomb_900kg, bomb_450kg, bomb_small, agm], max_kg: 4000, capacity: 4 }
+  - { id: wing_inner, kind: external, categories: [ashm_heavy, ashm, lacm_air, agm_heavy, bomb_900kg, arm], max_kg: 3200, capacity: 2 }
+  - { id: wing_outer, kind: external, categories: [aam_medium, arm, agm], max_kg: 800, capacity: 2 }
+  - { id: wingtip, kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+sensors: [kr-55, et-12]
+ew: [sp-3]
+countermeasures: { cm-chaff: 60, cm-flare: 60, cm-towed: 2 }
+datalinks: [tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+turnaround_min: 90
+design: { archetype: fighter-strike, note: "Strike fighter with a long-range turret instead of a targeting pod; heavier and slower than the HF-7" }

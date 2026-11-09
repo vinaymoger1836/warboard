@@ -1,0 +1,32 @@
+id: mf-5
+kind: platform
+name: MF-5 Dunmere
+short_name: MF-5
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 1.8
+  ceiling_m: 15500
+  sustained_g: 8.5
+  min_runway_m: 1400
+signature:
+  rcs_m2: { front: 2.5, side: 7, rear: 3.5, top: 11 }
+  ir: { cruise: 1.0, afterburner: 3.0 }
+  visual_size_m: 15.0
+fuel:
+  internal_kg: 3900
+  burn_kg_h: { cruise: 1800, military: 3600, afterburner: 10000 }
+  aar: probe
+stations:
+  - { id: wing_inner, kind: external, categories: [bomb_900kg, ashm, arm, aam_medium], max_kg: 2000, capacity: 2 }
+  - { id: wing_mid,   kind: external, categories: [aam_medium, arm], max_kg: 600, capacity: 2 }
+  - { id: wingtip,    kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+  - { id: centre,     kind: external, categories: [bomb_900kg], max_kg: 1000, capacity: 1 }
+sensors: [mr-30]
+countermeasures: { cm-chaff: 30, cm-flare: 30 }
+datalinks: [weave, tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.85 }
+turnaround_min: 45
+design: { archetype: fighter-multirole, note: "Faster, more manoeuvrable medium multirole fighter with the lighter AR-11" }

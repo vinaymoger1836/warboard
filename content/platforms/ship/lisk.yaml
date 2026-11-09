@@ -1,0 +1,28 @@
+id: lisk
+kind: platform
+name: Lisk-class corvette
+short_name: Lisk
+category: ship/corvette
+target_class: surface_ship
+crew: 80
+mobility:
+  cruise_speed_kt: 15
+  max_speed_kt: 33
+  turn_radius_m: 300
+signature:
+  rcs_m2: { front: 700, side: 2600, rear: 700, top: 2600 }
+  ir: { cruise: 3 }
+  acoustic_db: 112
+  visual_size_m: 95
+fuel:
+  range_nm: 3500
+stations:
+  - { id: ashm, kind: launcher, categories: [ashm_canister], capacity: 8 }
+  - { id: sam, kind: launcher, categories: [sam_box], capacity: 16 }
+  - { id: gun, kind: launcher, categories: [gun_mount], capacity: 1 }
+sensors:
+  - { sensor: kr-90, height_m: 20 }
+countermeasures: { cm-chaff: 12 }
+datalinks: [weave, tessel]
+durability: { model: ship, damage_points: 1500 }
+design: { archetype: corvette-missile, note: "Fast corvette: quicker than the Kest, smaller signature, thinner hull" }

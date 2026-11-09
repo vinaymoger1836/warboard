@@ -1,0 +1,17 @@
+id: gr-250-radar
+kind: sensor
+name: GR-250 surveillance radar
+sensor_type: radar
+role: [air_search, height_finding]
+radar:
+  band: L
+  r_ref_km: 250
+  sigma_ref_m2: 1.0
+  scan_period_s: 10
+  field_of_regard_deg: 360
+  clutter_rejection: 0.82
+  pulse_doppler: true
+  jam_resistance: 6
+  erp_class_dbw: 90
+  fire_channels: 0
+design: { archetype: radar-ground-surveillance, note: "Fixed long-range surveillance radar, less reach than the GR-300" }

@@ -21,6 +21,17 @@ platforms:
   ls-1-vira: 6
   orbit-eo-4: 1
   orbit-sar-1: 1
+  hf-5: 14
+  hf-8: 12
+  bm-5: 4
+  ej-6: 2
+  orlac: 2
+  tk-7: 2
+  lr-sam-kessen: 2
+  gr-250-site: 4
+  orbit-eo-6: 1
+  ud-18: 2
+  aw-4: 1
 munitions:
   ar-14: 300
   ar-9: 160
@@ -50,6 +61,10 @@ munitions:
   cg-35: 8
   cg-40: 6
   cg-30: 4
+  lc-7: 48
+  eh-6: 40
+  gb-300: 120
+  sl-45: 60
 basing:
   - { platform: bm-3, base: kld-scheltwerk-air, count: 12 }
   - { platform: tk-3, base: kld-scheltwerk-air, count: 2 }
@@ -69,6 +84,14 @@ basing:
   - { platform: tk-3, base: kld-kurkau-air, count: 2 }
   - { platform: kord, base: kld-briemheim-naval, count: 3 }
   - { platform: kest, base: kld-briemheim-naval, count: 2 }
+  - { platform: hf-5, base: kld-bramheim-air, count: 14 }
+  - { platform: hf-8, base: kld-kargow-air, count: 12 }
+  - { platform: bm-5, base: kld-zemheim-air, count: 4 }
+  - { platform: ej-6, base: kld-kurkau-air, count: 2 }
+  - { platform: tk-7, base: kld-brenumitz-air, count: 2 }
+  - { platform: ud-18, base: kld-scheltwerk-air, count: 2 }
+  - { platform: aw-4, base: kld-kurkau-air, count: 1 }
+  - { platform: orlac, base: kld-briemheim-naval, count: 2 }
 munition_basing:
   - base: kld-bramheim-air
     munitions: { ag-3: 14, ai-3: 14, ai-5: 25, ar-14: 42, ar-7: 22, ar-9: 37, as-8-spire: 16, eh-3: 18, gb-900g: 18, gb-900p: 18, lc-5: 9 }

@@ -1,0 +1,15 @@
+id: orbit-sar-5
+kind: platform
+name: Orbit SAR-5
+short_name: Orbit SAR-5
+category: satellite/sar
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [os-3-sar]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 90007U 26907A   26300.50000000  .00000400  00000+0  50000-4 0  9998"
+  tle_line2: "2 90007  97.7000 300.0000 0001300  90.0000 270.0000 15.20000000    15"
+design: { archetype: satellite-imaging, note: "Radar imager in a dusk orbit: sees through cloud and darkness between the SAR-1 and SAR-3 passes" }

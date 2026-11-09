@@ -20,6 +20,16 @@ platforms:
   sr-sam-ketta: 4
   cb-2-strand: 4
   gr-90-site: 4
+  dorne: 2
+  venn: 1
+  arlen: 3
+  lisk: 2
+  mp-8: 3
+  rw-3: 4
+  rw-4: 4
+  mf-5: 6
+  tk-7: 1
+  gr-75-site: 4
 munitions:
   ar-6: 220
   ar-7: 150
@@ -43,6 +53,9 @@ munitions:
   cg-40: 20
   cg-30: 40
   ag-1: 48
+  ar-11: 90
+  sn-10: 24
+  sn-20: 24
 basing:
   - { platform: mf-6, base: ald-lovwick-air, count: 12 }
   - { platform: mf-4, base: ald-lovwick-air, count: 12 }
@@ -65,6 +78,15 @@ basing:
   - { platform: halvard, base: ald-tadvik-naval, count: 2 }
   - { platform: selvik, base: ald-tadvik-naval, count: 2 }
   - { platform: kest, base: ald-tadvik-naval, count: 2 }
+  - { platform: mf-5, base: ald-kodvik-air, count: 6 }
+  - { platform: mp-8, base: ald-skaermere-air, count: 3 }
+  - { platform: tk-7, base: ald-lovwick-air, count: 1 }
+  - { platform: rw-3, base: ald-skaermere-air, count: 4 }
+  - { platform: rw-4, base: ald-lovwick-air, count: 4 }
+  - { platform: dorne, base: ald-tadvik-naval, count: 2 }
+  - { platform: venn, base: ald-lovwick-naval, count: 1 }
+  - { platform: arlen, base: ald-tadvik-naval, count: 3 }
+  - { platform: lisk, base: ald-lovwick-naval, count: 2 }
 munition_basing:
   - base: ald-kodvik-air
     munitions: { ai-3: 49, ar-6: 77, as-5: 19, eh-2: 8, gb-250: 56, lc-6: 8 }

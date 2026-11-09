@@ -1,0 +1,24 @@
+id: gb-300
+kind: weapon
+name: GB-300
+category: bomb
+targets: [ground, surface]
+profile:
+  kind: glide
+  max_speed_mach: 0.9
+  max_range_km: 75
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: satnav_ins
+warhead_kg: 110
+warhead: blast
+cep_m: 7
+lethal_radius_m: 18
+mass_kg: 310
+station_category: [bomb_small]
+internal_carriage: true
+signature:
+  rcs_m2: { front: 0.03, side: 0.15, rear: 0.045, top: 0.15 }
+  ir: { cruise: 0.05 }
+  visual_size_m: 1.8
+design: { archetype: bomb-guided-small, note: "Gliding small bomb with the largest warhead of the class and a shorter glide than the GB-250" }

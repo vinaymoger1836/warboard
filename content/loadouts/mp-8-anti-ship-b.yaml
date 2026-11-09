@@ -1,0 +1,8 @@
+id: mp-8-anti-ship-b
+kind: loadout
+name: Anti-ship (sea-skimmer)
+platform: mp-8
+roles: [anti_ship, maritime_patrol]
+items:
+  - { station: bay, weapon: as-5, count: 2 }
+design: { note: Two shaped sea-skimmers }

@@ -1,0 +1,11 @@
+id: vf-9-anti-ship
+kind: loadout
+name: Anti-ship (internal)
+platform: vf-9
+roles: [anti_ship]
+items:
+  - { station: bay_l, weapon: as-14, count: 1 }
+  - { station: bay_l, weapon: ar-8, count: 1 }
+  - { station: bay_r, weapon: as-14, count: 1 }
+  - { station: bay_r, weapon: ar-8, count: 1 }
+design: { note: Two shaped anti-ship missiles inside }

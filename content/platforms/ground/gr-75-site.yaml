@@ -1,0 +1,16 @@
+id: gr-75-site
+kind: platform
+name: GR-75 coastal radar
+short_name: GR-75
+category: ground/radar
+target_class: radar_site
+mobility:
+  road_speed_kmh: 40
+  offroad_speed_kmh: 15
+signature:
+  rcs_m2: { front: 30, side: 60, rear: 30, top: 90 }
+  visual_size_m: 12
+sensors:
+  - { sensor: gr-75-radar, height_m: 45 }
+durability: { model: ground, damage_points: 100 }
+design: { archetype: ground-radar-site, note: "Lower mast, shorter reach than the GR-90; cheaper to scatter along a coast" }

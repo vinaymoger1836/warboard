@@ -1,0 +1,29 @@
+id: mp-8
+kind: platform
+name: MP-8 Seawatch
+short_name: MP-8
+category: aircraft/maritime_patrol
+target_class: maritime_patrol
+crew: 10
+mobility:
+  cruise_speed_mach: 0.6
+  max_speed_mach: 0.65
+  ceiling_m: 10000
+  sustained_g: 2.0
+  min_runway_m: 2000
+signature:
+  rcs_m2: { front: 40, side: 120, rear: 40, top: 200 }
+  ir: { cruise: 2.5 }
+  visual_size_m: 36.0
+fuel:
+  internal_kg: 24000
+  burn_kg_h: { cruise: 2400 }
+stations:
+  - { id: bay, kind: internal, categories: [ashm, ashm_light], max_kg: 2000, capacity: 4 }
+  - { id: wing, kind: external, categories: [ashm, ashm_light], max_kg: 1500, capacity: 2 }
+sensors: [sr-250, es-60, et-6]
+countermeasures: { cm-chaff: 60, cm-flare: 60 }
+datalinks: [weave]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 90
+design: { archetype: maritime-patrol, note: "Patrol aircraft with the bigger radar but the same stations as the MP-6" }

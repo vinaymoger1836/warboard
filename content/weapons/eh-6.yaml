@@ -1,0 +1,31 @@
+id: eh-6
+kind: weapon
+name: EH-6
+category: arm
+targets: [ground, surface]
+target_class: anti_radiation_missile
+profile:
+  kind: rocket
+  boost_s: 7
+  max_speed_mach: 2.7
+  coast_tau_s: { sea_level: 90.8, high_alt: 332.7 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 0.8
+  max_range_km: 85
+  min_range_km: 4
+  max_g: 20
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: anti_radiation
+  seeker_resistance: 0.7
+warhead_kg: 45
+warhead: blast_fragmentation
+pk_base: { radar_site: 0.8, launcher: 0.6, c2_node: 0.5 }
+mass_kg: 290
+station_category: [arm]
+nav_resistant: true
+internal_carriage: true
+signature:
+  rcs_m2: { front: 0.05, side: 0.3, rear: 0.08, top: 0.3 }
+  ir: { cruise: 0.6 }
+  visual_size_m: 4.1
+design: { archetype: arm-missile, note: "Lighter emitter-homing missile for light and stealth aircraft: shorter reach than the EH-2" }

@@ -16,6 +16,17 @@ platforms:
   sr-sam-ketta: 10
   gr-300-site: 6
   gr-90-site: 6
+  mf-3: 24
+  mf-5: 12
+  hf-9: 8
+  rw-8: 6
+  cb-6-hale: 6
+  sr-sam-pell: 8
+  mr-sam-varn: 4
+  gr-75-site: 8
+  ud-14: 4
+  lisk: 2
+  pyke: 4
 munitions:
   ar-12: 260
   ar-5: 160
@@ -37,6 +48,14 @@ munitions:
   sn-15: 160
   cg-20: 6
   cg-30: 10
+  ai-8: 140
+  ar-11: 120
+  as-15: 80
+  sl-18: 90
+  sl-9: 140
+  ai-5: 64
+  ai-6: 64
+  ar-10: 64
 basing:
   - { platform: mf-2, base: tlv-haknes-air, count: 8 }
   - { platform: mf-4, base: tlv-haknes-air, count: 12 }
@@ -59,6 +78,14 @@ basing:
   - { platform: kest, base: tlv-gaknes-naval, count: 2 }
   - { platform: brisa, base: tlv-baknes-naval, count: 2 }
   - { platform: brisa, base: tlv-fonokvann-naval, count: 2 }
+  - { platform: mf-3, base: tlv-gandal-air, count: 12 }
+  - { platform: mf-3, base: tlv-honokvann-air, count: 12 }
+  - { platform: mf-5, base: tlv-haknes-air, count: 12 }
+  - { platform: hf-9, base: tlv-goknes-air, count: 8 }
+  - { platform: rw-8, base: tlv-fonakvann-air, count: 6 }
+  - { platform: ud-14, base: tlv-handal-air, count: 4 }
+  - { platform: lisk, base: tlv-fonokvann-naval, count: 2 }
+  - { platform: pyke, base: tlv-baknes-naval, count: 4 }
 munition_basing:
   - base: tlv-baknes-naval
     munitions: { as-3: 5, cg-20: 1, sl-14: 22 }

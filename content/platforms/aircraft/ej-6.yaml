@@ -1,0 +1,31 @@
+id: ej-6
+kind: platform
+name: EJ-6 Sable
+short_name: EJ-6
+category: aircraft/ew
+target_class: ew_aircraft
+crew: 2
+mobility:
+  cruise_speed_mach: 0.85
+  max_speed_mach: 1.5
+  ceiling_m: 14000
+  sustained_g: 6.0
+  min_runway_m: 1800
+signature:
+  rcs_m2: { front: 5, side: 12, rear: 6, top: 18 }
+  ir: { cruise: 1.0, afterburner: 3.0 }
+  visual_size_m: 17.0
+fuel:
+  internal_kg: 6800
+  burn_kg_h: { cruise: 2200, military: 4400, afterburner: 12000 }
+  aar: probe
+stations:
+  - { id: wing, kind: external, categories: [arm], max_kg: 900, capacity: 2 }
+  - { id: wingtip, kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+sensors: [mr-30, es-60]
+ew: [ew-ej-2]
+countermeasures: { cm-chaff: 60, cm-flare: 60 }
+datalinks: [weave]
+durability: { model: aircraft, p_kill_on_hit: 0.85 }
+turnaround_min: 90
+design: { archetype: ew-jet, note: "Jammer on a larger airframe: more fuel and a better radar than the EJ-2" }

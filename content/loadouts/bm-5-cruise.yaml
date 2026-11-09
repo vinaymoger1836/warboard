@@ -1,0 +1,8 @@
+id: bm-5-cruise
+kind: loadout
+name: Cruise missiles
+platform: bm-5
+roles: [strike]
+items:
+  - { station: bay, weapon: lc-1, count: 6 }
+design: { note: Six long-range cruise missiles }

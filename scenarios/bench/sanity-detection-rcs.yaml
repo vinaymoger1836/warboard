@@ -1,0 +1,30 @@
+# Test-bench sanity: the MF-4 Sellis radar looking head-on at an HF-4 Corvan and at a VF-7 stealth
+# fighter. Detection range scales with RCS^¼ (doc 02 §7.1), so the ratio of first-detection
+# ranges has to sit near the fourth root of the two front RCS values (G2 on the catalogue). G2 on the fixtures gives 1.13;
+# this pair gives about 1.2 because Pd fluctuation lifts the long range more than the short one, so the band is 0.8-1.3
+# (a decision for this bench file only; G2 keeps 0.8-1.2).
+name: Bench radar range against RCS (catalogue)
+seed: 102
+content: content
+start_utc: 2026-10-27T10:00:00Z
+start_mode: deploy
+sides:
+  - { name: Blue, nations: [ald] }
+  - { name: Red, nations: [vsm] }
+units:
+  - { id: 10, name: Seeker, platform: mf-4, nation: ald, lat_deg: 55.0, lon_deg: 10.0, alt_m: 9000, heading_deg: 90 }
+  - { id: 20, name: Target, platform: hf-4, nation: vsm, lat_deg: 55.0, lon_deg: 14.7, alt_m: 9000, heading_deg: 270 }
+orders:
+  - { tick: 0, side: 0, type: AssignTask, units: [10], task: { kind: move, waypoints: [[16.0, 55.0]], alt_m: 9000 } }
+  - { tick: 0, side: 1, type: AssignTask, units: [20], task: { kind: move, waypoints: [[9.0, 55.0]], alt_m: 9000 } }
+golden:
+  id: B2
+  description: MF-4 radar head-on against an HF-4 and a VF-7, range ratio within 20% of (σ₁/σ₂)^¼
+  max_ticks: 900
+  seeds: 50
+  variants:
+    fighter: {}
+    stealth: { replace: [{ unit: 20, platform: vf-7, nation: vsm }] }
+  expect:
+    - { variant: fighter, metric: first_detection_range_km, side: 0, target: 20, ratio_to: stealth, rcs_quarter_root: [hf-4, vf-7], min: 0.8, max: 1.3 }
+    - { variant: stealth, metric: first_detection_range_km, side: 0, target: 20, min: 1 }

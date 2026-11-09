@@ -4,7 +4,7 @@
 import Form from '@rjsf/core';
 import { type RegistryFieldsType, type RegistryWidgetsType, getDefaultFormState } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { schemaFor, uiFor } from '../schema';
 import { editFile, entry, fileOfId, get, kindOfFile, set, useStore } from '../store';
 import { applyDelta, toData } from '../yamlEdit';
@@ -31,7 +31,9 @@ export function EntryEditor({ id }: { id: string }) {
     [schema, data],
   );
   const prev = useRef(formState);
-  prev.current = formState;
+  useEffect(() => {
+    prev.current = formState;
+  }, [formState]);
   if (!file || text === undefined) return <p className="hint">No file for {id}.</p>;
   const problems = [...(report?.errors ?? []), ...(report?.warnings ?? [])].filter((p) => p.file === `content/${file}`);
   const archetype = info?.archetype ?? ((data['design'] as { archetype?: string } | undefined)?.archetype ?? null);

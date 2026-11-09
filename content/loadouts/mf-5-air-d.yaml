@@ -1,0 +1,10 @@
+id: mf-5-air-d
+kind: loadout
+name: Air (weave)
+platform: mf-5
+roles: [air_superiority]
+items:
+  - { station: wing_inner, weapon: ar-11, count: 2 }
+  - { station: wing_mid, weapon: ar-11, count: 2 }
+  - { station: wingtip, weapon: ai-3, count: 2 }
+design: { note: Four radar and two IR missiles }

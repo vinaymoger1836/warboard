@@ -1,0 +1,11 @@
+id: ga-4-ground-b
+kind: loadout
+name: Ground attack (guided)
+platform: ga-4
+roles: [strike, close_support]
+items:
+  - { station: wing_inner, weapon: gb-450, count: 2 }
+  - { station: wing_outer, weapon: ag-6, count: 3 }
+  - { station: wingtip, weapon: ai-5, count: 2 }
+  - { station: centre, weapon: bu-500, count: 1 }
+design: { note: Guided bombs and missiles }

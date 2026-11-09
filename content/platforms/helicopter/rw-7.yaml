@@ -1,0 +1,27 @@
+id: rw-7
+kind: platform
+name: RW-7 Harrow
+short_name: RW-7
+category: helicopter/attack
+target_class: helicopter
+crew: 2
+mobility:
+  cruise_speed_mach: 0.2
+  max_speed_mach: 0.28
+  ceiling_m: 6000
+signature:
+  rcs_m2: { front: 5, side: 12, rear: 5, top: 18 }
+  ir: { cruise: 0.7 }
+  visual_size_m: 16.0
+fuel:
+  internal_kg: 1500
+  burn_kg_h: { cruise: 500 }
+stations:
+  - { id: stub_l, kind: external, categories: [light_rail], max_kg: 600, capacity: 6 }
+  - { id: stub_r, kind: external, categories: [light_rail], max_kg: 600, capacity: 6 }
+sensors: [et-6]
+countermeasures: { cm-chaff: 30, cm-flare: 60 }
+datalinks: [tessel, weave]
+durability: { model: aircraft, p_kill_on_hit: 0.85 }
+turnaround_min: 30
+design: { archetype: helicopter-attack, note: "Heavier attack helicopter: six rails per side and more fuel, easier to see than the RW-5" }

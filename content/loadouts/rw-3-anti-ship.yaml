@@ -1,0 +1,8 @@
+id: rw-3-anti-ship
+kind: loadout
+name: Anti-ship
+platform: rw-3
+roles: [anti_ship]
+items:
+  - { station: side, weapon: as-2, count: 2 }
+design: { note: Two light anti-ship missiles }

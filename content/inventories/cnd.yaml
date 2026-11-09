@@ -15,6 +15,16 @@ platforms:
   mr-sam-tolven: 2
   gr-90-site: 8
   ls-1-vira: 4
+  lisk: 4
+  pyke: 6
+  cb-6-hale: 6
+  ud-14: 6
+  ud-18: 2
+  rw-4: 4
+  rw-8: 4
+  mf-3: 10
+  gr-75-site: 8
+  sr-sam-pell: 6
 munitions:
   ar-6: 100
   ai-3: 60
@@ -35,6 +45,9 @@ munitions:
   sl-20: 48
   cg-20: 8
   cg-30: 10
+  ai-8: 80
+  as-15: 90
+  sl-9: 120
 basing:
   - { platform: mf-2, base: cnd-vitlahti-air, count: 10 }
   - { platform: ud-9, base: cnd-vitlahti-air, count: 4 }
@@ -49,6 +62,13 @@ basing:
   - { platform: kest, base: cnd-satsaari-naval, count: 4 }
   - { platform: tarsk, base: cnd-satsaari-naval, count: 6 }
   - { platform: brisa, base: cnd-satsaari-naval, count: 6 }
+  - { platform: lisk, base: cnd-satsaari-naval, count: 4 }
+  - { platform: pyke, base: cnd-satsaari-naval, count: 6 }
+  - { platform: ud-14, base: cnd-vitlahti-air, count: 6 }
+  - { platform: ud-18, base: cnd-nasatranta-air, count: 2 }
+  - { platform: rw-4, base: cnd-vitlahti-air, count: 4 }
+  - { platform: rw-8, base: cnd-nasatranta-air, count: 4 }
+  - { platform: mf-3, base: cnd-nasatranta-air, count: 10 }
 munition_basing:
   - base: cnd-nasatranta-air
     munitions: { ag-1: 42, ag-5: 28, ai-3: 21, ar-6: 35, as-1: 42, as-2: 12, eh-5: 14, gb-120: 56 }

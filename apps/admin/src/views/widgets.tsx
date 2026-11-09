@@ -56,7 +56,7 @@ export function RcsField(props: FieldProps<Rcs>) {
   );
 }
 
-type Station = { id: string; kind: string; categories: string[]; max_kg?: number; capacity?: number };
+type Station = { id: string; kind: string; categories: string[]; max_kg?: number | undefined; capacity?: number };
 const KINDS = ['internal', 'external', 'vls', 'launcher'];
 
 export function StationsField(props: FieldProps<Station[]>) {

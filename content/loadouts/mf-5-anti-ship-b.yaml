@@ -1,0 +1,10 @@
+id: mf-5-anti-ship-b
+kind: loadout
+name: Anti-ship (light)
+platform: mf-5
+roles: [anti_ship]
+items:
+  - { station: wing_inner, weapon: as-7, count: 2 }
+  - { station: wing_mid, weapon: ar-11, count: 2 }
+  - { station: wingtip, weapon: ai-5, count: 2 }
+design: { note: Two cheap anti-ship missiles }

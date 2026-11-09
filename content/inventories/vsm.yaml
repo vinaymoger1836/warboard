@@ -24,6 +24,21 @@ platforms:
   ls-1-vira: 4
   orbit-sig-1: 1
   orbit-eo-2: 1
+  hf-5: 18
+  hf-9: 12
+  mf-5: 20
+  ga-4: 12
+  aw-4: 2
+  rw-7: 8
+  rw-8: 6
+  lr-sam-kessen: 4
+  mr-sam-varn: 8
+  sr-sam-pell: 10
+  gr-250-site: 6
+  ud-14: 6
+  ej-6: 2
+  tk-7: 2
+  orbit-sar-5: 1
 munitions:
   ar-7: 400
   ar-10: 96
@@ -56,6 +71,12 @@ munitions:
   gb-900g: 60
   as-7: 60
   gb-450l: 80
+  ar-11: 120
+  ag-6: 80
+  sl-45: 90
+  sl-18: 150
+  sl-9: 160
+  eh-6: 30
 basing:
   - { platform: hf-4, base: vsm-mivov-air, count: 10 }
   - { platform: hf-6, base: vsm-mivov-air, count: 8 }
@@ -87,6 +108,19 @@ basing:
   - { platform: kord, base: vsm-mivov-naval, count: 2 }
   - { platform: kest, base: vsm-mivov-naval, count: 4 }
   - { platform: kest, base: vsm-donost-naval, count: 2 }
+  - { platform: hf-5, base: vsm-donost-air, count: 10 }
+  - { platform: hf-5, base: vsm-sadograd-air, count: 8 }
+  - { platform: hf-9, base: vsm-mivov-air, count: 12 }
+  - { platform: mf-5, base: vsm-dovov-air, count: 10 }
+  - { platform: mf-5, base: vsm-sezhudyar-air, count: 10 }
+  - { platform: ga-4, base: vsm-tesleteva-air, count: 12 }
+  - { platform: aw-4, base: vsm-donost-air, count: 1 }
+  - { platform: aw-4, base: vsm-mivov-air, count: 1 }
+  - { platform: rw-7, base: vsm-tesleteva-air, count: 8 }
+  - { platform: rw-8, base: vsm-dovov-air, count: 6 }
+  - { platform: ud-14, base: vsm-sezhudyar-air, count: 6 }
+  - { platform: ej-6, base: vsm-sadograd-air, count: 2 }
+  - { platform: tk-7, base: vsm-donost-air, count: 2 }
 munition_basing:
   - base: vsm-donost-air
     munitions: { ag-1: 105, ai-3: 22, ai-5: 28, ai-7: 16, ar-7: 46, ar-9: 16, as-7: 8, as-8-spire: 6, gb-900: 28 }

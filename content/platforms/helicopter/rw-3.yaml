@@ -1,0 +1,26 @@
+id: rw-3
+kind: platform
+name: RW-3 Pinder
+short_name: RW-3
+category: helicopter/utility
+target_class: helicopter
+crew: 3
+mobility:
+  cruise_speed_mach: 0.19
+  max_speed_mach: 0.23
+  ceiling_m: 4200
+signature:
+  rcs_m2: { front: 10, side: 20, rear: 10, top: 30 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 17.0
+fuel:
+  internal_kg: 2200
+  burn_kg_h: { cruise: 450 }
+stations:
+  - { id: side, kind: external, categories: [ashm_light, light_rail], max_kg: 400, capacity: 2 }
+sensors: [hr-60, et-6]
+countermeasures: { cm-chaff: 30, cm-flare: 30 }
+datalinks: [weave]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 30
+design: { archetype: helicopter-naval, note: "Heavier utility helicopter: more fuel and a larger radar signature than the RW-2" }

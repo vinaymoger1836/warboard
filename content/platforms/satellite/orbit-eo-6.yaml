@@ -1,0 +1,15 @@
+id: orbit-eo-6
+kind: platform
+name: Orbit EO-6
+short_name: Orbit EO-6
+category: satellite/eo
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [oe-4-optical]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 90006U 26906A   26300.50000000  .00000400  00000+0  50000-4 0  9996"
+  tle_line2: "2 90006  97.5000 255.0000 0001300  90.0000 270.0000 15.28000000    19"
+design: { archetype: satellite-imaging, note: "Optical imager in an afternoon sun-synchronous orbit: complements the morning passes of the EO-4" }

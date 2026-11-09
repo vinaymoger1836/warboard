@@ -14,6 +14,14 @@ platforms:
   mr-sam-tolven: 2
   gr-300-site: 6
   ls-1-vira: 6
+  ga-4: 12
+  rw-7: 10
+  rw-8: 8
+  mf-3: 12
+  sr-sam-pell: 12
+  mr-sam-varn: 4
+  gr-75-site: 6
+  ud-14: 6
 munitions:
   ar-4: 180
   ar-5: 140
@@ -40,6 +48,10 @@ munitions:
   sl-14: 32
   cg-35: 10
   cg-20: 4
+  ai-8: 100
+  ag-6: 90
+  sl-9: 180
+  sl-18: 60
 basing:
   - { platform: mf-2, base: ost-sirice-air, count: 8 }
   - { platform: mf-4, base: ost-sirice-air, count: 8 }
@@ -55,6 +67,11 @@ basing:
   - { platform: rw-5, base: ost-zorice-air, count: 8 }
   - { platform: ud-11, base: ost-zorice-air, count: 6 }
   - { platform: brisa, base: ost-bilowo-naval, count: 4 }
+  - { platform: ga-4, base: ost-sirice-air, count: 12 }
+  - { platform: rw-7, base: ost-sowerary-air, count: 10 }
+  - { platform: rw-8, base: ost-zorice-air, count: 8 }
+  - { platform: mf-3, base: ost-doskava-air, count: 12 }
+  - { platform: ud-14, base: ost-doskava-air, count: 6 }
 munition_basing:
   - base: ost-bilowo-naval
     munitions: { as-3: 11, cg-20: 2, sl-14: 22 }

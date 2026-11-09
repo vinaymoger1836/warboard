@@ -1,0 +1,10 @@
+id: lisk-standard
+kind: loadout
+name: Standard
+platform: lisk
+roles: [anti_ship]
+items:
+  - { station: ashm, weapon: as-8-spire, count: 8 }
+  - { station: sam, weapon: sl-12, count: 16 }
+  - { station: gun, weapon: cg-30, count: 1 }
+design: { note: "Eight supersonic anti-ship missiles" }

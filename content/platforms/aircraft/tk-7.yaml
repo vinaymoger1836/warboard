@@ -1,0 +1,29 @@
+id: tk-7
+kind: platform
+name: TK-7 Orrin
+short_name: TK-7
+category: aircraft/tanker
+target_class: tanker
+crew: 3
+mobility:
+  cruise_speed_mach: 0.8
+  max_speed_mach: 0.84
+  ceiling_m: 12500
+  sustained_g: 1.5
+  min_runway_m: 2500
+signature:
+  rcs_m2: { front: 50, side: 200, rear: 50, top: 300 }
+  ir: { cruise: 2.0 }
+  visual_size_m: 55.0
+fuel:
+  internal_kg: 85000
+  burn_kg_h: { cruise: 5500 }
+tanker:
+  offload_kg: 38000
+  transfer_rate_kg_min: 3000
+  systems: [boom, probe]
+countermeasures: { cm-chaff: 60, cm-flare: 60 }
+datalinks: [weave, tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 120
+design: { archetype: tanker, note: "Smaller boom and probe tanker: less fuel to give than the TK-3" }

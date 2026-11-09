@@ -1,0 +1,33 @@
+id: hf-5
+kind: platform
+name: HF-5 Brannick
+short_name: HF-5
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 2.2
+  ceiling_m: 17500
+  sustained_g: 8.0
+  min_runway_m: 2000
+signature:
+  rcs_m2: { front: 7, side: 18, rear: 9, top: 27 }
+  ir: { cruise: 1.5, afterburner: 4.0 }
+  visual_size_m: 21.5
+fuel:
+  internal_kg: 10200
+  burn_kg_h: { cruise: 3200, military: 6500, afterburner: 18000 }
+  aar: probe
+stations:
+  - { id: fuselage, kind: external, categories: [aam_medium, aam_long], max_kg: 1200, capacity: 4 }
+  - { id: wing_inner, kind: external, categories: [aam_medium, aam_long, ashm_heavy, ashm, bomb_900kg], max_kg: 3200, capacity: 2 }
+  - { id: wing_outer, kind: external, categories: [aam_medium, ashm, arm], max_kg: 800, capacity: 4 }
+  - { id: wingtip, kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+sensors: [kr-40, ir-60]
+ew: [sp-3]
+countermeasures: { cm-chaff: 60, cm-flare: 60 }
+datalinks: [tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+turnaround_min: 90
+design: { archetype: fighter-heavy, note: "Heavy fighter with a better IRST than the HF-4 but a smaller fuel load" }

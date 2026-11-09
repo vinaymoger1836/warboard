@@ -117,7 +117,8 @@ function World() {
   const v = world?.value ?? {};
   const extent = (v['extent'] as number[] | undefined) ?? [2, 47.5, 42, 71.5];
   const reachKm = Number(v['reach_km'] ?? 500);
-  const list = (v['nations'] as { nation: string; seed_at: [number, number]; weight: number }[] | undefined) ?? [];
+  const rawList = v['nations'] as { nation: string; seed_at: [number, number]; weight: number }[] | undefined;
+  const list = useMemo(() => rawList ?? [], [rawList]);
   const seeds: Seed[] = useMemo(() => list.map((n) => ({ nation: n.nation, lon: n.seed_at[0], lat: n.seed_at[1], weight: n.weight })), [list]);
   const colours = useMemo(() => new Map(nations.map((n) => [n.id, String(n.value['colour'] ?? '#888888')])), [nations]);
   const worker = useRef<Worker | null>(null);

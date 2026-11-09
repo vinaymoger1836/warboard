@@ -1,0 +1,25 @@
+id: ud-18
+kind: platform
+name: UD-18 Highmast
+short_name: UD-18
+category: aircraft/uav
+target_class: uav
+crew: 0
+mobility:
+  cruise_speed_mach: 0.5
+  max_speed_mach: 0.55
+  ceiling_m: 17500
+  sustained_g: 2.0
+  min_runway_m: 2400
+signature:
+  rcs_m2: { front: 3, side: 8, rear: 3, top: 12 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 40.0
+fuel:
+  internal_kg: 7000
+  burn_kg_h: { cruise: 280 }
+sensors: [sr-180, et-20, es-60]
+datalinks: [weave, tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 180
+design: { archetype: drone-hale, note: "High-altitude watcher with a shorter-range radar than the UD-12 and a longer loiter" }

@@ -1,0 +1,25 @@
+id: ud-14
+kind: platform
+name: UD-14 Marlow
+short_name: UD-14
+category: aircraft/uav
+target_class: uav
+crew: 0
+mobility:
+  cruise_speed_mach: 0.3
+  max_speed_mach: 0.42
+  ceiling_m: 12000
+  sustained_g: 2
+  min_runway_m: 1500
+signature:
+  rcs_m2: { front: 0.9, side: 2.8, rear: 0.9, top: 4.5 }
+  ir: { cruise: 0.1 }
+  visual_size_m: 20.0
+fuel:
+  internal_kg: 2100
+  burn_kg_h: { cruise: 70 }
+sensors: [et-20, es-60]
+datalinks: [weave]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 120
+design: { archetype: drone-male, note: "Medium-altitude drone with a long-range turret and ESM; heavier and faster than the UD-9" }

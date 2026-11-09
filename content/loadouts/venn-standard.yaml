@@ -1,0 +1,13 @@
+id: venn-standard
+kind: loadout
+name: Standard
+platform: venn
+roles: [air_defence, anti_ship, strike]
+items:
+  - { station: vls, weapon: sn-50, count: 16 }
+  - { station: vls, weapon: sn-30, count: 24 }
+  - { station: vls, weapon: sn-15, count: 32 }
+  - { station: vls, weapon: lc-3, count: 16 }
+  - { station: ashm, weapon: as-5, count: 8 }
+  - { station: gun, weapon: cg-40, count: 2 }
+design: { note: Three air-defence layers and sixteen cruise missiles }

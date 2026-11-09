@@ -13,6 +13,13 @@ platforms:
   mr-sam-orsk: 4
   sr-sam-ketta: 4
   orbit-sar-3: 1
+  vf-9: 12
+  mf-8: 8
+  ej-6: 2
+  aw-4: 1
+  dorne: 2
+  ud-18: 2
+  orbit-sar-5: 1
 munitions:
   ar-8: 260
   ar-7: 60
@@ -31,6 +38,9 @@ munitions:
   sn-20: 96
   sn-10: 160
   cg-40: 6
+  eh-6: 40
+  lc-7: 24
+  ar-6: 64
 basing:
   - { platform: vf-5, base: mrv-raront-air, count: 12 }
   - { platform: vf-7, base: mrv-raront-air, count: 6 }
@@ -48,6 +58,12 @@ basing:
   - { platform: tarsk, base: mrv-raront-naval, count: 1 }
   - { platform: morna, base: mrv-malier-naval, count: 1 }
   - { platform: tarsk, base: mrv-malier-naval, count: 1 }
+  - { platform: vf-9, base: mrv-fissont-air, count: 12 }
+  - { platform: mf-8, base: mrv-raront-air, count: 8 }
+  - { platform: ej-6, base: mrv-forraine-air, count: 2 }
+  - { platform: aw-4, base: mrv-forraine-air, count: 1 }
+  - { platform: ud-18, base: mrv-raront-air, count: 2 }
+  - { platform: dorne, base: mrv-raront-naval, count: 2 }
 munition_basing:
   - base: mrv-fissont-air
     munitions: { ai-3: 14, ar-7: 21, eh-2: 14, gb-900: 14 }

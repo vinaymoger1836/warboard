@@ -1,0 +1,8 @@
+id: mp-8-anti-ship
+kind: loadout
+name: Anti-ship (long)
+platform: mp-8
+roles: [anti_ship, maritime_patrol]
+items:
+  - { station: bay, weapon: as-10, count: 2 }
+design: { note: Two long-range missiles cued by its own radar }

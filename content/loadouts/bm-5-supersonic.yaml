@@ -1,0 +1,8 @@
+id: bm-5-supersonic
+kind: loadout
+name: Supersonic strike
+platform: bm-5
+roles: [strike]
+items:
+  - { station: bay, weapon: lc-4, count: 3 }
+design: { note: Three supersonic land-attack missiles }

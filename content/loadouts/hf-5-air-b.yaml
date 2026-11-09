@@ -1,0 +1,10 @@
+id: hf-5-air-b
+kind: loadout
+name: Air (heavy missiles)
+platform: hf-5
+roles: [air_superiority]
+items:
+  - { station: fuselage, weapon: ar-14, count: 4 }
+  - { station: wing_inner, weapon: ar-9, count: 2 }
+  - { station: wingtip, weapon: ai-5, count: 2 }
+design: { note: "Eight missiles, two of them long-range" }

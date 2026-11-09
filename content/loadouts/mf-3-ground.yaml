@@ -1,0 +1,11 @@
+id: mf-3-ground
+kind: loadout
+name: Ground attack
+platform: mf-3
+roles: [strike, close_support]
+items:
+  - { station: wing, weapon: ag-2, count: 2 }
+  - { station: wing_outer, weapon: ar-11, count: 2 }
+  - { station: wingtip, weapon: ai-1, count: 2 }
+  - { station: centre, weapon: bu-250, count: 4 }
+design: { note: Two missiles and four unguided bombs }

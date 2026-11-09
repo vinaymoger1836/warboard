@@ -1,0 +1,10 @@
+id: mf-5-strike
+kind: loadout
+name: Strike
+platform: mf-5
+roles: [strike]
+items:
+  - { station: wing_inner, weapon: gb-900, count: 2 }
+  - { station: wing_mid, weapon: ar-11, count: 2 }
+  - { station: wingtip, weapon: ai-3, count: 2 }
+design: { note: "Two bombs and self-escort" }

@@ -1,0 +1,9 @@
+id: rw-7-attack
+kind: loadout
+name: Attack
+platform: rw-7
+roles: [close_support]
+items:
+  - { station: stub_l, weapon: ag-1, count: 4 }
+  - { station: stub_r, weapon: ag-1, count: 4 }
+design: { note: Eight laser missiles }

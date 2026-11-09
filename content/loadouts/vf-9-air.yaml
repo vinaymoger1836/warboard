@@ -1,0 +1,11 @@
+id: vf-9-air
+kind: loadout
+name: Air (internal)
+platform: vf-9
+roles: [air_superiority]
+items:
+  - { station: bay_l, weapon: ar-8, count: 2 }
+  - { station: bay_r, weapon: ar-8, count: 2 }
+  - { station: cheek_l, weapon: ai-4, count: 1 }
+  - { station: cheek_r, weapon: ai-4, count: 1 }
+design: { note: "Six missiles, all inside" }

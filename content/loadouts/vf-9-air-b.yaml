@@ -1,0 +1,11 @@
+id: vf-9-air-b
+kind: loadout
+name: "Air (internal, weave missiles)"
+platform: vf-9
+roles: [air_superiority]
+items:
+  - { station: bay_l, weapon: ar-6, count: 2 }
+  - { station: bay_r, weapon: ar-6, count: 2 }
+  - { station: cheek_l, weapon: ai-3, count: 1 }
+  - { station: cheek_r, weapon: ai-3, count: 1 }
+design: { note: "Six missiles, all inside" }

@@ -1,0 +1,11 @@
+id: mf-8-strike
+kind: loadout
+name: Stand-off strike
+platform: mf-8
+roles: [strike]
+items:
+  - { station: wing_inner, weapon: lc-6, count: 2 }
+  - { station: wing_mid, weapon: ar-6, count: 2 }
+  - { station: wingtip, weapon: ai-3, count: 2 }
+  - { station: centre, weapon: gb-250, count: 4 }
+design: { note: Two stand-off missiles and four small bombs }

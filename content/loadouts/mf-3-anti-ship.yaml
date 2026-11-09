@@ -1,0 +1,10 @@
+id: mf-3-anti-ship
+kind: loadout
+name: Anti-ship
+platform: mf-3
+roles: [anti_ship]
+items:
+  - { station: wing, weapon: as-6, count: 2 }
+  - { station: wing_outer, weapon: ar-11, count: 2 }
+  - { station: wingtip, weapon: ai-8, count: 2 }
+design: { note: Two light anti-ship missiles }

@@ -1,0 +1,10 @@
+id: hf-9-air
+kind: loadout
+name: Interception
+platform: hf-9
+roles: [air_superiority, interception]
+items:
+  - { station: fuselage, weapon: ar-10, count: 4 }
+  - { station: wing, weapon: ai-6, count: 2 }
+  - { station: wing, weapon: ai-5, count: 2 }
+design: { note: Four long-range and four IR missiles }

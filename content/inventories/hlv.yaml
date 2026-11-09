@@ -15,6 +15,18 @@ platforms:
   sr-sam-ketta: 4
   mr-sam-tolven: 2
   gr-90-site: 6
+  arlen: 3
+  dorne: 1
+  lisk: 2
+  mp-8: 4
+  ud-14: 8
+  ud-18: 3
+  rw-3: 4
+  rw-4: 6
+  mf-3: 12
+  mf-5: 6
+  gr-75-site: 6
+  pyke: 4
 munitions:
   ar-6: 180
   ar-7: 60
@@ -33,6 +45,17 @@ munitions:
   sl-20: 48
   sl-8: 96
   cg-30: 30
+  ar-11: 70
+  ai-8: 100
+  as-15: 60
+  as-5: 24
+  cg-40: 24
+  sn-10: 24
+  sn-20: 24
+  sl-12: 24
+  as-12: 32
+  cg-20: 32
+  sl-14: 32
 basing:
   - { platform: mf-6, base: hlv-visard-air, count: 10 }
   - { platform: mf-4, base: hlv-visard-air, count: 6 }
@@ -50,6 +73,17 @@ basing:
   - { platform: rw-2, base: hlv-tamirorn-air, count: 2 }
   - { platform: halvard, base: hlv-visard-naval, count: 4 }
   - { platform: selvik, base: hlv-visard-naval, count: 6 }
+  - { platform: arlen, base: hlv-visard-naval, count: 3 }
+  - { platform: dorne, base: hlv-visard-naval, count: 1 }
+  - { platform: lisk, base: hlv-visard-naval, count: 2 }
+  - { platform: pyke, base: hlv-visard-naval, count: 4 }
+  - { platform: mp-8, base: hlv-tamirorn-air, count: 4 }
+  - { platform: ud-14, base: hlv-tamirorn-air, count: 8 }
+  - { platform: ud-18, base: hlv-tamirorn-air, count: 3 }
+  - { platform: rw-3, base: hlv-visard-air, count: 4 }
+  - { platform: rw-4, base: hlv-visard-air, count: 6 }
+  - { platform: mf-3, base: hlv-tamirorn-air, count: 12 }
+  - { platform: mf-5, base: hlv-visard-air, count: 6 }
 munition_basing:
   - base: hlv-tamirorn-air
     munitions: { ag-1: 28, ai-3: 35, ar-6: 63, ar-7: 21, as-10: 37, as-2: 21, as-4-tarn: 9, gb-900: 14 }

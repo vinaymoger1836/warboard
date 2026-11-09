@@ -1,0 +1,28 @@
+id: lc-7
+kind: weapon
+name: LC-7
+category: lacm
+targets: [ground]
+target_class: cruise_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.8
+  max_range_km: 1100
+  min_range_km: 40
+  cruise_alt_m: 50
+  terminal_alt_m: 30
+guidance:
+  midcourse: [inertial, satnav, terrain_matching]
+  terminal: satnav_ins
+warhead_kg: 320
+warhead: blast
+cep_m: 8
+lethal_radius_m: 30
+mass_kg: 1100
+station_category: [vls_cell]
+nav_resistant: true
+signature:
+  rcs_m2: { front: 0.08, side: 0.4, rear: 0.12, top: 0.4 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 6.0
+design: { archetype: lacm-subsonic, note: "Air-launched cruise missile, long reach and a lighter warhead than the ship-launched LC-3" }
