@@ -2,7 +2,7 @@
 
 Every tool and dependency is pinned exactly. Upgrade only between phases (doc 08, R10) and update this file in the same change. Licences are checked against the CLAUDE.md rule 7 allowlist; Rust crates (including transitive ones) are enforced by `cargo deny check` (`deny.toml`).
 
-Last updated: 9 Nov 2026 (P7). No new dependency in P4, P5, P6a, P6b or P7.
+Last updated: 9 Nov 2026 (P8). No new dependency in P4, P5, P6a, P6b, P7 or P8.
 
 ## Toolchains
 

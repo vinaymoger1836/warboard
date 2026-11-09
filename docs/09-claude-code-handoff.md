@@ -41,9 +41,9 @@ Create a GitHub repository (private is fine) so CI runs on every push.
 
 Paste the block as the first message of the session. Every prompt assumes `CLAUDE.md` is in the repo root.
 
-### P0–P7 — Done
+### P0–P8 — Done
 
-P0 Foundations, P1 Content schema, P2 Geodata and 2D map, P3 Engine core, P4 Sensors and fog of war, P5 Weapons, air combat and ROE, PF Fictional setting, P6a Naval combat and layered air defence, P6b Electronic warfare and P7 Operations and reports are complete (see `docs/phase-reports/`). Their prompts are in git history.
+P0 Foundations, P1 Content schema, P2 Geodata and 2D map, P3 Engine core, P4 Sensors and fog of war, P5 Weapons, air combat and ROE, PF Fictional setting, P6a Naval combat and layered air defence, P6b Electronic warfare, P7 Operations and reports and P8 Admin app and Theatre North content are complete (see `docs/phase-reports/`). Their prompts are in git history.
 
 ### P8 — Admin app and Theatre North content
 
