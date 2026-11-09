@@ -300,6 +300,10 @@ pub enum Command {
         #[serde(default)]
         #[cfg_attr(feature = "ts", ts(optional))]
         replace: Option<u32>,
+        /// Start it as soon as it is created (scenarios, "create and start").
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        start: Option<bool>,
     },
     StartOperation {
         operation: u32,
@@ -636,11 +640,16 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
                 salvo: *salvo,
             })
         }
-        Command::CreateOperation { operation, replace } => {
+        Command::CreateOperation {
+            operation,
+            replace,
+            start,
+        } => {
             let op = crate::operations::build(world, geo, side, 0, operation)?;
             let cmd = crate::operations::OpCommand::Create {
                 op: Box::new(op),
                 replace: *replace,
+                start: start.unwrap_or(false),
             };
             crate::operations::validate(world, side, &cmd)?;
             Ok(Resolved::Operation(cmd))

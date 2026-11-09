@@ -67,6 +67,37 @@ enum Command {
         #[arg(long, default_value_t = 6.0)]
         max_ms: f64,
     },
+    /// Run a scenario and write its after-action report (doc 03 §12): JSON,
+    /// one CSV per table and printable HTML in `--out`.
+    Report {
+        #[arg(long)]
+        scenario: PathBuf,
+        #[arg(long, default_value = DEFAULT_CONTENT)]
+        content: PathBuf,
+        #[arg(long, default_value_t = 10_000)]
+        ticks: u64,
+        /// The side whose report it is.
+        #[arg(long, default_value_t = 0)]
+        side: u8,
+        /// End the war after the run and add the truth review.
+        #[arg(long)]
+        truth: bool,
+        #[arg(long, default_value = "build/report")]
+        out: PathBuf,
+    },
+    /// Run a scenario, then re-simulate from its replay checkpoints (doc 03
+    /// §12) and check every checkpoint's hash; fails on a mismatch.
+    Replay {
+        #[arg(long)]
+        scenario: PathBuf,
+        #[arg(long, default_value = DEFAULT_CONTENT)]
+        content: PathBuf,
+        #[arg(long, default_value_t = 10_000)]
+        ticks: u64,
+        /// Also seek to these ticks and compare with the run's hash there.
+        #[arg(long, value_delimiter = ',')]
+        seek: Vec<u64>,
+    },
     /// Run golden scenarios and check their bands (doc 08 §3).
     Golden {
         files: Vec<PathBuf>,
@@ -144,9 +175,24 @@ fn main() -> anyhow::Result<()> {
         } => {
             let c = sim::content(&content)?;
             let mut sim = sim::build(&sim::read_scenario(&scenario)?, &c, None)?;
+            sim.set_recording(false);
             bench::run(&mut sim, ticks, max_ms)
         }
         Command::Golden { files, content } => golden::run(&files, &sim::content(&content)?),
+        Command::Report {
+            scenario,
+            content,
+            ticks,
+            side,
+            truth,
+            out,
+        } => report(&scenario, &content, ticks, side, truth, &out),
+        Command::Replay {
+            scenario,
+            content,
+            ticks,
+            seek,
+        } => replay(&scenario, &content, ticks, &seek),
         Command::Content(ContentCommand::Check { dir }) => {
             let set = load_content(&dir)?;
             eprintln!(
@@ -217,6 +263,121 @@ fn write_file(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
             .with_context(|| format!("cannot create {}", parent.display()))?;
     }
     std::fs::write(path, bytes).with_context(|| format!("cannot write {}", path.display()))
+}
+
+/// Builds a scenario with its own `content:` folder when `--content` is the default.
+fn scenario_sim(path: &Path, content: &Path) -> anyhow::Result<Sim> {
+    let scn = sim::read_scenario(path)?;
+    let c = match &scn.content {
+        Some(dir) if content == Path::new(DEFAULT_CONTENT) => sim::content(Path::new(dir))?,
+        _ => sim::content(content)?,
+    };
+    sim::build(&scn, &c, None)
+}
+
+fn report(
+    scenario: &Path,
+    content: &Path,
+    ticks: u64,
+    side: u8,
+    truth: bool,
+    out: &Path,
+) -> anyhow::Result<()> {
+    let mut sim = scenario_sim(scenario, content)?;
+    sim.run_ticks(ticks.saturating_sub(sim.clock().tick));
+    if truth {
+        let tick = sim.clock().tick;
+        sim.submit(&wb_sim::Order {
+            tick,
+            side,
+            command: wb_sim::orders::Command::EndWar,
+        })
+        .map_err(|e| anyhow::anyhow!(e))?;
+        sim.step();
+    }
+    let r = wb_sim::reports::build(sim.world(), sim.events(), side, truth)
+        .map_err(|e| anyhow::anyhow!(e))?;
+    write_file(
+        &out.join("report.json"),
+        serde_json::to_string_pretty(&r)?.as_bytes(),
+    )?;
+    for t in wb_sim::reports::CSV_TABLES {
+        if let Some(csv) = wb_sim::reports::to_csv(&r, t) {
+            write_file(&out.join(format!("{t}.csv")), csv.as_bytes())?;
+        }
+    }
+    write_file(
+        &out.join("report.html"),
+        wb_sim::reports::to_html(&r).as_bytes(),
+    )?;
+    let t = r.totals;
+    eprintln!(
+        "{}: report for {} at T+{} written to {}",
+        scenario.display(),
+        r.side_name,
+        wb_sim::reports::fmt_t(r.sim_time_ms),
+        out.display()
+    );
+    println!(
+        "launched {} hits {} misses {} intercepted {} decoyed {} jammed {} other {} in_flight {} intercepts_made {} losses {}",
+        t.launched,
+        t.hits,
+        t.misses,
+        t.intercepted,
+        t.decoyed,
+        t.jammed,
+        t.other,
+        t.in_flight,
+        t.intercepts_made,
+        t.losses
+    );
+    Ok(())
+}
+
+fn replay(scenario: &Path, content: &Path, ticks: u64, seek: &[u64]) -> anyhow::Result<()> {
+    let mut sim = scenario_sim(scenario, content)?;
+    let mut recorded = std::collections::BTreeMap::new();
+    while sim.clock().tick < ticks {
+        sim.step();
+        if seek.contains(&sim.clock().tick) {
+            recorded.insert(sim.clock().tick, sim.state_hash_hex());
+        }
+    }
+    let mut r = wb_sim::replay::Replay::of(&sim).map_err(|e| anyhow::anyhow!(e))?;
+    let n = r.checkpoints().len();
+    let mut bad = 0;
+    for i in 0..n {
+        let (want, got) = r.verify(i).map_err(|e| anyhow::anyhow!(e))?;
+        let ok = want == got;
+        bad += usize::from(!ok);
+        println!(
+            "{} checkpoint {i} tick {} T+{} {}",
+            if ok { "match   " } else { "MISMATCH" },
+            r.checkpoints()[i].tick,
+            wb_sim::reports::fmt_t(r.checkpoints()[i].sim_time_ms),
+            &wb_sim::snapshot::to_hex(&got)[..16]
+        );
+    }
+    for (&t, want) in &recorded {
+        r.seek(t).map_err(|e| anyhow::anyhow!(e))?;
+        let got = r.sim().state_hash_hex();
+        let ok = &got == want;
+        bad += usize::from(!ok);
+        println!(
+            "{} seek tick {t} {}",
+            if ok { "match   " } else { "MISMATCH" },
+            &got[..16]
+        );
+    }
+    eprintln!(
+        "{}: {n} checkpoints, {} seeks, {bad} mismatches",
+        scenario.display(),
+        recorded.len()
+    );
+    if bad > 0 {
+        anyhow::bail!("{bad} replay hash mismatch(es)");
+    }
+    Ok(())
 }
 
 struct RunArgs {

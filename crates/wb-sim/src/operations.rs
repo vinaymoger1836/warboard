@@ -375,6 +375,7 @@ pub enum OpCommand {
     Create {
         op: Box<Operation>,
         replace: Option<u32>,
+        start: bool,
     },
     Start {
         op: u32,
@@ -1090,17 +1091,17 @@ pub fn apply(world: &mut World, side: u8, cmd: OpCommand) {
     let mut ops = std::mem::take(&mut *world.resource_mut::<Operations>());
     let mut events = Vec::new();
     match cmd {
-        OpCommand::Create { op, replace } => {
+        OpCommand::Create { op, replace, start } => {
             if let Some(r) = replace {
                 ops.ops.retain(|o| o.id != r);
             }
-            events.push(EventKind::OperationChanged {
-                operation: op.id,
-                name: op.name.clone(),
-                state: OpState::Planned,
-                reason: None,
-            });
-            ops.ops.push(*op);
+            let mut op = *op;
+            if start {
+                op.state = OpState::Running;
+                op.started = Some(stamp);
+            }
+            events.push(changed(&op, None));
+            ops.ops.push(op);
             ops.ops.sort_by_key(|o| o.id);
         }
         OpCommand::Start { op } => {

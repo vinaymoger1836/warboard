@@ -116,6 +116,11 @@ struct Measure {
     /// Content weapon id the weapon metrics are limited to.
     #[serde(default)]
     weapon: Option<String>,
+    /// Operation phase ids (operation metrics; the side's first operation).
+    #[serde(default)]
+    phase: Option<String>,
+    #[serde(default)]
+    phase_b: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
@@ -214,6 +219,17 @@ enum Metric {
     FirstTarget,
     /// Seconds from the start of the simulation to the side's first launch.
     FirstLaunchTimeS,
+    /// Ticks between the starts of two phases of the side's first operation
+    /// (`phase`, `phase_b`); missing if either never started (G13).
+    PhaseStartGapTicks,
+    /// Seconds from the operation's start to a phase's start.
+    PhaseStartS,
+    /// Phases of the side's first operation in an end state (done, aborted, cancelled).
+    PhasesEnded,
+    /// Phases of the side's first operation that completed (done).
+    PhasesDone,
+    /// 1 when the side's first operation completed, else 0.
+    OperationCompleted,
 }
 
 impl Metric {
@@ -241,6 +257,11 @@ impl Metric {
                 | Metric::FirstLaunchAfterCrossingS
                 | Metric::FirstTarget
                 | Metric::FirstLaunchTimeS
+                | Metric::PhaseStartGapTicks
+                | Metric::PhaseStartS
+                | Metric::PhasesEnded
+                | Metric::PhasesDone
+                | Metric::OperationCompleted
         )
     }
 }
@@ -319,6 +340,7 @@ fn run_file(path: &Path, content: &Content) -> anyhow::Result<usize> {
                 apply_variant(&mut s, var);
             }
             let mut sim = crate::sim::build(&s, content, None)?;
+            sim.set_recording(false);
             let values = measure_run(&mut sim, &measures, spec.max_ticks);
             for (m, val) in measures.iter().zip(values) {
                 results.entry((v.clone(), key(m))).or_default().push(val);
@@ -725,7 +747,48 @@ fn side_of(e: &Event) -> u8 {
     e.sides.trailing_zeros() as u8
 }
 
+/// Operation metrics, read from the side's first operation.
+fn operation_value(sim: &Sim, m: &Measure) -> Option<f64> {
+    use wb_sim::operations::{OpState, Operations, PhaseState};
+    let side = m.side?;
+    let ops = sim.world().resource::<Operations>();
+    let op = ops.ops.iter().find(|o| o.side == side)?;
+    let started = |id: &Option<String>| {
+        let id = id.as_deref()?;
+        op.phases.iter().find(|p| p.key == id)?.started
+    };
+    match m.metric {
+        Metric::PhaseStartGapTicks => {
+            let (a, b) = (started(&m.phase)?, started(&m.phase_b)?);
+            Some(a.tick.abs_diff(b.tick) as f64)
+        }
+        Metric::PhaseStartS => {
+            let a = started(&m.phase)?;
+            Some(a.ms.saturating_sub(op.started?.ms) as f64 / 1_000.0)
+        }
+        Metric::PhasesEnded => Some(op.phases.iter().filter(|p| p.state.is_final()).count() as f64),
+        Metric::PhasesDone => Some(
+            op.phases
+                .iter()
+                .filter(|p| p.state == PhaseState::Done)
+                .count() as f64,
+        ),
+        Metric::OperationCompleted => Some(f64::from(u8::from(op.state == OpState::Completed))),
+        _ => None,
+    }
+}
+
 fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
+    if matches!(
+        m.metric,
+        Metric::PhaseStartGapTicks
+            | Metric::PhaseStartS
+            | Metric::PhasesEnded
+            | Metric::PhasesDone
+            | Metric::OperationCompleted
+    ) {
+        return operation_value(sim, m);
+    }
     let side = m.side?;
     let events = sim.events();
     let mine = || events.iter().filter(move |e| side_of(e) == side);

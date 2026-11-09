@@ -1,0 +1,120 @@
+# G13 (doc 08 §3): a six-phase test operation shaped like Rising Sun (doc 03
+# §8.1), on the generic fixtures in the neutral test sea area (ADR-035).
+# Blue (side 0) plans and runs it; Red holds fire except in self-defence.
+#
+#   1 Eyes on        ESM aircraft flies a recon route west of the Red ships  H+0
+#                    ends: both corvettes identified to type and the SAM site
+#                    located, or 90 min
+#   2 Blind them     2 jammer aircraft, stand-off orbit                      after 1
+#                    ends: manual, bingo, or once the SAM suppression is over
+#   3 Take station   frigate sails to a patrol box                           H+0
+#                    ends: arrives (and keeps patrolling)
+#   4 Strike ship 1  frigate fires 3 test ASMs at corvette 1 (fire mission)  after 3 and with 2
+#   5 Strike ship 2  frigate fires 3 test ASMs at corvette 2 (fire mission)  with 4
+#   6 Suppress SAM   2 fighters, 4 test ARMs at the SAM site                 with 2 + 10 min
+#                    ends: SAM site destroyed or weapons ended
+#
+# Expected: runs end to end; phases 4 and 5 start on the same tick; every
+# phase reaches an end state and the operation completes.
+name: G13 Rising Sun
+seed: 1300
+content: scenarios/fixtures
+start_utc: 2026-10-27T05:00:00Z
+start_mode: garrisoned
+sides:
+  - { name: Blue, nations: [tst], player: true, roe: charlie, self_defence: true }
+  - { name: Red, nations: [opp], roe: charlie, self_defence: true }
+units:
+  # Blue: aircraft at the test air base, the frigate already at sea.
+  - { id: 10, name: Eyes, platform: test-esm-aircraft, nation: tst, base: test-airbase }
+  - { id: 20, name: Jammers, platform: test-jammer-aircraft, nation: tst, count: 2, base: test-airbase }
+  - { id: 30, name: Frigate, platform: test-frigate, nation: tst, lat_deg: 55.15, lon_deg: 17.45, heading_deg: 70, loadout: test-frigate-standard }
+  - { id: 40, name: Strikers, platform: test-fighter, nation: tst, count: 2, base: test-airbase, loadout: test-fighter-sead }
+  # Red: two corvettes and a SAM site in the eastern gulf.
+  - { id: 100, name: Corvette 1, platform: test-corvette, nation: opp, lat_deg: 55.20, lon_deg: 18.40, heading_deg: 270, loadout: test-corvette-standard }
+  - { id: 110, name: Corvette 2, platform: test-corvette, nation: opp, lat_deg: 55.32, lon_deg: 18.42, heading_deg: 270, loadout: test-corvette-standard }
+  - { id: 200, name: SAM site, system: test-sam-site, nation: opp, lat_deg: 55.26, lon_deg: 18.85, heading_deg: 270 }
+orders:
+  - tick: 0
+    side: 0
+    type: CreateOperation
+    start: true
+    operation:
+      name: Rising Sun
+      phases:
+        - id: eyes-on
+          name: Eyes on
+          tasks:
+            - units: [10]
+              task: { kind: patrol_route, waypoints: [[17.10, 55.55], [17.70, 55.55], [17.70, 54.95], [17.10, 54.95]], alt_m: 9000 }
+          trigger: { kind: start }
+          end:
+            kind: any
+            of:
+              - kind: all
+                of:
+                  - { kind: contacts, domain: surface, level: type, count: 2, area: { centre: [18.4, 55.26], radius_km: 40 } }
+                  - { kind: contacts, domain: ground, level: type, count: 1, area: { centre: [18.85, 55.26], radius_km: 30 } }
+              - { kind: elapsed, min: 90 }
+        - id: blind
+          name: Blind them
+          tasks:
+            - units: [20]
+              task: { kind: jam, centre: [17.30, 55.30], radius_km: 15, alt_m: 9000 }
+          trigger: { kind: phase_ended, phase: eyes-on }
+          end:
+            kind: any
+            of:
+              - { kind: manual }
+              - { kind: bingo }
+              - { kind: phase_ended, phase: suppress }
+        - id: station
+          name: Take station
+          tasks:
+            - units: [30]
+              task: { kind: patrol_route, waypoints: [[17.95, 55.20], [18.05, 55.20], [18.05, 55.28], [17.95, 55.28]], speed: max }
+          trigger: { kind: start }
+          end: { kind: arrived }
+        - id: strike-1
+          name: Strike ship 1
+          tasks:
+            - units: [30]
+              fire: true
+              near_km: 15
+              task: { kind: strike, point: [18.40, 55.20], weapon: test-asm, count: 3 }
+          trigger:
+            kind: all
+            of:
+              - { kind: phase_ended, phase: station }
+              - { kind: phase_started, phase: blind }
+          end: { kind: weapons_done }
+        - id: strike-2
+          name: Strike ship 2
+          tasks:
+            - units: [30]
+              fire: true
+              near_km: 15
+              task: { kind: strike, point: [18.42, 55.32], weapon: test-asm, count: 3 }
+          trigger: { kind: phase_started, phase: strike-1 }
+          end: { kind: weapons_done }
+        - id: suppress
+          name: Suppress the SAM
+          tasks:
+            - units: [40]
+              task: { kind: suppress, point: [18.85, 55.26], weapon: test-arm, count: 4 }
+          trigger: { kind: phase_started, phase: blind, delay_min: 10 }
+          end:
+            kind: any
+            of:
+              - { kind: targets_destroyed }
+              - { kind: weapons_done }
+golden:
+  id: G13
+  description: six-phase operation shaped like Rising Sun; phases 4 and 5 start on the same tick; every phase ends
+  max_ticks: 40000
+  seeds: 3
+  expect:
+    - { metric: phase_start_gap_ticks, side: 0, phase: strike-1, phase_b: strike-2, aggregate: max, min: 0, max: 0 }
+    - { metric: phases_ended, side: 0, aggregate: min, min: 6, max: 6 }
+    - { metric: operation_completed, side: 0, aggregate: min, min: 1, max: 1 }
+    - { metric: launches, side: 0, weapon: test-asm, aggregate: min, min: 6, max: 6 }
