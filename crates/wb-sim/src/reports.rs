@@ -425,7 +425,11 @@ pub fn build(world: &World, events: &[Event], side: u8, truth: bool) -> Result<R
                 kind: "new".into(),
                 contact: Some(contact.0),
                 source: source.as_str().to_owned(),
-                text: format!("New {} contact C{}", format!("{domain:?}").to_lowercase(), contact.0),
+                text: format!(
+                    "New {} contact C{}",
+                    format!("{domain:?}").to_lowercase(),
+                    contact.0
+                ),
             }),
             EventKind::ContactClassified {
                 contact,
@@ -787,7 +791,13 @@ pub fn build(world: &World, events: &[Event], side: u8, truth: bool) -> Result<R
                         tasks: pv
                             .tasks
                             .iter()
-                            .map(|t| format!("{} · {}", t.kind.replace('_', " "), t.unit_names.join(", ")))
+                            .map(|t| {
+                                format!(
+                                    "{} · {}",
+                                    t.kind.replace('_', " "),
+                                    t.unit_names.join(", ")
+                                )
+                            })
                             .collect(),
                         tally: p.tally,
                     })
@@ -1052,8 +1062,21 @@ pub fn to_csv(r: &Report, table: &str) -> Option<String> {
         ),
         "salvos" => csv_rows(
             &[
-                "salvo", "t", "shooter", "weapon", "count", "target", "launch_range_km", "reason",
-                "hits", "misses", "intercepted", "decoyed", "jammed", "other", "in_flight",
+                "salvo",
+                "t",
+                "shooter",
+                "weapon",
+                "count",
+                "target",
+                "launch_range_km",
+                "reason",
+                "hits",
+                "misses",
+                "intercepted",
+                "decoyed",
+                "jammed",
+                "other",
+                "in_flight",
             ],
             r.salvos
                 .iter()
@@ -1126,7 +1149,9 @@ pub fn to_csv(r: &Report, table: &str) -> Option<String> {
                 .collect(),
         ),
         "munitions" => csv_rows(
-            &["weapon", "name", "expended", "on_units", "in_stock", "by_base"],
+            &[
+                "weapon", "name", "expended", "on_units", "in_stock", "by_base",
+            ],
             r.munitions
                 .iter()
                 .map(|m| {
@@ -1147,8 +1172,17 @@ pub fn to_csv(r: &Report, table: &str) -> Option<String> {
         ),
         "sorties" => csv_rows(
             &[
-                "unit", "name", "base", "took_off", "landed", "landed_at", "fuel_at_landing_kg",
-                "refuels", "bingo", "launched", "loadout",
+                "unit",
+                "name",
+                "base",
+                "took_off",
+                "landed",
+                "landed_at",
+                "fuel_at_landing_kg",
+                "refuels",
+                "bingo",
+                "launched",
+                "loadout",
             ],
             r.sorties
                 .iter()
@@ -1172,8 +1206,18 @@ pub fn to_csv(r: &Report, table: &str) -> Option<String> {
         ),
         "operations" => csv_rows(
             &[
-                "operation", "phase", "state", "started", "ended", "reason", "tasks", "launched",
-                "hits", "intercepted", "decoyed", "lost",
+                "operation",
+                "phase",
+                "state",
+                "started",
+                "ended",
+                "reason",
+                "tasks",
+                "launched",
+                "hits",
+                "intercepted",
+                "decoyed",
+                "lost",
             ],
             r.operations
                 .iter()
@@ -1200,7 +1244,15 @@ pub fn to_csv(r: &Report, table: &str) -> Option<String> {
         "truth_hits" => {
             let t = r.truth.as_ref()?;
             csv_rows(
-                &["t", "shooter_side", "shooter", "weapon", "target_side", "target", "destroyed"],
+                &[
+                    "t",
+                    "shooter_side",
+                    "shooter",
+                    "weapon",
+                    "target_side",
+                    "target",
+                    "destroyed",
+                ],
                 t.hits
                     .iter()
                     .map(|h| {
@@ -1301,8 +1353,10 @@ pub fn to_html(r: &Report) -> String {
                 vec![
                     p.name.clone(),
                     format!("{:?}", p.state).to_lowercase(),
-                    p.started_ms.map_or_else(|| "—".into(), |m| format!("T+{}", fmt_t(m))),
-                    p.ended_ms.map_or_else(|| "—".into(), |m| format!("T+{}", fmt_t(m))),
+                    p.started_ms
+                        .map_or_else(|| "—".into(), |m| format!("T+{}", fmt_t(m))),
+                    p.ended_ms
+                        .map_or_else(|| "—".into(), |m| format!("T+{}", fmt_t(m))),
                     p.reason.clone(),
                     p.tasks.join("; "),
                     format!(
@@ -1314,17 +1368,40 @@ pub fn to_html(r: &Report) -> String {
             .collect();
         table(
             &mut o,
-            &format!("Operation {} ({})", op.name, format!("{:?}", op.state).to_lowercase()),
-            &["Phase", "State", "Start", "End", "Why it ended", "Tasks", "Results"],
+            &format!(
+                "Operation {} ({})",
+                op.name,
+                format!("{:?}", op.state).to_lowercase()
+            ),
+            &[
+                "Phase",
+                "State",
+                "Start",
+                "End",
+                "Why it ended",
+                "Tasks",
+                "Results",
+            ],
             &rows,
         );
     }
     let rows: Vec<Vec<String>> = r
         .salvos
         .iter()
-        .map(|s| vec![format!("T+{}", fmt_t(s.t_ms)), s.summary.clone(), s.reason.clone()])
+        .map(|s| {
+            vec![
+                format!("T+{}", fmt_t(s.t_ms)),
+                s.summary.clone(),
+                s.reason.clone(),
+            ]
+        })
         .collect();
-    table(&mut o, "Salvo reports", &["Time", "Salvo", "Why fired"], &rows);
+    table(
+        &mut o,
+        "Salvo reports",
+        &["Time", "Salvo", "Why fired"],
+        &rows,
+    );
     let rows: Vec<Vec<String>> = r
         .losses
         .iter()
@@ -1347,7 +1424,12 @@ pub fn to_html(r: &Report) -> String {
                 h.target.clone(),
                 h.weapon_name.clone(),
                 h.shooter_name.clone(),
-                if h.gone { "left our picture" } else { "still tracked" }.to_owned(),
+                if h.gone {
+                    "left our picture"
+                } else {
+                    "still tracked"
+                }
+                .to_owned(),
             ]
         })
         .collect();
@@ -1396,7 +1478,16 @@ pub fn to_html(r: &Report) -> String {
     table(
         &mut o,
         "Sorties",
-        &["Unit", "Base", "Took off", "Landed", "Fuel left", "Refuels", "Fired", "Loadout"],
+        &[
+            "Unit",
+            "Base",
+            "Took off",
+            "Landed",
+            "Fuel left",
+            "Refuels",
+            "Fired",
+            "Loadout",
+        ],
         &rows,
     );
     let rows: Vec<Vec<String>> = r
@@ -1422,7 +1513,8 @@ pub fn to_html(r: &Report) -> String {
                     format!("C{}", c.contact),
                     c.thought.clone(),
                     c.was.clone(),
-                    c.error_km.map_or_else(String::new, |e| format!("{e:.1} km")),
+                    c.error_km
+                        .map_or_else(String::new, |e| format!("{e:.1} km")),
                 ]
             })
             .collect();
@@ -1455,7 +1547,13 @@ pub fn to_html(r: &Report) -> String {
             let rows: Vec<Vec<String>> = s
                 .units
                 .iter()
-                .map(|u| vec![u.name.clone(), u.platform.clone(), format!("{:.3}, {:.3}", u.lat, u.lon)])
+                .map(|u| {
+                    vec![
+                        u.name.clone(),
+                        u.platform.clone(),
+                        format!("{:.3}, {:.3}", u.lat, u.lon),
+                    ]
+                })
                 .collect();
             table(
                 &mut o,

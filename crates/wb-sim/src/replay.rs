@@ -90,7 +90,7 @@ impl Recorder {
             let half = self.checkpoints.len() / 2;
             let mut i = 0usize;
             self.checkpoints.retain(|_| {
-                let keep = i == 0 || i >= half || i % 2 == 0;
+                let keep = i == 0 || i >= half || i.is_multiple_of(2);
                 i += 1;
                 keep
             });
@@ -124,10 +124,8 @@ fn world_at(
         .filter(|o| o.seq < next_seq)
         .cloned()
         .collect();
-    world.resource_mut::<EventLog>().0 = events
-        .get(..cp.events as usize)
-        .unwrap_or(events)
-        .to_vec();
+    world.resource_mut::<EventLog>().0 =
+        events.get(..cp.events as usize).unwrap_or(events).to_vec();
     Ok(world)
 }
 
@@ -178,7 +176,12 @@ impl Replay {
 
     /// Positions the sim at checkpoint `i`.
     fn restore(&mut self, i: usize) -> Result<(), String> {
-        let world = world_at(&self.rules, &self.orders, &self.events, &self.checkpoints[i])?;
+        let world = world_at(
+            &self.rules,
+            &self.orders,
+            &self.events,
+            &self.checkpoints[i],
+        )?;
         self.sim = Sim::from_world(world, self.geo.clone());
         Ok(())
     }

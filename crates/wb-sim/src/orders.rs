@@ -477,7 +477,11 @@ pub fn submit(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Ord
             let ops = world.resource::<crate::operations::Operations>();
             ops.get(*op).map(|o| {
                 let n = o.phases.len();
-                format!("{} starts with {n} phase{}", o.name, if n == 1 { "" } else { "s" })
+                format!(
+                    "{} starts with {n} phase{}",
+                    o.name,
+                    if n == 1 { "" } else { "s" }
+                )
             })
         }
         Resolved::TaskSatellite {
@@ -953,7 +957,11 @@ pub(crate) fn fmt_point(p: LatLon) -> String {
 
 /// Expands unit and group ids of `side` into group picks, in `UnitId` order.
 /// Unknown and enemy ids get the same message, so the reply reveals nothing.
-pub(crate) fn pick_groups(world: &World, side: u8, units: &[u32]) -> Result<Vec<GroupPick>, String> {
+pub(crate) fn pick_groups(
+    world: &World,
+    side: u8,
+    units: &[u32],
+) -> Result<Vec<GroupPick>, String> {
     if units.is_empty() {
         return Err("No units selected".to_owned());
     }
@@ -1283,7 +1291,11 @@ pub(crate) fn resolve_task(
 
 /// A contact of the side's picture with a position; its id and domain.
 /// Unknown and other sides' ids get the same answer.
-pub(crate) fn own_contact(world: &World, side: u8, raw: u32) -> Result<(ContactId, Domain), String> {
+pub(crate) fn own_contact(
+    world: &World,
+    side: u8,
+    raw: u32,
+) -> Result<(ContactId, Domain), String> {
     let pics = world.resource::<crate::picture::SidePictures>();
     pics.sides
         .get(usize::from(side))

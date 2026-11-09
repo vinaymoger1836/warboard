@@ -279,9 +279,8 @@ pub fn destroy(world: &mut World, unit: UnitId) {
                 Some(rules.db.str(p.id).to_owned()),
                 match p.domain {
                     wb_content::source::Domain::Air => "shot down",
-                    wb_content::source::Domain::Surface | wb_content::source::Domain::Subsurface => {
-                        "sunk"
-                    }
+                    wb_content::source::Domain::Surface
+                    | wb_content::source::Domain::Subsurface => "sunk",
                     _ => "destroyed",
                 }
                 .to_owned(),

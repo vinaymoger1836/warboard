@@ -699,9 +699,7 @@ fn self_defence(
 }
 
 /// Offensive engagements of one group; whether a hostile was inside a
-/// member's envelope.
-#[allow(clippy::too_many_arguments)]
-/// Offensive fire for `task`: the group's own task, or a fire mission
+/// member's envelope. `task` is the group's own task, or a fire mission
 /// (`mission`, its index in `g.fires`) dressed as a strike.
 #[allow(clippy::too_many_arguments)]
 fn offensive(

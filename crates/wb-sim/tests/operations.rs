@@ -117,7 +117,10 @@ fn report_totals_equal_event_counts() {
             t.launched,
             t.hits + t.misses + t.intercepted + t.decoyed + t.jammed + t.other + t.in_flight
         );
-        assert_eq!(r.munitions.iter().map(|m| m.expended).sum::<u32>(), t.launched);
+        assert_eq!(
+            r.munitions.iter().map(|m| m.expended).sum::<u32>(),
+            t.launched
+        );
         assert_eq!(r.losses.len() as u32, t.losses);
         // Exports build, and the JSON round-trips.
         for table in wb_sim::reports::CSV_TABLES {
@@ -150,7 +153,12 @@ fn report_totals_equal_event_counts() {
     sim.step();
     let r = wb_sim::reports::build(sim.world(), sim.events(), 0, true).expect("truth");
     let truth = r.truth.expect("truth review");
-    assert!(truth.sides[1].units.iter().any(|u| u.name == "Red corvette B"));
+    assert!(
+        truth.sides[1]
+            .units
+            .iter()
+            .any(|u| u.name == "Red corvette B")
+    );
     assert!(truth.hits.iter().any(|h| h.target == "Red corvette A"));
     assert!(!truth.contacts.is_empty());
 }
@@ -175,7 +183,7 @@ fn replay_reproduces_every_checkpoint_hash() {
             .expect("order");
         }
         sim.step();
-        if sim.clock().tick % 1_700 == 0 {
+        if sim.clock().tick.is_multiple_of(1_700) {
             hashes.insert(sim.clock().tick, sim.state_hash());
         }
     }
@@ -212,7 +220,10 @@ fn save_mid_operation_continues_identically() {
     assert_eq!(op(&part).state, OpState::Running);
     let bytes = part.save("rising sun", Vec::new(), 0);
     let mut loaded = Sim::load(&bytes, db, hash, None).expect("loads");
-    assert!(!loaded.recorder().checkpoints.is_empty(), "checkpoints are saved");
+    assert!(
+        !loaded.recorder().checkpoints.is_empty(),
+        "checkpoints are saved"
+    );
     loaded.run_ticks(3_000);
     assert_eq!(loaded.state_hash_hex(), whole.state_hash_hex());
 }
@@ -246,18 +257,17 @@ fn planner_rejects_cycles_and_flags_issues() {
         &spec("{ kind: start }", "{ kind: phase_ended, phase: zz }"),
     );
     assert!(unknown[0].text.contains("No phase `zz`"));
-    let phase_only = wb_sim::operations::check(
-        world,
-        geo,
-        0,
-        &spec("{ kind: arrived }", "{ kind: start }"),
-    );
+    let phase_only =
+        wb_sim::operations::check(world, geo, 0, &spec("{ kind: arrived }", "{ kind: start }"));
     assert_eq!(phase_only[0].severity, Severity::Error);
     let ok = wb_sim::operations::check(
         world,
         geo,
         0,
-        &spec("{ kind: start }", "{ kind: phase_started, phase: a, delay_min: 5 }"),
+        &spec(
+            "{ kind: start }",
+            "{ kind: phase_started, phase: a, delay_min: 5 }",
+        ),
     );
     assert!(ok.iter().all(|i| i.severity != Severity::Error), "{ok:?}");
 }

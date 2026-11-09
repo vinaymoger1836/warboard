@@ -441,9 +441,7 @@ fn resolve_cond(
         return Err("Conditions nest at most 8 deep".to_owned());
     }
     if trigger && let Some(what) = phase_only(c) {
-        return Err(format!(
-            "`{what}` can end or abort a phase, not start one"
-        ));
+        return Err(format!("`{what}` can end or abort a phase, not start one"));
     }
     let phase = |id: &str| -> Result<u32, String> {
         keys.iter()
@@ -482,11 +480,17 @@ fn resolve_cond(
                 at_ms: (t - start_utc_ms).max(0) as u64,
             }
         }
-        CondSpec::PhaseStarted { phase: p, delay_min } => Cond::PhaseStarted {
+        CondSpec::PhaseStarted {
+            phase: p,
+            delay_min,
+        } => Cond::PhaseStarted {
             phase: phase(p)?,
             delay_ms: minutes(*delay_min, "Phase delay")?,
         },
-        CondSpec::PhaseEnded { phase: p, delay_min } => Cond::PhaseEnded {
+        CondSpec::PhaseEnded {
+            phase: p,
+            delay_min,
+        } => Cond::PhaseEnded {
             phase: phase(p)?,
             delay_ms: minutes(*delay_min, "Phase delay")?,
         },
@@ -525,14 +529,10 @@ fn resolve_cond(
         CondSpec::Elapsed { min } => Cond::Elapsed {
             ms: minutes(Some(*min), "Time limit")?,
         },
-        CondSpec::LossesPct { pct: p } => Cond::LossesPct {
-            fraction: pct(*p)?,
-        },
+        CondSpec::LossesPct { pct: p } => Cond::LossesPct { fraction: pct(*p)? },
         CondSpec::Bingo => Cond::Bingo,
         CondSpec::UnderAttack => Cond::UnderAttack,
-        CondSpec::FuelBelow { pct: p } => Cond::FuelBelow {
-            fraction: pct(*p)?,
-        },
+        CondSpec::FuelBelow { pct: p } => Cond::FuelBelow { fraction: pct(*p)? },
     })
 }
 
@@ -702,10 +702,7 @@ pub fn build(
         })
         .collect();
     if let Some(cycle) = find_cycle(&edges) {
-        let names: Vec<String> = cycle
-            .iter()
-            .map(|i| format!("Phase {}", i + 1))
-            .collect();
+        let names: Vec<String> = cycle.iter().map(|i| format!("Phase {}", i + 1)).collect();
         return Err(format!(
             "Trigger cycle: {} wait for each other",
             names.join(" → ")
@@ -813,10 +810,7 @@ pub fn check(world: &mut World, geo: Option<&Geo>, side: u8, spec: &OperationSpe
                 if busy.contains(m) {
                     warn(
                         Severity::Warning,
-                        format!(
-                            "{} is busy in a running operation",
-                            name_of(world, *m)
-                        ),
+                        format!("{} is busy in a running operation", name_of(world, *m)),
                     );
                 }
                 if !t.fire {
@@ -973,7 +967,7 @@ pub fn check(world: &mut World, geo: Option<&Geo>, side: u8, spec: &OperationSpe
             });
         }
     }
-    out.sort_by(|a, b| b.severity.cmp(&a.severity));
+    out.sort_by_key(|a| std::cmp::Reverse(a.severity));
     out
 }
 
@@ -1024,7 +1018,10 @@ pub fn validate(world: &World, side: u8, cmd: &OpCommand) -> Result<(), String> 
             if let Some(r) = replace {
                 let o = find(*r)?;
                 if o.state != OpState::Planned {
-                    return Err(format!("{} has started and can no longer be edited", o.name));
+                    return Err(format!(
+                        "{} has started and can no longer be edited",
+                        o.name
+                    ));
                 }
             }
             Ok(())
@@ -1054,7 +1051,10 @@ pub fn validate(world: &World, side: u8, cmd: &OpCommand) -> Result<(), String> 
         OpCommand::Go { op, phase: p } => {
             let o = find(*op)?;
             let ph = phase(o, *p)?;
-            if !matches!(o.state, OpState::Running | OpState::Paused | OpState::Planned) {
+            if !matches!(
+                o.state,
+                OpState::Running | OpState::Paused | OpState::Planned
+            ) {
                 return Err(format!("{} has ended", o.name));
             }
             if ph.state != PhaseState::Waiting {
@@ -1128,7 +1128,14 @@ pub fn apply(world: &mut World, side: u8, cmd: OpCommand) {
         OpCommand::Abort { op } => {
             if let Some(i) = ops.ops.iter().position(|o| o.id == op) {
                 let mut o = ops.ops[i].clone();
-                finish(world, &mut o, stamp, OpState::Aborted, "Aborted by order", &mut events);
+                finish(
+                    world,
+                    &mut o,
+                    stamp,
+                    OpState::Aborted,
+                    "Aborted by order",
+                    &mut events,
+                );
                 ops.ops[i] = o;
             }
         }
@@ -1387,10 +1394,7 @@ fn step(
     }
     if o.phases.iter().all(|p| p.state.is_final()) {
         let any_done = o.phases.iter().any(|p| p.state == PhaseState::Done);
-        let all_ok = o
-            .phases
-            .iter()
-            .all(|p| matches!(p.state, PhaseState::Done));
+        let all_ok = o.phases.iter().all(|p| matches!(p.state, PhaseState::Done));
         let reason = if all_ok {
             "Every phase completed".to_owned()
         } else if any_done {
@@ -1488,7 +1492,9 @@ fn eval(world: &World, o: &Operation, p: &Phase, c: &Cond, manual: bool) -> bool
                 .and_then(|e| world.get::<Fuel>(e))
                 .is_some_and(|f| f.max_kg > 0.0 && f.kg / f.max_kg < *fraction)
         }),
-        Cond::Arrived => p.state == PhaseState::Running && p.tasks.iter().all(|t| arrived(world, t)),
+        Cond::Arrived => {
+            p.state == PhaseState::Running && p.tasks.iter().all(|t| arrived(world, t))
+        }
         Cond::TasksDone => {
             p.state == PhaseState::Running
                 && p.tasks.iter().all(|t| task_done(world, t))
@@ -1541,9 +1547,10 @@ fn mins(ms: u64) -> String {
 /// Plain English for a condition, as the planner shows it.
 pub fn describe(o: &Operation, c: &Cond) -> String {
     let phase = |i: u32| {
-        o.phases
-            .get(i as usize)
-            .map_or_else(|| format!("phase {}", i + 1), |p| format!("Phase {} ({})", i + 1, p.name))
+        o.phases.get(i as usize).map_or_else(
+            || format!("phase {}", i + 1),
+            |p| format!("Phase {} ({})", i + 1, p.name),
+        )
     };
     let plus = |d: u64| {
         if d == 0 {
@@ -1565,8 +1572,12 @@ pub fn describe(o: &Operation, c: &Cond) -> String {
             .join(" or "),
         Cond::Start { delay_ms } => format!("H+{}", mins(*delay_ms)),
         Cond::AtTime { at_ms } => format!("at T+{}", crate::reports::fmt_t(*at_ms)),
-        Cond::PhaseStarted { phase: q, delay_ms } => format!("with {}{}", phase(*q), plus(*delay_ms)),
-        Cond::PhaseEnded { phase: q, delay_ms } => format!("after {}{}", phase(*q), plus(*delay_ms)),
+        Cond::PhaseStarted { phase: q, delay_ms } => {
+            format!("with {}{}", phase(*q), plus(*delay_ms))
+        }
+        Cond::PhaseEnded { phase: q, delay_ms } => {
+            format!("after {}{}", phase(*q), plus(*delay_ms))
+        }
         Cond::Manual => "manual".to_owned(),
         Cond::Contacts {
             domain,
@@ -1588,7 +1599,9 @@ pub fn describe(o: &Operation, c: &Cond) -> String {
                 ContactLevel::Type => "identified to type",
                 ContactLevel::Precise => "located precisely",
             };
-            let a = area.map_or(String::new(), |(_, r)| format!(" within {:.0} km", r / 1_000.0));
+            let a = area.map_or(String::new(), |(_, r)| {
+                format!(" within {:.0} km", r / 1_000.0)
+            });
             format!(
                 "{count} {d}contact{} {lv}{a}",
                 if *count == 1 { "" } else { "s" }
@@ -1629,7 +1642,9 @@ fn arrived(world: &World, t: &PhaseTask) -> bool {
                 Task::Rtb { .. } | Task::Land { .. } | Task::Transfer { .. } => {
                     matches!(g.mode, Mode::AtBase { .. })
                 }
-                _ => g.on_station || (t.away.contains(gid) && matches!(g.mode, Mode::AtBase { .. })),
+                _ => {
+                    g.on_station || (t.away.contains(gid) && matches!(g.mode, Mode::AtBase { .. }))
+                }
             }
         })
 }
