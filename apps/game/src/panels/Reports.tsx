@@ -40,20 +40,29 @@ export function Reports({ bridge, toast }: { bridge: EngineBridge; toast: (t: st
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [csv, setCsv] = useState('salvos');
 
-  const load = useCallback(async () => {
-    try {
-      // The truth review comes with the report once the war has ended.
-      const plain = await bridge.request({ type: 'report', truth: false });
-      setR(plain.war_ended ? await bridge.request({ type: 'report', truth: true }) : plain);
-    } catch (err) {
-      toast(err instanceof Error ? err.message : String(err));
-    }
-  }, [bridge, toast]);
+  const [refresh, setRefresh] = useState(0);
+  // The truth review comes with the report once the war has ended.
+  const fetchReport = useCallback(
+    () =>
+      bridge
+        .request({ type: 'report', truth: false })
+        .then((plain) => (plain.war_ended ? bridge.request({ type: 'report', truth: true }) : plain)),
+    [bridge],
+  );
   useEffect(() => {
-    void load();
-    const t = setInterval(() => void load(), 2_000);
-    return () => clearInterval(t);
-  }, [load]);
+    let live = true;
+    const load = () =>
+      fetchReport()
+        .then((x) => live && setR(x))
+        .catch((err: unknown) => live && toast(err instanceof Error ? err.message : String(err)));
+    load();
+    const t = setInterval(load, 2_000);
+    return () => {
+      live = false;
+      clearInterval(t);
+    };
+  }, [fetchReport, toast, refresh]);
+  const load = () => setRefresh((n) => n + 1);
 
   const truth = r?.war_ended ?? false;
   const text = (format: string) => bridge.request({ type: 'reportText', truth, format });

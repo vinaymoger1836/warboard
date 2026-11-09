@@ -10,6 +10,14 @@ import { type LonLat, type PlanRoute, ui, useUi } from '../store';
 import { CloseGlyph } from './glyphs';
 import { rememberDraft } from './Operations';
 
+/** Sets an optional field, or drops it when `v` is undefined (exactOptionalPropertyTypes). */
+function opt<T extends object, K extends keyof T>(o: T, k: K, v: T[K] | undefined): T {
+  const out = { ...o };
+  if (v === undefined) delete (out as Record<PropertyKey, unknown>)[k];
+  else out[k] = v;
+  return out;
+}
+
 /** Names of units added to a plan (the plan itself holds ids only). */
 const unitNames = new Map<number, string>();
 
@@ -134,7 +142,7 @@ export function Planner({ bridge, toast }: { bridge: EngineBridge; toast: (t: st
   const details = useUi((s) => s.details);
   const [issues, setIssues] = useState<Issue[]>([]);
   /** Which task is drawing: `[phase, task]`. */
-  const [drawing, setDrawing] = useState<[number, number] | null>(null);
+  const drawing = useUi((s) => s.planDrawing);
   const draft = planner?.draft ?? null;
 
   const set = (d: OperationSpec) => planner && ui.set({ planner: { ...planner, draft: d } });
@@ -153,7 +161,7 @@ export function Planner({ bridge, toast }: { bridge: EngineBridge; toast: (t: st
   useEffect(() => {
     ui.set({ planRoutes: routes });
   }, [routes]);
-  useEffect(() => () => ui.set({ planRoutes: [], capture: false, planTool: null }), []);
+  useEffect(() => () => ui.set({ planRoutes: [], capture: false, planTool: null, planDrawing: null }), []);
 
   // Engine validation on every edit (debounced).
   useEffect(() => {
@@ -172,8 +180,7 @@ export function Planner({ bridge, toast }: { bridge: EngineBridge; toast: (t: st
     if (!planTool || !drawing || !draft) return;
     const [i, j] = drawing;
     const t = draft.phases[i]?.tasks[j];
-    ui.set({ planTool: null });
-    setDrawing(null);
+    ui.set({ planTool: null, planDrawing: null });
     if (!t) return;
     const task = t.task;
     if (planTool.kind === 'route' && 'waypoints' in task) setTask(i, j, { ...t, task: { ...task, waypoints: planTool.points } });
@@ -188,11 +195,10 @@ export function Planner({ bridge, toast }: { bridge: EngineBridge; toast: (t: st
     if (!capture || !drawing || !draft || tool?.kind !== 'strike' || !tool.aim) return;
     const [i, j] = drawing;
     const t = draft.phases[i]?.tasks[j];
-    ui.set({ tool: null, capture: false });
-    setDrawing(null);
+    ui.set({ tool: null, capture: false, planDrawing: null });
     if (!t || (t.task.kind !== 'strike' && t.task.kind !== 'suppress')) return;
     const aim = tool.aim;
-    const base = { ...t.task, contact: undefined, point: undefined };
+    const base = opt(opt(t.task, 'contact', undefined), 'point', undefined);
     setTask(i, j, { ...t, task: 'contact' in aim ? { ...base, contact: aim.contact } : { ...base, point: aim.point } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tool, capture]);
@@ -201,8 +207,8 @@ export function Planner({ bridge, toast }: { bridge: EngineBridge; toast: (t: st
   const errors = issues.filter((x) => x.severity === 'error');
 
   const draw = (i: number, j: number, kind: 'route' | 'circle' | 'strike') => {
-    setDrawing([i, j]);
     ui.set({
+      planDrawing: [i, j],
       capture: true,
       planTool: null,
       tool: kind === 'route' ? { kind: 'route', patrol: false, points: [] } : kind === 'circle' ? { kind: 'circle', centre: null, radiusKm: 20 } : { kind: 'strike', aim: null },
@@ -213,7 +219,14 @@ export function Planner({ bridge, toast }: { bridge: EngineBridge; toast: (t: st
   const create = async (start: boolean) => {
     const ack = await bridge.request({
       type: 'order',
-      order: { tick: 0, side: 0, type: 'CreateOperation', operation: draft, replace: planner.replace ?? undefined, start },
+      order: {
+        tick: 0,
+        side: 0,
+        type: 'CreateOperation',
+        operation: draft,
+        start,
+        ...(planner.replace !== null ? { replace: planner.replace } : {}),
+      },
     });
     if (!ack.ok) {
       toast(ack.reason);
@@ -252,8 +265,8 @@ export function Planner({ bridge, toast }: { bridge: EngineBridge; toast: (t: st
               </button>
             </div>
             <CondEditor role="trigger" value={p.trigger} phases={draft.phases} self={p.id} onChange={(c) => c && setPhase(i, { ...p, trigger: c })} />
-            <CondEditor role="end" value={p.end ?? { kind: 'tasks_done' }} phases={draft.phases} self={p.id} onChange={(c) => setPhase(i, { ...p, end: c ?? undefined })} />
-            <CondEditor role="abort" value={p.abort ?? null} phases={draft.phases} self={p.id} onChange={(c) => setPhase(i, { ...p, abort: c ?? undefined })} />
+            <CondEditor role="end" value={p.end ?? { kind: 'tasks_done' }} phases={draft.phases} self={p.id} onChange={(c) => setPhase(i, opt(p, 'end', c ?? undefined))} />
+            <CondEditor role="abort" value={p.abort ?? null} phases={draft.phases} self={p.id} onChange={(c) => setPhase(i, opt(p, 'abort', c ?? undefined))} />
             {p.tasks.map((t, j) => (
               <TaskEditor
                 key={j}
@@ -346,7 +359,7 @@ function TaskEditor({
         <select
           aria-label="Task"
           value={task.kind}
-          onChange={(e) => onChange({ ...t, task: newTask(e.target.value, task), fire: undefined, near_km: undefined })}
+          onChange={(e) => onChange(opt(opt({ ...t, task: newTask(e.target.value, task) }, 'fire', undefined), 'near_km', undefined))}
         >
           {TASK_KINDS.map(([k, label]) => (
             <option key={k} value={k}>
@@ -386,7 +399,7 @@ function TaskEditor({
             <select
               aria-label="Weapon"
               value={task.weapon ?? ''}
-              onChange={(e) => onChange({ ...t, task: { ...task, weapon: e.target.value || undefined } })}
+              onChange={(e) => onChange({ ...t, task: opt(task, 'weapon', e.target.value || undefined) })}
             >
               <option value="">Any suitable weapon</option>
               {weapons.map(([id, name]) => (
@@ -407,7 +420,7 @@ function TaskEditor({
               />
             </label>
             <label className="inline" title="Fire from where the units are and keep their task (ADR-043)">
-              <input type="checkbox" checked={t.fire ?? false} onChange={(e) => onChange({ ...t, fire: e.target.checked || undefined })} />
+              <input type="checkbox" checked={t.fire ?? false} onChange={(e) => onChange(opt(t, 'fire', e.target.checked || undefined))} />
               Fire mission
             </label>
             {task.point && (
@@ -418,7 +431,7 @@ function TaskEditor({
                   min={0}
                   max={500}
                   value={t.near_km ?? 0}
-                  onChange={(e) => onChange({ ...t, near_km: Number(e.target.value) > 0 ? Number(e.target.value) : undefined })}
+                  onChange={(e) => onChange(opt(t, 'near_km', Number(e.target.value) > 0 ? Number(e.target.value) : undefined))}
                 />
                 km
               </label>
@@ -526,13 +539,13 @@ function LeafEditor({
       {leaf.kind === 'contacts' && (
         <>
           {num(leaf.count, (n) => onChange({ ...leaf, count: Math.max(1, n) }), '×', 1)}
-          <select aria-label="Domain" value={leaf.domain ?? ''} onChange={(e) => onChange({ ...leaf, domain: (e.target.value || undefined) as typeof leaf.domain })}>
+          <select aria-label="Domain" value={leaf.domain ?? ''} onChange={(e) => onChange(opt(leaf, 'domain', (e.target.value || undefined) as typeof leaf.domain))}>
             <option value="">any</option>
             <option value="air">air</option>
             <option value="surface">surface</option>
             <option value="ground">ground</option>
           </select>
-          <select aria-label="Level" value={leaf.level ?? 'class'} onChange={(e) => onChange({ ...leaf, level: e.target.value as typeof leaf.level })}>
+          <select aria-label="Level" value={leaf.level ?? 'class'} onChange={(e) => onChange(opt(leaf, 'level', e.target.value as typeof leaf.level))}>
             <option value="domain">detected</option>
             <option value="class">classified</option>
             <option value="type">identified to type</option>

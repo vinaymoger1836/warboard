@@ -45,7 +45,7 @@ export function routesOf(op: OperationView): PlanRoute[] {
           phase: i + 1,
           kind: t.kind,
           route: t.route,
-          radiusKm: t.radius_km ?? undefined,
+          ...(t.radius_km != null ? { radiusKm: t.radius_km } : {}),
           active: p.state === 'running',
         })),
   );

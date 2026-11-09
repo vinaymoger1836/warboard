@@ -65,6 +65,8 @@ export interface UiState {
   planTool: Tool | null;
   /** The operation planner's draft (doc 03 §8); `replace` is the planned operation it edits. */
   planner: { draft: OperationSpec; replace: number | null } | null;
+  /** The planner task (`[phase, task]`) a map tool is drawing for. */
+  planDrawing: [number, number] | null;
   /** Reports panel open (doc 03 §12). */
   reportsOpen: boolean;
 }
@@ -90,6 +92,7 @@ let state: UiState = {
   capture: false,
   planTool: null,
   planner: null,
+  planDrawing: null,
   reportsOpen: false,
 };
 const listeners = new Set<() => void>();
