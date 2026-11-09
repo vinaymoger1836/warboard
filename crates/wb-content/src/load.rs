@@ -49,6 +49,8 @@ pub struct LoadedEntry {
     pub id: String,
     pub kind: Kind,
     pub custom: bool,
+    /// The entry this one is based on (doc 04 §3.6).
+    pub extends: Option<String>,
     /// Resolved YAML without meta keys (used for archetype bands and
     /// unit checks).
     pub value: Value,
@@ -306,6 +308,7 @@ pub fn load_files(
                 id: raw.id.clone(),
                 kind: raw.meta.kind,
                 custom: raw.meta.custom,
+                extends: raw.meta.extends.clone(),
                 value,
                 entry,
             }),

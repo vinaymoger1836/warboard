@@ -1213,10 +1213,25 @@ fn key<T: serde::Serialize>(k: &T) -> String {
         .unwrap_or_default()
 }
 
-/// Values outside their archetype's bands (doc 04 §4). A band whose path the
-/// entry does not have is skipped: archetypes are shared by entries that fill
-/// different optional fields.
-pub(crate) fn band_warnings(set: &ContentSet) -> Vec<ContentError> {
+/// Where one key stat of an entry sits in its archetype's band (doc 04 §4).
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct BandPosition {
+    /// Field path, e.g. `profile.max_range_km`.
+    pub field: String,
+    pub min: f64,
+    pub max: f64,
+    /// The entry's value; none when the entry lacks the field.
+    pub value: Option<f64>,
+}
+
+impl BandPosition {
+    pub fn inside(&self) -> Option<bool> {
+        self.value.map(|v| v >= self.min && v <= self.max)
+    }
+}
+
+/// Every band of each entry's archetype, by entry index in `set.entries`.
+pub fn band_positions(set: &ContentSet) -> BTreeMap<usize, Vec<BandPosition>> {
     let archetypes: BTreeMap<&str, &crate::source::Archetype> = set
         .entries
         .iter()
@@ -1225,24 +1240,51 @@ pub(crate) fn band_warnings(set: &ContentSet) -> Vec<ContentError> {
             _ => None,
         })
         .collect();
-    let mut out = Vec::new();
-    for e in &set.entries {
+    let mut out = BTreeMap::new();
+    for (i, e) in set.entries.iter().enumerate() {
         let Some(id) = e.entry.design().and_then(|d| d.archetype.as_deref()) else {
             continue;
         };
         let Some(a) = archetypes.get(id) else {
             continue;
         };
-        for (path, [lo, hi]) in &a.bands {
-            let Some(v) = get_path(&e.value, path).and_then(Value::as_f64) else {
-                continue;
-            };
-            if v < *lo || v > *hi {
+        let bands = a
+            .bands
+            .iter()
+            .map(|(path, [lo, hi])| BandPosition {
+                field: path.clone(),
+                min: *lo,
+                max: *hi,
+                value: get_path(&e.value, path).and_then(Value::as_f64),
+            })
+            .collect();
+        out.insert(i, bands);
+    }
+    out
+}
+
+/// Values outside their archetype's bands (doc 04 §4). A band whose path the
+/// entry does not have is skipped: archetypes are shared by entries that fill
+/// different optional fields.
+pub(crate) fn band_warnings(set: &ContentSet) -> Vec<ContentError> {
+    let mut out = Vec::new();
+    for (i, bands) in band_positions(set) {
+        let e = &set.entries[i];
+        let id = e
+            .entry
+            .design()
+            .and_then(|d| d.archetype.as_deref())
+            .unwrap_or_default();
+        for b in bands {
+            if b.inside() == Some(false) {
                 out.push(ContentError {
                     file: e.file.clone(),
-                    path: path.clone(),
+                    path: b.field.clone(),
                     message: format!(
-                        "{v} is outside the `{id}` band [{lo}, {hi}]; say why in design.note or move it inside"
+                        "{} is outside the `{id}` band [{}, {}]; say why in design.note or move it inside",
+                        b.value.unwrap_or_default(),
+                        b.min,
+                        b.max
                     ),
                 });
             }

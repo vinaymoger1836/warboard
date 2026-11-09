@@ -1,0 +1,1142 @@
+//! Test bench: scenarios with a `golden:` block of variants, metrics and
+//! expected bands, run over N seeds (doc 08 §3, doc 04 §5). `wb golden` runs
+//! them natively; the admin app runs the same code through `wb-wasm`
+//! (`TestBench`) to chart outcome distributions.
+//!
+//! This is a measurement harness, not a client: it reads the truth (who a
+//! weapon was aimed at, where a target really was) to score runs, like the
+//! golden tests always have. It never runs inside a war and hands out only
+//! per-seed metric values (ADR-045).
+//!
+//! ```yaml
+//! golden:
+//!   id: G7
+//!   max_ticks: 86400
+//!   seeds: 1                       # runs per variant, seeds seed, seed+1, …
+//!   variants:
+//!     no_tanker: { drop_units: [30] }
+//!     tanker: {}
+//!   expect:
+//!     - { variant: no_tanker, metric: landed_reserve_margin_kg, group: 10, min: 0 }
+//!     - { variant: tanker, metric: time_on_station_s, group: 10, ratio_to: no_tanker, min: 2.0 }
+//!     - { metric: first_detection_range_km, side: 0, target: 900, aggregate: min, min: 28 }
+//! ```
+//!
+//! A run stops when every group named by a flight metric has landed once
+//! (after taking off), when every sensor metric has its value, or at
+//! `max_ticks`. Flight metrics count up to that first landing.
+
+use crate::components::{
+    Group, GroupMember, Kinematics, PlatformRef, ReturnWhy, WeaponFlight, WeaponTarget,
+};
+use crate::events::{AimRef, Outcome};
+use crate::orders::Command;
+use crate::picture::SidePictures;
+use crate::weapons::LaunchReason;
+use crate::{Event, EventKind, Scenario, ScenarioError, Sim};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::rc::Rc;
+use std::sync::Arc;
+use wb_content::ContentDb;
+use wb_core::UnitId;
+use wb_core::math::pow;
+use wb_geo::Geo;
+
+#[derive(Debug, thiserror::Error)]
+pub enum BenchError {
+    #[error("the scenario has no golden block")]
+    NoSpec,
+    #[error("golden block is invalid: {0}")]
+    Spec(String),
+    #[error("unknown variant `{0}`")]
+    Variant(String),
+    #[error("cannot build the scenario: {0}")]
+    Build(#[from] ScenarioError),
+    #[error("{0}: unknown platform in rcs_quarter_root")]
+    RcsPlatform(String),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Spec {
+    id: String,
+    #[serde(default)]
+    description: Option<String>,
+    max_ticks: u64,
+    #[serde(default = "one")]
+    seeds: u64,
+    #[serde(default)]
+    variants: BTreeMap<String, Variant>,
+    expect: Vec<Expect>,
+}
+
+fn one() -> u64 {
+    1
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Variant {
+    /// Scenario units (and the orders that name only them) left out.
+    #[serde(default)]
+    drop_units: Vec<u32>,
+    /// Scripted targets left out.
+    #[serde(default)]
+    drop_targets: Vec<u32>,
+    /// Units whose platform (and nation) is swapped, so one target id
+    /// stands for different types across variants (G2).
+    #[serde(default)]
+    replace: Vec<Replace>,
+    /// Orders added to the scenario's (doctrine, threat reaction, ROE).
+    #[serde(default)]
+    orders: Vec<crate::Order>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Replace {
+    unit: u32,
+    platform: String,
+    #[serde(default)]
+    nation: Option<String>,
+}
+
+/// One measured quantity of a run.
+// No `deny_unknown_fields` here or on `Expect`: serde cannot combine it with `flatten`.
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+struct Measure {
+    metric: Metric,
+    #[serde(default)]
+    group: Option<u32>,
+    /// Side whose picture is read.
+    #[serde(default)]
+    side: Option<u8>,
+    /// Unit or scripted target (its group is the contact).
+    #[serde(default)]
+    target: Option<u32>,
+    /// Shooter unit that fired the weapon.
+    #[serde(default)]
+    shooter: Option<u32>,
+    /// Own sensor unit, for line-of-sight metrics.
+    #[serde(default)]
+    observer: Option<u32>,
+    #[serde(default)]
+    satellite: Option<u32>,
+    #[serde(default)]
+    imaged: Option<bool>,
+    /// Which launches `launches` counts (`first` also limits the weapon
+    /// outcome metrics).
+    #[serde(default)]
+    filter: Option<LaunchFilter>,
+    /// Outcomes `outcome_fraction` counts.
+    #[serde(default)]
+    outcomes: Option<Vec<Outcome>>,
+    /// Content weapon id the weapon metrics are limited to.
+    #[serde(default)]
+    weapon: Option<String>,
+    /// Operation phase ids (operation metrics; the side's first operation).
+    #[serde(default)]
+    phase: Option<String>,
+    #[serde(default)]
+    phase_b: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum LaunchFilter {
+    /// Target's true position outside the side's territory at launch.
+    OutsideTerritory,
+    /// At weapons (interceptors).
+    AtWeapons,
+    AtNonWeapons,
+    /// Fired under Bravo at a contact that launched at us.
+    ReturnFire,
+    /// The side's first launch (of `weapon`): the shot fired at the
+    /// doctrine's range, not the follow-ups after a miss (G6).
+    First,
+}
+
+#[derive(Debug, Deserialize)]
+struct Expect {
+    #[serde(default = "base_variant")]
+    variant: String,
+    #[serde(flatten)]
+    what: Measure,
+    /// Divide by the same metric of this variant before comparing.
+    #[serde(default)]
+    ratio_to: Option<String>,
+    /// Divide by another metric of the same variant.
+    #[serde(default)]
+    over: Option<Measure>,
+    /// Divide by `(σ_a / σ_b)^¼` from the content front RCS of two platforms (G2).
+    #[serde(default)]
+    rcs_quarter_root: Option<[String; 2]>,
+    /// How runs over seeds combine (default: median).
+    #[serde(default)]
+    aggregate: Aggregate,
+    #[serde(default)]
+    min: Option<f64>,
+    #[serde(default)]
+    max: Option<f64>,
+}
+
+#[derive(Debug, Clone, Copy, Default, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum Aggregate {
+    #[default]
+    Median,
+    Min,
+    Max,
+    /// For probabilities estimated per run (a few shots each).
+    Mean,
+}
+
+fn base_variant() -> String {
+    "base".into()
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "snake_case")]
+enum Metric {
+    /// Seconds on station before the first landing.
+    TimeOnStationS,
+    /// Lowest (landing fuel − reserve recorded at bingo) over the members.
+    LandedReserveMarginKg,
+    /// Bingo calls by members before the first landing.
+    BingoCalls,
+    /// Refuellings completed by members before the first landing.
+    Refuels,
+    /// Times the group headed home because its weapons were spent (winchester,
+    /// doc 02 §6), before the first landing.
+    WinchesterReturns,
+    /// True range at the side's first detection of the target, km.
+    FirstDetectionRangeKm,
+    /// Terrain clearance of the exact line of sight observer → target at the
+    /// side's first detection, metres (negative: blocked).
+    ClearanceAtFirstDetectionM,
+    /// Seconds from the exact line of sight clearing to first detection.
+    FirstDetectionAfterLosClearS,
+    /// Intel reports from a satellite (optionally only `imaged` ones).
+    ReportCount,
+    /// Launches by a side (optionally filtered).
+    Launches,
+    /// Self-defence launches by a side.
+    SelfDefenceLaunches,
+    /// Approval requests raised for a side.
+    RoeRequests,
+    /// Requests the side approved.
+    Approvals,
+    /// Share of a side's terminations (of `weapon`) with one of `outcomes`.
+    OutcomeFraction,
+    /// Hits over terminations of a side's weapons (of `weapon`).
+    Pk,
+    /// Seconds from the target's true crossing into the side's territory
+    /// to the side's first launch after it.
+    FirstLaunchAfterCrossingS,
+    /// Truth target of the side's first launch (of `weapon` / `shooter`).
+    FirstTarget,
+    /// Seconds from the start of the simulation to the side's first launch.
+    FirstLaunchTimeS,
+    /// Ticks between the starts of two phases of the side's first operation
+    /// (`phase`, `phase_b`); missing if either never started (G13).
+    PhaseStartGapTicks,
+    /// Seconds from the operation's start to a phase's start.
+    PhaseStartS,
+    /// Phases of the side's first operation in an end state (done, aborted, cancelled).
+    PhasesEnded,
+    /// Phases of the side's first operation that completed (done).
+    PhasesDone,
+    /// 1 when the side's first operation completed, else 0.
+    OperationCompleted,
+    /// Own units of the side destroyed (scenario units and their members).
+    UnitsLost,
+}
+
+impl Metric {
+    fn is_flight(self) -> bool {
+        matches!(
+            self,
+            Metric::TimeOnStationS
+                | Metric::LandedReserveMarginKg
+                | Metric::BingoCalls
+                | Metric::Refuels
+                | Metric::WinchesterReturns
+        )
+    }
+
+    /// Combat metrics run to `max_ticks`.
+    fn is_combat(self) -> bool {
+        matches!(
+            self,
+            Metric::Launches
+                | Metric::SelfDefenceLaunches
+                | Metric::RoeRequests
+                | Metric::Approvals
+                | Metric::OutcomeFraction
+                | Metric::Pk
+                | Metric::FirstLaunchAfterCrossingS
+                | Metric::FirstTarget
+                | Metric::FirstLaunchTimeS
+                | Metric::PhaseStartGapTicks
+                | Metric::PhaseStartS
+                | Metric::PhasesEnded
+                | Metric::PhasesDone
+                | Metric::OperationCompleted
+                | Metric::UnitsLost
+        )
+    }
+
+    fn name(self) -> String {
+        enum_name(&self)
+    }
+}
+
+fn enum_name<T: Serialize>(v: &T) -> String {
+    serde_yaml::to_value(v)
+        .ok()
+        .and_then(|v| v.as_str().map(str::to_owned))
+        .unwrap_or_default()
+}
+
+fn key(m: &Measure) -> String {
+    format!("{m:?}")
+}
+
+/// A parsed test-bench scenario: the scenario and its `golden:` block.
+#[derive(Debug)]
+pub struct Bench {
+    scenario: Scenario,
+    spec: Spec,
+    /// Variants in run order (`base` when the block names none).
+    variants: Vec<String>,
+    /// Every measure each variant needs.
+    needs: BTreeMap<String, Vec<Measure>>,
+}
+
+/// One run: which variant and seed, and where it ended.
+#[derive(Debug, Clone, Serialize)]
+pub struct RunSummary {
+    pub variant: String,
+    /// Seed offset: the run used `scenario.seed + n`.
+    pub n: u64,
+    pub ticks: u64,
+    pub sim_time_ms: u64,
+    pub hash: String,
+}
+
+/// Values measured so far: (variant, measure) → value per seed.
+#[derive(Debug, Default, Clone)]
+pub struct Results(BTreeMap<(String, String), Vec<Option<f64>>>);
+
+/// One expectation after the runs.
+#[derive(Debug, Clone, Serialize)]
+pub struct Check {
+    pub variant: String,
+    pub metric: String,
+    /// `group 10`, `target 900`, `satellite 3` or empty.
+    pub subject: String,
+    /// The comparison as `wb golden` prints it.
+    pub label: String,
+    pub aggregate: Aggregate,
+    /// Per-seed values after `over` (before `ratio_to` and the RCS scaling).
+    pub values: Vec<Option<f64>>,
+    pub value: Option<f64>,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+    pub ok: bool,
+}
+
+impl Bench {
+    /// Reads the `golden:` block of a scenario.
+    pub fn new(scenario: Scenario) -> Result<Self, BenchError> {
+        let spec: Spec = serde_yaml::from_value(scenario.golden.clone().ok_or(BenchError::NoSpec)?)
+            .map_err(|e| BenchError::Spec(e.to_string()))?;
+        let mut variants = spec.variants.keys().cloned().collect::<Vec<_>>();
+        if variants.is_empty() {
+            variants.push(base_variant());
+        }
+        let mut needs: BTreeMap<String, Vec<Measure>> = BTreeMap::new();
+        for e in &spec.expect {
+            let mut add = |v: &str, m: &Measure| {
+                let list = needs.entry(v.to_owned()).or_default();
+                if !list.contains(m) {
+                    list.push(m.clone());
+                }
+            };
+            add(&e.variant, &e.what);
+            if let Some(r) = &e.ratio_to {
+                add(r, &e.what);
+            }
+            if let Some(o) = &e.over {
+                add(&e.variant, o);
+            }
+        }
+        Ok(Self {
+            scenario,
+            spec,
+            variants,
+            needs,
+        })
+    }
+
+    pub fn id(&self) -> &str {
+        &self.spec.id
+    }
+
+    pub fn description(&self) -> Option<&str> {
+        self.spec.description.as_deref()
+    }
+
+    pub fn scenario(&self) -> &Scenario {
+        &self.scenario
+    }
+
+    /// Seeds per variant from the block.
+    pub fn seeds(&self) -> u64 {
+        self.spec.seeds.max(1)
+    }
+
+    pub fn max_ticks(&self) -> u64 {
+        self.spec.max_ticks
+    }
+
+    pub fn variants(&self) -> &[String] {
+        &self.variants
+    }
+
+    /// Runs one variant with seed `scenario.seed + n` and stores its values.
+    pub fn run(
+        &self,
+        variant: &str,
+        n: u64,
+        content: Arc<ContentDb>,
+        content_hash: [u8; 32],
+        geo: Option<Rc<Geo>>,
+        results: &mut Results,
+    ) -> Result<RunSummary, BenchError> {
+        if !self.variants.iter().any(|v| v == variant) {
+            return Err(BenchError::Variant(variant.to_owned()));
+        }
+        let measures = self.needs.get(variant).cloned().unwrap_or_default();
+        let mut s = self.scenario.clone();
+        s.seed = self.scenario.seed.wrapping_add(n);
+        if let Some(var) = self.spec.variants.get(variant) {
+            apply_variant(&mut s, var);
+        }
+        let mut sim = Sim::new(&s, content, content_hash, geo)?;
+        sim.set_recording(false);
+        let values = measure_run(&mut sim, &measures, self.spec.max_ticks);
+        for (m, val) in measures.iter().zip(values) {
+            results
+                .0
+                .entry((variant.to_owned(), key(m)))
+                .or_default()
+                .push(val);
+        }
+        Ok(RunSummary {
+            variant: variant.to_owned(),
+            n,
+            ticks: sim.clock().tick,
+            sim_time_ms: sim.clock().sim_time_ms,
+            hash: sim.state_hash_hex(),
+        })
+    }
+
+    /// Compares the measured values with the bands.
+    pub fn evaluate(&self, results: &Results, db: &ContentDb) -> Result<Vec<Check>, BenchError> {
+        let mut out = Vec::new();
+        for e in &self.spec.expect {
+            let get = |v: &str, m: &Measure| {
+                results
+                    .0
+                    .get(&(v.to_owned(), key(m)))
+                    .cloned()
+                    .unwrap_or_default()
+            };
+            let mut vals = get(&e.variant, &e.what);
+            let combine = |a: Vec<Option<f64>>, b: Vec<Option<f64>>| -> Vec<Option<f64>> {
+                a.iter()
+                    .zip(b.iter().chain(std::iter::repeat(&None)))
+                    .map(|(x, y)| match (x, y) {
+                        (Some(x), Some(y)) if *y != 0.0 => Some(x / y),
+                        _ => None,
+                    })
+                    .collect()
+            };
+            if let Some(o) = &e.over {
+                vals = combine(vals, get(&e.variant, o));
+            }
+            let mut value = aggregate(&vals, e.aggregate);
+            if let Some(r) = &e.ratio_to {
+                let other = aggregate(&get(r, &e.what), e.aggregate);
+                value = match (value, other) {
+                    (Some(v), Some(d)) if d > 0.0 => Some(v / d),
+                    _ => None,
+                };
+            }
+            if let Some([a, b]) = &e.rcs_quarter_root {
+                let front = |id: &str| {
+                    db.platforms
+                        .iter()
+                        .find(|p| db.str(p.id) == id)
+                        .map(|p| p.signature.rcs_m2.front)
+                };
+                let q = match (front(a), front(b)) {
+                    (Some(x), Some(y)) if y > 0.0 => pow(x / y, 0.25),
+                    _ => return Err(BenchError::RcsPlatform(self.spec.id.clone())),
+                };
+                value = value.map(|v| v / q);
+            }
+            let ok = value
+                .is_some_and(|v| e.min.is_none_or(|m| v >= m) && e.max.is_none_or(|m| v <= m));
+            let mut label = format!("{:?}({})", e.what.metric, e.variant);
+            if let Some(o) = &e.over {
+                label += &format!(" / {:?}", o.metric);
+            }
+            if let Some(r) = &e.ratio_to {
+                label += &format!(" / {:?}({r})", e.what.metric);
+            }
+            if e.rcs_quarter_root.is_some() {
+                label += " / (σ₁/σ₂)^¼";
+            }
+            if self.spec.seeds > 1 {
+                label += &format!(" [{:?} of {}]", e.aggregate, self.spec.seeds);
+            }
+            let subject = match (e.what.group, e.what.target, e.what.satellite) {
+                (Some(g), _, _) => format!("group {g}"),
+                (_, Some(t), _) => format!("target {t}"),
+                (_, _, Some(s)) => format!("satellite {s}"),
+                _ => String::new(),
+            };
+            out.push(Check {
+                variant: e.variant.clone(),
+                metric: e.what.metric.name(),
+                subject,
+                label,
+                aggregate: e.aggregate,
+                values: vals,
+                value,
+                min: e.min,
+                max: e.max,
+                ok,
+            });
+        }
+        Ok(out)
+    }
+}
+
+/// Combines per-seed values; a missing value makes the result missing.
+pub fn aggregate(vals: &[Option<f64>], how: Aggregate) -> Option<f64> {
+    let mut v: Vec<f64> = vals.iter().copied().collect::<Option<Vec<_>>>()?;
+    if v.is_empty() {
+        return None;
+    }
+    v.sort_by(|a, b| a.total_cmp(b));
+    Some(match how {
+        Aggregate::Min => v[0],
+        Aggregate::Max => v[v.len() - 1],
+        Aggregate::Mean => v.iter().sum::<f64>() / v.len() as f64,
+        Aggregate::Median => {
+            let n = v.len();
+            if n % 2 == 1 {
+                v[n / 2]
+            } else {
+                (v[n / 2 - 1] + v[n / 2]) / 2.0
+            }
+        }
+    })
+}
+
+fn apply_variant(s: &mut Scenario, v: &Variant) {
+    s.units.retain(|u| !v.drop_units.contains(&u.id));
+    s.scripted_targets
+        .retain(|t| !v.drop_targets.contains(&t.id));
+    for r in &v.replace {
+        for u in s.units.iter_mut().filter(|u| u.id == r.unit) {
+            u.platform = Some(r.platform.clone());
+            if let Some(c) = &r.nation {
+                u.nation = Some(c.clone());
+            }
+        }
+    }
+    s.orders.retain(|o| match &o.command {
+        Command::AssignTask { units, .. }
+        | Command::SetBehaviour { units, .. }
+        | Command::SetEmcon { units, .. } => !units.iter().all(|u| v.drop_units.contains(u)),
+        Command::TaskSatellite { satellite, .. } => !v.drop_units.contains(satellite),
+        _ => true,
+    });
+    s.orders.extend(v.orders.iter().cloned());
+}
+
+fn members_of(sim: &Sim, group: u32) -> Vec<UnitId> {
+    let world = sim.world();
+    crate::world::entity(world, UnitId(group))
+        .and_then(|e| world.get::<Group>(e))
+        .map(|g| g.members.clone())
+        .unwrap_or_default()
+}
+
+/// Association key of a target: its group, or itself.
+fn truth_key(sim: &Sim, target: u32) -> UnitId {
+    let world = sim.world();
+    crate::world::entity(world, UnitId(target))
+        .and_then(|e| world.get::<GroupMember>(e))
+        .map_or(UnitId(target), |m| m.group)
+}
+
+/// The side's contact of a target: (first detection tick, true range).
+fn first_seen(sim: &Sim, side: u8, target: u32) -> Option<(u64, f64)> {
+    let key = truth_key(sim, target);
+    let pics = sim.world().get_resource::<SidePictures>()?;
+    let pic = pics.sides.get(usize::from(side))?;
+    let c = pic.get(*pic.by_truth.get(&key)?)?;
+    Some((c.first_seen.tick, c.first_seen.range_m))
+}
+
+/// Position and line-of-sight height of a unit: a lead or a member of
+/// `id` (groups use their lead).
+fn place(sim: &Sim, id: u32) -> Option<(wb_core::geo::LatLon, f64, Option<f64>)> {
+    let world = sim.world();
+    let mut e = crate::world::entity(world, UnitId(id))?;
+    if let Some(g) = world.get::<Group>(e) {
+        e = crate::world::entity(world, *g.members.first()?)?;
+    }
+    let k = world.get::<Kinematics>(e)?;
+    let rules = world.resource::<crate::Rules>();
+    let mount = world
+        .get::<PlatformRef>(e)
+        .and_then(|p| rules.platform(p.0).sensors.first().map(|m| m.height_m));
+    Some((k.pos(), k.alt_m, mount))
+}
+
+/// Exact clearance of the line of sight from `observer` (ground + its first
+/// sensor's mount) to `target`, metres.
+fn clearance(sim: &Sim, observer: u32, target: u32) -> Option<f64> {
+    let geo = sim.geo()?;
+    let (a, alt_a, mount) = place(sim, observer)?;
+    let (b, alt_b, _) = place(sim, target)?;
+    let ground = geo.elevation_m(a).ok()?;
+    let h_a = alt_a.max(ground) + mount.unwrap_or(0.0);
+    let real = sim.world().resource::<crate::Rules>().realism().clone();
+    let d = wb_core::geo::distance_m(a, b);
+    let p = wb_geo::LosParams {
+        k_factor: real.earth.radio_k_factor,
+        step_m: (d / real.radar.los_sample_divisor).max(30.0),
+    };
+    geo.line_of_sight(a, h_a, b, alt_b, &p)
+        .ok()
+        .map(|l| l.min_clearance_m)
+}
+
+fn first_landing(events: &[Event], members: &[UnitId]) -> Option<usize> {
+    members
+        .iter()
+        .map(|m| {
+            let mut airborne = false;
+            events.iter().position(|e| match &e.kind {
+                EventKind::TookOff { unit, .. } if unit == m => {
+                    airborne = true;
+                    false
+                }
+                EventKind::Landed { unit, .. } => airborne && unit == m,
+                _ => false,
+            })
+        })
+        .try_fold(0, |acc, i| i.map(|i| acc.max(i)))
+}
+
+/// Runs one scenario and returns each measure.
+fn measure_run(sim: &mut Sim, measures: &[Measure], max_ticks: u64) -> Vec<Option<f64>> {
+    let groups: BTreeMap<u32, Vec<UnitId>> = measures
+        .iter()
+        .filter(|m| m.metric.is_flight())
+        .filter_map(|m| m.group)
+        .map(|g| (g, members_of(sim, g)))
+        .collect();
+    let los: Vec<&Measure> = measures
+        .iter()
+        .filter(|m| {
+            matches!(
+                m.metric,
+                Metric::ClearanceAtFirstDetectionM | Metric::FirstDetectionAfterLosClearS
+            )
+        })
+        .collect();
+    let sensing: Vec<&Measure> = measures
+        .iter()
+        .filter(|m| {
+            !m.metric.is_flight() && !m.metric.is_combat() && m.metric != Metric::ReportCount
+        })
+        .collect();
+    let reports_only = measures.iter().all(|m| m.metric == Metric::ReportCount);
+    let combat = measures.iter().any(|m| m.metric.is_combat());
+    let crossings: Vec<(u8, u32)> = measures
+        .iter()
+        .filter(|m| m.metric == Metric::FirstLaunchAfterCrossingS)
+        .filter_map(|m| Some((m.side?, m.target?)))
+        .collect();
+    let mut log = CombatLog::default();
+    let mut seen_events = 0;
+    // Line of sight per (observer, target): clearance each tick and the tick it cleared.
+    let mut cleared: BTreeMap<(u32, u32), Option<u64>> = BTreeMap::new();
+    let mut history: BTreeMap<(u32, u32), BTreeMap<u64, f64>> = BTreeMap::new();
+    let mut checked = 0;
+    let mut flight_done = groups.is_empty();
+    while sim.clock().tick < max_ticks {
+        let step = if los.is_empty() { 10 } else { 1 };
+        sim.run_ticks(step);
+        let tick = sim.clock().tick;
+        for m in &los {
+            let (Some(o), Some(t), Some(side)) = (m.observer, m.target, m.side) else {
+                continue;
+            };
+            let c = clearance(sim, o, t);
+            let entry = cleared.entry((o, t)).or_insert(None);
+            if entry.is_none() && c.is_some_and(|c| c >= 0.0) {
+                *entry = Some(tick);
+            }
+            if let Some(c) = c {
+                // Positions after tick `tick - 1` ran: what its sensors saw.
+                history.entry((o, t)).or_default().insert(tick - 1, c);
+            }
+            let _ = side;
+        }
+        if combat {
+            seen_events = log.update(sim, seen_events, &crossings);
+            continue;
+        }
+        if reports_only {
+            continue;
+        }
+        let events = sim.events();
+        if events.len() != checked {
+            checked = events.len();
+            flight_done = groups.values().all(|m| first_landing(events, m).is_some());
+        }
+        let sensing_done = sensing.iter().all(|m| match (m.side, m.target) {
+            (Some(s), Some(t)) => first_seen(sim, s, t).is_some(),
+            _ => true,
+        });
+        if flight_done && sensing_done {
+            break;
+        }
+    }
+    let at_detect: BTreeMap<(u32, u32), f64> = los
+        .iter()
+        .filter_map(|m| {
+            let (o, t) = (m.observer?, m.target?);
+            let (ft, _) = first_seen(sim, m.side?, t)?;
+            let c = history.get(&(o, t))?.range(..=ft).next_back()?.1;
+            Some(((o, t), *c))
+        })
+        .collect();
+    if combat {
+        log.check_terminations(sim);
+    }
+    measures
+        .iter()
+        .map(|m| value(sim, m, &groups, &cleared, &at_detect, &log))
+        .collect()
+}
+
+/// What the harness records on truth while a combat golden runs.
+#[derive(Default)]
+struct CombatLog {
+    /// Per launched weapon: its target's true position was outside the
+    /// shooter's territory at launch.
+    outside: BTreeMap<UnitId, bool>,
+    /// (side, target) → sim time the target first crossed into the side's
+    /// territory.
+    crossed: BTreeMap<(u8, u32), u64>,
+    /// Per launched weapon: truth UnitId of its target.
+    targets: BTreeMap<UnitId, u32>,
+}
+
+impl CombatLog {
+    fn update(&mut self, sim: &mut Sim, from: usize, crossings: &[(u8, u32)]) -> usize {
+        let now = sim.clock().sim_time_ms;
+        for &(side, target) in crossings {
+            if self.crossed.contains_key(&(side, target)) {
+                continue;
+            }
+            let Some((at, _, _)) = place(sim, target) else {
+                continue;
+            };
+            let world = sim.world();
+            let rules = world.resource::<crate::Rules>();
+            if crate::roe::own_territory(world, rules, side, at) {
+                self.crossed.insert((side, target), now);
+            }
+        }
+        let launched: Vec<(UnitId, u8, Option<AimRef>)> = sim.events()[from..]
+            .iter()
+            .filter_map(|e| match &e.kind {
+                EventKind::WeaponLaunched { weapon, target, .. } => {
+                    Some((*weapon, e.sides.trailing_zeros() as u8, *target))
+                }
+                _ => None,
+            })
+            .collect();
+        let n = sim.events().len();
+        let world = sim.world();
+        let rules = world.resource::<crate::Rules>();
+        for (weapon, side, aim_ref) in launched {
+            let key = crate::world::entity(world, weapon)
+                .and_then(|e| world.get::<WeaponFlight>(e))
+                .and_then(|f| match f.target {
+                    WeaponTarget::Track { key, .. } | WeaponTarget::Truth(key) => Some(key),
+                    WeaponTarget::Point { .. } => None,
+                })
+                .or_else(|| match aim_ref {
+                    Some(AimRef::Contact { contact }) => {
+                        let pics = world.resource::<SidePictures>();
+                        pics.sides
+                            .get(usize::from(side))
+                            .and_then(|p| p.get(contact))
+                            .map(|c| c.truth)
+                    }
+                    _ => None,
+                });
+            if let Some(target_uid) = key {
+                self.targets.insert(weapon, target_uid.0);
+            }
+            let Some((at, _, _)) = key.and_then(|k| place(sim, k.0)) else {
+                continue;
+            };
+            self.outside
+                .insert(weapon, !crate::roe::own_territory(world, rules, side, at));
+        }
+        n
+    }
+
+    /// Every termination must carry its factors (doc 02 §11, CLAUDE.md
+    /// rule 4): an endgame roll when the weapon fuzed.
+    fn check_terminations(&self, sim: &Sim) {
+        for e in sim.events() {
+            if let EventKind::WeaponTerminated {
+                outcome, factors, ..
+            } = &e.kind
+            {
+                let fuzed = matches!(outcome, Outcome::Hit | Outcome::Miss | Outcome::Decoyed);
+                assert!(
+                    !fuzed || factors.endgame.is_some(),
+                    "a fuzed termination without endgame factors: {e:?}"
+                );
+            }
+        }
+    }
+}
+
+fn side_of(e: &Event) -> u8 {
+    e.sides.trailing_zeros() as u8
+}
+
+/// Operation metrics, read from the side's first operation.
+fn operation_value(sim: &Sim, m: &Measure) -> Option<f64> {
+    use crate::operations::{OpState, Operations, PhaseState};
+    let side = m.side?;
+    let ops = sim.world().resource::<Operations>();
+    let op = ops.ops.iter().find(|o| o.side == side)?;
+    let started = |id: &Option<String>| {
+        let id = id.as_deref()?;
+        op.phases.iter().find(|p| p.key == id)?.started
+    };
+    match m.metric {
+        Metric::PhaseStartGapTicks => {
+            let (a, b) = (started(&m.phase)?, started(&m.phase_b)?);
+            Some(a.tick.abs_diff(b.tick) as f64)
+        }
+        Metric::PhaseStartS => {
+            let a = started(&m.phase)?;
+            Some(a.ms.saturating_sub(op.started?.ms) as f64 / 1_000.0)
+        }
+        Metric::PhasesEnded => Some(op.phases.iter().filter(|p| p.state.is_final()).count() as f64),
+        Metric::PhasesDone => Some(
+            op.phases
+                .iter()
+                .filter(|p| p.state == PhaseState::Done)
+                .count() as f64,
+        ),
+        Metric::OperationCompleted => Some(f64::from(u8::from(op.state == OpState::Completed))),
+        _ => None,
+    }
+}
+
+fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
+    if matches!(
+        m.metric,
+        Metric::PhaseStartGapTicks
+            | Metric::PhaseStartS
+            | Metric::PhasesEnded
+            | Metric::PhasesDone
+            | Metric::OperationCompleted
+    ) {
+        return operation_value(sim, m);
+    }
+    let side = m.side?;
+    let events = sim.events();
+    let mine = || events.iter().filter(move |e| side_of(e) == side);
+    let weapon_ok = |w: &str| m.weapon.as_deref().is_none_or(|x| x == w);
+    let target_ok = |w: &UnitId| {
+        m.target.is_none_or(|t| {
+            log.targets.get(w).copied() == Some(t)
+                || log
+                    .targets
+                    .get(w)
+                    .is_some_and(|tid| members_of(sim, t).contains(&UnitId(*tid)))
+        })
+    };
+    let shooter_ok = |s: &UnitId| {
+        m.shooter
+            .is_none_or(|sh| s.0 == sh || members_of(sim, sh).contains(s))
+    };
+    let first = mine().find_map(|e| match &e.kind {
+        EventKind::WeaponLaunched {
+            weapon,
+            shooter,
+            weapon_type,
+            ..
+        } if weapon_ok(weapon_type) && shooter_ok(shooter) && target_ok(weapon) => Some(*weapon),
+        _ => None,
+    });
+    match m.metric {
+        Metric::Launches => Some(
+            mine()
+                .filter(|e| match &e.kind {
+                    EventKind::WeaponLaunched {
+                        weapon,
+                        shooter,
+                        weapon_type,
+                        intercept,
+                        reason,
+                        ..
+                    } => {
+                        weapon_ok(weapon_type)
+                            && shooter_ok(shooter)
+                            && target_ok(weapon)
+                            && match m.filter {
+                                None => true,
+                                Some(LaunchFilter::AtWeapons) => *intercept,
+                                Some(LaunchFilter::AtNonWeapons) => !*intercept,
+                                Some(LaunchFilter::ReturnFire) => {
+                                    *reason == LaunchReason::ReturnFire
+                                }
+                                Some(LaunchFilter::First) => first == Some(*weapon),
+                                Some(LaunchFilter::OutsideTerritory) => {
+                                    log.outside.get(weapon).copied().unwrap_or(false)
+                                }
+                            }
+                    }
+                    _ => false,
+                })
+                .count() as f64,
+        ),
+        Metric::SelfDefenceLaunches => Some(
+            mine()
+                .filter(|e| {
+                    matches!(&e.kind, EventKind::WeaponLaunched { reason, .. }
+                        if *reason == LaunchReason::SelfDefence)
+                })
+                .count() as f64,
+        ),
+        Metric::RoeRequests => Some(
+            mine()
+                .filter(|e| matches!(e.kind, EventKind::RoeRequest { .. }))
+                .count() as f64,
+        ),
+        Metric::Approvals => Some(
+            mine()
+                .filter(|e| {
+                    matches!(&e.kind, EventKind::RoeDecision { decision, .. }
+                        if *decision == crate::events::Decision::Approved)
+                })
+                .count() as f64,
+        ),
+        Metric::OutcomeFraction | Metric::Pk => {
+            let ends: Vec<Outcome> = mine()
+                .filter_map(|e| match &e.kind {
+                    EventKind::WeaponTerminated {
+                        weapon,
+                        weapon_type,
+                        outcome,
+                        ..
+                    } if weapon_ok(weapon_type)
+                        && (m.filter != Some(LaunchFilter::First) || first == Some(*weapon)) =>
+                    {
+                        Some(*outcome)
+                    }
+                    _ => None,
+                })
+                .collect();
+            if ends.is_empty() {
+                return None;
+            }
+            let wanted = match m.metric {
+                Metric::Pk => vec![Outcome::Hit],
+                _ => m.outcomes.clone().unwrap_or_default(),
+            };
+            Some(ends.iter().filter(|o| wanted.contains(o)).count() as f64 / ends.len() as f64)
+        }
+        Metric::FirstLaunchAfterCrossingS => {
+            let crossed = *log.crossed.get(&(side, m.target?))?;
+            let first = mine()
+                .filter(|e| e.sim_time_ms >= crossed)
+                .find(|e| matches!(e.kind, EventKind::WeaponLaunched { .. }))?;
+            Some((first.sim_time_ms - crossed) as f64 / 1_000.0)
+        }
+        Metric::FirstTarget => {
+            let ev = mine().find(|e| match &e.kind {
+                EventKind::WeaponLaunched {
+                    weapon: _,
+                    shooter,
+                    weapon_type,
+                    ..
+                } => weapon_ok(weapon_type) && shooter_ok(shooter),
+                _ => false,
+            })?;
+            if let EventKind::WeaponLaunched { weapon, .. } = &ev.kind {
+                log.targets.get(weapon).map(|t| *t as f64)
+            } else {
+                None
+            }
+        }
+        Metric::UnitsLost => Some(
+            mine()
+                .filter(|e| match &e.kind {
+                    EventKind::UnitDestroyed { unit, .. } => m
+                        .target
+                        .is_none_or(|t| unit.0 == t || members_of(sim, t).contains(unit)),
+                    _ => false,
+                })
+                .count() as f64,
+        ),
+        Metric::FirstLaunchTimeS => {
+            let ev = mine().find(|e| match &e.kind {
+                EventKind::WeaponLaunched {
+                    weapon,
+                    shooter,
+                    weapon_type,
+                    ..
+                } => weapon_ok(weapon_type) && shooter_ok(shooter) && target_ok(weapon),
+                _ => false,
+            })?;
+            Some(ev.sim_time_ms as f64 / 1_000.0)
+        }
+        _ => None,
+    }
+}
+
+fn value(
+    sim: &Sim,
+    m: &Measure,
+    groups: &BTreeMap<u32, Vec<UnitId>>,
+    cleared: &BTreeMap<(u32, u32), Option<u64>>,
+    at_detect: &BTreeMap<(u32, u32), f64>,
+    log: &CombatLog,
+) -> Option<f64> {
+    if m.metric.is_combat() {
+        return combat_value(sim, m, log);
+    }
+    let events = sim.events();
+    match m.metric {
+        Metric::FirstDetectionRangeKm => {
+            first_seen(sim, m.side?, m.target?).map(|(_, r)| r / 1_000.0)
+        }
+        Metric::ClearanceAtFirstDetectionM => at_detect.get(&(m.observer?, m.target?)).copied(),
+        Metric::FirstDetectionAfterLosClearS => {
+            let (t, _) = first_seen(sim, m.side?, m.target?)?;
+            let c = (*cleared.get(&(m.observer?, m.target?))?)?;
+            // Coarse ticks are 1 s.
+            Some(t as f64 - c as f64)
+        }
+        Metric::ReportCount => {
+            let sat = UnitId(m.satellite?);
+            Some(
+                events
+                    .iter()
+                    .filter(|e| {
+                        matches!(&e.kind, EventKind::IntelReport { satellite, imaged, .. }
+                        if *satellite == sat && m.imaged.is_none_or(|i| i == *imaged))
+                    })
+                    .count() as f64,
+            )
+        }
+        _ => flight_value(events, UnitId(m.group?), groups.get(&m.group?)?, m.metric),
+    }
+}
+
+fn flight_value(
+    events: &[Event],
+    group: UnitId,
+    members: &[UnitId],
+    metric: Metric,
+) -> Option<f64> {
+    let end = first_landing(events, members);
+    let window = &events[..end.map_or(events.len(), |i| i + 1)];
+    match metric {
+        Metric::TimeOnStationS => {
+            let mut total = 0u64;
+            let mut since = None;
+            for e in window {
+                if let EventKind::StationChanged { group: g, on } = e.kind
+                    && g == group
+                {
+                    match (on, since) {
+                        (true, None) => since = Some(e.sim_time_ms),
+                        (false, Some(s)) => {
+                            total += e.sim_time_ms - s;
+                            since = None;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            if let (Some(s), Some(last)) = (since, window.last()) {
+                total += last.sim_time_ms - s;
+            }
+            Some(total as f64 / 1_000.0)
+        }
+        Metric::LandedReserveMarginKg => {
+            end?;
+            let mut worst: Option<f64> = None;
+            for m in members {
+                let reserve = window.iter().rev().find_map(|e| match e.kind {
+                    EventKind::BingoRtb {
+                        unit, reserve_kg, ..
+                    } if unit == *m => Some(reserve_kg),
+                    _ => None,
+                })?;
+                let landed = window.iter().rev().find_map(|e| match e.kind {
+                    EventKind::Landed { unit, fuel_kg, .. } if unit == *m => Some(fuel_kg),
+                    _ => None,
+                })?;
+                let margin = landed - reserve;
+                worst = Some(worst.map_or(margin, |w: f64| w.min(margin)));
+            }
+            worst
+        }
+        Metric::BingoCalls => Some(
+            window
+                .iter()
+                .filter(|e| matches!(e.kind, EventKind::BingoRtb { unit, .. } if members.contains(&unit)))
+                .count() as f64,
+        ),
+        Metric::Refuels => Some(
+            window
+                .iter()
+                .filter(|e| matches!(e.kind, EventKind::Refuelled { unit, .. } if members.contains(&unit)))
+                .count() as f64,
+        ),
+        Metric::WinchesterReturns => Some(
+            window
+                .iter()
+                .filter(|e| {
+                    matches!(e.kind, EventKind::Return { group: g, why: ReturnWhy::Winchester, .. } if g == group)
+                })
+                .count() as f64,
+        ),
+        _ => None,
+    }
+}

@@ -10,7 +10,9 @@ use wb_content::ContentDb;
 use wb_sim::view::ViewEncoder;
 use wb_sim::{Order, Sim};
 
+mod admin;
 mod geo;
+pub use admin::{TestBench, build_content_pack, check_content, content_pack_info};
 pub use geo::{Blake3Hasher, GeoQuery};
 
 fn content(pack: &[u8]) -> Result<(Arc<ContentDb>, [u8; 32]), JsError> {
@@ -171,6 +173,13 @@ impl Engine {
         wb_sim::details::contact_details(self.current().world(), self.side, id)
             .map(|d| json(&d))
             .map_err(|e| JsError::new(&e))
+    }
+
+    /// Content inventories of this side's own nations (Forces panel), JSON
+    /// (`NationInventory[]`).
+    pub fn inventory(&self) -> String {
+        let rules = self.sim.world().resource::<wb_sim::Rules>();
+        json(&wb_sim::inventory::inventory(rules, self.sim.sides(), self.side))
     }
 
     /// Open ROE approval requests of this side, JSON (`ApprovalView[]`).

@@ -9,6 +9,7 @@ pub mod compiled;
 pub mod denylist;
 pub mod load;
 pub mod pack;
+pub mod report;
 #[cfg(feature = "schema")]
 pub mod schema;
 pub mod source;
@@ -18,3 +19,4 @@ pub use compile::compile;
 pub use compiled::ContentDb;
 pub use load::{ContentError, ContentSet, SourceFile, load_dir, load_files};
 pub use pack::{PackHeader, decode, encode};
+pub use validate::{BandPosition, band_positions};
