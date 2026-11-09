@@ -30,6 +30,8 @@ pub struct Engine {
     side: u8,
     /// Events already handed to the client.
     events_sent: usize,
+    /// A replay being watched (doc 03 §12); the war itself is paused meanwhile.
+    replay: Option<wb_sim::replay::Replay>,
 }
 
 #[wasm_bindgen]
@@ -56,6 +58,28 @@ impl Engine {
             encoder: ViewEncoder::new(),
             side,
             events_sent: 0,
+            replay: None,
+        }
+    }
+
+    /// The sim the client sees: the replay while one is open, else the war.
+    fn current(&self) -> &Sim {
+        self.replay.as_ref().map_or(&self.sim, |r| r.sim())
+    }
+
+    fn replay_json(&self) -> String {
+        match &self.replay {
+            None => json(&serde_json::json!({ "active": false })),
+            Some(r) => json(&serde_json::json!({
+                "active": true,
+                "tick": r.sim().clock().tick,
+                "sim_time_ms": r.sim().clock().sim_time_ms,
+                "end_tick": r.end_tick,
+                "end_ms": self.sim.clock().sim_time_ms,
+                "checkpoints": r.checkpoints().iter()
+                    .map(|c| serde_json::json!({ "tick": c.tick, "sim_time_ms": c.sim_time_ms }))
+                    .collect::<Vec<_>>(),
+            })),
         }
     }
 
@@ -80,6 +104,9 @@ impl Engine {
     /// Adds `real_dt_ms × speed` of sim time and runs every whole tick that
     /// fits. Returns the number of ticks run.
     pub fn advance(&mut self, real_dt_ms: f64, speed: f64) -> u32 {
+        if self.replay.is_some() {
+            return 0;
+        }
         self.sim.advance(real_dt_ms, speed)
     }
 
@@ -90,12 +117,12 @@ impl Engine {
 
     /// Ticks completed. Exact up to 2^53.
     pub fn tick(&self) -> f64 {
-        self.sim.clock().tick as f64
+        self.current().clock().tick as f64
     }
 
     /// Sim time since war start, ms. Exact up to 2^53.
     pub fn sim_time_ms(&self) -> f64 {
-        self.sim.clock().sim_time_ms as f64
+        self.current().clock().sim_time_ms as f64
     }
 
     /// War start, Unix epoch ms UTC.
@@ -104,7 +131,7 @@ impl Engine {
     }
 
     pub fn tick_len_ms(&self) -> u32 {
-        self.sim.clock().tick_len.ms()
+        self.current().clock().tick_len.ms()
     }
 
     /// BLAKE3 state hash, 64 hex chars.
@@ -115,7 +142,8 @@ impl Engine {
     /// Encodes the side view; read it at `view_ptr()` for the returned length
     /// before the next call into the engine.
     pub fn encode_view(&mut self) -> usize {
-        self.encoder.encode(self.sim.world(), self.side).len()
+        let world = self.replay.as_ref().map_or(self.sim.world(), |r| r.sim().world());
+        self.encoder.encode(world, self.side).len()
     }
 
     /// Address of the last encoded view in WebAssembly memory.
@@ -130,21 +158,21 @@ impl Engine {
 
     /// Unit card / base card JSON for an own unit, group or base.
     pub fn details(&self, id: u32) -> Result<String, JsError> {
-        wb_sim::details::details(self.sim.world(), self.side, id)
+        wb_sim::details::details(self.current().world(), self.side, id)
             .map(|d| json(&d))
             .map_err(|e| JsError::new(&e))
     }
 
     /// Contact card JSON for a contact of this side's picture: estimates only.
     pub fn contact_details(&self, id: u32) -> Result<String, JsError> {
-        wb_sim::details::contact_details(self.sim.world(), self.side, id)
+        wb_sim::details::contact_details(self.current().world(), self.side, id)
             .map(|d| json(&d))
             .map_err(|e| JsError::new(&e))
     }
 
     /// Open ROE approval requests of this side, JSON (`ApprovalView[]`).
     pub fn approvals(&self) -> String {
-        json(&wb_sim::roe::approvals(self.sim.world(), self.side))
+        json(&wb_sim::roe::approvals(self.current().world(), self.side))
     }
 
     /// Ground track of an own satellite, `[[lon, lat], …]` every `step_s`.
@@ -195,6 +223,76 @@ impl Engine {
             .collect();
         self.events_sent = all.len();
         json(&new)
+    }
+
+    /// The side's operations for the planner (`OperationView[]`).
+    pub fn operations(&self) -> String {
+        json(&wb_sim::operations::views(self.current().world(), self.side))
+    }
+
+    /// Planner validation of an `OperationSpec` (JSON): `Issue[]`, errors first.
+    pub fn check_operation(&mut self, spec_json: &str) -> String {
+        match serde_json::from_str::<wb_sim::operations::OperationSpec>(spec_json) {
+            Err(e) => json(&vec![wb_sim::operations::Issue {
+                severity: wb_sim::operations::Severity::Error,
+                phase: None,
+                text: format!("The plan is not valid: {e}"),
+            }]),
+            Ok(spec) => {
+                let geo = self.sim.geo_shared();
+                let side = self.side;
+                json(&wb_sim::operations::check(
+                    self.sim.world_mut(),
+                    geo.as_deref(),
+                    side,
+                    &spec,
+                ))
+            }
+        }
+    }
+
+    /// The after-action report (`Report`) of this side; `truth` adds the
+    /// truth review once the war has ended. `format`: `json`, `html` or
+    /// `csv:<table>`.
+    pub fn report(&self, truth: bool, format: &str) -> Result<String, JsError> {
+        let sim = self.current();
+        let r = wb_sim::reports::build(sim.world(), sim.events(), self.side, truth)
+            .map_err(|e| JsError::new(&e))?;
+        match format {
+            "json" => Ok(json(&r)),
+            "html" => Ok(wb_sim::reports::to_html(&r)),
+            f => f
+                .strip_prefix("csv:")
+                .and_then(|t| wb_sim::reports::to_csv(&r, t))
+                .ok_or_else(|| JsError::new(&format!("Unknown report format `{f}`"))),
+        }
+    }
+
+    /// Opens a replay of the war so far at its first checkpoint; the war
+    /// pauses. Returns the replay state JSON.
+    pub fn replay_start(&mut self) -> Result<String, JsError> {
+        let r = wb_sim::replay::Replay::of(&self.sim).map_err(|e| JsError::new(&e))?;
+        self.replay = Some(r);
+        self.encoder.reset();
+        Ok(self.replay_json())
+    }
+
+    /// Re-simulates the replay to `tick` (doc 03 §12 scrubber).
+    pub fn replay_seek(&mut self, tick: f64) -> Result<String, JsError> {
+        let r = self
+            .replay
+            .as_mut()
+            .ok_or_else(|| JsError::new("No replay is open"))?;
+        r.seek(tick.max(0.0) as u64).map_err(|e| JsError::new(&e))?;
+        self.encoder.reset();
+        Ok(self.replay_json())
+    }
+
+    /// Closes the replay; the war carries on from where it was.
+    pub fn replay_stop(&mut self) -> String {
+        self.replay = None;
+        self.encoder.reset();
+        self.replay_json()
     }
 
     /// Writes a `.wbsave`. `packs_json` is a JSON array of `id@version`.

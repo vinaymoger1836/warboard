@@ -186,6 +186,11 @@ impl Sim {
         self.geo.clone()
     }
 
+    /// The packs, shared (planner checks borrow the world mutably).
+    pub fn geo_shared(&self) -> Option<Rc<Geo>> {
+        self.geo.clone()
+    }
+
     /// Writes a `.wbsave`. `created_utc_ms` is the client's wall clock (only
     /// recorded, never read by the engine).
     pub fn save(&self, war_name: &str, packs: Vec<String>, created_utc_ms: i64) -> Vec<u8> {

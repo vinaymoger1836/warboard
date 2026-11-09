@@ -1939,7 +1939,7 @@ fn finish(
 /// What the planner and the map show of a phase task.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
-pub struct TaskView {
+pub struct PhaseTaskView {
     pub kind: String,
     pub units: Vec<u32>,
     pub unit_names: Vec<String>,
@@ -1972,7 +1972,7 @@ pub struct PhaseView {
     #[cfg_attr(feature = "ts", ts(optional))]
     pub reason: Option<String>,
     pub manual_go: bool,
-    pub tasks: Vec<TaskView>,
+    pub tasks: Vec<PhaseTaskView>,
     pub tally: PhaseTally,
     pub in_flight: u32,
 }
@@ -2056,7 +2056,7 @@ pub fn view(world: &World, o: &Operation) -> OperationView {
                                 | Task::Jam { radius_m, .. } => Some(radius_m / 1_000.0),
                                 _ => t.near_m.map(|r| r / 1_000.0),
                             };
-                            TaskView {
+                            PhaseTaskView {
                                 kind: if t.fire {
                                     "fire".to_owned()
                                 } else {
