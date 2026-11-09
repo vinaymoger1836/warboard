@@ -829,7 +829,7 @@ fn resolve_loadout(
 }
 
 /// `[lon, lat]` degrees to a point, checking the ranges.
-fn point(p: LonLat) -> Result<LatLon, String> {
+pub(crate) fn point(p: LonLat) -> Result<LatLon, String> {
     let [lon, lat] = p;
     if !(lat.is_finite() && lon.is_finite()) || !(-89.0..=89.0).contains(&lat) {
         return Err(format!("Latitude {lat} is outside ±89°"));
@@ -840,7 +840,7 @@ fn point(p: LonLat) -> Result<LatLon, String> {
     Ok(LatLon::from_deg(lat, lon))
 }
 
-fn fmt_point(p: LatLon) -> String {
+pub(crate) fn fmt_point(p: LatLon) -> String {
     let (lat, lon) = (rad_to_deg(p.lat), rad_to_deg(p.lon));
     format!(
         "{:.2}°{} {:.2}°{}",
@@ -853,7 +853,7 @@ fn fmt_point(p: LatLon) -> String {
 
 /// Expands unit and group ids of `side` into group picks, in `UnitId` order.
 /// Unknown and enemy ids get the same message, so the reply reveals nothing.
-fn pick_groups(world: &World, side: u8, units: &[u32]) -> Result<Vec<GroupPick>, String> {
+pub(crate) fn pick_groups(world: &World, side: u8, units: &[u32]) -> Result<Vec<GroupPick>, String> {
     if units.is_empty() {
         return Err("No units selected".to_owned());
     }
@@ -892,7 +892,7 @@ fn pick_groups(world: &World, side: u8, units: &[u32]) -> Result<Vec<GroupPick>,
     Ok(picks)
 }
 
-fn resolve_task(
+pub(crate) fn resolve_task(
     world: &mut World,
     geo: Option<&Geo>,
     side: u8,
@@ -1183,7 +1183,7 @@ fn resolve_task(
 
 /// A contact of the side's picture with a position; its id and domain.
 /// Unknown and other sides' ids get the same answer.
-fn own_contact(world: &World, side: u8, raw: u32) -> Result<(ContactId, Domain), String> {
+pub(crate) fn own_contact(world: &World, side: u8, raw: u32) -> Result<(ContactId, Domain), String> {
     let pics = world.resource::<crate::picture::SidePictures>();
     pics.sides
         .get(usize::from(side))
@@ -1562,7 +1562,7 @@ fn set_loadout(
 /// The group entity the pick applies to: the group itself when it names
 /// every member, otherwise a new group split off from it. `None` if the group
 /// or its members are gone (destroyed since the order was given).
-fn split(world: &mut World, side: u8, pick: &GroupPick) -> Option<Entity> {
+pub(crate) fn split(world: &mut World, side: u8, pick: &GroupPick) -> Option<Entity> {
     let ge = entity(world, pick.group)?;
     let g = world.get::<Group>(ge)?.clone();
     let members: Vec<UnitId> = pick
@@ -1603,6 +1603,7 @@ fn split(world: &mut World, side: u8, pick: &GroupPick) -> Option<Entity> {
         evade: g.evade,
         doctrine: g.doctrine,
         autonomous_after_ms: g.autonomous_after_ms,
+        fires: Vec::new(),
     };
     Some(spawn_unit(
         world,

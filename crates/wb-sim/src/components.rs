@@ -446,6 +446,26 @@ pub struct Group {
     pub doctrine: DoctrineOverride,
     /// When C2 is lost, autonomous mode activates after this sim time (ms).
     pub autonomous_after_ms: Option<u64>,
+    /// Fire missions from operations (ADR-043): rounds to fire at a target
+    /// without changing the task, so a ship keeps its patrol while it fires.
+    pub fires: Vec<FireMission>,
+}
+
+/// A fire mission (ADR-043): `count` rounds of `weapon` (any suitable if
+/// none) at `target`, fired from where the group is, pre-approved like a
+/// strike. `salvos` lists the salvos fired for it, so an operation can tell
+/// when its weapons have ended.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct FireMission {
+    /// Unique per war (`Operations::next_mission`).
+    pub id: u32,
+    pub target: StrikeTarget,
+    pub weapon: Option<WeaponIx>,
+    pub count: u32,
+    pub fired: u32,
+    pub salvos: Vec<u32>,
+    /// Nothing more will be fired: all rounds away, or none left to fire.
+    pub done: bool,
 }
 
 impl Group {

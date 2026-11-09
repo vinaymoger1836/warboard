@@ -142,7 +142,19 @@ pub fn run(world: &mut World) {
             &mut incoming,
             now,
         );
-        in_env |= offensive(world, &rules, side, gid, &g, &shooters, &mut inflight, now);
+        in_env |= offensive(
+            world,
+            &rules,
+            side,
+            gid,
+            &g,
+            &g.task,
+            None,
+            &shooters,
+            &mut inflight,
+            now,
+        );
+        in_env |= fire_missions(world, &rules, side, gid, &g, &mut inflight, now);
     }
     // Incoming weapons stay marked while their contact exists, so a threat
     // whose predicted approach flickers is announced once.
@@ -689,12 +701,17 @@ fn self_defence(
 /// Offensive engagements of one group; whether a hostile was inside a
 /// member's envelope.
 #[allow(clippy::too_many_arguments)]
+/// Offensive fire for `task`: the group's own task, or a fire mission
+/// (`mission`, its index in `g.fires`) dressed as a strike.
+#[allow(clippy::too_many_arguments)]
 fn offensive(
     world: &mut World,
     rules: &Rules,
     side: u8,
     gid: UnitId,
     g: &Group,
+    task: &Task,
+    mission: Option<usize>,
     shooters: &[Shooter],
     inflight: &mut BTreeMap<(u8, ContactId), u32>,
     now: u64,
@@ -716,7 +733,7 @@ fn offensive(
         weapon,
         count,
         fired,
-    } = g.task
+    } = *task
     {
         let want = count.unwrap_or(shots).saturating_sub(fired);
         let mut done = 0;
@@ -754,12 +771,12 @@ fn offensive(
             }
         }
         if done > 0 {
-            strike_fired(world, rules, side, gid, done, want);
+            strike_fired(world, rules, side, gid, mission, salvo, done, want);
         }
         return done > 0;
     }
 
-    let ordered = match g.task {
+    let ordered = match *task {
         Task::Intercept { contact } => Some(contact),
         Task::Strike {
             target: StrikeTarget::Contact(c),
@@ -771,7 +788,7 @@ fn offensive(
         } => Some(c),
         _ => None,
     };
-    let (strike_weapon, strike_left) = match g.task {
+    let (strike_weapon, strike_left) = match *task {
         Task::Strike {
             weapon,
             count,
@@ -801,7 +818,7 @@ fn offensive(
                         && c.level >= wb_content::source::realism::ContactLevel::Class
                 }
             })
-            .filter(|c| match g.task {
+            .filter(|c| match *task {
                 Task::Cap {
                     centre, commit_m, ..
                 } => c.est.is_some_and(|e| distance_m(e.at, centre) <= commit_m),
@@ -930,7 +947,7 @@ fn offensive(
         if let Some(left) = strike_left
             && done > 0
         {
-            strike_fired(world, rules, side, gid, done, left);
+            strike_fired(world, rules, side, gid, mission, Some(salvo), done, left);
         }
     }
     in_env
@@ -938,16 +955,109 @@ fn offensive(
 
 /// Counts a strike's rounds; once all are away the group goes home (air) or
 /// stops (ships).
-fn strike_fired(world: &mut World, rules: &Rules, side: u8, gid: UnitId, done: u32, want: u32) {
+///
+/// A fire mission (`mission`) records its salvo and is done once its rounds
+/// are away; the group keeps its task.
+#[allow(clippy::too_many_arguments)]
+fn strike_fired(
+    world: &mut World,
+    rules: &Rules,
+    side: u8,
+    gid: UnitId,
+    mission: Option<usize>,
+    salvo: Option<u32>,
+    done: u32,
+    want: u32,
+) {
     let Some(ge) = entity(world, gid) else { return };
     let mut g = std::mem::take(&mut *world.get_mut::<Group>(ge).expect("group"));
-    if let Task::Strike { fired, .. } | Task::Suppress { fired, .. } = &mut g.task {
-        *fired += done;
+    match mission.and_then(|i| g.fires.get_mut(i)) {
+        Some(m) => {
+            m.fired += done;
+            if let Some(s) = salvo
+                && !m.salvos.contains(&s)
+            {
+                m.salvos.push(s);
+            }
+            m.done = m.fired >= m.count;
+        }
+        None => {
+            if let Task::Strike { fired, .. } | Task::Suppress { fired, .. } = &mut g.task {
+                *fired += done;
+            }
+        }
     }
     *world.get_mut::<Group>(ge).expect("group") = g;
-    if done >= want {
+    if mission.is_none() && done >= want {
         end_strike(world, rules, side, gid);
     }
+}
+
+/// Fires the group's open fire missions (ADR-043), each like a strike with
+/// the shooters as they are after the previous one. A mission that can never
+/// fire (no rounds of its weapon on working launchers) is closed with
+/// `StrikeAborted`.
+fn fire_missions(
+    world: &mut World,
+    rules: &Rules,
+    side: u8,
+    gid: UnitId,
+    g: &Group,
+    inflight: &mut BTreeMap<(u8, ContactId), u32>,
+    now: u64,
+) -> bool {
+    let mut in_env = false;
+    for (i, m) in g.fires.iter().enumerate() {
+        if m.done {
+            continue;
+        }
+        let shooters = shooters(world, rules, g);
+        let can = shooters.iter().any(|s| {
+            s.rounds
+                .iter()
+                .any(|(w, n)| *n > 0 && m.weapon.is_none_or(|x| x == *w))
+        });
+        if !can {
+            let what = m.weapon.map_or_else(
+                || "weapons".to_owned(),
+                |w| rules.db.str(rules.db.weapons[w.0 as usize].name).to_owned(),
+            );
+            if let Some(ge) = entity(world, gid)
+                && let Some(mut live) = world.get_mut::<Group>(ge)
+                && let Some(lm) = live.fires.get_mut(i)
+            {
+                lm.done = true;
+            }
+            emit(
+                world,
+                side,
+                EventKind::StrikeAborted {
+                    group: gid,
+                    reason: format!("fire mission: no {what} left on working launchers"),
+                },
+            );
+            continue;
+        }
+        let task = Task::Strike {
+            target: m.target,
+            weapon: m.weapon,
+            count: Some(m.count),
+            fired: m.fired,
+        };
+        in_env |= offensive(
+            world,
+            rules,
+            side,
+            gid,
+            g,
+            &task,
+            Some(i),
+            &shooters,
+            inflight,
+            now,
+        );
+    }
+    in_env
 }
 
 /// Ends a strike: aircraft go home, ships stop.
