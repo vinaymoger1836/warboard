@@ -6,6 +6,7 @@ import { useState } from 'react';
 import type { EngineBridge } from '../bridge';
 import { type EventLine, ui, useUi } from '../store';
 import { Approvals, useApprovals } from './Approvals';
+import { Operations } from './Operations';
 import { CATEGORY_COLOUR, contactOf, describe, elapsed, subjectOf } from './format';
 
 const TABS = [
@@ -17,11 +18,7 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
-const LATER: Partial<Record<Tab, string>> = {
-  operations: 'Operations arrive in P7.',
-};
-
-export function Dock({ bridge, toast }: { bridge: EngineBridge; toast: (t: string) => void }) {
+export function Dock({ bridge, toast, now }: { bridge: EngineBridge; toast: (t: string) => void; now: number }) {
   const strings = bridge.strings;
   const [tab, setTab] = useState<Tab>('events');
   const [open, setOpen] = useState(true);
@@ -32,7 +29,7 @@ export function Dock({ bridge, toast }: { bridge: EngineBridge; toast: (t: strin
   const waiting = approvals.filter((r) => !r.approved).length;
   const lines = tab === 'alerts' ? alerts : tab === 'events' ? events : tab === 'intel' ? intel : [];
   return (
-    <section className={open ? 'dock' : 'dock closed'} aria-label="Dock">
+    <section className={open ? (tab === 'operations' ? 'dock tall' : 'dock') : 'dock closed'} aria-label="Dock">
       <div className="dock-tabs" role="tablist">
         {TABS.map(([id, label]) => (
           <button
@@ -57,8 +54,8 @@ export function Dock({ bridge, toast }: { bridge: EngineBridge; toast: (t: strin
       </div>
       {open && (
         <div className="dock-body" role="tabpanel">
-          {LATER[tab] ? (
-            <p className="muted">{LATER[tab]}</p>
+          {tab === 'operations' ? (
+            <Operations bridge={bridge} toast={toast} now={now} />
           ) : tab === 'approvals' ? (
             <Approvals bridge={bridge} list={approvals} toast={toast} />
           ) : lines.length === 0 ? (

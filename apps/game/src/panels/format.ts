@@ -49,7 +49,7 @@ export function fuelColour(pct: number | null | undefined, bingo = false): strin
   return cssVar('state.ok');
 }
 
-export type EventCategory = 'Task' | 'Fuel' | 'Air' | 'Base' | 'Alert' | 'Contact' | 'Intel' | 'EMCON' | 'EW' | 'Weapon' | 'ROE';
+export type EventCategory = 'Task' | 'Fuel' | 'Air' | 'Base' | 'Alert' | 'Contact' | 'Intel' | 'EMCON' | 'EW' | 'Weapon' | 'ROE' | 'Op';
 
 export const CATEGORY_COLOUR: Record<EventCategory, string> = {
   Task: cssVar('text.secondary'),
@@ -63,6 +63,7 @@ export const CATEGORY_COLOUR: Record<EventCategory, string> = {
   EW: cssVar('ring.sensor'),
   Weapon: cssVar('weapon.offensive'),
   ROE: cssVar('state.warn'),
+  Op: cssVar('side.own'),
 };
 
 const SOURCE: Record<string, string> = {
@@ -196,7 +197,19 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     const what = d.subsystem ? `, ${d.subsystem.replace(/_/g, ' ')} out` : '';
     return { category: 'Alert', text: `${n(d.unit)} hit${left}${what}${d.aborted ? ', aborting mission' : ''}` };
   }
-  if ('UnitDestroyed' in k) return { category: 'Alert', text: `${k.UnitDestroyed.name} destroyed` };
+  if ('UnitDestroyed' in k) return { category: 'Alert', text: `${k.UnitDestroyed.name} ${k.UnitDestroyed.cause}` };
+  if ('OperationChanged' in k) {
+    const o = k.OperationChanged;
+    return { category: 'Op', text: `${o.name} ${o.state}${o.reason ? `: ${o.reason}` : ''}` };
+  }
+  if ('PhaseStarted' in k) return { category: 'Op', text: `Phase ${k.PhaseStarted.phase + 1} ${k.PhaseStarted.name} started` };
+  if ('PhaseEnded' in k) {
+    const p = k.PhaseEnded;
+    return { category: p.state === 'aborted' ? 'Alert' : 'Op', text: `Phase ${p.phase + 1} ${p.name} ${p.state}: ${p.reason}` };
+  }
+  if ('WarEnded' in k) return { category: 'Op', text: 'The war has ended: the truth review is unlocked' };
+  // Truth-only (no side receives it); listed so the cases stay exhaustive.
+  if ('TruthHit' in k) return { category: 'Weapon', text: 'Hit (truth record)' };
   if ('BaseComponentDamaged' in k) {
     const b = k.BaseComponentDamaged;
     return { category: 'Base', text: `${n(b.base)}: ${b.component.replace(/_/g, ' ')} damaged, repaired by ${elapsed(b.repaired_at_ms)}` };
@@ -292,7 +305,8 @@ export const isAlert = (e: Event) =>
   'UnitDestroyed' in e.kind ||
   'AutonomousMode' in e.kind ||
   'RoeRequest' in e.kind ||
-  'StrikeAborted' in e.kind;
+  'StrikeAborted' in e.kind ||
+  ('PhaseEnded' in e.kind && e.kind.PhaseEnded.state === 'aborted');
 
 /** The unit an event is about, for click-to-locate. */
 export function subjectOf(e: Event): number | null {

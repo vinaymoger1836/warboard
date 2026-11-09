@@ -18,6 +18,10 @@ interface Props {
   /** The side's default ROE (doc 03 §7); none until the war is loaded. */
   sideRoe: Roe | null;
   onRoe: (r: Roe) => void;
+  onReports: () => void;
+  reportsOpen: boolean;
+  onReplay: () => void;
+  replaying: boolean;
 }
 
 /** Side ROE buttons (doc 10 §8): letter, value and what it means (doc 03 §7). */
@@ -33,7 +37,22 @@ const AUTO_SLOW = [
   ['off', 'OFF'],
 ] as const;
 
-export function TopBar({ report, error, speed, onSpeed, onSaves, onPacks, savesOpen, packsOpen, sideRoe, onRoe }: Props) {
+export function TopBar({
+  report,
+  error,
+  speed,
+  onSpeed,
+  onSaves,
+  onPacks,
+  savesOpen,
+  packsOpen,
+  sideRoe,
+  onRoe,
+  onReports,
+  reportsOpen,
+  onReplay,
+  replaying,
+}: Props) {
   const autoSlow = useUi((s) => s.autoSlow);
   const achieved = report
     ? speed === 0
@@ -103,6 +122,12 @@ export function TopBar({ report, error, speed, onSpeed, onSaves, onPacks, savesO
         </div>
       </div>
       <div className="top-actions">
+        <button type="button" className="chrome-button" aria-expanded={reportsOpen} onClick={onReports}>
+          REPORTS
+        </button>
+        <button type="button" className="chrome-button" aria-pressed={replaying} onClick={onReplay}>
+          {replaying ? 'EXIT REPLAY' : 'REPLAY'}
+        </button>
         <button type="button" className="chrome-button" aria-expanded={savesOpen} onClick={onSaves}>
           SAVES
         </button>

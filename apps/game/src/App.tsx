@@ -2,13 +2,16 @@
 import type { Roe, TickReport } from '@warboard/protocol';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EngineBridge } from './bridge';
-import type { WarInfo } from './engine/messages';
+import type { ReplayInfo, WarInfo } from './engine/messages';
 import { coalitionOf } from './map2d/coalitions';
 import { MapView } from './map2d/MapView';
 import { PackManager, type PackState } from './packs/manager';
 import { PackPanel } from './packs/PackPanel';
 import { fileFor, type InstalledPack } from './packs/types';
 import { Dock } from './panels/Dock';
+import { Planner } from './panels/Planner';
+import { ReplayBar } from './panels/ReplayBar';
+import { Reports } from './panels/Reports';
 import { ForcesPanel } from './panels/ForcesPanel';
 import { sendCommand } from './orders';
 import { isAlert, isIntel } from './panels/format';
@@ -46,6 +49,19 @@ export function App() {
   const { toasts, show } = useToasts();
   const selected = useUi((s) => s.selected);
   const selectedContact = useUi((s) => s.selectedContact);
+  const planner = useUi((s) => s.planner);
+  const reportsOpen = useUi((s) => s.reportsOpen);
+  const [replay, setReplay] = useState<ReplayInfo>({ active: false });
+  const toggleReplay = useCallback(() => {
+    const req = replay.active ? { type: 'replayStop' as const } : { type: 'replayStart' as const };
+    bridge
+      .request(req)
+      .then((info) => {
+        setReplay(info);
+        ui.select(null);
+      })
+      .catch((err: unknown) => show(err instanceof Error ? err.message : String(err)));
+  }, [bridge, replay.active, show]);
 
   const choose = useCallback(
     (s: number) => {
@@ -202,7 +218,12 @@ export function App() {
             if (ok) setSideRoe(roe);
           });
         }}
+        reportsOpen={reportsOpen}
+        onReports={() => ui.set((s) => ({ reportsOpen: !s.reportsOpen }))}
+        replaying={replay.active}
+        onReplay={toggleReplay}
       />
+      {replay.active && <ReplayBar bridge={bridge} info={replay} onInfo={setReplay} toast={show} />}
 
       <main className="board">
         {mapReady ? (
@@ -225,9 +246,11 @@ export function App() {
         <UnitCard bridge={bridge} toast={show} />
         {packsOpen && <PackPanel manager={manager} state={packs} onClose={() => setPacksOpen(false)} />}
         {savesOpen && <SavesPanel bridge={bridge} toast={show} onClose={() => setSavesOpen(false)} />}
+        {planner && <Planner bridge={bridge} toast={show} />}
+        {reportsOpen && <Reports bridge={bridge} toast={show} />}
         <Toasts toasts={toasts} sticky={speed === 0 ? ['Simulation paused'] : []} />
       </main>
-      <Dock bridge={bridge} toast={show} />
+      <Dock bridge={bridge} toast={show} now={report?.simTimeMs ?? 0} />
     </div>
   );
 }
