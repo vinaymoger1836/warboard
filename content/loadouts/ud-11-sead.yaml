@@ -1,0 +1,9 @@
+id: ud-11-sead
+kind: loadout
+name: Radar hunter
+platform: ud-11
+roles: [sead]
+items:
+  - { station: wing_l, weapon: eh-5, count: 2 }
+  - { station: wing_r, weapon: ag-5, count: 2 }
+design: { note: Two light emitter-homing and two mini missiles }

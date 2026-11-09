@@ -1,0 +1,8 @@
+id: mp-6-patrol
+kind: loadout
+name: Patrol
+platform: mp-6
+roles: [maritime_patrol]
+items:
+  - { station: bay, weapon: as-2, count: 4 }
+design: { note: Four light missiles for small craft }

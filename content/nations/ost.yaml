@@ -4,5 +4,5 @@ name: Ostrevia
 colour: "#A08A4F"
 flag: { pattern: horizontal, colours: ["#C8A040", "#3F6B3A"] }
 doctrine: ost-ground
-datalinks: [tessel]
+datalinks: [tessel, rill]
 design: { note: "Agrarian plains; ground forces, short-range air defence" }

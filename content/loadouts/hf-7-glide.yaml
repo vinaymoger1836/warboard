@@ -1,0 +1,11 @@
+id: hf-7-glide
+kind: loadout
+name: Glide bombs
+platform: hf-7
+roles: [strike]
+items:
+  - { station: fuselage, weapon: gb-900g, count: 2 }
+  - { station: fuselage, weapon: ar-14, count: 2 }
+  - { station: wing_outer, weapon: ar-14, count: 2 }
+  - { station: wingtip, weapon: ai-5, count: 2 }
+design: { note: Two stand-off glide bombs }

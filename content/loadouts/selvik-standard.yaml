@@ -1,0 +1,10 @@
+id: selvik-standard
+kind: loadout
+name: Standard
+platform: selvik
+roles: [anti_ship, air_defence]
+items:
+  - { station: vls, weapon: sn-15, count: 64 }
+  - { station: ashm, weapon: as-5, count: 8 }
+  - { station: gun, weapon: cg-30, count: 1 }
+design: { note: Sixty-four short missiles and eight sea-skimmers }

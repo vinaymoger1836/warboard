@@ -1,0 +1,6 @@
+id: esm-naval
+kind: archetype
+name: Naval ESM receiver
+bands:
+  esm.r_ref_km: [150, 350]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

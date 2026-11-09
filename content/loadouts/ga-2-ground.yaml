@@ -1,0 +1,11 @@
+id: ga-2-ground
+kind: loadout
+name: Ground attack
+platform: ga-2
+roles: [strike, close_support]
+items:
+  - { station: wing_inner, weapon: ag-4, count: 2 }
+  - { station: wing_outer, weapon: ag-2, count: 2 }
+  - { station: wingtip, weapon: ai-1, count: 2 }
+  - { station: centre, weapon: bu-250, count: 2 }
+design: { note: "Heavy missiles, light missiles and bombs" }

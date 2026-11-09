@@ -1,0 +1,29 @@
+id: lm-1
+kind: weapon
+name: LM-1
+category: loitering
+targets: [ground, surface]
+target_class: uav
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.35
+  max_range_km: 300
+  min_range_km: 10
+  cruise_alt_m: 1500
+  terminal_alt_m: 300
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: anti_radiation
+  seeker_range_km: 15
+  seeker_resistance: 0.6
+warhead_kg: 25
+warhead: blast_fragmentation
+pk_base: { radar_site: 0.7, launcher: 0.4, surface_ship: 0.2 }
+mass_kg: 140
+station_category: [loiter_rail]
+engage_on_remote: true
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 2.5
+design: { archetype: loitering-munition, note: "Slow emitter-hunting loitering munition; cheap, launched in swarms against air-defence radars. Flies to the emitter's position and searches only in the last 40 km" }

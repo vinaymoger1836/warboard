@@ -1,0 +1,29 @@
+id: as-7
+kind: weapon
+name: AS-7
+category: ashm
+targets: [surface]
+target_class: anti_ship_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.8
+  max_range_km: 110
+  min_range_km: 5
+  cruise_alt_m: 15
+  terminal_alt_m: 5
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: active_radar
+  seeker_range_km: 15
+  seeker_resistance: 0.4
+warhead_kg: 130
+warhead: blast_fragmentation
+pk_base: { surface_ship: 0.8 }
+countermeasure_resistance: { chaff: 0.35 }
+mass_kg: 480
+station_category: [ashm]
+signature:
+  rcs_m2: { front: 0.08, side: 0.4, rear: 0.12, top: 0.4 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 3.8
+design: { archetype: ashm-subsonic, note: "Cheap air-launched anti-ship missile of the continental nations; bottom of the band, easily decoyed" }

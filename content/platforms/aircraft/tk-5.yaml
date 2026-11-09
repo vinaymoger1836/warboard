@@ -1,0 +1,29 @@
+id: tk-5
+kind: platform
+name: TK-5 Merrin
+short_name: TK-5
+category: aircraft/tanker
+target_class: tanker
+crew: 3
+mobility:
+  cruise_speed_mach: 0.72
+  max_speed_mach: 0.8
+  ceiling_m: 11000
+  sustained_g: 1.5
+  min_runway_m: 2200
+signature:
+  rcs_m2: { front: 30, side: 120, rear: 30, top: 200 }
+  ir: { cruise: 1.5 }
+  visual_size_m: 40.0
+fuel:
+  internal_kg: 60000
+  burn_kg_h: { cruise: 3800 }
+tanker:
+  offload_kg: 32000
+  transfer_rate_kg_min: 2000
+  systems: [probe]
+countermeasures: { cm-chaff: 30, cm-flare: 30 }
+datalinks: [tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 120
+design: { archetype: tanker, note: Medium probe-only tanker; gives less fuel than the TK-3 }

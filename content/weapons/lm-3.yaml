@@ -1,0 +1,27 @@
+id: lm-3
+kind: weapon
+name: LM-3
+category: loitering
+targets: [ground]
+target_class: cruise_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.4
+  max_range_km: 900
+  min_range_km: 20
+  cruise_alt_m: 1500
+  terminal_alt_m: 100
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: satnav_ins
+warhead_kg: 50
+warhead: blast
+cep_m: 15
+lethal_radius_m: 15
+mass_kg: 220
+station_category: [loiter_rail]
+signature:
+  rcs_m2: { front: 0.3, side: 1.5, rear: 0.45, top: 1.5 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 3.5
+design: { archetype: one-way-attack-drone, note: "Cheap, slow one-way attack drone: long reach and many of them, each easy to shoot down" }

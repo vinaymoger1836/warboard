@@ -1,0 +1,6 @@
+id: gun-air-defence
+kind: archetype
+name: Air-defence gun
+bands:
+  profile.max_range_km: [2, 5]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,7 @@
+id: helicopter-naval
+kind: archetype
+name: Naval helicopter
+bands:
+  mobility.max_speed_mach: [0.2, 0.28]
+  mobility.ceiling_m: [3500, 6000]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

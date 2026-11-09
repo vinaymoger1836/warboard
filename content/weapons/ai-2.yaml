@@ -1,0 +1,30 @@
+id: ai-2
+kind: weapon
+name: AI-2
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 3
+  max_speed_mach: 2.8
+  coast_tau_s: { sea_level: 8.0, high_alt: 26.5 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 18
+  min_range_km: 0.3
+  max_g: 50
+guidance:
+  terminal: ir
+  seeker_range_km: 16
+  seeker_resistance: 0.55
+warhead_kg: 10
+warhead: blast_fragmentation
+pk_base: { fighter: 0.71, bomber: 0.81, attack: 0.76, helicopter: 0.76, uav: 0.81, aew: 0.81, tanker: 0.81, ew_aircraft: 0.76, maritime_patrol: 0.81 }
+mass_kg: 85
+station_category: [aam_short]
+countermeasure_resistance: { flare: 0.55 }
+signature:
+  rcs_m2: { front: 0.03, side: 0.15, rear: 0.045, top: 0.15 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 2.9
+design: { archetype: aam-short-ir, note: Helmet-cued dogfight missile of Talvenor }

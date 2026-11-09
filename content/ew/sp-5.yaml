@@ -1,0 +1,7 @@
+id: sp-5
+kind: ew_suite
+name: SP-5 self-protection suite
+modes:
+  self_protect: { jam_strength: 6 }
+effects: [radar]
+design: { archetype: jammer-self-protect, note: Top of the self-protection class; Morvel only }

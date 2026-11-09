@@ -1,0 +1,9 @@
+id: fighter-light
+kind: archetype
+name: Light multirole fighter
+bands:
+  signature.rcs_m2.front: [0.8, 3]
+  mobility.max_speed_mach: [1.2, 1.8]
+  mobility.sustained_g: [6.5, 8.5]
+  fuel.internal_kg: [1800, 3500]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,16 @@
+id: gr-90-site
+kind: platform
+name: GR-90 coastal radar
+short_name: GR-90
+category: ground/radar
+target_class: radar_site
+mobility:
+  road_speed_kmh: 40
+  offroad_speed_kmh: 15
+signature:
+  rcs_m2: { front: 30, side: 60, rear: 30, top: 90 }
+  visual_size_m: 12
+sensors:
+  - { sensor: gr-90-radar, height_m: 45 }
+durability: { model: ground, damage_points: 100 }
+design: { archetype: ground-radar-site, note: Coastal surveillance radar on a tall mast }

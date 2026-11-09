@@ -1,0 +1,9 @@
+id: ud-11-bombs
+kind: loadout
+name: Bombs
+platform: ud-11
+roles: [strike]
+items:
+  - { station: wing_l, weapon: gb-120, count: 2 }
+  - { station: wing_r, weapon: gb-120, count: 2 }
+design: { note: Four small glide bombs }

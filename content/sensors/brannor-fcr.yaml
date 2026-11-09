@@ -1,0 +1,17 @@
+id: brannor-fcr
+kind: sensor
+name: Brannor fire-control radar
+sensor_type: radar
+role: [air_search, fire_control, missile_guidance]
+radar:
+  band: Ku
+  r_ref_km: 35
+  sigma_ref_m2: 1.0
+  scan_period_s: 1
+  field_of_regard_deg: 360
+  clutter_rejection: 0.85
+  pulse_doppler: true
+  jam_resistance: 5
+  erp_class_dbw: 62
+  fire_channels: 4
+design: { archetype: radar-shorad, note: Search and tracking radar of the Brannor battery }

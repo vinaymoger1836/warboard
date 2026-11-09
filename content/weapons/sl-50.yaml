@@ -1,0 +1,32 @@
+id: sl-50
+kind: weapon
+name: SL-50
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 14
+  max_speed_mach: 6.0
+  coast_tau_s: { sea_level: 59.4, high_alt: 196.0 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.3
+  max_range_km: 280
+  min_range_km: 5
+  max_g: 18
+guidance:
+  midcourse: [inertial, command]
+  terminal: active_radar
+  seeker_range_km: 25
+  seeker_resistance: 0.6
+warhead_kg: 180
+warhead: blast_fragmentation
+pk_base: { fighter: 0.71, bomber: 0.81, attack: 0.76, helicopter: 0.76, uav: 0.81, aew: 0.81, tanker: 0.81, ew_aircraft: 0.76, maritime_patrol: 0.81, cruise_missile: 0.54, anti_ship_missile: 0.54, anti_radiation_missile: 0.45 }
+mass_kg: 2300
+station_category: [drevan_tube]
+countermeasure_resistance: { chaff: 0.6 }
+envelope: { min_alt_m: 15, max_alt_m: 30000 }
+signature:
+  rcs_m2: { front: 0.2, side: 1.0, rear: 0.3, top: 1.0 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 8.0
+design: { archetype: sam-missile-long, note: "Very long reach and fast, but heavy: two per launcher; aimed at support aircraft" }

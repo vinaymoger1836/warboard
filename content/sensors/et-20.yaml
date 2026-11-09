@@ -1,0 +1,11 @@
+id: et-20
+kind: sensor
+name: ET-20 long-range turret
+sensor_type: eo_ir
+role: [targeting, imaging]
+eo_ir:
+  max_range_km: 38
+  gsd_at_10km_m: 0.2
+  night_capable: true
+  field_of_regard_deg: 360
+design: { archetype: eo-ir-turret, note: High-altitude turret of the UD-12; top of the band }

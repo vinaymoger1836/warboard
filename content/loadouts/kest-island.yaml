@@ -1,0 +1,10 @@
+id: kest-island
+kind: loadout
+name: Island
+platform: kest
+roles: [anti_ship]
+items:
+  - { station: ashm, weapon: as-12, count: 8 }
+  - { station: sam, weapon: sl-12, count: 16 }
+  - { station: gun, weapon: cg-30, count: 1 }
+design: { note: Eight compact anti-ship missiles }

@@ -1,0 +1,30 @@
+id: ai-5
+kind: weapon
+name: AI-5
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 4
+  max_speed_mach: 3.0
+  coast_tau_s: { sea_level: 11.0, high_alt: 36.2 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 28
+  min_range_km: 0.3
+  max_g: 55
+guidance:
+  terminal: ir
+  seeker_range_km: 22
+  seeker_resistance: 0.6
+warhead_kg: 12
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, maritime_patrol: 0.85 }
+mass_kg: 98
+station_category: [aam_short]
+countermeasure_resistance: { flare: 0.6 }
+signature:
+  rcs_m2: { front: 0.03, side: 0.15, rear: 0.045, top: 0.15 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 3.0
+design: { archetype: aam-short-ir, note: "Agile Vessmar dogfight missile, longer than the AI-3" }

@@ -1,0 +1,8 @@
+id: mr-sam-tolven-b
+kind: system
+extends: mr-sam-tolven
+name: MR-SAM Tolven battery (older missiles)
+short_name: Tolven-B
+overrides:
+  "components[2].magazine": { sl-20: 2, sl-24: 4 }
+design: { archetype: sam-medium-range, note: "Tolven with mostly older semi-active SL-24; shorter reach, more rounds in stock" }

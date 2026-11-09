@@ -1,0 +1,31 @@
+id: bm-3
+kind: platform
+name: BM-3 Tervak
+short_name: BM-3
+category: aircraft/bomber
+target_class: bomber
+crew: 4
+mobility:
+  cruise_speed_mach: 0.8
+  max_speed_mach: 1.3
+  ceiling_m: 13000
+  sustained_g: 2.5
+  min_runway_m: 2600
+signature:
+  rcs_m2: { front: 15, side: 60, rear: 20, top: 90 }
+  ir: { cruise: 3.0, afterburner: 8.0 }
+  visual_size_m: 45.0
+fuel:
+  internal_kg: 95000
+  burn_kg_h: { cruise: 9000, military: 18000, afterburner: 45000 }
+  aar: probe
+stations:
+  - { id: bay, kind: internal, categories: [lacm_heavy, ashm_heavy_bomber, bomb_900kg], max_kg: 10000, capacity: 6 }
+  - { id: wing, kind: external, categories: [lacm_heavy, ashm_heavy_bomber], max_kg: 6000, capacity: 2 }
+sensors: [kr-55]
+ew: [sp-3]
+countermeasures: { cm-chaff: 90, cm-flare: 90, cm-towed: 4 }
+datalinks: [tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 180
+design: { archetype: bomber-missile-carrier, note: "Missile carrier: launches cruise and heavy anti-ship missiles from far outside defences; helpless if caught" }

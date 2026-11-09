@@ -1,0 +1,30 @@
+id: eh-1
+kind: weapon
+name: EH-1
+category: arm
+targets: [ground, surface]
+target_class: anti_radiation_missile
+profile:
+  kind: rocket
+  boost_s: 6
+  max_speed_mach: 2.5
+  coast_tau_s: { sea_level: 88.4, high_alt: 291.9 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 0.8
+  max_range_km: 70
+  min_range_km: 5
+  max_g: 20
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: anti_radiation
+  seeker_resistance: 0.4
+warhead_kg: 150
+warhead: blast_fragmentation
+pk_base: { radar_site: 0.68, launcher: 0.51, c2_node: 0.42, surface_ship: 0.26 }
+mass_kg: 650
+station_category: [arm]
+nav_resistant: true
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.6 }
+  visual_size_m: 4.6
+design: { archetype: arm-missile, note: "Old, heavy emitter-homing missile; forgets an emitter that switches off" }

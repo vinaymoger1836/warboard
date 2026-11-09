@@ -1,0 +1,7 @@
+id: agm-tactical
+kind: archetype
+name: Tactical air-to-ground missile
+bands:
+  profile.max_range_km: [15, 40]
+  profile.max_speed_mach: [1.0, 2.0]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

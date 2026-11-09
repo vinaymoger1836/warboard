@@ -1,0 +1,29 @@
+id: selvik
+kind: platform
+name: Selvik-class frigate
+short_name: Selvik
+category: ship/frigate
+target_class: surface_ship
+crew: 140
+mobility:
+  cruise_speed_kt: 16
+  max_speed_kt: 28
+  turn_radius_m: 450
+signature:
+  rcs_m2: { front: 2500, side: 8000, rear: 2500, top: 8000 }
+  ir: { cruise: 4 }
+  acoustic_db: 112
+  visual_size_m: 125
+fuel:
+  range_nm: 5000
+stations:
+  - { id: vls, kind: vls, categories: [vls_cell], capacity: 16 }
+  - { id: ashm, kind: launcher, categories: [ashm_canister], capacity: 8 }
+  - { id: gun, kind: launcher, categories: [gun_mount], capacity: 1 }
+sensors:
+  - { sensor: nr-110, height_m: 25 }
+  - es-40
+countermeasures: { cm-chaff: 24, cm-flare: 12 }
+datalinks: [weave]
+durability: { model: ship, damage_points: 3600 }
+design: { archetype: frigate-general-purpose, note: "Affordable general-purpose frigate: quad-packed short missiles for self-defence, no area air defence" }

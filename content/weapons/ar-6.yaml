@@ -1,0 +1,33 @@
+id: ar-6
+kind: weapon
+name: AR-6
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 5
+  max_speed_mach: 4.0
+  coast_tau_s: { sea_level: 25.0, high_alt: 82.6 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 95
+  min_range_km: 1.0
+  max_g: 40
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 16
+  seeker_resistance: 0.65
+warhead_kg: 18
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, maritime_patrol: 0.85, cruise_missile: 0.5 }
+mass_kg: 150
+station_category: [aam_medium]
+countermeasure_resistance: { chaff: 0.6, towed_decoy: 0.4 }
+internal_carriage: true
+engage_on_remote: true
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 3.6
+design: { archetype: aam-medium-radar, note: "Active missile of the maritime nations; mid-band range, good seeker" }

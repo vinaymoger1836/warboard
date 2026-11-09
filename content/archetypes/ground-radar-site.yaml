@@ -1,0 +1,5 @@
+id: ground-radar-site
+kind: archetype
+name: Fixed or relocatable ground radar
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

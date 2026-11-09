@@ -13,4 +13,4 @@ cap_rotation_min: 60
 reaction_time_s: 4
 iads_layers: [medium]
 strike_package: [sead, strike]
-design: { note: "Few, advanced, and careful with them" }
+design: { note: "Few, advanced platforms: first look, first shot, and no losses taken lightly" }

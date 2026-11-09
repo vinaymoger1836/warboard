@@ -1,0 +1,14 @@
+id: lr-sam-drevan
+kind: system
+name: LR-SAM Drevan battalion
+short_name: Drevan
+deploy_as: site
+setup_min: 15
+components:
+  - { platform: drevan-sr-vehicle, count: 1, role: surveillance }
+  - { platform: drevan-er-vehicle, count: 2, role: fire_control }
+  - { platform: drevan-cp, count: 1, role: c2 }
+  - { platform: drevan-launcher, count: 6, role: launcher, magazine: { sl-50: 2, sl-35: 2 } }
+emcon_default: blink
+iads_capable: true
+design: { archetype: sam-long-range, note: "Kaldoria's long-range system: the longest reach and two engagement radars, but slow to set up and move" }

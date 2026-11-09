@@ -1,0 +1,17 @@
+id: vr-60
+kind: sensor
+name: VR-60 AESA
+sensor_type: radar
+role: [air_search, fire_control, ground_mapping]
+radar:
+  band: X
+  r_ref_km: 105
+  sigma_ref_m2: 1.0
+  scan_period_s: 2
+  field_of_regard_deg: 120
+  clutter_rejection: 0.85
+  pulse_doppler: true
+  jam_resistance: 8
+  erp_class_dbw: 62
+  fire_channels: 4
+design: { archetype: radar-fighter-aesa, note: Low-probability-of-intercept radar of the VF-7; shorter reach than the VR-81 }

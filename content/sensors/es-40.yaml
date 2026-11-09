@@ -1,0 +1,12 @@
+id: es-40
+kind: sensor
+name: ES-40 naval receiver
+sensor_type: esm
+role: [esm, elint]
+esm:
+  bands: [L, S, C, X, Ku]
+  r_ref_km: 260
+  erp_ref_dbw: 80
+  bearing_sigma_deg: 1.5
+  field_of_regard_deg: 360
+design: { archetype: esm-naval, note: Mast receiver of the larger warships }

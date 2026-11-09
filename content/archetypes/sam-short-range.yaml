@@ -1,0 +1,5 @@
+id: sam-short-range
+kind: archetype
+name: Short-range SAM battery
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

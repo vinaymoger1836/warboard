@@ -1,0 +1,30 @@
+id: eh-3
+kind: weapon
+name: EH-3
+category: arm
+targets: [ground, surface]
+target_class: anti_radiation_missile
+profile:
+  kind: rocket
+  boost_s: 10
+  max_speed_mach: 3.6
+  coast_tau_s: { sea_level: 115.1, high_alt: 379.8 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 0.8
+  max_range_km: 150
+  min_range_km: 5
+  max_g: 20
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: anti_radiation
+  seeker_resistance: 0.7
+warhead_kg: 90
+warhead: blast_fragmentation
+pk_base: { radar_site: 0.8, launcher: 0.6, c2_node: 0.5, surface_ship: 0.3 }
+mass_kg: 600
+station_category: [arm]
+nav_resistant: true
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.6 }
+  visual_size_m: 4.8
+design: { archetype: arm-missile, note: Long-range emitter hunter of Kaldoria; top of the band }

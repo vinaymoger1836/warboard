@@ -1,0 +1,8 @@
+id: ew-ej-4
+kind: ew_suite
+name: EJ-4 stand-off jamming system
+modes:
+  stand_off: { jam_strength: 8, coverage_km: 300, sector_deg: 90 }
+  escort: { jam_strength: 5, coverage_km: 120, sector_deg: 90 }
+effects: [radar, datalink]
+design: { archetype: jammer-escort, note: Powerful stand-off jammer on a slow airframe; weaker as an escort }

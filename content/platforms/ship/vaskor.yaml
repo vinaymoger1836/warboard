@@ -1,0 +1,30 @@
+id: vaskor
+kind: platform
+name: Vaskor-class destroyer
+short_name: Vaskor
+category: ship/destroyer
+target_class: surface_ship
+crew: 280
+mobility:
+  cruise_speed_kt: 18
+  max_speed_kt: 30
+  turn_radius_m: 600
+signature:
+  rcs_m2: { front: 4500, side: 14000, rear: 4500, top: 14000 }
+  ir: { cruise: 6 }
+  acoustic_db: 118
+  visual_size_m: 160
+fuel:
+  range_nm: 6000
+stations:
+  - { id: vls, kind: vls, categories: [vls_cell], capacity: 64 }
+  - { id: ashm, kind: launcher, categories: [ashm_canister], capacity: 8 }
+  - { id: gun, kind: launcher, categories: [gun_mount], capacity: 2 }
+sensors:
+  - { sensor: hr-320, height_m: 35 }
+  - es-40
+ew: [nj-10]
+countermeasures: { cm-chaff: 24, cm-chaff-naval: 24, cm-flare: 12 }
+datalinks: [weave]
+durability: { model: ship, damage_points: 6500 }
+design: { archetype: destroyer-air-defence, note: "Fleet air-defence flagship: 64 cells shared between area missiles, point defence and cruise missiles" }

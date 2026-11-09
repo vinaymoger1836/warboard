@@ -1,0 +1,27 @@
+id: ag-3
+kind: weapon
+name: AG-3
+category: agm
+targets: [ground, surface]
+target_class: cruise_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.8
+  max_range_km: 120
+  min_range_km: 3
+  cruise_alt_m: 150
+guidance:
+  midcourse: [inertial, satnav, datalink]
+  terminal: imaging_ir
+  seeker_resistance: 0.6
+  seeker_range_km: 10
+warhead_kg: 220
+warhead: blast_fragmentation
+pk_base: { radar_site: 0.75, launcher: 0.7, c2_node: 0.7, ground_vehicle: 0.7, structure: 0.6, surface_ship: 0.5 }
+mass_kg: 900
+station_category: [lacm_air, agm_heavy]
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.4 }
+  visual_size_m: 4.4
+design: { archetype: agm-standoff, note: Powered stand-off missile with a two-way link; keeps the launcher outside short-range defences }

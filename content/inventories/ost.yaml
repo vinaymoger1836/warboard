@@ -2,16 +2,68 @@ id: ost-forces
 kind: inventory
 nation: ost
 platforms:
-  mf-4: 24
-  mr-sam-tolven: 10
+  mf-2: 24
+  mf-4: 16
+  ga-2: 24
+  rw-5: 24
+  ud-11: 12
+  brisa: 4
+  sr-sam-ketta: 16
+  sr-sam-brannor: 10
+  mr-sam-tolven-b: 8
+  mr-sam-tolven: 2
+  gr-300-site: 6
+  ls-1-vira: 6
 munitions:
-  ar-7: 120
-  ai-3: 80
-  gb-900: 100
-  sl-20: 300
+  ar-4: 180
+  ar-5: 140
+  ai-1: 160
+  ai-7: 120
+  ai-2: 60
+  ag-1: 300
+  ag-2: 80
+  ag-4: 120
+  ag-5: 160
+  bu-250: 600
+  bu-500: 300
+  gb-250l: 120
+  gb-120: 80
+  lm-2: 200
+  lm-1: 60
+  as-3: 16
+  eh-5: 80
+  gb-450l: 60
+  sl-24: 320
+  sl-20: 100
+  sl-8: 400
+  sl-10: 320
+  sl-14: 32
+  cg-35: 10
+  cg-20: 4
 basing:
-  - { platform: mf-4, base: ost-sirice-air, count: 6 }
-  - { platform: mf-4, base: ost-doskava-air, count: 6 }
-  - { platform: mf-4, base: ost-sowerary-air, count: 6 }
-  - { platform: mf-4, base: ost-zorice-air, count: 6 }
-design: { note: "Agrarian plains; ground forces, short-range air defence" }
+  - { platform: mf-2, base: ost-sirice-air, count: 8 }
+  - { platform: mf-4, base: ost-sirice-air, count: 8 }
+  - { platform: ga-2, base: ost-sirice-air, count: 8 }
+  - { platform: rw-5, base: ost-sirice-air, count: 8 }
+  - { platform: mf-2, base: ost-doskava-air, count: 8 }
+  - { platform: ga-2, base: ost-doskava-air, count: 8 }
+  - { platform: rw-5, base: ost-doskava-air, count: 8 }
+  - { platform: mf-2, base: ost-sowerary-air, count: 8 }
+  - { platform: mf-4, base: ost-sowerary-air, count: 8 }
+  - { platform: ud-11, base: ost-sowerary-air, count: 6 }
+  - { platform: ga-2, base: ost-zorice-air, count: 8 }
+  - { platform: rw-5, base: ost-zorice-air, count: 8 }
+  - { platform: ud-11, base: ost-zorice-air, count: 6 }
+  - { platform: brisa, base: ost-bilowo-naval, count: 4 }
+munition_basing:
+  - base: ost-bilowo-naval
+    munitions: { as-3: 11, cg-20: 2, sl-14: 22 }
+  - base: ost-doskava-air
+    munitions: { ag-1: 52, ag-2: 14, ag-4: 28, ai-1: 28, ai-7: 28, ar-4: 42, ar-5: 32, bu-250: 105 }
+  - base: ost-sirice-air
+    munitions: { ag-1: 52, ag-2: 14, ag-4: 28, ai-1: 28, ai-7: 28, ar-4: 42, ar-5: 32, bu-250: 105 }
+  - base: ost-sowerary-air
+    munitions: { ag-1: 52, ag-2: 14, ag-5: 56, ai-1: 28, ar-4: 42, ar-5: 32, bu-250: 105, eh-5: 28, gb-120: 28 }
+  - base: ost-zorice-air
+    munitions: { ag-1: 52, ag-2: 14, ag-4: 28, ag-5: 56, ai-1: 28, ai-7: 28, bu-250: 105, eh-5: 28, gb-120: 28 }
+design: { note: "Agrarian plains: ground forces under a dense short-range air-defence umbrella; attack aircraft and helicopters, few fighters" }

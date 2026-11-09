@@ -1,0 +1,12 @@
+id: hf-7-strike
+kind: loadout
+name: Stand-off strike
+platform: hf-7
+roles: [strike]
+items:
+  - { station: fuselage, weapon: ar-14, count: 2 }
+  - { station: fuselage, weapon: gb-900p, count: 2 }
+  - { station: wing_inner, weapon: ag-3, count: 2 }
+  - { station: wing_outer, weapon: ar-14, count: 2 }
+  - { station: wingtip, weapon: ai-5, count: 2 }
+design: { note: Two stand-off missiles and two penetrators }

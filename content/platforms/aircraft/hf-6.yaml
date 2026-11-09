@@ -1,0 +1,31 @@
+id: hf-6
+kind: platform
+name: HF-6 Skarn
+short_name: HF-6
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.95
+  max_speed_mach: 2.8
+  ceiling_m: 20500
+  sustained_g: 5.0
+  min_runway_m: 2400
+signature:
+  rcs_m2: { front: 12, side: 30, rear: 15, top: 45 }
+  ir: { cruise: 2.0, afterburner: 6.0 }
+  visual_size_m: 22.5
+fuel:
+  internal_kg: 15500
+  burn_kg_h: { cruise: 4000, military: 8000, afterburner: 24000 }
+  aar: probe
+stations:
+  - { id: fuselage, kind: external, categories: [aam_long, aam_medium], max_kg: 2000, capacity: 4 }
+  - { id: wing, kind: external, categories: [aam_medium, aam_short], max_kg: 900, capacity: 4 }
+sensors: [kr-70, ir-60]
+ew: [sp-3]
+countermeasures: { cm-chaff: 60, cm-flare: 60 }
+datalinks: [tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+turnaround_min: 90
+design: { archetype: fighter-interceptor, note: "Very fast, very high interceptor with a huge radar; turns poorly and is seen from far away" }

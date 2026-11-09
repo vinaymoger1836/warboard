@@ -1,0 +1,28 @@
+id: lc-3
+kind: weapon
+name: LC-3
+category: lacm
+targets: [ground]
+target_class: cruise_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.75
+  max_range_km: 900
+  min_range_km: 25
+  cruise_alt_m: 50
+  terminal_alt_m: 30
+guidance:
+  midcourse: [inertial, satnav, terrain_matching]
+  terminal: satnav_ins
+warhead_kg: 400
+warhead: blast
+cep_m: 8
+lethal_radius_m: 30
+mass_kg: 1350
+station_category: [vls_cell]
+nav_resistant: true
+signature:
+  rcs_m2: { front: 0.08, side: 0.4, rear: 0.12, top: 0.4 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 6.0
+design: { archetype: lacm-subsonic, note: "Ship-launched cruise missile; one per cell, so every one costs an air-defence round" }

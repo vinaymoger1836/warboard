@@ -1,0 +1,11 @@
+id: ir-60
+kind: sensor
+name: IR-60 IRST
+sensor_type: irst
+role: [irst, targeting]
+irst:
+  r_ref_km: 65
+  i_ref: 1
+  field_of_regard_deg: 160
+  scan_period_s: 2
+design: { archetype: irst-airborne, note: Long-reach passive search for the HF-6 and VF-7 }

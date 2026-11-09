@@ -1,0 +1,10 @@
+id: hf-7-strike-b
+kind: loadout
+name: Cruise missile strike
+platform: hf-7
+roles: [strike]
+items:
+  - { station: fuselage, weapon: ar-7, count: 2 }
+  - { station: wing_inner, weapon: lc-5, count: 2 }
+  - { station: wingtip, weapon: ai-5, count: 2 }
+design: { note: Two air-launched cruise missiles }

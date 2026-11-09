@@ -1,0 +1,9 @@
+id: lattice
+kind: datalink
+name: Lattice
+latency_s: 0.5
+capacity_tracks: 800
+range_km: 400
+engage_on_remote: true
+jam_resistance: 0.9
+design: { archetype: datalink-tactical, note: "Fast, jam-resistant link of Morvel's few advanced platforms" }

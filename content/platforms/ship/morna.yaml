@@ -1,0 +1,30 @@
+id: morna
+kind: platform
+name: Morna-class frigate
+short_name: Morna
+category: ship/frigate
+target_class: surface_ship
+crew: 120
+mobility:
+  cruise_speed_kt: 16
+  max_speed_kt: 29
+  turn_radius_m: 420
+signature:
+  rcs_m2: { front: 600, side: 2500, rear: 600, top: 2500 }
+  ir: { cruise: 3 }
+  acoustic_db: 108
+  visual_size_m: 130
+fuel:
+  range_nm: 5000
+stations:
+  - { id: vls, kind: vls, categories: [vls_cell], capacity: 32 }
+  - { id: ashm, kind: launcher, categories: [ashm_canister], capacity: 8 }
+  - { id: gun, kind: launcher, categories: [gun_mount], capacity: 1 }
+sensors:
+  - { sensor: hr-260, height_m: 28 }
+  - es-40
+ew: [nj-10]
+countermeasures: { cm-chaff: 24, cm-chaff-naval: 12, cm-flare: 12 }
+datalinks: [lattice, weave]
+durability: { model: ship, damage_points: 4000 }
+design: { archetype: frigate-air-defence, note: "Low-signature air-defence frigate of Morvel; few hulls, each very capable" }

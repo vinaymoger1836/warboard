@@ -1,0 +1,7 @@
+id: aam-medium-ir
+kind: archetype
+name: Medium-range IR air-to-air missile
+bands:
+  profile.max_range_km: [30, 80]
+  profile.max_speed_mach: [3.0, 4.5]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

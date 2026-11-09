@@ -1,0 +1,27 @@
+id: rw-5
+kind: platform
+name: RW-5 Garrock
+short_name: RW-5
+category: helicopter/attack
+target_class: helicopter
+crew: 2
+mobility:
+  cruise_speed_mach: 0.2
+  max_speed_mach: 0.26
+  ceiling_m: 5500
+signature:
+  rcs_m2: { front: 4, side: 10, rear: 4, top: 15 }
+  ir: { cruise: 0.7 }
+  visual_size_m: 16.0
+fuel:
+  internal_kg: 1200
+  burn_kg_h: { cruise: 500 }
+stations:
+  - { id: stub_l, kind: external, categories: [light_rail], max_kg: 600, capacity: 4 }
+  - { id: stub_r, kind: external, categories: [light_rail], max_kg: 600, capacity: 4 }
+sensors: [et-6]
+countermeasures: { cm-chaff: 30, cm-flare: 60 }
+datalinks: [tessel, weave]
+durability: { model: aircraft, p_kill_on_hit: 0.85 }
+turnaround_min: 30
+design: { archetype: helicopter-attack, note: "Attack helicopter: light missiles and rockets from behind terrain; vulnerable to short-range air defence" }

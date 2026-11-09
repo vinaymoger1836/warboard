@@ -1,0 +1,10 @@
+id: tarsk-standard-b
+kind: loadout
+name: Standard (sea-skimmer)
+platform: tarsk
+roles: [anti_ship]
+items:
+  - { station: vls, weapon: sn-10, count: 32 }
+  - { station: ashm, weapon: as-5, count: 8 }
+  - { station: gun, weapon: cg-40, count: 1 }
+design: { note: Eight shaped sea-skimmers }

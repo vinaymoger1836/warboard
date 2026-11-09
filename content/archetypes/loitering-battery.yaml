@@ -1,0 +1,5 @@
+id: loitering-battery
+kind: archetype
+name: Loitering munition battery
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

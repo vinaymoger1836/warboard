@@ -1,0 +1,24 @@
+id: gb-250
+kind: weapon
+name: GB-250
+category: bomb
+targets: [ground, surface]
+profile:
+  kind: glide
+  max_speed_mach: 0.9
+  max_range_km: 90
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: satnav_ins
+warhead_kg: 90
+warhead: blast
+cep_m: 6
+lethal_radius_m: 15
+mass_kg: 260
+station_category: [bomb_small]
+internal_carriage: true
+signature:
+  rcs_m2: { front: 0.03, side: 0.15, rear: 0.045, top: 0.15 }
+  ir: { cruise: 0.05 }
+  visual_size_m: 1.8
+design: { archetype: bomb-guided-small, note: "Winged small bomb, four to a rack: long glide, small warhead, many aimpoints per sortie" }

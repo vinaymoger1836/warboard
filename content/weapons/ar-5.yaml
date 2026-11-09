@@ -1,0 +1,31 @@
+id: ar-5
+kind: weapon
+name: AR-5
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 4
+  max_speed_mach: 3.6
+  coast_tau_s: { sea_level: 23.0, high_alt: 75.8 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 75
+  min_range_km: 1.0
+  max_g: 35
+guidance:
+  midcourse: [inertial]
+  terminal: active_radar
+  seeker_range_km: 14
+  seeker_resistance: 0.5
+warhead_kg: 16
+warhead: blast_fragmentation
+pk_base: { fighter: 0.71, bomber: 0.81, attack: 0.76, helicopter: 0.76, uav: 0.81, aew: 0.81, tanker: 0.81, ew_aircraft: 0.76, maritime_patrol: 0.81, cruise_missile: 0.47 }
+mass_kg: 135
+station_category: [aam_medium]
+countermeasure_resistance: { chaff: 0.5, towed_decoy: 0.3 }
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 3.4
+design: { archetype: aam-medium-radar, note: Compact active missile sized for the light fighter; low end of the band }

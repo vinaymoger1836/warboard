@@ -1,0 +1,7 @@
+id: helicopter-attack
+kind: archetype
+name: Attack helicopter
+bands:
+  mobility.max_speed_mach: [0.22, 0.3]
+  mobility.ceiling_m: [4000, 6500]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

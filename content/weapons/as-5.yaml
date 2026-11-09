@@ -1,0 +1,30 @@
+id: as-5
+kind: weapon
+name: AS-5
+category: ashm
+targets: [surface, ground]
+target_class: anti_ship_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.82
+  max_range_km: 280
+  min_range_km: 8
+  cruise_alt_m: 10
+  terminal_alt_m: 3
+guidance:
+  midcourse: [inertial, satnav, datalink]
+  terminal: imaging_ir
+  seeker_range_km: 20
+  seeker_resistance: 0.75
+warhead_kg: 150
+warhead: blast_fragmentation
+pk_base: { surface_ship: 0.85, structure: 0.6 }
+countermeasure_resistance: { chaff: 0.9, flare: 0.6 }
+mass_kg: 700
+station_category: [ashm_canister, ashm, vls_cell]
+internal_carriage: true
+signature:
+  rcs_m2: { front: 0.02, side: 0.1, rear: 0.03, top: 0.1 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 4.0
+design: { archetype: ashm-subsonic, note: "Long-range shaped sea-skimmer with an imaging seeker: hard to see and to decoy" }

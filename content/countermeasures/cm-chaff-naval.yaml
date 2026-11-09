@@ -1,0 +1,8 @@
+id: cm-chaff-naval
+kind: countermeasure
+name: CM-N chaff rocket
+cm_type: chaff
+effect: 0.45
+defeats: [active_radar, semi_active_radar]
+mass_kg: 20
+design: { archetype: chaff-cartridge, note: Ship-launched chaff rocket; a large cloud against sea-skimmers }

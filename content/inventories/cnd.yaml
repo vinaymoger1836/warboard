@@ -2,23 +2,58 @@ id: cnd-forces
 kind: inventory
 nation: cnd
 platforms:
-  mf-4: 16
-  ud-9: 10
-  kest: 8
-  cb-2-strand: 8
+  mf-2: 16
+  ud-9: 8
+  ud-11: 10
+  aw-2: 2
+  rw-2: 6
+  kest: 4
+  tarsk: 6
+  brisa: 6
+  cb-2-strand: 10
+  sr-sam-ketta: 6
   mr-sam-tolven: 2
+  gr-90-site: 8
+  ls-1-vira: 4
 munitions:
-  ar-7: 100
+  ar-6: 100
   ai-3: 60
-  as-4-tarn: 160
-  as-8-spire: 64
-  sl-12: 140
-  sl-20: 60
+  ai-7: 40
+  as-12: 220
+  as-4-tarn: 80
+  as-1: 120
+  as-2: 36
+  ag-1: 120
+  ag-5: 80
+  gb-120: 160
+  lm-2: 120
+  eh-5: 40
+  sl-12: 64
+  sl-14: 96
+  sn-10: 192
+  sl-8: 120
+  sl-20: 48
+  cg-20: 8
   cg-30: 10
 basing:
-  - { platform: mf-4, base: cnd-vitlahti-air, count: 8 }
-  - { platform: mf-4, base: cnd-nasatranta-air, count: 8 }
-  - { platform: ud-9, base: cnd-vitlahti-air, count: 5 }
-  - { platform: ud-9, base: cnd-nasatranta-air, count: 5 }
-  - { platform: kest, base: cnd-satsaari-naval, count: 8 }
-design: { note: "Archipelago state; corvettes, coastal defence, drones" }
+  - { platform: mf-2, base: cnd-vitlahti-air, count: 10 }
+  - { platform: ud-9, base: cnd-vitlahti-air, count: 4 }
+  - { platform: ud-11, base: cnd-vitlahti-air, count: 6 }
+  - { platform: aw-2, base: cnd-vitlahti-air, count: 1 }
+  - { platform: rw-2, base: cnd-vitlahti-air, count: 3 }
+  - { platform: mf-2, base: cnd-nasatranta-air, count: 6 }
+  - { platform: ud-9, base: cnd-nasatranta-air, count: 4 }
+  - { platform: ud-11, base: cnd-nasatranta-air, count: 4 }
+  - { platform: aw-2, base: cnd-nasatranta-air, count: 1 }
+  - { platform: rw-2, base: cnd-nasatranta-air, count: 3 }
+  - { platform: kest, base: cnd-satsaari-naval, count: 4 }
+  - { platform: tarsk, base: cnd-satsaari-naval, count: 6 }
+  - { platform: brisa, base: cnd-satsaari-naval, count: 6 }
+munition_basing:
+  - base: cnd-nasatranta-air
+    munitions: { ag-1: 42, ag-5: 28, ai-3: 21, ar-6: 35, as-1: 42, as-2: 12, eh-5: 14, gb-120: 56 }
+  - base: cnd-satsaari-naval
+    munitions: { as-12: 154, as-4-tarn: 56, cg-20: 5, cg-30: 7, sl-12: 44, sl-14: 67, sn-10: 134 }
+  - base: cnd-vitlahti-air
+    munitions: { ag-1: 42, ag-5: 28, ai-3: 21, ar-6: 35, as-1: 42, as-2: 12, eh-5: 14, gb-120: 56 }
+design: { note: "Archipelago state: corvettes and fast attack craft among the islands, coastal batteries and drones; a few light fighters" }

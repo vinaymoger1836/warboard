@@ -1,0 +1,27 @@
+id: lc-5
+kind: weapon
+name: LC-5
+category: lacm
+targets: [ground]
+target_class: cruise_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.75
+  max_range_km: 600
+  min_range_km: 20
+  cruise_alt_m: 50
+  terminal_alt_m: 30
+guidance:
+  midcourse: [inertial, satnav, terrain_matching]
+  terminal: satnav_ins
+warhead_kg: 450
+warhead: blast
+cep_m: 12
+lethal_radius_m: 35
+mass_kg: 1500
+station_category: [lacm_air, lacm_heavy]
+signature:
+  rcs_m2: { front: 0.12, side: 0.6, rear: 0.18, top: 0.6 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 5.8
+design: { archetype: lacm-subsonic, note: "Air-launched stand-off missile of Vessmar's strike aircraft" }

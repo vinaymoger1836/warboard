@@ -1,0 +1,9 @@
+id: fighter-strike
+kind: archetype
+name: Two-seat strike fighter
+bands:
+  signature.rcs_m2.front: [4, 15]
+  mobility.max_speed_mach: [1.6, 2.2]
+  mobility.sustained_g: [5.5, 8.0]
+  fuel.internal_kg: [9000, 14000]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

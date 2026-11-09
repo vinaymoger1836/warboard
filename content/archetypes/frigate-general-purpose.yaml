@@ -1,0 +1,6 @@
+id: frigate-general-purpose
+kind: archetype
+name: General-purpose frigate
+bands:
+  mobility.max_speed_kt: [26, 30]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,8 @@
+id: drone-hale
+kind: archetype
+name: High-altitude long-endurance drone
+bands:
+  signature.rcs_m2.front: [1, 5]
+  mobility.max_speed_mach: [0.4, 0.65]
+  mobility.ceiling_m: [16000, 20000]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

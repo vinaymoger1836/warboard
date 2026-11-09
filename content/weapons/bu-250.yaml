@@ -1,0 +1,22 @@
+id: bu-250
+kind: weapon
+name: BU-250
+category: bomb
+targets: [ground, surface]
+profile:
+  kind: glide
+  max_speed_mach: 0.9
+  max_range_km: 13
+guidance:
+  terminal: none
+warhead_kg: 110
+warhead: blast
+cep_m: 60
+lethal_radius_m: 15
+mass_kg: 250
+station_category: [bomb_small, bomb_450kg]
+signature:
+  rcs_m2: { front: 0.03, side: 0.15, rear: 0.045, top: 0.15 }
+  ir: { cruise: 0.05 }
+  visual_size_m: 2.2
+design: { archetype: bomb-unguided, note: "Unguided bomb: cheap and plentiful, scatters wide from altitude" }

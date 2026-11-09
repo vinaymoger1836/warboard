@@ -1,0 +1,29 @@
+id: as-6
+kind: weapon
+name: AS-6
+category: ashm
+targets: [surface]
+target_class: anti_ship_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.8
+  max_range_km: 130
+  min_range_km: 5
+  cruise_alt_m: 15
+  terminal_alt_m: 4
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: imaging_ir
+  seeker_range_km: 15
+  seeker_resistance: 0.65
+warhead_kg: 120
+warhead: blast_fragmentation
+pk_base: { surface_ship: 0.8 }
+countermeasure_resistance: { chaff: 0.85, flare: 0.55 }
+mass_kg: 380
+station_category: [ashm, ashm_canister]
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 3.5
+design: { archetype: ashm-subsonic, note: Light air- and ship-launched missile of Talvenor; hugs the fjord walls }

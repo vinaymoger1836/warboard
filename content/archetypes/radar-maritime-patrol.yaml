@@ -1,0 +1,6 @@
+id: radar-maritime-patrol
+kind: archetype
+name: Maritime surveillance radar
+bands:
+  radar.r_ref_km: [100, 220]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

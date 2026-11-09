@@ -1,0 +1,33 @@
+id: hf-7
+kind: platform
+name: HF-7 Durn
+short_name: HF-7
+category: aircraft/fighter
+target_class: fighter
+crew: 2
+mobility:
+  cruise_speed_mach: 0.85
+  max_speed_mach: 1.9
+  ceiling_m: 16000
+  sustained_g: 7.0
+  min_runway_m: 2000
+signature:
+  rcs_m2: { front: 6, side: 18, rear: 9, top: 26 }
+  ir: { cruise: 1.4, afterburner: 4.0 }
+  visual_size_m: 22.0
+fuel:
+  internal_kg: 12500
+  burn_kg_h: { cruise: 3000, military: 6200, afterburner: 17000 }
+  aar: probe
+stations:
+  - { id: fuselage, kind: external, categories: [aam_medium, bomb_900kg, bomb_450kg, bomb_small, agm], max_kg: 4000, capacity: 4 }
+  - { id: wing_inner, kind: external, categories: [ashm_heavy, ashm, lacm_air, agm_heavy, bomb_900kg, arm], max_kg: 3200, capacity: 2 }
+  - { id: wing_outer, kind: external, categories: [aam_medium, arm, agm], max_kg: 800, capacity: 2 }
+  - { id: wingtip, kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+sensors: [kr-55, et-6]
+ew: [sp-3]
+countermeasures: { cm-chaff: 60, cm-flare: 60, cm-towed: 2 }
+datalinks: [tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.8 }
+turnaround_min: 90
+design: { archetype: fighter-strike, note: "Two-seat long-range strike fighter: carries the heavy stand-off weapons; needs an escort against fighters" }

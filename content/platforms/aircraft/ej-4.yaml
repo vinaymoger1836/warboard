@@ -1,0 +1,27 @@
+id: ej-4
+kind: platform
+name: EJ-4 Murren
+short_name: EJ-4
+category: aircraft/ew
+target_class: ew_aircraft
+crew: 6
+mobility:
+  cruise_speed_mach: 0.68
+  max_speed_mach: 0.75
+  ceiling_m: 10500
+  sustained_g: 2.0
+  min_runway_m: 2200
+signature:
+  rcs_m2: { front: 35, side: 120, rear: 35, top: 200 }
+  ir: { cruise: 2.2 }
+  visual_size_m: 38.0
+fuel:
+  internal_kg: 30000
+  burn_kg_h: { cruise: 2800 }
+sensors: [es-60]
+ew: [ew-ej-4]
+countermeasures: { cm-chaff: 60, cm-flare: 60 }
+datalinks: [tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 120
+design: { archetype: jammer-aircraft-standoff, note: "Stand-off jamming aircraft: blinds radars from far behind the line, but cannot keep up with a strike" }

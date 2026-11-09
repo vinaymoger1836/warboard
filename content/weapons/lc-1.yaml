@@ -1,0 +1,29 @@
+id: lc-1
+kind: weapon
+name: LC-1
+category: lacm
+targets: [ground]
+target_class: cruise_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.72
+  max_range_km: 1200
+  min_range_km: 30
+  cruise_alt_m: 60
+  terminal_alt_m: 30
+guidance:
+  midcourse: [inertial, satnav, terrain_matching]
+  terminal: satnav_ins
+warhead_kg: 450
+warhead: blast
+cep_m: 10
+lethal_radius_m: 35
+mass_kg: 1600
+station_category: [lacm_heavy, vls_cell]
+internal_carriage: true
+nav_resistant: true
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 6.2
+design: { archetype: lacm-subsonic, note: "Long-range cruise missile: slow, low and many" }

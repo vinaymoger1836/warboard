@@ -1,0 +1,31 @@
+id: ai-4
+kind: weapon
+name: AI-4
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 4
+  max_speed_mach: 3.2
+  coast_tau_s: { sea_level: 11.3, high_alt: 37.4 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 32
+  min_range_km: 0.3
+  max_g: 60
+guidance:
+  terminal: imaging_ir
+  seeker_range_km: 25
+  seeker_resistance: 0.8
+warhead_kg: 9
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, maritime_patrol: 0.85 }
+mass_kg: 90
+station_category: [aam_short]
+countermeasure_resistance: { flare: 0.85 }
+internal_carriage: true
+signature:
+  rcs_m2: { front: 0.03, side: 0.15, rear: 0.045, top: 0.15 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 3.0
+design: { archetype: aam-short-ir, note: Imaging seeker that ignores most flares; fits internal bays }

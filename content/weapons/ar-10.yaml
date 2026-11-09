@@ -1,0 +1,31 @@
+id: ar-10
+kind: weapon
+name: AR-10
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 10
+  max_speed_mach: 5.0
+  coast_tau_s: { sea_level: 46.3, high_alt: 152.7 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.2
+  max_range_km: 220
+  min_range_km: 5
+  max_g: 22
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 22
+  seeker_resistance: 0.55
+warhead_kg: 45
+warhead: blast_fragmentation
+pk_base: { fighter: 0.68, bomber: 0.77, attack: 0.72, helicopter: 0.72, uav: 0.77, aew: 0.77, tanker: 0.77, ew_aircraft: 0.72, maritime_patrol: 0.77, cruise_missile: 0.45 }
+mass_kg: 470
+station_category: [aam_long]
+countermeasure_resistance: { chaff: 0.55, towed_decoy: 0.35 }
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 4.2
+design: { archetype: aam-long-rocket, note: Large rocket missile of the HF-6 for shooting bombers and support aircraft far out; poor against agile fighters }

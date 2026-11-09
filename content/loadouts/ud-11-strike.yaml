@@ -1,0 +1,9 @@
+id: ud-11-strike
+kind: loadout
+name: Strike
+platform: ud-11
+roles: [strike]
+items:
+  - { station: wing_l, weapon: ag-5, count: 2 }
+  - { station: wing_r, weapon: ag-5, count: 2 }
+design: { note: Four mini missiles }

@@ -1,0 +1,17 @@
+id: gr-90-radar
+kind: sensor
+name: GR-90 coastal radar
+sensor_type: radar
+role: [surface_search, air_search]
+radar:
+  band: X
+  r_ref_km: 95
+  sigma_ref_m2: 1.0
+  scan_period_s: 4
+  field_of_regard_deg: 360
+  clutter_rejection: 0.88
+  pulse_doppler: true
+  jam_resistance: 5
+  erp_class_dbw: 76
+  fire_channels: 0
+design: { archetype: radar-coastal, note: Fixed coastal surveillance radar on a mast }

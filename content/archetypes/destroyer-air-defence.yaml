@@ -1,0 +1,6 @@
+id: destroyer-air-defence
+kind: archetype
+name: Air-defence destroyer with VLS
+bands:
+  mobility.max_speed_kt: [28, 32]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

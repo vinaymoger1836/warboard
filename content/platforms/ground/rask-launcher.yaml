@@ -1,0 +1,16 @@
+id: rask-launcher
+kind: platform
+name: Rask launcher
+short_name: Rask TEL
+category: ground/launcher
+target_class: launcher
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 20, side: 40, rear: 20, top: 60 }
+  visual_size_m: 14
+stations:
+  - { id: tubes, kind: launcher, categories: [rask_tube], capacity: 2 }
+durability: { model: ground, damage_points: 90 }
+design: { archetype: ground-launcher, note: Two AS-13 tubes }

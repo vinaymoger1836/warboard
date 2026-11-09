@@ -13,4 +13,4 @@ cap_rotation_min: 90
 reaction_time_s: 6
 iads_layers: [medium, short]
 strike_package: [escort, strike]
-design: { note: "Watches the sea with drones and frigates" }
+design: { note: "Watches the sea with drones and patrol aircraft; strikes ships far out with cued missiles" }

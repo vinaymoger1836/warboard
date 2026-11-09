@@ -1,0 +1,31 @@
+id: ar-12
+kind: weapon
+name: AR-12
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 6
+  max_speed_mach: 3.8
+  coast_tau_s: { sea_level: 29.5, high_alt: 97.2 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 105
+  min_range_km: 1.0
+  max_g: 40
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 16
+  seeker_resistance: 0.6
+warhead_kg: 20
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, maritime_patrol: 0.85, cruise_missile: 0.5 }
+mass_kg: 165
+station_category: [aam_medium]
+countermeasure_resistance: { chaff: 0.6, towed_decoy: 0.4 }
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 3.7
+design: { archetype: aam-medium-radar, note: "Talvenor's own missile: middle of the band, tuned for cold dense air at low level" }

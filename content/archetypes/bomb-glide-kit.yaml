@@ -1,0 +1,7 @@
+id: bomb-glide-kit
+kind: archetype
+name: Guided bomb with a glide kit
+bands:
+  profile.max_range_km: [40, 120]
+  warhead_kg: [150, 500]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

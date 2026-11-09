@@ -131,9 +131,11 @@ fn wb_sim_seeks(w: &Weapon) -> bool {
     !matches!(w.guidance.terminal, Seeker::SatnavIns | Seeker::None)
 }
 
-/// Runs until the weapon's flight ends.
+/// Runs until the weapon's flight ends. The cap covers the engine's longest
+/// flight (two hours at 100 ms ticks): slow long-range cruise missiles fly
+/// for well over an hour.
 fn outcome(sim: &mut Sim) -> (Outcome, f64) {
-    for _ in 0..40_000 {
+    for _ in 0..100_000 {
         sim.step();
         if let Some((o, tof)) = sim.events().iter().rev().find_map(|e| match &e.kind {
             EventKind::WeaponTerminated {
@@ -144,7 +146,7 @@ fn outcome(sim: &mut Sim) -> (Outcome, f64) {
             return (o, tof);
         }
     }
-    panic!("weapon still flying after 40000 ticks");
+    panic!("weapon still flying after 100000 ticks");
 }
 
 /// The weapon reached its target (whatever the endgame roll said).

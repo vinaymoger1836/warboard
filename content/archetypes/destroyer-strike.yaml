@@ -1,0 +1,6 @@
+id: destroyer-strike
+kind: archetype
+name: Strike destroyer
+bands:
+  mobility.max_speed_kt: [28, 33]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

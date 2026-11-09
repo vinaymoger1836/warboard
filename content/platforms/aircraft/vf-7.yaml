@@ -1,0 +1,36 @@
+id: vf-7
+kind: platform
+name: VF-7 Ilsen
+short_name: VF-7
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 1.6
+  ceiling_m: 15000
+  sustained_g: 6.5
+  min_runway_m: 2000
+signature:
+  rcs_m2: { front: 0.008, side: 0.15, rear: 0.08, top: 0.08 }
+  external_stores_rcs_multiplier: 8
+  ir: { cruise: 0.9, afterburner: 2.8 }
+  visual_size_m: 15.5
+fuel:
+  internal_kg: 6500
+  burn_kg_h: { cruise: 2300, military: 4500, afterburner: 12500 }
+  aar: boom
+stations:
+  - { id: bay_l, kind: internal, categories: [aam_medium, bomb_450kg, bomb_small, arm, ashm_internal], max_kg: 700, capacity: 2 }
+  - { id: bay_r, kind: internal, categories: [aam_medium, bomb_450kg, bomb_small, arm, ashm_internal], max_kg: 700, capacity: 2 }
+  - { id: cheek_l, kind: internal, categories: [aam_short], max_kg: 100, capacity: 1 }
+  - { id: cheek_r, kind: internal, categories: [aam_short], max_kg: 100, capacity: 1 }
+  - { id: pylon_l, kind: external, categories: [lacm_air, bomb_900kg, aam_medium], max_kg: 1200, capacity: 1 }
+  - { id: pylon_r, kind: external, categories: [lacm_air, bomb_900kg, aam_medium], max_kg: 1200, capacity: 1 }
+sensors: [vr-60, ir-60]
+ew: [sp-5]
+countermeasures: { cm-chaff: 40, cm-flare: 40, cm-towed: 2 }
+datalinks: [lattice, weave]
+durability: { model: aircraft, p_kill_on_hit: 0.85 }
+turnaround_min: 60
+design: { archetype: fighter-stealth, note: "Lighter single-engine stealth fighter: fewer weapons inside and shorter legs than the VF-5" }

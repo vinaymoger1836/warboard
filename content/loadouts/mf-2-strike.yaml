@@ -1,0 +1,11 @@
+id: mf-2-strike
+kind: loadout
+name: Strike
+platform: mf-2
+roles: [strike]
+items:
+  - { station: wing, weapon: gb-250l, count: 2 }
+  - { station: wing_outer, weapon: ar-12, count: 2 }
+  - { station: wingtip, weapon: ai-2, count: 2 }
+  - { station: centre, weapon: gb-450, count: 2 }
+design: { note: Laser and satellite-guided bombs with self-escort }

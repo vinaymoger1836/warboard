@@ -1,0 +1,28 @@
+id: ud-11
+kind: platform
+name: UD-11 Velka
+short_name: UD-11
+category: aircraft/uav
+target_class: uav
+crew: 0
+mobility:
+  cruise_speed_mach: 0.25
+  max_speed_mach: 0.36
+  ceiling_m: 9000
+  sustained_g: 2.5
+  min_runway_m: 1200
+signature:
+  rcs_m2: { front: 0.8, side: 3, rear: 1, top: 5 }
+  ir: { cruise: 0.1 }
+  visual_size_m: 16.0
+fuel:
+  internal_kg: 1100
+  burn_kg_h: { cruise: 60 }
+stations:
+  - { id: wing_l, kind: external, categories: [light_rail, bomb_small], max_kg: 200, capacity: 2 }
+  - { id: wing_r, kind: external, categories: [light_rail, bomb_small], max_kg: 200, capacity: 2 }
+sensors: [et-6]
+datalinks: [weave, tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 60
+design: { archetype: drone-male, note: "Armed medium-altitude drone: light missiles and small bombs against vehicles and small craft" }

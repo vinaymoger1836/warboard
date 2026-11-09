@@ -1,0 +1,11 @@
+id: oe-4-optical
+kind: sensor
+name: Orbit EO-4 imager
+sensor_type: satellite_payload
+role: [imaging]
+payload:
+  kind: optical
+  swath_km: 600
+  gsd_m: 0.35
+  downlink_delay_min: 20
+design: { archetype: payload-optical, note: "Sharpest optical imager; narrow swath, daylight only" }

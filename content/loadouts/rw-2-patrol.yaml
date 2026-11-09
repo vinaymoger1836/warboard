@@ -1,0 +1,8 @@
+id: rw-2-patrol
+kind: loadout
+name: Patrol
+platform: rw-2
+roles: [maritime_patrol]
+items:
+  - { station: side, weapon: ag-1, count: 2 }
+design: { note: Two laser missiles for boats }

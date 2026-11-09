@@ -1,0 +1,10 @@
+id: mf-2-air-c
+kind: loadout
+name: Air (island)
+platform: mf-2
+roles: [air_superiority]
+items:
+  - { station: wing, weapon: ar-6, count: 2 }
+  - { station: wing_outer, weapon: ar-6, count: 2 }
+  - { station: wingtip, weapon: ai-3, count: 2 }
+design: { note: Four active radar missiles }

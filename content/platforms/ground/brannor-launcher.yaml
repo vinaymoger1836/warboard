@@ -1,0 +1,17 @@
+id: brannor-launcher
+kind: platform
+name: Brannor gun-missile vehicle
+short_name: Brannor
+category: ground/launcher
+target_class: launcher
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 10, side: 20, rear: 10, top: 30 }
+  visual_size_m: 9
+stations:
+  - { id: tubes, kind: launcher, categories: [brannor_tube], capacity: 8 }
+  - { id: gun, kind: launcher, categories: [brannor_gun], capacity: 1 }
+durability: { model: ground, damage_points: 60 }
+design: { archetype: ground-launcher, note: Eight SL-10 tubes and a twin gun }

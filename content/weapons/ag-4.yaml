@@ -1,0 +1,28 @@
+id: ag-4
+kind: weapon
+name: AG-4
+category: agm
+targets: [ground, surface]
+profile:
+  kind: rocket
+  boost_s: 4
+  max_speed_mach: 1.1
+  coast_tau_s: { sea_level: 126.1, high_alt: 416.1 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 0.5
+  max_range_km: 30
+  min_range_km: 0.5
+  max_g: 15
+  calibration: { launch_alt_m: 3000, launch_speed_mach: 0.6, target_alt_m: 0, target_speed_mach: 0 }
+guidance:
+  terminal: imaging_ir
+  seeker_resistance: 0.4
+warhead_kg: 120
+warhead: blast_fragmentation
+pk_base: { radar_site: 0.68, launcher: 0.63, c2_node: 0.63, ground_vehicle: 0.63, structure: 0.54, surface_ship: 0.45 }
+mass_kg: 600
+station_category: [agm, agm_heavy]
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.4 }
+  visual_size_m: 3.9
+design: { archetype: agm-tactical, note: "Heavy TV-guided missile of the attack aircraft; slow, but a big warhead" }

@@ -11,6 +11,6 @@ shots_per_target: 2
 cap_aircraft: 2
 cap_rotation_min: 60
 reaction_time_s: 6
-iads_layers: [medium, short]
+iads_layers: [long, medium, short]
 strike_package: [escort, strike]
-design: { note: "Fleet first; protects sea lanes" }
+design: { note: "Fleet first: the destroyers hold the sea lanes, aircraft extend their reach" }

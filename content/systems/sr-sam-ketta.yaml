@@ -1,0 +1,13 @@
+id: sr-sam-ketta
+kind: system
+name: SR-SAM Ketta battery
+short_name: Ketta
+deploy_as: site
+setup_min: 3
+components:
+  - { platform: ketta-radar-vehicle, count: 1, role: fire_control }
+  - { platform: ketta-cp, count: 1, role: c2 }
+  - { platform: ketta-launcher, count: 4, role: launcher, magazine: { sl-8: 4 } }
+emcon_default: blink
+iads_capable: true
+design: { archetype: sam-short-range, note: "Short-range IR battery that covers bases and units against helicopters, drones and low attackers" }

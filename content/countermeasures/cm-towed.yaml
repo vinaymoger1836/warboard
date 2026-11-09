@@ -1,0 +1,8 @@
+id: cm-towed
+kind: countermeasure
+name: CM-T towed decoy
+cm_type: towed_decoy
+effect: 0.45
+defeats: [active_radar, semi_active_radar]
+mass_kg: 25
+design: { archetype: towed-decoy, note: Two per sortie on newer fighters; strong against radar missiles }

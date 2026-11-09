@@ -1,0 +1,15 @@
+id: orbit-eo-4
+kind: platform
+name: Orbit EO-4
+short_name: Orbit EO-4
+category: satellite/eo
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [oe-4-optical]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 90003U 26903A   26300.50000000  .00000400  00000+0  50000-4 0  9990"
+  tle_line2: "2 90003  97.5000  75.0000 0001300  90.0000 270.0000 15.30000000    19"
+design: { archetype: satellite-imaging, note: Sharp optical imager in a mid-morning sun-synchronous orbit }

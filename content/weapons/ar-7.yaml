@@ -20,7 +20,7 @@ guidance:
   seeker_resistance: 0.6
 warhead_kg: 20
 warhead: blast_fragmentation
-pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, cruise_missile: 0.5 }
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, maritime_patrol: 0.85, ew_aircraft: 0.8, cruise_missile: 0.5 }
 mass_kg: 160
 station_category: [aam_medium]
 countermeasure_resistance: { chaff: 0.6, towed_decoy: 0.4 }

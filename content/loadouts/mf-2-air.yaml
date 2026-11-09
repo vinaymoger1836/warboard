@@ -1,0 +1,10 @@
+id: mf-2-air
+kind: loadout
+name: Air (Talvenor)
+platform: mf-2
+roles: [air_superiority]
+items:
+  - { station: wing, weapon: ar-12, count: 2 }
+  - { station: wing_outer, weapon: ar-5, count: 2 }
+  - { station: wingtip, weapon: ai-2, count: 2 }
+design: { note: Four radar and two IR missiles }

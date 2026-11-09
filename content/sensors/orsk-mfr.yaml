@@ -1,0 +1,17 @@
+id: orsk-mfr
+kind: sensor
+name: Orsk multi-function radar
+sensor_type: radar
+role: [air_search, fire_control, missile_guidance]
+radar:
+  band: X
+  r_ref_km: 140
+  sigma_ref_m2: 1.0
+  scan_period_s: 1
+  field_of_regard_deg: 360
+  clutter_rejection: 0.9
+  pulse_doppler: true
+  jam_resistance: 9
+  erp_class_dbw: 76
+  fire_channels: 8
+design: { archetype: radar-sam-engagement, note: Rotating AESA of the Orsk; 360° and very hard to jam }

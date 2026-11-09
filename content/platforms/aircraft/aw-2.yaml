@@ -1,0 +1,26 @@
+id: aw-2
+kind: platform
+name: AW-2 Corra
+short_name: AW-2
+category: aircraft/aew
+target_class: aew
+crew: 6
+mobility:
+  cruise_speed_mach: 0.55
+  max_speed_mach: 0.62
+  ceiling_m: 9500
+  sustained_g: 2.0
+  min_runway_m: 1400
+signature:
+  rcs_m2: { front: 20, side: 80, rear: 20, top: 120 }
+  ir: { cruise: 1.0 }
+  visual_size_m: 28.0
+fuel:
+  internal_kg: 8500
+  burn_kg_h: { cruise: 900 }
+sensors: [ar-200]
+countermeasures: { cm-chaff: 30, cm-flare: 30 }
+datalinks: [weave, tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 90
+design: { archetype: aew-aircraft, note: Small airborne early warning aircraft for nations that cannot field the AW-1; shorter reach }

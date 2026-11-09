@@ -1,0 +1,7 @@
+id: agm-light
+kind: archetype
+name: Light air-to-ground missile
+bands:
+  profile.max_range_km: [5, 15]
+  profile.max_speed_mach: [1.0, 1.8]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

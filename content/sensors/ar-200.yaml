@@ -1,0 +1,17 @@
+id: ar-200
+kind: sensor
+name: AR-200 surveillance radar
+sensor_type: radar
+role: [air_search, surface_search]
+radar:
+  band: S
+  r_ref_km: 270
+  sigma_ref_m2: 1.0
+  scan_period_s: 8
+  field_of_regard_deg: 300
+  clutter_rejection: 0.88
+  pulse_doppler: true
+  jam_resistance: 6
+  erp_class_dbw: 84
+  fire_channels: 0
+design: { archetype: radar-aew, note: Fixed-array radar of the AW-2; shorter reach and a blind sector fore and aft }

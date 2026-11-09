@@ -1,0 +1,8 @@
+id: lr-sam-bastra-m
+kind: system
+extends: lr-sam-bastra
+name: LR-SAM Bastra battalion (mixed magazine)
+short_name: Bastra-M
+overrides:
+  "components[3].magazine": { sl-40: 3, sl-30: 4 }
+design: { archetype: sam-long-range, note: "Bastra with three SL-40 and a quad pack of SL-30 per launcher: deeper, and better against cruise missiles" }

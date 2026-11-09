@@ -1,0 +1,29 @@
+id: ar-4
+kind: weapon
+name: AR-4
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 5
+  max_speed_mach: 3.0
+  coast_tau_s: { sea_level: 24.4, high_alt: 80.6 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 65
+  min_range_km: 1.0
+  max_g: 25
+guidance:
+  terminal: semi_active_radar
+  seeker_resistance: 0.35
+warhead_kg: 30
+warhead: blast_fragmentation
+pk_base: { fighter: 0.64, bomber: 0.72, attack: 0.68, helicopter: 0.68, uav: 0.72, aew: 0.72, tanker: 0.72, ew_aircraft: 0.68, maritime_patrol: 0.72, cruise_missile: 0.42 }
+mass_kg: 230
+station_category: [aam_medium]
+countermeasure_resistance: { chaff: 0.35, towed_decoy: 0.2 }
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 3.7
+design: { archetype: aam-medium-radar, note: "Old semi-active missile: the shooter must keep the target in its radar to the end; cheap and plentiful" }

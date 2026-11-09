@@ -1,0 +1,11 @@
+id: os-3-sar
+kind: sensor
+name: Orbit SAR-3 radar
+sensor_type: satellite_payload
+role: [imaging]
+payload:
+  kind: sar
+  swath_km: 500
+  gsd_m: 0.6
+  downlink_delay_min: 15
+design: { archetype: payload-sar, note: "Finer than the SAR-1, narrower swath, quicker downlink" }

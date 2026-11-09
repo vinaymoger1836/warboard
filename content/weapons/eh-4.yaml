@@ -1,0 +1,31 @@
+id: eh-4
+kind: weapon
+name: EH-4
+category: arm
+targets: [ground, surface]
+target_class: anti_radiation_missile
+profile:
+  kind: rocket
+  boost_s: 6
+  max_speed_mach: 3.0
+  coast_tau_s: { sea_level: 87.0, high_alt: 287.1 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 0.8
+  max_range_km: 90
+  min_range_km: 5
+  max_g: 20
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: anti_radiation
+  seeker_resistance: 0.8
+warhead_kg: 40
+warhead: blast_fragmentation
+pk_base: { radar_site: 0.76, launcher: 0.57, c2_node: 0.47, surface_ship: 0.28 }
+mass_kg: 280
+station_category: [arm]
+nav_resistant: true
+internal_carriage: true
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.6 }
+  visual_size_m: 3.6
+design: { archetype: arm-missile, note: Compact emitter hunter that fits stealth fighter bays; small warhead }

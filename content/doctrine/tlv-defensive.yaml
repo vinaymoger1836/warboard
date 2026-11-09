@@ -13,4 +13,4 @@ cap_rotation_min: 60
 reaction_time_s: 5
 iads_layers: [medium, short]
 strike_package: [escort, strike]
-design: { note: "Holds the mountains and fjords" }
+design: { note: "Defends from dispersed road strips and the fjords; trades space for time" }

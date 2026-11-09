@@ -1,0 +1,28 @@
+id: ag-5
+kind: weapon
+name: AG-5
+category: agm
+targets: [ground, surface]
+profile:
+  kind: rocket
+  boost_s: 2
+  max_speed_mach: 1.0
+  coast_tau_s: { sea_level: 61.9, high_alt: 204.3 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 0.5
+  max_range_km: 12
+  min_range_km: 0.5
+  max_g: 15
+  calibration: { launch_alt_m: 3000, launch_speed_mach: 0.6, target_alt_m: 0, target_speed_mach: 0 }
+guidance:
+  terminal: laser
+  seeker_resistance: 0.6
+warhead_kg: 6
+warhead: shaped_charge
+pk_base: { radar_site: 0.64, launcher: 0.59, c2_node: 0.59, ground_vehicle: 0.59, structure: 0.51, surface_ship: 0.3 }
+mass_kg: 25
+station_category: [light_rail]
+signature:
+  rcs_m2: { front: 0.01, side: 0.05, rear: 0.015, top: 0.05 }
+  ir: { cruise: 0.4 }
+  visual_size_m: 1.2
+design: { archetype: agm-light, note: Mini missile for armed drones; two fit where one AG-1 does }

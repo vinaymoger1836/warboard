@@ -1,0 +1,31 @@
+id: ai-6
+kind: weapon
+name: AI-6
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 6
+  max_speed_mach: 3.5
+  coast_tau_s: { sea_level: 18.1, high_alt: 59.9 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 60
+  min_range_km: 1.0
+  max_g: 30
+guidance:
+  midcourse: [inertial]
+  terminal: ir
+  seeker_range_km: 25
+  seeker_resistance: 0.6
+warhead_kg: 25
+warhead: blast_fragmentation
+pk_base: { fighter: 0.71, bomber: 0.81, attack: 0.76, helicopter: 0.76, uav: 0.81, aew: 0.81, tanker: 0.81, ew_aircraft: 0.76, maritime_patrol: 0.81 }
+mass_kg: 220
+station_category: [aam_medium]
+countermeasure_resistance: { flare: 0.6 }
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 3.8
+design: { archetype: aam-medium-ir, note: "Medium-range IR missile: no radar warning for the target, but flares and a beam turn defeat it" }

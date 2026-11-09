@@ -1,0 +1,9 @@
+id: bm-3-anti-ship
+kind: loadout
+name: Anti-ship
+platform: bm-3
+roles: [anti_ship]
+items:
+  - { station: bay, weapon: as-9, count: 4 }
+  - { station: wing, weapon: as-9, count: 2 }
+design: { note: Six heavy anti-ship missiles }

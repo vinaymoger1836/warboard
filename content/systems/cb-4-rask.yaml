@@ -1,0 +1,13 @@
+id: cb-4-rask
+kind: system
+name: CB-4 Rask coastal battery
+short_name: Rask
+deploy_as: site
+setup_min: 15
+components:
+  - { platform: rask-radar-vehicle, count: 1, role: fire_control }
+  - { platform: rask-cp, count: 1, role: c2 }
+  - { platform: rask-launcher, count: 4, role: launcher, magazine: { as-13: 2 } }
+emcon_default: "off"
+iads_capable: false
+design: { archetype: coastal-battery, note: "Heavy supersonic coastal battery; reaches across a gulf, but each launcher carries only two rounds" }

@@ -1,0 +1,9 @@
+id: ud-11-strike-b
+kind: loadout
+name: Strike (laser)
+platform: ud-11
+roles: [strike]
+items:
+  - { station: wing_l, weapon: ag-1, count: 2 }
+  - { station: wing_r, weapon: ag-1, count: 2 }
+design: { note: Four laser missiles }

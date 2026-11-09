@@ -1,0 +1,7 @@
+id: bomb-guided-small
+kind: archetype
+name: Small guided glide bomb
+bands:
+  profile.max_range_km: [20, 110]
+  warhead_kg: [15, 120]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

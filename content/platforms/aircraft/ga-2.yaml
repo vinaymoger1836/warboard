@@ -1,0 +1,32 @@
+id: ga-2
+kind: platform
+name: GA-2 Brask
+short_name: GA-2
+category: aircraft/attack
+target_class: attack
+crew: 1
+mobility:
+  cruise_speed_mach: 0.65
+  max_speed_mach: 0.8
+  ceiling_m: 10000
+  sustained_g: 5.5
+  min_runway_m: 1200
+  road_capable: true
+signature:
+  rcs_m2: { front: 9, side: 25, rear: 12, top: 40 }
+  ir: { cruise: 1.5 }
+  visual_size_m: 15.5
+fuel:
+  internal_kg: 5000
+  burn_kg_h: { cruise: 1500, military: 2600 }
+stations:
+  - { id: wing_inner, kind: external, categories: [bomb_450kg, bomb_900kg, agm_heavy, agm, bomb_small], max_kg: 1500, capacity: 2 }
+  - { id: wing_outer, kind: external, categories: [agm, bomb_small, bomb_450kg], max_kg: 800, capacity: 4 }
+  - { id: wingtip, kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+  - { id: centre, kind: external, categories: [bomb_450kg, bomb_small], max_kg: 1000, capacity: 2 }
+sensors: [et-6]
+countermeasures: { cm-chaff: 60, cm-flare: 90 }
+datalinks: [tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.7 }
+turnaround_min: 40
+design: { archetype: attack-aircraft, note: "Armoured subsonic attacker for the land battle; deadly at low level, easy prey for fighters" }

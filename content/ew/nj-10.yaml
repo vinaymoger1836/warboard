@@ -1,0 +1,7 @@
+id: nj-10
+kind: ew_suite
+name: NJ-10 shipboard jammer
+modes:
+  self_protect: { jam_strength: 5 }
+effects: [radar]
+design: { archetype: jammer-self-protect, note: Shipboard jammer that seduces anti-ship seekers }

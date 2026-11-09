@@ -13,4 +13,4 @@ cap_rotation_min: 60
 reaction_time_s: 7
 iads_layers: [medium, short]
 strike_package: [strike]
-design: { note: "Small air force; batteries cover the plains" }
+design: { note: "Covers the army with short-range air defence; aircraft and helicopters support the land battle" }

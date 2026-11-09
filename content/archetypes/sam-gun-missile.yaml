@@ -1,0 +1,5 @@
+id: sam-gun-missile
+kind: archetype
+name: Gun-missile air-defence battery
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

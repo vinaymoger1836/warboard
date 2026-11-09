@@ -1,0 +1,32 @@
+id: sl-8
+kind: weapon
+name: SL-8
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 3
+  max_speed_mach: 2.8
+  coast_tau_s: { sea_level: 9.4, high_alt: 31.1 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 12
+  min_range_km: 0.5
+  max_g: 40
+  calibration: { launch_alt_m: 0, launch_speed_mach: 0, target_alt_m: 3000, target_speed_mach: 0.8 }
+guidance:
+  terminal: ir
+  seeker_range_km: 10
+  seeker_resistance: 0.5
+warhead_kg: 6
+warhead: blast_fragmentation
+pk_base: { fighter: 0.71, bomber: 0.81, attack: 0.76, helicopter: 0.76, uav: 0.81, aew: 0.81, tanker: 0.81, ew_aircraft: 0.76, maritime_patrol: 0.81, cruise_missile: 0.6, anti_ship_missile: 0.6, anti_radiation_missile: 0.5 }
+mass_kg: 75
+station_category: [ketta_rail]
+countermeasure_resistance: { flare: 0.5 }
+envelope: { min_alt_m: 10, max_alt_m: 6000 }
+signature:
+  rcs_m2: { front: 0.03, side: 0.15, rear: 0.045, top: 0.15 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 2.6
+design: { archetype: sam-missile-short, note: IR missile of the Ketta battery; good against helicopters and drones }

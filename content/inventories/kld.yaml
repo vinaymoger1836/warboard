@@ -3,37 +3,83 @@ kind: inventory
 nation: kld
 platforms:
   hf-4: 36
+  hf-7: 30
+  bm-3: 12
   mf-4: 24
   tk-3: 4
+  tk-5: 2
   aw-1: 2
-  lr-sam-bastra: 4
-  mr-sam-tolven: 4
+  ej-4: 2
+  ud-12: 4
+  kord: 3
+  kest: 2
+  lr-sam-drevan: 4
+  lr-sam-bastra: 2
+  sr-sam-brannor: 8
+  cb-4-rask: 4
+  gr-300-site: 6
+  ls-1-vira: 6
+  orbit-eo-4: 1
+  orbit-sar-1: 1
 munitions:
-  ar-7: 300
-  ar-9: 120
-  ai-3: 150
-  as-8-spire: 120
-  gb-900: 300
+  ar-14: 300
+  ar-9: 160
+  ar-7: 160
+  ai-5: 180
+  ai-3: 80
+  eh-3: 80
   eh-2: 40
-  sl-40: 150
-  sl-20: 120
+  as-9: 48
+  as-8-spire: 140
+  as-13: 32
+  lc-1: 160
+  lc-4: 60
+  lc-5: 40
+  ag-3: 60
+  gb-900: 200
+  gb-900p: 80
+  gb-450: 160
+  gb-900g: 80
+  lm-3: 240
+  sl-50: 96
+  sl-35: 120
+  sl-40: 100
+  sl-10: 200
+  sn-40: 96
+  sl-12: 32
+  cg-35: 8
+  cg-40: 6
+  cg-30: 4
 basing:
-  - { platform: hf-4, base: kld-scheltwerk-air, count: 6 }
-  - { platform: hf-4, base: kld-bramheim-air, count: 6 }
-  - { platform: hf-4, base: kld-brenumitz-air, count: 6 }
-  - { platform: hf-4, base: kld-kargow-air, count: 6 }
-  - { platform: hf-4, base: kld-kurkau-air, count: 6 }
-  - { platform: hf-4, base: kld-zemheim-air, count: 6 }
-  - { platform: mf-4, base: kld-scheltwerk-air, count: 4 }
-  - { platform: mf-4, base: kld-bramheim-air, count: 4 }
-  - { platform: mf-4, base: kld-brenumitz-air, count: 4 }
-  - { platform: mf-4, base: kld-kargow-air, count: 4 }
-  - { platform: mf-4, base: kld-kurkau-air, count: 4 }
-  - { platform: mf-4, base: kld-zemheim-air, count: 4 }
-  - { platform: tk-3, base: kld-scheltwerk-air, count: 1 }
-  - { platform: tk-3, base: kld-bramheim-air, count: 1 }
-  - { platform: tk-3, base: kld-brenumitz-air, count: 1 }
-  - { platform: tk-3, base: kld-kargow-air, count: 1 }
-  - { platform: aw-1, base: kld-scheltwerk-air, count: 1 }
-  - { platform: aw-1, base: kld-kurkau-air, count: 1 }
-design: { note: "Industrial state; long-range missiles, heavy fighters" }
+  - { platform: bm-3, base: kld-scheltwerk-air, count: 12 }
+  - { platform: tk-3, base: kld-scheltwerk-air, count: 2 }
+  - { platform: tk-5, base: kld-scheltwerk-air, count: 2 }
+  - { platform: aw-1, base: kld-scheltwerk-air, count: 2 }
+  - { platform: ej-4, base: kld-scheltwerk-air, count: 2 }
+  - { platform: ud-12, base: kld-scheltwerk-air, count: 4 }
+  - { platform: hf-7, base: kld-scheltwerk-air, count: 10 }
+  - { platform: hf-4, base: kld-bramheim-air, count: 12 }
+  - { platform: hf-7, base: kld-bramheim-air, count: 10 }
+  - { platform: hf-4, base: kld-brenumitz-air, count: 12 }
+  - { platform: mf-4, base: kld-brenumitz-air, count: 8 }
+  - { platform: hf-4, base: kld-kargow-air, count: 12 }
+  - { platform: mf-4, base: kld-kargow-air, count: 8 }
+  - { platform: hf-7, base: kld-kurkau-air, count: 10 }
+  - { platform: mf-4, base: kld-kurkau-air, count: 8 }
+  - { platform: tk-3, base: kld-kurkau-air, count: 2 }
+  - { platform: kord, base: kld-briemheim-naval, count: 3 }
+  - { platform: kest, base: kld-briemheim-naval, count: 2 }
+munition_basing:
+  - base: kld-bramheim-air
+    munitions: { ag-3: 14, ai-3: 14, ai-5: 25, ar-14: 42, ar-7: 22, ar-9: 37, as-8-spire: 16, eh-3: 18, gb-900g: 18, gb-900p: 18, lc-5: 9 }
+  - base: kld-brenumitz-air
+    munitions: { ai-3: 14, ai-5: 25, ar-14: 42, ar-7: 22, ar-9: 37, as-8-spire: 16, eh-2: 9, gb-900: 46 }
+  - base: kld-briemheim-naval
+    munitions: { as-8-spire: 16, cg-30: 2, cg-40: 4, lc-1: 56, sl-12: 22, sn-40: 67 }
+  - base: kld-kargow-air
+    munitions: { ai-3: 14, ai-5: 25, ar-14: 42, ar-7: 22, ar-9: 37, as-8-spire: 16, eh-2: 9, gb-900: 46 }
+  - base: kld-kurkau-air
+    munitions: { ag-3: 14, ai-3: 14, ai-5: 25, ar-14: 42, ar-7: 22, as-8-spire: 16, eh-2: 9, eh-3: 18, gb-900: 46, gb-900g: 18, gb-900p: 18, lc-5: 9 }
+  - base: kld-scheltwerk-air
+    munitions: { ag-3: 14, ai-5: 25, ar-14: 42, ar-7: 22, as-8-spire: 16, as-9: 33, eh-3: 18, gb-900g: 18, gb-900p: 18, lc-1: 56, lc-4: 42, lc-5: 9 }
+design: { note: "Industrial state: heavy fighters, missile-carrying bombers and long-range missiles of every kind" }

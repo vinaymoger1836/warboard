@@ -1,0 +1,12 @@
+id: vaskor-air-defence
+kind: loadout
+name: Air defence
+platform: vaskor
+roles: [air_defence]
+items:
+  - { station: vls, weapon: sn-50, count: 24 }
+  - { station: vls, weapon: sn-30, count: 24 }
+  - { station: vls, weapon: sn-15, count: 64 }
+  - { station: ashm, weapon: as-5, count: 8 }
+  - { station: gun, weapon: cg-40, count: 2 }
+design: { note: Every cell for air defence }

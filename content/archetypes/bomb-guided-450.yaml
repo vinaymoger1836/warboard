@@ -1,0 +1,7 @@
+id: bomb-guided-450
+kind: archetype
+name: "450 kg guided bomb"
+bands:
+  profile.max_range_km: [10, 40]
+  warhead_kg: [150, 250]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,17 @@
+id: hr-320
+kind: sensor
+name: HR-320 multi-function radar
+sensor_type: radar
+role: [air_search, surface_search, fire_control, missile_guidance]
+radar:
+  band: S
+  r_ref_km: 240
+  sigma_ref_m2: 1.0
+  scan_period_s: 1
+  field_of_regard_deg: 360
+  clutter_rejection: 0.9
+  pulse_doppler: true
+  jam_resistance: 8
+  erp_class_dbw: 88
+  fire_channels: 16
+design: { archetype: radar-naval-area, note: Four-face array of the Vaskor; the strongest radar afloat }

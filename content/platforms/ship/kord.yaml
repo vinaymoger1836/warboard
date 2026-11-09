@@ -1,0 +1,30 @@
+id: kord
+kind: platform
+name: Kord-class destroyer
+short_name: Kord
+category: ship/destroyer
+target_class: surface_ship
+crew: 300
+mobility:
+  cruise_speed_kt: 18
+  max_speed_kt: 31
+  turn_radius_m: 650
+signature:
+  rcs_m2: { front: 6000, side: 18000, rear: 6000, top: 18000 }
+  ir: { cruise: 7 }
+  acoustic_db: 120
+  visual_size_m: 165
+fuel:
+  range_nm: 5500
+stations:
+  - { id: vls, kind: vls, categories: [vls_cell], capacity: 32 }
+  - { id: ashm, kind: launcher, categories: [ashm_canister, ashm_heavy], capacity: 16 }
+  - { id: gun, kind: launcher, categories: [gun_mount], capacity: 2 }
+sensors:
+  - { sensor: kr-120, height_m: 35 }
+  - es-40
+ew: [nj-10]
+countermeasures: { cm-chaff: 24, cm-chaff-naval: 16, cm-flare: 12 }
+datalinks: [tessel]
+durability: { model: ship, damage_points: 7000 }
+design: { archetype: destroyer-strike, note: Big anti-ship and land-attack punch; its air defence is semi-active and needs its one radar }

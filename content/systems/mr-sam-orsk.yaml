@@ -1,0 +1,13 @@
+id: mr-sam-orsk
+kind: system
+name: MR-SAM Orsk battery
+short_name: Orsk
+deploy_as: site
+setup_min: 5
+components:
+  - { platform: orsk-radar-vehicle, count: 1, role: fire_control }
+  - { platform: orsk-cp, count: 1, role: c2 }
+  - { platform: orsk-launcher, count: 3, role: launcher, magazine: { sl-25: 8 } }
+emcon_default: blink
+iads_capable: true
+design: { archetype: sam-medium-range, note: "Expensive medium-range battery: long reach and a radar that is very hard to jam; few launchers" }

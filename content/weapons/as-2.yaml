@@ -1,0 +1,30 @@
+id: as-2
+kind: weapon
+name: AS-2
+category: ashm
+targets: [surface]
+target_class: anti_ship_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.9
+  max_range_km: 45
+  min_range_km: 3
+  cruise_alt_m: 15
+  terminal_alt_m: 4
+guidance:
+  midcourse: [inertial]
+  terminal: active_radar
+  seeker_range_km: 12
+  seeker_resistance: 0.5
+warhead_kg: 70
+warhead: blast_fragmentation
+pk_base: { surface_ship: 0.8 }
+countermeasure_resistance: { chaff: 0.45 }
+mass_kg: 180
+station_category: [light_rail, ashm_light]
+internal_carriage: true
+signature:
+  rcs_m2: { front: 0.04, side: 0.2, rear: 0.06, top: 0.2 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 2.6
+design: { archetype: ashm-light, note: "Helicopter anti-ship missile; out-ranged by any frigate's missiles" }

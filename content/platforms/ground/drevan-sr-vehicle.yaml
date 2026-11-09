@@ -1,0 +1,16 @@
+id: drevan-sr-vehicle
+kind: platform
+name: Drevan surveillance radar
+short_name: Drevan SR
+category: ground/radar
+target_class: radar_site
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 40, side: 80, rear: 40, top: 120 }
+  visual_size_m: 14
+sensors:
+  - { sensor: drevan-sr, height_m: 12 }
+durability: { model: ground, damage_points: 100 }
+design: { archetype: ground-radar-vehicle, note: Search radar of the battalion }

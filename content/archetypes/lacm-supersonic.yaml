@@ -1,0 +1,7 @@
+id: lacm-supersonic
+kind: archetype
+name: Supersonic land-attack cruise missile
+bands:
+  profile.max_range_km: [200, 600]
+  profile.max_speed_mach: [2.0, 3.5]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

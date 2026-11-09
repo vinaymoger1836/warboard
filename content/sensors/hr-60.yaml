@@ -1,0 +1,17 @@
+id: hr-60
+kind: sensor
+name: HR-60 helicopter radar
+sensor_type: radar
+role: [surface_search, air_search]
+radar:
+  band: X
+  r_ref_km: 75
+  sigma_ref_m2: 1.0
+  scan_period_s: 4
+  field_of_regard_deg: 360
+  clutter_rejection: 0.85
+  pulse_doppler: true
+  jam_resistance: 5
+  erp_class_dbw: 66
+  fire_channels: 1
+design: { archetype: radar-helicopter, note: "Chin radar of the RW-2; extends a ship's surface picture" }

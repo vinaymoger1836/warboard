@@ -1,0 +1,28 @@
+id: brisa
+kind: platform
+name: Brisa-class fast attack craft
+short_name: Brisa
+category: ship/patrol
+target_class: surface_ship
+crew: 25
+mobility:
+  cruise_speed_kt: 20
+  max_speed_kt: 38
+  turn_radius_m: 200
+signature:
+  rcs_m2: { front: 120, side: 500, rear: 120, top: 500 }
+  ir: { cruise: 1.5 }
+  acoustic_db: 104
+  visual_size_m: 42
+fuel:
+  range_nm: 1200
+stations:
+  - { id: ashm, kind: launcher, categories: [ashm_canister], capacity: 4 }
+  - { id: sam, kind: launcher, categories: [sam_box], capacity: 8 }
+  - { id: gun, kind: launcher, categories: [gun_mount], capacity: 1 }
+sensors:
+  - { sensor: nr-60, height_m: 12 }
+countermeasures: { cm-chaff: 6 }
+datalinks: [weave, tessel]
+durability: { model: ship, damage_points: 600 }
+design: { archetype: patrol-craft, note: "Small, fast and cheap; four anti-ship missiles and almost no defence. Works in packs from sheltered water" }

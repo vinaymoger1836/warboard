@@ -1,0 +1,11 @@
+id: morna-standard
+kind: loadout
+name: Standard
+platform: morna
+roles: [air_defence, anti_ship]
+items:
+  - { station: vls, weapon: sn-20, count: 24 }
+  - { station: vls, weapon: sn-10, count: 32 }
+  - { station: ashm, weapon: as-5, count: 8 }
+  - { station: gun, weapon: cg-40, count: 1 }
+design: { note: Area and point defence }

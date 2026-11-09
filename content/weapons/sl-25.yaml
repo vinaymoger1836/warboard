@@ -1,0 +1,33 @@
+id: sl-25
+kind: weapon
+name: SL-25
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 6
+  max_speed_mach: 4.5
+  coast_tau_s: { sea_level: 27.0, high_alt: 89.2 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.2
+  max_range_km: 100
+  min_range_km: 2
+  max_g: 40
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 18
+  seeker_resistance: 0.75
+warhead_kg: 25
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, maritime_patrol: 0.85, cruise_missile: 0.66, anti_ship_missile: 0.66, anti_radiation_missile: 0.55 }
+mass_kg: 320
+station_category: [orsk_tube]
+countermeasure_resistance: { chaff: 0.7 }
+engage_on_remote: true
+envelope: { min_alt_m: 5, max_alt_m: 22000 }
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 4.2
+design: { archetype: sam-missile-medium, note: "Active missile of the Orsk: long reach for its class, small warhead" }

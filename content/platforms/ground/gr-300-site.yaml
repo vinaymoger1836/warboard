@@ -1,0 +1,16 @@
+id: gr-300-site
+kind: platform
+name: GR-300 Stavel radar
+short_name: GR-300
+category: ground/radar
+target_class: radar_site
+mobility:
+  road_speed_kmh: 40
+  offroad_speed_kmh: 15
+signature:
+  rcs_m2: { front: 60, side: 120, rear: 60, top: 180 }
+  visual_size_m: 16
+sensors:
+  - { sensor: gr-300-radar, height_m: 15 }
+durability: { model: ground, damage_points: 120 }
+design: { archetype: ground-radar-site, note: Relocatable early-warning radar for the air-defence network }

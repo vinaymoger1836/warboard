@@ -1,0 +1,15 @@
+id: orbit-sar-3
+kind: platform
+name: Orbit SAR-3
+short_name: Orbit SAR-3
+category: satellite/sar
+target_class: structure
+mobility: {}
+signature:
+  rcs_m2: { front: 5, side: 5, rear: 5, top: 5 }
+sensors: [os-3-sar]
+durability: { model: ground, damage_points: 100 }
+orbit:
+  tle_line1: "1 90004U 26904A   26300.50000000  .00000400  00000+0  50000-4 0  9992"
+  tle_line2: "2 90004  97.7000 165.0000 0001300  90.0000 270.0000 15.22000000    13"
+design: { archetype: satellite-imaging, note: Fine-resolution radar imager; day and night }

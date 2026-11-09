@@ -1,0 +1,7 @@
+id: agm-standoff
+kind: archetype
+name: Powered stand-off air-to-ground missile
+bands:
+  profile.max_range_km: [40, 150]
+  profile.max_speed_mach: [0.6, 0.95]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

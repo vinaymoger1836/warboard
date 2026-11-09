@@ -1,0 +1,17 @@
+id: sr-180
+kind: sensor
+name: SR-180 maritime radar
+sensor_type: radar
+role: [surface_search, air_search, ground_mapping]
+radar:
+  band: X
+  r_ref_km: 180
+  sigma_ref_m2: 1.0
+  scan_period_s: 6
+  field_of_regard_deg: 360
+  clutter_rejection: 0.9
+  pulse_doppler: true
+  jam_resistance: 6
+  erp_class_dbw: 80
+  fire_channels: 2
+design: { archetype: radar-maritime-patrol, note: "Belly radar of the MP-6; finds ships far out, weak against fighters" }

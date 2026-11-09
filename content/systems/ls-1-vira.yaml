@@ -1,0 +1,12 @@
+id: ls-1-vira
+kind: system
+name: LS-1 Vira loitering munition battery
+short_name: Vira
+deploy_as: site
+setup_min: 10
+components:
+  - { platform: vira-cp, count: 1, role: c2 }
+  - { platform: vira-launcher, count: 4, role: launcher, magazine: { lm-2: 12 } }
+emcon_default: "off"
+iads_capable: false
+design: { archetype: loitering-battery, note: "Fires loitering munitions on networked tracks; no radar of its own, so it needs someone else's picture" }

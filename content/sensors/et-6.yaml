@@ -1,0 +1,11 @@
+id: et-6
+kind: sensor
+name: ET-6 targeting pod
+sensor_type: eo_ir
+role: [targeting, imaging]
+eo_ir:
+  max_range_km: 20
+  gsd_at_10km_m: 0.4
+  night_capable: true
+  field_of_regard_deg: 220
+design: { archetype: eo-ir-turret, note: "Targeting pod and helicopter sight; short reach, night capable" }

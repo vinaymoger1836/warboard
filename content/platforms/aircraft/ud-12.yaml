@@ -1,0 +1,25 @@
+id: ud-12
+kind: platform
+name: UD-12 Highmoor
+short_name: UD-12
+category: aircraft/uav
+target_class: uav
+crew: 0
+mobility:
+  cruise_speed_mach: 0.55
+  max_speed_mach: 0.6
+  ceiling_m: 18000
+  sustained_g: 2.0
+  min_runway_m: 2400
+signature:
+  rcs_m2: { front: 2, side: 6, rear: 2, top: 10 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 40.0
+fuel:
+  internal_kg: 6500
+  burn_kg_h: { cruise: 280 }
+sensors: [sr-250, et-20, es-60]
+datalinks: [weave, tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.9 }
+turnaround_min: 180
+design: { archetype: drone-hale, note: "High-altitude watcher: ground-mapping radar and a long-range turret over a whole sea; unarmed" }

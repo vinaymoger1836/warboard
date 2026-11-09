@@ -1,0 +1,23 @@
+id: gb-900g
+kind: weapon
+name: GB-900G
+category: bomb
+targets: [ground, surface]
+profile:
+  kind: glide
+  max_speed_mach: 0.9
+  max_range_km: 70
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: satnav_ins
+warhead_kg: 430
+warhead: blast
+cep_m: 12
+lethal_radius_m: 30
+mass_kg: 1000
+station_category: [bomb_900kg]
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.05 }
+  visual_size_m: 4.2
+design: { archetype: bomb-glide-kit, note: "GB-900 with a glide kit: stand-off release from altitude, external carriage only" }

@@ -1,0 +1,32 @@
+id: mf-6
+kind: platform
+name: MF-6 Tarrow
+short_name: MF-6
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.9
+  max_speed_mach: 1.8
+  ceiling_m: 15500
+  sustained_g: 7.5
+  min_runway_m: 1600
+signature:
+  rcs_m2: { front: 1.5, side: 5, rear: 2.5, top: 8 }
+  ir: { cruise: 1.0, afterburner: 3.0 }
+  visual_size_m: 15.5
+fuel:
+  internal_kg: 5800
+  burn_kg_h: { cruise: 1700, military: 3400, afterburner: 9500 }
+  aar: probe
+stations:
+  - { id: wing_inner, kind: external, categories: [ashm, lacm_air, agm_heavy, bomb_900kg, aam_medium], max_kg: 2000, capacity: 2 }
+  - { id: wing_mid, kind: external, categories: [aam_medium, agm, arm], max_kg: 600, capacity: 2 }
+  - { id: wingtip, kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+  - { id: centre, kind: external, categories: [bomb_450kg, bomb_small], max_kg: 1100, capacity: 4 }
+sensors: [mr-30]
+countermeasures: { cm-chaff: 30, cm-flare: 30, cm-towed: 2 }
+datalinks: [weave]
+durability: { model: aircraft, p_kill_on_hit: 0.85 }
+turnaround_min: 45
+design: { archetype: fighter-multirole, note: "Maritime multirole fighter: longer legs and a sea-tuned radar instead of speed" }

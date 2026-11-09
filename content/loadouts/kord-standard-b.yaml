@@ -1,0 +1,10 @@
+id: kord-standard-b
+kind: loadout
+name: Standard (continental)
+platform: kord
+roles: [anti_ship, air_defence]
+items:
+  - { station: vls, weapon: sn-40, count: 32 }
+  - { station: ashm, weapon: as-11, count: 16 }
+  - { station: gun, weapon: cg-30, count: 2 }
+design: { note: Sixteen medium supersonic missiles }

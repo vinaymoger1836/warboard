@@ -1,0 +1,31 @@
+id: sl-24
+kind: weapon
+name: SL-24
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 5
+  max_speed_mach: 3.2
+  coast_tau_s: { sea_level: 30.4, high_alt: 100.3 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.2
+  max_range_km: 50
+  min_range_km: 2
+  max_g: 25
+guidance:
+  midcourse: [command]
+  terminal: semi_active_radar
+  seeker_resistance: 0.35
+warhead_kg: 60
+warhead: blast_fragmentation
+pk_base: { fighter: 0.64, bomber: 0.72, attack: 0.68, helicopter: 0.68, uav: 0.72, aew: 0.72, tanker: 0.72, ew_aircraft: 0.68, maritime_patrol: 0.72, cruise_missile: 0.48, anti_ship_missile: 0.48, anti_radiation_missile: 0.4 }
+mass_kg: 520
+station_category: [tolven_tube]
+countermeasure_resistance: { chaff: 0.35 }
+envelope: { min_alt_m: 20, max_alt_m: 15000 }
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 5.0
+design: { archetype: sam-missile-medium, note: "Older semi-active missile for the Tolven: shorter, and the radar must light the target to the end" }

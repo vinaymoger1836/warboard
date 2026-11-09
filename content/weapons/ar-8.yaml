@@ -1,0 +1,33 @@
+id: ar-8
+kind: weapon
+name: AR-8
+category: aam
+targets: [air]
+target_class: air_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 6
+  max_speed_mach: 4.2
+  coast_tau_s: { sea_level: 34.5, high_alt: 114.0 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 140
+  min_range_km: 1.0
+  max_g: 40
+guidance:
+  midcourse: [inertial, datalink]
+  terminal: active_radar
+  seeker_range_km: 20
+  seeker_resistance: 0.8
+warhead_kg: 15
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, maritime_patrol: 0.85, cruise_missile: 0.5 }
+mass_kg: 150
+station_category: [aam_medium]
+countermeasure_resistance: { chaff: 0.75, towed_decoy: 0.55 }
+internal_carriage: true
+engage_on_remote: true
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.5 }
+  visual_size_m: 3.6
+design: { archetype: aam-medium-radar, note: "Morvel's missile: long reach and the hardest seeker to fool, small warhead" }

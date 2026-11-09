@@ -1,0 +1,11 @@
+id: halvard-patrol
+kind: loadout
+name: Patrol fleet
+platform: halvard
+roles: [air_defence, anti_ship]
+items:
+  - { station: vls, weapon: sn-30, count: 24 }
+  - { station: vls, weapon: sn-15, count: 32 }
+  - { station: ashm, weapon: as-10, count: 8 }
+  - { station: gun, weapon: cg-30, count: 2 }
+design: { note: Area and inner layer; long-range anti-ship missiles }

@@ -2,32 +2,80 @@ id: tlv-forces
 kind: inventory
 nation: tlv
 platforms:
-  mf-4: 48
-  ud-9: 4
+  mf-2: 48
+  mf-4: 36
+  aw-2: 3
   tk-3: 1
-  mr-sam-tolven: 6
-  cb-2-strand: 6
+  ud-9: 4
+  rw-5: 8
+  brisa: 6
+  selvik: 2
   kest: 2
+  cb-2-strand: 8
+  mr-sam-tolven: 6
+  sr-sam-ketta: 10
+  gr-300-site: 6
+  gr-90-site: 6
 munitions:
-  ar-7: 300
-  ai-3: 150
-  as-4-tarn: 100
-  gb-900: 100
+  ar-12: 260
+  ar-5: 160
+  ar-7: 120
+  ai-2: 260
+  ai-3: 60
+  as-6: 140
+  as-4-tarn: 120
+  as-3: 24
+  ag-2: 80
+  gb-250l: 120
+  gb-450: 80
+  ag-1: 160
+  ai-7: 32
   sl-20: 200
+  sl-8: 240
+  sl-14: 96
   sl-12: 40
+  sn-15: 160
+  cg-20: 6
   cg-30: 10
 basing:
-  - { platform: mf-4, base: tlv-haknes-air, count: 8 }
-  - { platform: mf-4, base: tlv-fonakvann-air, count: 8 }
-  - { platform: mf-4, base: tlv-gandal-air, count: 8 }
-  - { platform: mf-4, base: tlv-goknes-air, count: 8 }
-  - { platform: mf-4, base: tlv-handal-air, count: 8 }
-  - { platform: mf-4, base: tlv-honokvann-air, count: 8 }
-  - { platform: ud-9, base: tlv-haknes-air, count: 1 }
-  - { platform: ud-9, base: tlv-fonakvann-air, count: 1 }
-  - { platform: ud-9, base: tlv-gandal-air, count: 1 }
-  - { platform: ud-9, base: tlv-goknes-air, count: 1 }
-  - { platform: kest, base: tlv-gaknes-naval, count: 1 }
-  - { platform: kest, base: tlv-baknes-naval, count: 1 }
+  - { platform: mf-2, base: tlv-haknes-air, count: 8 }
+  - { platform: mf-4, base: tlv-haknes-air, count: 12 }
+  - { platform: aw-2, base: tlv-haknes-air, count: 1 }
   - { platform: tk-3, base: tlv-haknes-air, count: 1 }
-design: { note: "Northern and mountainous; fighters and coastal batteries" }
+  - { platform: mf-2, base: tlv-handal-air, count: 8 }
+  - { platform: mf-4, base: tlv-handal-air, count: 12 }
+  - { platform: mf-2, base: tlv-gandal-air, count: 8 }
+  - { platform: mf-4, base: tlv-gandal-air, count: 12 }
+  - { platform: mf-2, base: tlv-goknes-air, count: 8 }
+  - { platform: aw-2, base: tlv-goknes-air, count: 1 }
+  - { platform: rw-5, base: tlv-goknes-air, count: 4 }
+  - { platform: mf-2, base: tlv-honokvann-air, count: 8 }
+  - { platform: aw-2, base: tlv-honokvann-air, count: 1 }
+  - { platform: rw-5, base: tlv-honokvann-air, count: 4 }
+  - { platform: mf-2, base: tlv-fonakvann-air, count: 8 }
+  - { platform: ud-9, base: tlv-fonakvann-air, count: 4 }
+  - { platform: brisa, base: tlv-gaknes-naval, count: 2 }
+  - { platform: selvik, base: tlv-gaknes-naval, count: 2 }
+  - { platform: kest, base: tlv-gaknes-naval, count: 2 }
+  - { platform: brisa, base: tlv-baknes-naval, count: 2 }
+  - { platform: brisa, base: tlv-fonokvann-naval, count: 2 }
+munition_basing:
+  - base: tlv-baknes-naval
+    munitions: { as-3: 5, cg-20: 1, sl-14: 22 }
+  - base: tlv-fonakvann-air
+    munitions: { ai-2: 30, ar-12: 30, ar-5: 18, as-6: 14, gb-250l: 14, gb-450: 9 }
+  - base: tlv-fonokvann-naval
+    munitions: { as-3: 5, cg-20: 1, sl-14: 22 }
+  - base: tlv-gaknes-naval
+    munitions: { as-3: 5, as-4-tarn: 21, as-6: 14, cg-20: 1, cg-30: 7, sl-12: 28, sl-14: 22, sn-15: 112 }
+  - base: tlv-gandal-air
+    munitions: { ai-2: 30, ai-3: 14, ar-12: 30, ar-5: 18, ar-7: 28, as-4-tarn: 21, as-6: 14, gb-250l: 14, gb-450: 9 }
+  - base: tlv-goknes-air
+    munitions: { ag-1: 56, ai-2: 30, ai-7: 11, ar-12: 30, ar-5: 18, as-6: 14, gb-250l: 14, gb-450: 9 }
+  - base: tlv-haknes-air
+    munitions: { ai-2: 30, ai-3: 14, ar-12: 30, ar-5: 18, ar-7: 28, as-4-tarn: 21, as-6: 14, gb-250l: 14, gb-450: 9 }
+  - base: tlv-handal-air
+    munitions: { ai-2: 30, ai-3: 14, ar-12: 30, ar-5: 18, ar-7: 28, as-4-tarn: 21, as-6: 14, gb-250l: 14, gb-450: 9 }
+  - base: tlv-honokvann-air
+    munitions: { ag-1: 56, ai-2: 30, ai-7: 11, ar-12: 30, ar-5: 18, as-6: 14, gb-250l: 14, gb-450: 9 }
+design: { note: "Northern and mountainous: many light fighters dispersed on road strips, coastal batteries in the fjords, a defensive posture" }

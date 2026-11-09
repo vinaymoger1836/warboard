@@ -1,0 +1,11 @@
+id: hf-7-sead
+kind: loadout
+name: Suppression
+platform: hf-7
+roles: [sead]
+items:
+  - { station: fuselage, weapon: ar-14, count: 2 }
+  - { station: wing_inner, weapon: eh-3, count: 2 }
+  - { station: wing_outer, weapon: ar-14, count: 2 }
+  - { station: wingtip, weapon: ai-5, count: 2 }
+design: { note: Two long-range emitter-homing missiles }

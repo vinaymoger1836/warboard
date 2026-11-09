@@ -1,0 +1,11 @@
+id: ga-2-laser
+kind: loadout
+name: Laser bombs
+platform: ga-2
+roles: [strike, close_support]
+items:
+  - { station: wing_inner, weapon: gb-450l, count: 2 }
+  - { station: wing_outer, weapon: ag-2, count: 2 }
+  - { station: wingtip, weapon: ai-5, count: 2 }
+  - { station: centre, weapon: bu-250, count: 2 }
+design: { note: Two laser bombs designated by its own pod }

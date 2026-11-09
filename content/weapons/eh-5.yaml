@@ -1,0 +1,30 @@
+id: eh-5
+kind: weapon
+name: EH-5
+category: arm
+targets: [ground, surface]
+target_class: anti_radiation_missile
+profile:
+  kind: rocket
+  boost_s: 3
+  max_speed_mach: 1.8
+  coast_tau_s: { sea_level: 59.4, high_alt: 196.3 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 0.8
+  max_range_km: 25
+  min_range_km: 5
+  max_g: 20
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: anti_radiation
+  seeker_resistance: 0.6
+warhead_kg: 8
+warhead: blast_fragmentation
+pk_base: { radar_site: 0.72, launcher: 0.54, c2_node: 0.45, surface_ship: 0.27 }
+mass_kg: 45
+station_category: [light_rail]
+nav_resistant: true
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.6 }
+  visual_size_m: 1.8
+design: { archetype: arm-light, note: "Light emitter-homing missile for drones and helicopters; kills short-range air-defence radars, not long-range sites" }

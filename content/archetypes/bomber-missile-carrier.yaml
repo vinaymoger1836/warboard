@@ -1,0 +1,8 @@
+id: bomber-missile-carrier
+kind: archetype
+name: Missile-carrying bomber
+bands:
+  signature.rcs_m2.front: [10, 60]
+  mobility.max_speed_mach: [0.85, 2.0]
+  fuel.internal_kg: [60000, 150000]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,33 @@
+id: sn-10
+kind: weapon
+name: SN-10
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 3
+  max_speed_mach: 3.0
+  coast_tau_s: { sea_level: 15.7, high_alt: 51.7 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 20
+  min_range_km: 0.5
+  max_g: 45
+  calibration: { launch_alt_m: 0, launch_speed_mach: 0, target_alt_m: 3000, target_speed_mach: 0.8 }
+guidance:
+  terminal: imaging_ir
+  seeker_range_km: 12
+  seeker_resistance: 0.7
+warhead_kg: 10
+warhead: blast_fragmentation
+pk_base: { fighter: 0.64, bomber: 0.72, attack: 0.68, helicopter: 0.68, uav: 0.72, aew: 0.72, tanker: 0.72, ew_aircraft: 0.68, maritime_patrol: 0.72, cruise_missile: 0.72, anti_ship_missile: 0.72, anti_radiation_missile: 0.6 }
+mass_kg: 90
+station_category: [vls_cell]
+countermeasure_resistance: { flare: 0.8 }
+rounds_per_cell: 4
+envelope: { min_alt_m: 3, max_alt_m: 6000 }
+signature:
+  rcs_m2: { front: 0.03, side: 0.15, rear: 0.045, top: 0.15 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 2.8
+design: { archetype: sam-missile-short, note: "Point-defence missile, four per cell; imaging seeker against sea-skimmers" }

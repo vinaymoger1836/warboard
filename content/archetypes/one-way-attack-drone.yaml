@@ -1,0 +1,7 @@
+id: one-way-attack-drone
+kind: archetype
+name: Long-range one-way attack drone
+bands:
+  profile.max_range_km: [500, 2000]
+  profile.max_speed_mach: [0.15, 0.45]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

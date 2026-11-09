@@ -1,0 +1,16 @@
+id: vira-launcher
+kind: platform
+name: Vira launcher
+short_name: Vira
+category: ground/launcher
+target_class: launcher
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 10, side: 20, rear: 10, top: 30 }
+  visual_size_m: 10
+stations:
+  - { id: canisters, kind: launcher, categories: [loiter_rail], capacity: 12 }
+durability: { model: ground, damage_points: 50 }
+design: { archetype: ground-launcher, note: Twelve canisters for loitering munitions }

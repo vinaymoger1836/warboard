@@ -1,0 +1,29 @@
+id: lc-6
+kind: weapon
+name: LC-6
+category: lacm
+targets: [ground, surface]
+target_class: cruise_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.8
+  max_range_km: 300
+  min_range_km: 10
+  cruise_alt_m: 40
+  terminal_alt_m: 20
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: imaging_ir
+  seeker_range_km: 10
+  seeker_resistance: 0.7
+warhead_kg: 230
+warhead: penetrator
+pk_base: { structure: 0.8, radar_site: 0.75, launcher: 0.7, c2_node: 0.75, surface_ship: 0.6 }
+countermeasure_resistance: { flare: 0.7 }
+mass_kg: 950
+station_category: [lacm_air]
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 4.6
+design: { archetype: lacm-subsonic, note: Short stand-off missile for multirole fighters; bottom of the band }

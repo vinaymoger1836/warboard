@@ -1,0 +1,29 @@
+id: lc-2
+kind: weapon
+name: LC-2
+category: lacm
+targets: [ground, surface]
+target_class: cruise_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.75
+  max_range_km: 450
+  min_range_km: 15
+  cruise_alt_m: 40
+  terminal_alt_m: 20
+guidance:
+  midcourse: [inertial, satnav, terrain_matching]
+  terminal: imaging_ir
+  seeker_range_km: 10
+  seeker_resistance: 0.8
+warhead_kg: 350
+warhead: penetrator
+pk_base: { structure: 0.85, radar_site: 0.8, launcher: 0.75, c2_node: 0.8, surface_ship: 0.5 }
+countermeasure_resistance: { flare: 0.8 }
+mass_kg: 1100
+station_category: [lacm_air]
+signature:
+  rcs_m2: { front: 0.01, side: 0.05, rear: 0.015, top: 0.05 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 5.0
+design: { archetype: lacm-subsonic, note: Shaped stand-off missile with an imaging seeker; finds its aimpoint itself }

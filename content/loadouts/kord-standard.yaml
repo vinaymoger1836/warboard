@@ -1,0 +1,11 @@
+id: kord-standard
+kind: loadout
+name: Standard
+platform: kord
+roles: [anti_ship, strike]
+items:
+  - { station: vls, weapon: sn-40, count: 24 }
+  - { station: vls, weapon: lc-1, count: 8 }
+  - { station: ashm, weapon: as-8-spire, count: 16 }
+  - { station: gun, weapon: cg-40, count: 2 }
+design: { note: Sixteen supersonic anti-ship and eight cruise missiles }

@@ -13,4 +13,4 @@ cap_rotation_min: 60
 reaction_time_s: 5
 iads_layers: [long, medium, short]
 strike_package: [sead, escort, strike, jammer]
-design: { note: "Deep air-defence network and many fighters" }
+design: { note: "Layered defence first; strikes come in large packages behind stand-off jamming" }

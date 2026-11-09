@@ -13,4 +13,4 @@ cap_rotation_min: 60
 reaction_time_s: 6
 iads_layers: [medium, short]
 strike_package: [strike]
-design: { note: "Corvettes and coastal batteries hold the islands" }
+design: { note: "Corvettes, fast attack craft and coastal batteries hold the islands; drones find the targets" }

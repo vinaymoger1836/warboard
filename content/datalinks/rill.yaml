@@ -1,0 +1,9 @@
+id: rill
+kind: datalink
+name: Rill
+latency_s: 4
+capacity_tracks: 200
+range_km: 250
+engage_on_remote: false
+jam_resistance: 0.5
+design: { archetype: datalink-basic, note: Simple low-capacity link; shares a picture but cannot cue a shot }

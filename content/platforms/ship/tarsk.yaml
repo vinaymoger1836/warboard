@@ -1,0 +1,28 @@
+id: tarsk
+kind: platform
+name: Tarsk-class corvette
+short_name: Tarsk
+category: ship/corvette
+target_class: surface_ship
+crew: 60
+mobility:
+  cruise_speed_kt: 15
+  max_speed_kt: 32
+  turn_radius_m: 280
+signature:
+  rcs_m2: { front: 250, side: 1000, rear: 250, top: 1000 }
+  ir: { cruise: 2 }
+  acoustic_db: 106
+  visual_size_m: 75
+fuel:
+  range_nm: 2500
+stations:
+  - { id: vls, kind: vls, categories: [vls_cell], capacity: 8 }
+  - { id: ashm, kind: launcher, categories: [ashm_canister], capacity: 8 }
+  - { id: gun, kind: launcher, categories: [gun_mount], capacity: 1 }
+sensors:
+  - { sensor: nr-80, height_m: 18 }
+countermeasures: { cm-chaff: 12, cm-flare: 6 }
+datalinks: [weave]
+durability: { model: ship, damage_points: 1500 }
+design: { archetype: corvette-missile, note: "Low-signature corvette for the islands: hides among them, strikes first, then runs" }

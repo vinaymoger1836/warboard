@@ -1,0 +1,9 @@
+id: attack-aircraft
+kind: archetype
+name: Subsonic ground-attack aircraft
+bands:
+  signature.rcs_m2.front: [5, 20]
+  mobility.max_speed_mach: [0.6, 0.9]
+  mobility.sustained_g: [4.0, 7.0]
+  fuel.internal_kg: [4000, 7000]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

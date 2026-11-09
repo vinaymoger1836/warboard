@@ -1,0 +1,7 @@
+id: maritime-patrol
+kind: archetype
+name: Maritime patrol aircraft
+bands:
+  mobility.max_speed_mach: [0.45, 0.85]
+  fuel.internal_kg: [8000, 40000]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,32 @@
+id: sn-15
+kind: weapon
+name: SN-15
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 4
+  max_speed_mach: 3.6
+  coast_tau_s: { sea_level: 26.4, high_alt: 87.0 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.2
+  max_range_km: 50
+  min_range_km: 2
+  max_g: 40
+guidance:
+  midcourse: [inertial, command]
+  terminal: semi_active_radar
+  seeker_resistance: 0.55
+warhead_kg: 35
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, maritime_patrol: 0.85, cruise_missile: 0.69, anti_ship_missile: 0.69, anti_radiation_missile: 0.57 }
+mass_kg: 290
+station_category: [vls_cell]
+countermeasure_resistance: { chaff: 0.55 }
+rounds_per_cell: 4
+envelope: { min_alt_m: 3, max_alt_m: 15000 }
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 3.8
+design: { archetype: sam-missile-medium, note: "Four per cell; the ship's radar lights the target. The inner layer of the maritime nations" }

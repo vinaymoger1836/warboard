@@ -1,0 +1,17 @@
+id: mr-18
+kind: sensor
+name: MR-18 pulse-Doppler radar
+sensor_type: radar
+role: [air_search, fire_control, surface_search]
+radar:
+  band: X
+  r_ref_km: 70
+  sigma_ref_m2: 1.0
+  scan_period_s: 2
+  field_of_regard_deg: 120
+  clutter_rejection: 0.75
+  pulse_doppler: true
+  jam_resistance: 4
+  erp_class_dbw: 60
+  fire_channels: 2
+design: { archetype: radar-fighter-pd, note: "Small nose radar of the light fighter; short reach, two fire channels" }

@@ -1,0 +1,7 @@
+id: loitering-munition
+kind: archetype
+name: Loitering munition
+bands:
+  profile.max_range_km: [50, 400]
+  profile.max_speed_mach: [0.2, 0.5]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

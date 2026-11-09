@@ -1,0 +1,16 @@
+id: orsk-launcher
+kind: platform
+name: Orsk launcher
+short_name: Orsk TEL
+category: ground/launcher
+target_class: launcher
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 20, side: 40, rear: 20, top: 60 }
+  visual_size_m: 12
+stations:
+  - { id: tubes, kind: launcher, categories: [orsk_tube], capacity: 8 }
+durability: { model: ground, damage_points: 80 }
+design: { archetype: ground-launcher, note: Eight SL-25 tubes }

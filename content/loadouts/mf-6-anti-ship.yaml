@@ -1,0 +1,10 @@
+id: mf-6-anti-ship
+kind: loadout
+name: Anti-ship
+platform: mf-6
+roles: [anti_ship]
+items:
+  - { station: wing_inner, weapon: as-5, count: 2 }
+  - { station: wing_mid, weapon: ar-6, count: 2 }
+  - { station: wingtip, weapon: ai-3, count: 2 }
+design: { note: Two long-range sea-skimmers }

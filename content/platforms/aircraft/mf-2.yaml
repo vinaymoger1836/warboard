@@ -1,0 +1,33 @@
+id: mf-2
+kind: platform
+name: MF-2 Hask
+short_name: MF-2
+category: aircraft/fighter
+target_class: fighter
+crew: 1
+mobility:
+  cruise_speed_mach: 0.85
+  max_speed_mach: 1.6
+  ceiling_m: 15000
+  sustained_g: 7.5
+  min_runway_m: 800
+  road_capable: true
+signature:
+  rcs_m2: { front: 1.2, side: 4, rear: 2, top: 6 }
+  ir: { cruise: 0.8, afterburner: 2.5 }
+  visual_size_m: 13.0
+fuel:
+  internal_kg: 2900
+  burn_kg_h: { cruise: 1300, military: 2600, afterburner: 7500 }
+  aar: probe
+stations:
+  - { id: wing, kind: external, categories: [aam_medium, agm, ashm, bomb_450kg, bomb_small], max_kg: 900, capacity: 2 }
+  - { id: wing_outer, kind: external, categories: [aam_medium, aam_short], max_kg: 350, capacity: 2 }
+  - { id: wingtip, kind: external, categories: [aam_short], max_kg: 200, capacity: 2 }
+  - { id: centre, kind: external, categories: [bomb_450kg, bomb_small], max_kg: 1000, capacity: 4 }
+sensors: [mr-18]
+countermeasures: { cm-chaff: 30, cm-flare: 30 }
+datalinks: [weave, tessel]
+durability: { model: aircraft, p_kill_on_hit: 0.85 }
+turnaround_min: 30
+design: { archetype: fighter-light, note: "Small, cheap and road-capable; short legs and a small radar. Dispersal is its defence" }

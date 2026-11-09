@@ -1,0 +1,6 @@
+id: payload-sigint
+kind: archetype
+name: Satellite SIGINT payload
+bands:
+  payload.location_sigma_km: [2, 20]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,34 @@
+id: sl-30
+kind: weapon
+name: SL-30
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 6
+  max_speed_mach: 4.8
+  coast_tau_s: { sea_level: 27.8, high_alt: 91.7 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.2
+  max_range_km: 110
+  min_range_km: 2
+  max_g: 35
+guidance:
+  midcourse: [inertial, command]
+  terminal: active_radar
+  seeker_range_km: 16
+  seeker_resistance: 0.55
+warhead_kg: 40
+warhead: blast_fragmentation
+pk_base: { fighter: 0.75, bomber: 0.85, attack: 0.8, helicopter: 0.8, uav: 0.85, aew: 0.85, tanker: 0.85, ew_aircraft: 0.8, maritime_patrol: 0.85, cruise_missile: 0.72, anti_ship_missile: 0.72, anti_radiation_missile: 0.6 }
+mass_kg: 650
+station_category: [bastra_tube]
+countermeasure_resistance: { chaff: 0.55 }
+rounds_per_cell: 4
+engage_on_remote: true
+envelope: { min_alt_m: 5, max_alt_m: 25000 }
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.15, top: 0.5 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 5.5
+design: { archetype: sam-missile-medium, note: "Second missile of the Bastra, four per tube; for cruise missiles and low fliers" }

@@ -1,0 +1,16 @@
+id: drevan-launcher
+kind: platform
+name: Drevan launcher
+short_name: Drevan TEL
+category: ground/launcher
+target_class: launcher
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 20, side: 40, rear: 20, top: 60 }
+  visual_size_m: 14
+stations:
+  - { id: tubes, kind: launcher, categories: [drevan_tube], capacity: 4 }
+durability: { model: ground, damage_points: 100 }
+design: { archetype: ground-launcher, note: Four tubes for a mix of SL-50 and SL-35 }

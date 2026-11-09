@@ -1,0 +1,12 @@
+id: sig-1-esm
+kind: sensor
+name: Orbit SIG-1 receiver
+sensor_type: satellite_payload
+role: [esm, elint]
+payload:
+  kind: sigint
+  swath_km: 2000
+  bands: [L, S, C, X]
+  location_sigma_km: 8
+  downlink_delay_min: 30
+design: { archetype: payload-sigint, note: Locates emitting radars over a wide swath; rough positions }

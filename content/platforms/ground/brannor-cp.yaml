@@ -1,0 +1,14 @@
+id: brannor-cp
+kind: platform
+name: Brannor command post
+short_name: Brannor CP
+category: ground/c2
+target_class: c2_node
+mobility:
+  road_speed_kmh: 60
+  offroad_speed_kmh: 30
+signature:
+  rcs_m2: { front: 8, side: 15, rear: 8, top: 20 }
+  visual_size_m: 8
+durability: { model: ground, damage_points: 40 }
+design: { archetype: ground-command-post, note: Battery command post }

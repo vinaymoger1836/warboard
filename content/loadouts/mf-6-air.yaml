@@ -1,0 +1,10 @@
+id: mf-6-air
+kind: loadout
+name: Air superiority
+platform: mf-6
+roles: [air_superiority]
+items:
+  - { station: wing_inner, weapon: ar-6, count: 2 }
+  - { station: wing_mid, weapon: ar-6, count: 2 }
+  - { station: wingtip, weapon: ai-3, count: 2 }
+design: { note: Four radar and two IR missiles }

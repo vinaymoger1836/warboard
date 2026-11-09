@@ -1,0 +1,29 @@
+id: as-1
+kind: weapon
+name: AS-1
+category: ashm
+targets: [surface]
+target_class: anti_ship_missile
+profile:
+  kind: air_breathing
+  max_speed_mach: 0.85
+  max_range_km: 22
+  min_range_km: 1
+  cruise_alt_m: 30
+  terminal_alt_m: 5
+guidance:
+  midcourse: [inertial]
+  terminal: imaging_ir
+  seeker_range_km: 8
+  seeker_resistance: 0.6
+warhead_kg: 30
+warhead: blast_fragmentation
+pk_base: { surface_ship: 0.75 }
+countermeasure_resistance: { flare: 0.7 }
+mass_kg: 60
+station_category: [light_rail]
+signature:
+  rcs_m2: { front: 0.02, side: 0.1, rear: 0.03, top: 0.1 }
+  ir: { cruise: 0.3 }
+  visual_size_m: 1.8
+design: { archetype: ashm-light, note: "Light imaging-IR missile for drones; for patrol craft, not frigates" }

@@ -1,0 +1,22 @@
+id: gb-250l
+kind: weapon
+name: GB-250L
+category: bomb
+targets: [ground, surface]
+profile:
+  kind: glide
+  max_speed_mach: 0.9
+  max_range_km: 22
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: laser
+warhead_kg: 100
+warhead: blast
+pk_base: { radar_site: 0.75, launcher: 0.75, c2_node: 0.75, ground_vehicle: 0.7, structure: 0.6, surface_ship: 0.3 }
+mass_kg: 250
+station_category: [bomb_small, bomb_450kg]
+signature:
+  rcs_m2: { front: 0.03, side: 0.15, rear: 0.045, top: 0.15 }
+  ir: { cruise: 0.05 }
+  visual_size_m: 3.3
+design: { archetype: bomb-guided-small, note: "Laser-guided small bomb; cheap, but someone must lase the target" }

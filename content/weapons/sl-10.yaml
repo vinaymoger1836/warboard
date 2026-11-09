@@ -1,0 +1,31 @@
+id: sl-10
+kind: weapon
+name: SL-10
+category: sam
+targets: [air]
+target_class: surface_to_air_missile
+profile:
+  kind: rocket
+  boost_s: 3
+  max_speed_mach: 3.2
+  coast_tau_s: { sea_level: 12.2, high_alt: 40.3 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 1.0
+  max_range_km: 18
+  min_range_km: 1
+  max_g: 35
+  calibration: { launch_alt_m: 0, launch_speed_mach: 0, target_alt_m: 3000, target_speed_mach: 0.8 }
+guidance:
+  terminal: command
+  seeker_resistance: 0.55
+warhead_kg: 12
+warhead: blast_fragmentation
+pk_base: { fighter: 0.68, bomber: 0.77, attack: 0.72, helicopter: 0.72, uav: 0.77, aew: 0.77, tanker: 0.77, ew_aircraft: 0.72, maritime_patrol: 0.77, cruise_missile: 0.66, anti_ship_missile: 0.66, anti_radiation_missile: 0.55 }
+mass_kg: 95
+station_category: [brannor_tube]
+countermeasure_resistance: { chaff: 0.7, flare: 0.9 }
+envelope: { min_alt_m: 5, max_alt_m: 9000 }
+signature:
+  rcs_m2: { front: 0.03, side: 0.15, rear: 0.045, top: 0.15 }
+  ir: { cruise: 0.8 }
+  visual_size_m: 3.2
+design: { archetype: sam-missile-short, note: "Command-guided missile of the Brannor: immune to flares, but the radar must track to the end" }

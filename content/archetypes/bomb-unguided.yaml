@@ -1,0 +1,7 @@
+id: bomb-unguided
+kind: archetype
+name: Unguided general-purpose bomb
+bands:
+  profile.max_range_km: [3, 15]
+  warhead_kg: [80, 450]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -2,28 +2,59 @@ id: hlv-forces
 kind: inventory
 nation: hlv
 platforms:
-  mf-4: 24
-  ud-9: 12
-  aw-1: 2
-  halvard: 8
-  kest: 2
+  mf-6: 16
+  mf-4: 12
+  mp-6: 8
+  aw-2: 2
+  ud-9: 10
+  ud-12: 4
+  ud-11: 8
+  rw-2: 10
+  halvard: 4
+  selvik: 6
+  sr-sam-ketta: 4
   mr-sam-tolven: 2
+  gr-90-site: 6
 munitions:
-  ar-7: 150
-  ai-3: 80
-  as-4-tarn: 160
-  gb-900: 60
-  sn-30: 400
-  sl-12: 40
-  sl-20: 60
-  cg-30: 40
+  ar-6: 180
+  ar-7: 60
+  ai-3: 100
+  as-10: 160
+  as-4-tarn: 40
+  as-2: 60
+  as-1: 80
+  ag-1: 80
+  gb-120: 120
+  gb-900: 40
+  lc-6: 16
+  ag-5: 64
+  sn-30: 200
+  sn-15: 400
+  sl-20: 48
+  sl-8: 96
+  cg-30: 30
 basing:
-  - { platform: mf-4, base: hlv-visard-air, count: 12 }
-  - { platform: mf-4, base: hlv-tamirorn-air, count: 12 }
-  - { platform: ud-9, base: hlv-visard-air, count: 6 }
-  - { platform: ud-9, base: hlv-tamirorn-air, count: 6 }
-  - { platform: halvard, base: hlv-visard-naval, count: 8 }
-  - { platform: aw-1, base: hlv-visard-air, count: 1 }
-  - { platform: aw-1, base: hlv-tamirorn-air, count: 1 }
-  - { platform: kest, base: hlv-visard-naval, count: 2 }
-design: { note: "Island republic; frigates, maritime patrol, drones" }
+  - { platform: mf-6, base: hlv-visard-air, count: 10 }
+  - { platform: mf-4, base: hlv-visard-air, count: 6 }
+  - { platform: mp-6, base: hlv-visard-air, count: 5 }
+  - { platform: aw-2, base: hlv-visard-air, count: 1 }
+  - { platform: ud-12, base: hlv-visard-air, count: 2 }
+  - { platform: ud-11, base: hlv-visard-air, count: 8 }
+  - { platform: rw-2, base: hlv-visard-air, count: 6 }
+  - { platform: mf-6, base: hlv-tamirorn-air, count: 6 }
+  - { platform: mf-4, base: hlv-tamirorn-air, count: 6 }
+  - { platform: mp-6, base: hlv-tamirorn-air, count: 3 }
+  - { platform: aw-2, base: hlv-tamirorn-air, count: 1 }
+  - { platform: ud-9, base: hlv-tamirorn-air, count: 10 }
+  - { platform: ud-12, base: hlv-tamirorn-air, count: 2 }
+  - { platform: rw-2, base: hlv-tamirorn-air, count: 2 }
+  - { platform: halvard, base: hlv-visard-naval, count: 4 }
+  - { platform: selvik, base: hlv-visard-naval, count: 6 }
+munition_basing:
+  - base: hlv-tamirorn-air
+    munitions: { ag-1: 28, ai-3: 35, ar-6: 63, ar-7: 21, as-10: 37, as-2: 21, as-4-tarn: 9, gb-900: 14 }
+  - base: hlv-visard-air
+    munitions: { ag-1: 28, ag-5: 44, ai-3: 35, ar-6: 63, ar-7: 21, as-1: 56, as-10: 37, as-2: 21, as-4-tarn: 9, gb-120: 84, gb-900: 14 }
+  - base: hlv-visard-naval
+    munitions: { as-10: 37, as-4-tarn: 9, cg-30: 21, sn-15: 280, sn-30: 140 }
+design: { note: "Island republic: frigates, maritime patrol aircraft and drones watch the sea; few fighters" }

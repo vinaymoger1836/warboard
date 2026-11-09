@@ -1,0 +1,9 @@
+id: ud-11-anti-ship
+kind: loadout
+name: Anti-ship
+platform: ud-11
+roles: [anti_ship]
+items:
+  - { station: wing_l, weapon: as-1, count: 2 }
+  - { station: wing_r, weapon: as-1, count: 2 }
+design: { note: Four light anti-ship missiles }

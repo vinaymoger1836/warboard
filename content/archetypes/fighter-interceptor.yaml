@@ -1,0 +1,10 @@
+id: fighter-interceptor
+kind: archetype
+name: High-speed interceptor
+bands:
+  signature.rcs_m2.front: [5, 20]
+  mobility.max_speed_mach: [2.3, 3.0]
+  mobility.sustained_g: [4.5, 6.5]
+  mobility.ceiling_m: [18000, 22000]
+  fuel.internal_kg: [12000, 18000]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -1,0 +1,28 @@
+id: ag-2
+kind: weapon
+name: AG-2
+category: agm
+targets: [ground, surface]
+profile:
+  kind: rocket
+  boost_s: 4
+  max_speed_mach: 1.5
+  coast_tau_s: { sea_level: 61.3, high_alt: 202.8 }   # calibrated to max_range_km (wb-sim tests/weapons.rs)
+  min_speed_mach: 0.5
+  max_range_km: 25
+  min_range_km: 0.5
+  max_g: 15
+  calibration: { launch_alt_m: 3000, launch_speed_mach: 0.6, target_alt_m: 0, target_speed_mach: 0 }
+guidance:
+  terminal: imaging_ir
+  seeker_resistance: 0.6
+warhead_kg: 50
+warhead: blast_fragmentation
+pk_base: { radar_site: 0.75, launcher: 0.7, c2_node: 0.7, ground_vehicle: 0.7, structure: 0.6, surface_ship: 0.5 }
+mass_kg: 220
+station_category: [agm]
+signature:
+  rcs_m2: { front: 0.05, side: 0.25, rear: 0.075, top: 0.25 }
+  ir: { cruise: 0.4 }
+  visual_size_m: 2.6
+design: { archetype: agm-tactical, note: Fire-and-forget imaging-IR missile for fighters and attack aircraft }

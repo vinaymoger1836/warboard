@@ -2,41 +2,78 @@ id: ald-forces
 kind: inventory
 nation: ald
 platforms:
-  mf-4: 36
-  ej-2: 4
+  mf-6: 24
+  mf-4: 12
+  vf-7: 8
+  ej-2: 2
+  mp-6: 6
   aw-1: 2
   tk-3: 2
   ud-9: 6
+  rw-2: 12
+  vaskor: 2
   halvard: 6
+  selvik: 4
   kest: 4
-  mr-sam-tolven: 4
+  mr-sam-orsk: 2
+  mr-sam-tolven: 2
+  sr-sam-ketta: 4
   cb-2-strand: 4
+  gr-90-site: 4
 munitions:
-  ar-7: 300
-  ai-3: 120
-  as-4-tarn: 120
-  as-8-spire: 40
-  eh-2: 40
-  gb-900: 200
-  sn-30: 300
-  sl-12: 120
-  sl-20: 120
+  ar-6: 220
+  ar-7: 150
+  ai-3: 140
+  as-5: 140
+  as-4-tarn: 100
+  as-2: 48
+  lc-3: 32
+  lc-6: 24
+  gb-250: 160
+  gb-450: 80
+  gb-900: 60
+  eh-2: 24
+  sn-50: 96
+  sn-30: 280
+  sn-15: 400
+  sl-25: 48
+  sl-20: 48
+  sl-8: 96
+  sl-12: 64
+  cg-40: 20
   cg-30: 40
+  ag-1: 48
 basing:
+  - { platform: mf-6, base: ald-lovwick-air, count: 12 }
   - { platform: mf-4, base: ald-lovwick-air, count: 12 }
-  - { platform: mf-4, base: ald-kodvik-air, count: 12 }
-  - { platform: mf-4, base: ald-skaermere-air, count: 12 }
-  - { platform: halvard, base: ald-lovwick-naval, count: 3 }
-  - { platform: halvard, base: ald-tadvik-naval, count: 3 }
-  - { platform: ud-9, base: ald-lovwick-air, count: 2 }
-  - { platform: ud-9, base: ald-kodvik-air, count: 2 }
-  - { platform: ud-9, base: ald-skaermere-air, count: 2 }
-  - { platform: ej-2, base: ald-lovwick-air, count: 2 }
-  - { platform: ej-2, base: ald-kodvik-air, count: 2 }
-  - { platform: kest, base: ald-lovwick-naval, count: 2 }
-  - { platform: kest, base: ald-tadvik-naval, count: 2 }
+  - { platform: mp-6, base: ald-lovwick-air, count: 3 }
   - { platform: aw-1, base: ald-lovwick-air, count: 1 }
-  - { platform: aw-1, base: ald-skaermere-air, count: 1 }
   - { platform: tk-3, base: ald-lovwick-air, count: 1 }
+  - { platform: rw-2, base: ald-lovwick-air, count: 6 }
+  - { platform: mf-6, base: ald-kodvik-air, count: 12 }
+  - { platform: vf-7, base: ald-kodvik-air, count: 8 }
+  - { platform: ej-2, base: ald-kodvik-air, count: 2 }
+  - { platform: aw-1, base: ald-kodvik-air, count: 1 }
+  - { platform: mp-6, base: ald-skaermere-air, count: 3 }
   - { platform: tk-3, base: ald-skaermere-air, count: 1 }
-design: { note: "Maritime trading state; strong navy, small air force" }
+  - { platform: ud-9, base: ald-skaermere-air, count: 6 }
+  - { platform: rw-2, base: ald-skaermere-air, count: 6 }
+  - { platform: vaskor, base: ald-lovwick-naval, count: 2 }
+  - { platform: halvard, base: ald-lovwick-naval, count: 4 }
+  - { platform: selvik, base: ald-lovwick-naval, count: 2 }
+  - { platform: kest, base: ald-lovwick-naval, count: 2 }
+  - { platform: halvard, base: ald-tadvik-naval, count: 2 }
+  - { platform: selvik, base: ald-tadvik-naval, count: 2 }
+  - { platform: kest, base: ald-tadvik-naval, count: 2 }
+munition_basing:
+  - base: ald-kodvik-air
+    munitions: { ai-3: 49, ar-6: 77, as-5: 19, eh-2: 8, gb-250: 56, lc-6: 8 }
+  - base: ald-lovwick-air
+    munitions: { ag-1: 16, ai-3: 49, ar-6: 77, ar-7: 105, as-2: 16, as-4-tarn: 23, as-5: 19, eh-2: 8, gb-250: 56, gb-900: 42, lc-6: 8 }
+  - base: ald-lovwick-naval
+    munitions: { as-4-tarn: 23, as-5: 19, cg-30: 14, cg-40: 14, lc-3: 22, sl-12: 22, sn-15: 140, sn-30: 98, sn-50: 67 }
+  - base: ald-skaermere-air
+    munitions: { ag-1: 16, as-2: 16, as-5: 19 }
+  - base: ald-tadvik-naval
+    munitions: { as-4-tarn: 23, as-5: 19, cg-30: 14, sl-12: 22, sn-15: 140, sn-30: 98 }
+design: { note: "Maritime trading state: the strongest fleet around the sea, a small air force built around the fleet" }

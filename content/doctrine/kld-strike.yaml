@@ -11,6 +11,6 @@ shots_per_target: 1
 cap_aircraft: 4
 cap_rotation_min: 60
 reaction_time_s: 5
-iads_layers: [long, medium]
+iads_layers: [long, medium, short]
 strike_package: [escort, strike, jammer]
-design: { note: "Strikes early and from far away" }
+design: { note: "Strikes early and from far away with bombers and cruise missiles" }

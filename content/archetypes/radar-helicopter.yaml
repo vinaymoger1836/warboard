@@ -1,0 +1,6 @@
+id: radar-helicopter
+kind: archetype
+name: Helicopter search radar
+bands:
+  radar.r_ref_km: [40, 100]
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

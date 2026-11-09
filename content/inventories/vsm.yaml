@@ -3,44 +3,105 @@ kind: inventory
 nation: vsm
 platforms:
   hf-4: 48
-  mf-4: 72
+  hf-6: 24
+  mf-4: 60
+  hf-7: 12
+  ga-2: 24
   aw-1: 4
-  tk-3: 4
-  lr-sam-bastra: 8
-  mr-sam-tolven: 12
+  tk-3: 2
+  tk-5: 4
+  ej-4: 2
+  ud-12: 4
+  rw-5: 16
   kest: 6
+  kord: 2
+  lr-sam-bastra: 6
+  lr-sam-bastra-m: 4
+  mr-sam-tolven: 12
+  sr-sam-brannor: 16
+  gr-300-site: 8
+  cb-4-rask: 2
+  ls-1-vira: 4
+  orbit-sig-1: 1
+  orbit-eo-2: 1
 munitions:
-  ar-7: 500
+  ar-7: 400
+  ar-10: 96
   ar-9: 120
-  ai-3: 300
-  as-8-spire: 80
-  as-4-tarn: 60
-  gb-900: 400
-  sl-40: 300
+  ar-4: 200
+  ai-5: 240
+  ai-6: 120
+  ai-3: 160
+  eh-1: 60
+  as-8-spire: 60
+  as-11: 80
+  lc-5: 48
+  gb-900: 200
+  gb-450: 200
+  bu-500: 300
+  ag-2: 120
+  ag-4: 80
+  ag-1: 300
+  ai-7: 48
+  sl-40: 240
+  sl-30: 192
   sl-20: 400
+  sl-10: 400
   sl-12: 120
+  sn-40: 64
+  as-13: 16
+  cg-35: 16
   cg-30: 20
+  lm-1: 120
+  gb-900g: 60
+  as-7: 60
+  gb-450l: 80
 basing:
-  - { platform: mf-4, base: vsm-mivov-air, count: 12 }
-  - { platform: mf-4, base: vsm-donost-air, count: 12 }
-  - { platform: mf-4, base: vsm-dovov-air, count: 12 }
-  - { platform: mf-4, base: vsm-sadograd-air, count: 12 }
-  - { platform: mf-4, base: vsm-sezhudyar-air, count: 12 }
-  - { platform: mf-4, base: vsm-tesleteva-air, count: 12 }
-  - { platform: hf-4, base: vsm-mivov-air, count: 8 }
+  - { platform: hf-4, base: vsm-mivov-air, count: 10 }
+  - { platform: hf-6, base: vsm-mivov-air, count: 8 }
+  - { platform: mf-4, base: vsm-mivov-air, count: 14 }
+  - { platform: aw-1, base: vsm-mivov-air, count: 2 }
+  - { platform: tk-5, base: vsm-mivov-air, count: 2 }
+  - { platform: ej-4, base: vsm-mivov-air, count: 2 }
   - { platform: hf-4, base: vsm-donost-air, count: 8 }
-  - { platform: hf-4, base: vsm-dovov-air, count: 8 }
-  - { platform: hf-4, base: vsm-sadograd-air, count: 8 }
-  - { platform: hf-4, base: vsm-sezhudyar-air, count: 8 }
-  - { platform: hf-4, base: vsm-tesleteva-air, count: 8 }
-  - { platform: kest, base: vsm-mivov-naval, count: 3 }
-  - { platform: kest, base: vsm-donost-naval, count: 3 }
-  - { platform: aw-1, base: vsm-mivov-air, count: 1 }
-  - { platform: aw-1, base: vsm-donost-air, count: 1 }
-  - { platform: aw-1, base: vsm-dovov-air, count: 1 }
-  - { platform: aw-1, base: vsm-sadograd-air, count: 1 }
-  - { platform: tk-3, base: vsm-mivov-air, count: 1 }
-  - { platform: tk-3, base: vsm-sezhudyar-air, count: 1 }
-  - { platform: tk-3, base: vsm-tesleteva-air, count: 1 }
+  - { platform: mf-4, base: vsm-donost-air, count: 12 }
   - { platform: tk-3, base: vsm-donost-air, count: 1 }
-design: { note: "Large continental power; deep air-defence network, many fighters" }
+  - { platform: ud-12, base: vsm-donost-air, count: 2 }
+  - { platform: rw-5, base: vsm-donost-air, count: 4 }
+  - { platform: hf-4, base: vsm-dovov-air, count: 8 }
+  - { platform: hf-6, base: vsm-dovov-air, count: 8 }
+  - { platform: mf-4, base: vsm-dovov-air, count: 10 }
+  - { platform: hf-4, base: vsm-sadograd-air, count: 8 }
+  - { platform: mf-4, base: vsm-sadograd-air, count: 12 }
+  - { platform: ga-2, base: vsm-sadograd-air, count: 8 }
+  - { platform: hf-7, base: vsm-sezhudyar-air, count: 12 }
+  - { platform: ga-2, base: vsm-sezhudyar-air, count: 8 }
+  - { platform: tk-3, base: vsm-sezhudyar-air, count: 1 }
+  - { platform: tk-5, base: vsm-sezhudyar-air, count: 2 }
+  - { platform: hf-4, base: vsm-tesleteva-air, count: 8 }
+  - { platform: hf-6, base: vsm-tesleteva-air, count: 8 }
+  - { platform: mf-4, base: vsm-tesleteva-air, count: 8 }
+  - { platform: aw-1, base: vsm-tesleteva-air, count: 2 }
+  - { platform: ud-12, base: vsm-tesleteva-air, count: 2 }
+  - { platform: rw-5, base: vsm-tesleteva-air, count: 2 }
+  - { platform: kord, base: vsm-mivov-naval, count: 2 }
+  - { platform: kest, base: vsm-mivov-naval, count: 4 }
+  - { platform: kest, base: vsm-donost-naval, count: 2 }
+munition_basing:
+  - base: vsm-donost-air
+    munitions: { ag-1: 105, ai-3: 22, ai-5: 28, ai-7: 16, ar-7: 46, ar-9: 16, as-7: 8, as-8-spire: 6, gb-900: 28 }
+  - base: vsm-donost-naval
+    munitions: { as-8-spire: 6, cg-30: 7, sl-12: 42 }
+  - base: vsm-dovov-air
+    munitions: { ai-3: 22, ai-5: 28, ai-6: 28, ar-10: 22, ar-7: 46, ar-9: 16, as-7: 8, as-8-spire: 6, gb-900: 28 }
+  - base: vsm-mivov-air
+    munitions: { ai-3: 22, ai-5: 28, ai-6: 28, ar-10: 22, ar-7: 46, ar-9: 16, as-7: 8, as-8-spire: 6, gb-900: 28 }
+  - base: vsm-mivov-naval
+    munitions: { as-11: 56, as-8-spire: 6, cg-30: 7, sl-12: 42, sn-40: 44 }
+  - base: vsm-sadograd-air
+    munitions: { ag-2: 42, ai-3: 22, ai-5: 28, ar-7: 46, ar-9: 16, as-7: 8, as-8-spire: 6, bu-500: 105, gb-450: 70, gb-900: 28 }
+  - base: vsm-sezhudyar-air
+    munitions: { ag-2: 42, ai-5: 28, ar-7: 46, bu-500: 105, gb-450: 70, lc-5: 33 }
+  - base: vsm-tesleteva-air
+    munitions: { ag-1: 105, ai-3: 22, ai-5: 28, ai-6: 28, ai-7: 16, ar-10: 22, ar-7: 46, ar-9: 16, as-7: 8, as-8-spire: 6, gb-900: 28 }
+design: { note: "Large continental power: the deepest air-defence network and the most fighters; a small coastal fleet" }
