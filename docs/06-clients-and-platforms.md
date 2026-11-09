@@ -4,13 +4,13 @@
 
 | Module | Responsibility |
 |---|---|
-| `shell` | Routing (menu, setup, war board, AAR), settings, credits |
+| `shell` | Routing (menu, setup, war board, handover screen, AAR), settings, credits |
 | `packs` | Pack manager: download, verify (BLAKE3), store in OPFS, quota checks, updates |
 | `bridge` | Starts the engine worker, sends orders, receives views and events, measures achieved speed |
 | `map2d` | MapLibre GL JS v6 + deck.gl overlay layers (`MapboxOverlay` from `@deck.gl/mapbox`, which also drives MapLibre) |
 | `map3d` | CesiumJS view, loaded with dynamic `import()` only when opened |
 | `panels` | React: top bar, OOB tree, unit card, approval queue, alerts, event log, operation planner, AAR |
-| `store` | Zustand slices: selection, camera, clock, alerts, panel state (not the simulation) |
+| `store` | Zustand slices: selection, camera, clock, alerts, panel state (not the simulation). From P9 the side-specific slices (camera, selection, panels, alerts, approvals, planner, event filter) are kept per human side and swapped on a side switch (doc 12 §2) |
 | `saves` | Save slots (IndexedDB metadata + OPFS blobs), autosave, export/import |
 
 Rule: React renders panels only. Map layers update from the decoded view buffer each frame without going through React state.
@@ -37,6 +37,7 @@ sequenceDiagram
 - The UI interpolates positions between the last two views using velocity, so motion is smooth at 60 fps even though views arrive at 10 Hz.
 - If the engine cannot keep up, it reports achieved speed; the top bar shows it.
 - Engine panics are caught, the last autosave is offered, and the error is logged with the tick and state hash.
+- **Sides (P9, doc 12):** `set_view_side(side | umpire)` chooses whose view the worker builds; `umpire` is refused unless the mode is Command both and the umpire view is on. Orders, `details` and `contact_details` carry the side. Events arrive tagged by side; the client keeps each human side's events apart and renders only the active side's.
 
 ## 3. Side view format (`SideView v2`, little-endian)
 
@@ -60,6 +61,8 @@ As built (P6b, view still version 3): own-unit `flags` gain `JAMMING` (the unit'
 Strike orders (after P6b): `GroupDetails.weapons` lists each of the lead's weapons with its content `id`, `category`, `targets` (domains), `min_range_m`, `max_range_m`, `engage_on_remote` and rounds left, so the card's strike panel offers only weapons that can engage the target picked on the map (a contact, or a point that counts as surface or ground) and warns when it is out of range. The order is `AssignTask` with `{ kind: 'strike', contact | point, weapon, count }` (1–64 rounds). A weapon without `engage_on_remote` fires only on a track from the group's own sensors, so the group closes in until it holds one. If every member is deployed but none has rounds of the ordered weapon on a working launcher (all fired, or the launcher knocked out), the engine ends the strike and emits `StrikeAborted { group, reason }`, shown as an alert.
 
 ROE on the card (after P6b): `GroupDetails` carries the lead's effective `roe`, its `roe_source` (`side`, `group`, `unit`), the group's own `roe_override` and `self_defence` with `self_defence_override`. The top bar's A/B/C sends `SetRoe` without units (the side default, also in `SideInfo.roe`); the card sends it with the group (A, B, C or `inherit`, and self-defence on or off). `HOLD FIRE` is `SetRoe` C on the group and `RESUME FIRE` is `inherit`. `WeaponLaunched` and `WeaponTerminated` also carry `weapon_name` and `category` for the event line.
+
+Umpire view (P9, view version 4): a header flag `UMPIRE`, own-unit and weapon rows gain `side u8`, and the view holds both sides' units and weapons exactly with an empty contacts section. Built only in Command both with the umpire view on (doc 12 §1, ADR-044); a normal side view is unchanged apart from the version.
 
 Full detail for the selected unit or contact (task, loadout, sensors, magazines, ROE source) comes from `details()` on demand, keeping the view small (≈ 150 KB at 2,000 units). Group details carry the lead's rounds by weapon and station, its chaff and flares, and for ships and batteries the fire channels in use (`fire_channels: { used, total }`, P6a).
 
@@ -105,7 +108,7 @@ Icons are SVG in `packages/symbols`, packed into a texture atlas when the app st
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ ⏸ ×1 ×3 ×5 ×10 ×30 ×60  2026-10-27 14:05:12Z (achieved ×10)  ROE: Bravo ▾  ⚠3 │
+│ [ALD|VSM] ⏸ ×1 ×3 ×5 ×10 ×30 ×60  2026-10-27 14:05:12Z (×10)  ROE: Bravo ▾  ⚠3 │
 ├───────────────┬──────────────────────────────────────────────┬───────────────┤
 │ Forces (OOB)  │                                              │ Unit card     │
 │ ▸ Bases       │                 2D / 3D map                  │ 12 × MF-4     │
@@ -123,6 +126,8 @@ Icons are SVG in `packages/symbols`, packed into a texture atlas when the app st
 **Unit card** (matches the reference screenshot and extends it): name and count, formation, status and task, speed, altitude, heading, fuel; ring toggles for sensor horizon, max engagement range and combat radius; weapons by station; sensors and EMCON; jammer; effective ROE and its source; archetype; actions (Retask, RTB, Patrol, Strike, Hold fire, EMCON, Jam).
 
 **Operation planner:** phases as rows on a timeline with trigger arrows; selecting a phase shows its tasks and draws its routes on the map; validation messages inline; Start / Pause / Abort.
+
+**Side toggle and handover (P9, doc 12):** the side toggle sits at the left of the top bar in Command both, Hot-seat and Watch (with `UMPIRE` as a third position when enabled). Hot-seat adds a `HAND OVER` button and the full-screen handover screen, which renders no map, panels, alerts or toasts.
 
 ## 8. Storage
 
@@ -169,7 +174,7 @@ flowchart LR
 
 ## 13. PvP later
 
-The deterministic engine allows two options:
+Hot-seat on one device comes first (P9, doc 12): one engine, two human sides, handover screen, no network. Online PvP later can use either option below:
 
 | Option | How | Trade-off |
 |---|---|---|

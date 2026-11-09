@@ -270,13 +270,14 @@ flowchart LR
 | Part | Content |
 |---|---|
 | Header | Magic, save version, content hash, map pack versions, created, war name |
-| Setup | Coalitions, sides, difficulty, start mode, start time, seed |
+| Setup | Coalitions, sides, controllers (Human/AI per side), mode, difficulty per AI side, start mode, start time, seed |
+| Session | Active side, hot-seat settings, PIN hashes, `umpire_used` (P9, doc 12). Client state, not part of the state hash |
 | Snapshot | Serialized ECS world + side pictures + operations + RNG seed + tick (postcard, zstd) |
 | Command log | All orders since war start (for replay) |
 | Event log | All events (compressed) |
 | Checkpoints | Snapshots every 10 sim minutes for replay seeking (optional, pruned) |
 
-As built in P3 (`wb-sim/src/save.rs`): `"WBSG"`, save version u16 LE, postcard header (war name, content hash, region pack `id@version` list, wall-clock creation time recorded by the client, tick, sim time, start time), then a zstd-compressed postcard body holding the snapshot (setup lives in it: sides, seed, clock), the command log and the event log. Loading with a different content hash is refused with a message naming both hashes. P7 (ADR-043, save version 3): the snapshot holds the operations and the war state; the body adds replay checkpoints (zstd snapshot, state hash and event count every 10 sim minutes, at most 144, the older half thinned); each logged order records the tick it was submitted, so a replay queues it again then (`wb-sim/src/replay.rs`).
+As built in P3 (`wb-sim/src/save.rs`): `"WBSG"`, save version u16 LE, postcard header (war name, content hash, region pack `id@version` list, wall-clock creation time recorded by the client, tick, sim time, start time), then a zstd-compressed postcard body holding the snapshot (setup lives in it: sides, seed, clock), the command log and the event log. Loading with a different content hash is refused with a message naming both hashes. P7 (ADR-043, save version 3): the snapshot holds the operations and the war state; the body adds replay checkpoints (zstd snapshot, state hash and event count every 10 sim minutes, at most 144, the older half thinned); each logged order records the tick it was submitted, so a replay queues it again then (`wb-sim/src/replay.rs`). P9 (ADR-044, save version 4): setup gains `controllers` and `mode`; the session section is stored beside the snapshot and left out of the state hash.
 
 ### 7.2 Orders (commands)
 
@@ -290,6 +291,8 @@ Orders are typed, validated by the engine, and logged with the tick they apply a
 ```
 
 Rejections carry a reason the UI can show ("Loadout locked: unit is airborne").
+
+From P9 (ADR-044) every order carries `side` (`"side": 0`). Unit, base and contact ids resolve within that side, since contact ids are per-side; an order naming another side's unit, base or contact is rejected ("Order rejected: unit 1203 belongs to the other side"). The browser sends the active side; the command log stores it.
 
 As built in P3 (`wb-sim/src/orders.rs`): points are `[lon, lat]` in degrees as above; commands are `AssignTask` (tasks `move`, `patrol_circle`, `patrol_route`, `rtb`, `land`, `tanker_track`, `transfer`), `SetBehaviour` (bingo, winchester, resume after turnaround), `PlaceBase` and `TestAutoSlow` (client plumbing until P4). `units` may name groups or members; members alone split off into a new group. Validation turns an order into a resolved command (ids expanded, bases resolved, radians); the queue and the command log store that form, and replays apply it without validating again, so a replay never depends on the region packs. The browser sends orders without a tick; the worker stamps the next tick. P7 adds `CreateOperation` (an `OperationSpec`, optional `replace` and `start`; the operation's id is the order's `seq`), `StartOperation`, `PauseOperation`, `ResumeOperation`, `AbortOperation`, `PhaseGo`, `EndPhase` and `EndWar` (ADR-043). Events are externally tagged in JSON (`{"Landed": {...}}`) because saves store them with postcard.
 

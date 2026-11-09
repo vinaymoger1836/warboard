@@ -2,7 +2,7 @@
 
 A strategy wargame for the browser, built to grow into an Android game. It is set on real Earth terrain with fictional nations and weapon systems. You pick a nation or a coalition, deploy its forces, plan multi-phase operations, and fight an AI opponent in real time. Fog of war, terrain, sensors, electronic warfare and weapon energy all decide who wins.
 
-**Status: Design locked — 27 Oct 2026. Setting changed to fictional nations on real terrain — 5 Nov 2026 (ADR-036, doc 11).** This folder is the hand-off to Claude Code. Numbers marked *estimate* are planning figures to replace with measurements during the phases.
+**Status: Design locked — 27 Oct 2026. Setting changed to fictional nations on real terrain — 5 Nov 2026 (ADR-036, doc 11). Play modes added — 9 Nov 2026 (ADR-044, doc 12).** This folder is the hand-off to Claude Code. Numbers marked *estimate* are planning figures to replace with measurements during the phases.
 
 ## Locked scope
 
@@ -10,9 +10,9 @@ A strategy wargame for the browser, built to grow into an Android game. It is se
 |---|---|
 | Platform now | Browser, fully offline after install (installable web app) |
 | Platform later | Android: Capacitor wrapper first, then a Unity client (Blender models) reusing the same engine |
-| Modes | Single player vs AI. PvP later (the engine is deterministic from day one) |
+| Modes | vs AI; Command both (one player runs both sides); Hot-seat (two players, one device); Watch (AI vs AI). Online PvP later (the engine is deterministic from day one). Doc 12 |
 | Setting | Real Earth terrain; fictional nations, borders, bases, place names and weapon systems (doc 11) |
-| Sides | Any nations grouped into two coalitions; player controls one, AI the other |
+| Sides | Any nations grouped into two coalitions; each coalition is controlled by a human or the AI |
 | Map | Real coastlines, elevation and land cover; generated fictional borders with 12 nm territorial seas |
 | Views | 2D strategic map **and** 3D tactical view, both in the browser |
 | Realism | Engineering-level models (radar range vs RCS, horizon, terrain line of sight, missile energy, probability of kill) with electronic warfare as game stats (ADR-034), not full flight physics |
@@ -44,6 +44,7 @@ All game state lives in a **deterministic simulation engine written in Rust**. I
 | 09 | [Claude Code hand-off](09-claude-code-handoff.md) | How to run the build with Claude Code, per-phase prompts, acceptance tests, review checklists |
 | 10 | [UI style guide](10-ui-style-guide.md) | Tokens, map style, unit symbols and labels, weapon visuals, unit card, chrome — derived from the reference screenshots in `ui-reference/` |
 | 11 | [Fictional setting](11-fictional-setting.md) | Nations of Theatre North, generated borders, place names, bases, the fictional catalogue and the migration |
+| 12 | [Play modes](12-play-modes.md) | Controllers per side; vs AI, Command both, Hot-seat and Watch; side toggle, handover screen, umpire view |
 | — | [CLAUDE.md](CLAUDE.md) | Drop-in project memory file for the repo root |
 
 ## Headline targets

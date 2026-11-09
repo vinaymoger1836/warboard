@@ -8,7 +8,7 @@ Build a wargame that feels like real operational command on real Earth terrain, 
 
 Numbered to match the original brief. On 5 Nov 2026 the setting changed from real countries and systems to fictional ones on real terrain (ADR-036); the requirements below are worded for that.
 
-1. **Offline play** vs AI. PvP later.
+1. **Offline play** vs AI, both sides by one player (*Command both*), or two players on one device (*Hot-seat*); AI vs AI to watch (doc 12, ADR-044). Online PvP later.
 2. **Nation and coalition selection.** Any nations, grouped into two coalitions.
 3. **Two sides of the product.** *Game*: select nations, deploy, fight. *Admin*: define every nation's systems, quantities and metadata.
 4. **Catalogue and custom systems.** A fictional catalogue (VF-5 Vantor, LR-SAM Bastra, AR-7, GB-900 …) and admin-created custom systems, each with type-specific specs, assignable to one or many nations. Platforms carry **weapon stations** that accept compatible weapons.
@@ -31,7 +31,7 @@ Numbered to match the original brief. On 5 Nov 2026 the setting changed from rea
 | Performance | ≤ 6 ms average tick, 2,000 units | Rust + WASM in a worker, adaptive tick, multi-rate systems, spatial grid, LOS cache |
 | Smoothness | 60 fps 2D, ≥ 30 fps 3D | Engine off the main thread; GPU layers (deck.gl, Cesium primitives); interpolation |
 | Determinism | Bit-identical across platforms | Fixed step, counter-based RNG, `libm`, ordered iteration, single-threaded schedule |
-| Fair fog of war | UI and AI see only their side | Engine API returns side views only; contacts have their own IDs |
+| Fair fog of war | UI and AI see only their side | Engine API returns side views only; contacts have their own IDs; the opt-in umpire view of Command both is the one marked exception (doc 12) |
 | Offline | Everything works without network | Installable web app + region packs in browser storage (OPFS) |
 | Portability | Same engine in Unity later | Engine has no browser or UI dependencies; C ABI planned |
 | Data integrity | Every spec explained | Archetype and balance note on every entry; band and denylist checks |
@@ -42,7 +42,7 @@ Numbered to match the original brief. On 5 Nov 2026 the setting changed from rea
 
 ```mermaid
 flowchart LR
-  P[Player] -->|orders, operations, ROE| G[Game app\nbrowser, offline]
+  P[Player or two players\non one device] -->|orders, operations, ROE| G[Game app\nbrowser, offline]
   A[Owner as admin] -->|edits systems, inventories| AD[Admin app\nlocal web app]
   AD -->|YAML files| REPO[(Git repo\ncontent/)]
   REPO -->|content compiler| CP[(Content pack)]
@@ -160,3 +160,6 @@ warboard/
 | Pk | Probability of kill for one weapon against one target in one engagement |
 | Region pack | Downloadable map data for the world or one theatre |
 | Content pack | Compiled database of nations, systems, weapons and inventories |
+| Controller | Who commands a side: Human or AI (doc 12) |
+| Active side | The side whose picture the screen shows and whose units take orders |
+| Umpire view | Both sides' truth, read-only, only in Command both and only when turned on (doc 12 §1) |

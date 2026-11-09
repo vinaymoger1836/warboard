@@ -190,6 +190,9 @@ Floating, bottom right, width `min(470px, 100vw − 32px)`, `panel.bg`, 1 px `pa
 Not in the screenshots; build them in the same family:
 
 - **Top bar:** `panel.bg`; clock in JetBrains Mono (`03:40:12Z  T+0:00:12`); speed buttons `⏸ ×1 ×3 ×5 ×10 ×30 ×60` as a segmented control (active = amber outline); achieved speed in `text.secondary`; auto-slow toggle; side ROE `A B C` segmented.
+- **Side toggle** (P9, doc 12): first item of the top bar, a segmented control with each human side's generated flag (16 px) and nation id in JetBrains Mono uppercase (`ALD | VSM`, plus `UMPIRE` when enabled); active = amber outline; tooltip `Switch side (Tab)`. Hot-seat adds an outlined amber `HAND OVER` button next to it. The active side is always drawn with the `side.own` and `terr.own.*` tokens and the other side with `side.enemy` and `terr.enemy.*`.
+- **Handover screen** (hot-seat): full screen `map.land`, nothing else visible; centred the side's flag (96 px), `Pass the device to the <Nation> player` in 20 px `text.primary`, an optional 4-digit PIN field (JetBrains Mono, `panel.inset`, 1 px `panel.border`), and an outlined amber `CONTINUE` button. No toast, alert or reason for the handover.
+- **Umpire view:** a banner across the top of the map, `toast.bg` with 1 px `state.warn` border, `Umpire view: both sides visible` in 13 px `state.warn`; side A in `side.own`, side B in `side.enemy`, solid frames, no ellipses; command buttons hidden.
 - **Left panel (forces):** tree of bases, groups, units with mini icons from the atlas, status text in state colours, fuel bar.
 - **Bottom dock:** tabs Alerts · Approvals · Intel log · Event log · Operations. Event lines start with mono time `T+0:17:15` and a coloured category chip.
 - **Operation planner:** phases as rows on a timeline; bars in `side.own`, active phase outlined amber, failed `state.bad`.

@@ -61,7 +61,7 @@ Resources: `SimClock`, `RealismProfile`, `ContentDb` (read-only), `TerrainDb`, `
 
 **Real clock mapping.** A war starts at the real current UTC time (or a chosen time). `advance(real_dt_ms)` adds `real_dt × speed` to an accumulator and runs whole ticks. Speeds: pause, ×1, ×3, ×5, ×10, ×30, ×60. The engine **never skips ticks**: if the device cannot keep up, it reports the achieved speed (e.g. "×10 requested, ×7.6 actual").
 
-**Auto-slow.** On a new hostile contact, a launch against own forces, or an ROE approval request, the engine emits `AutoSlow`; the client drops to ×1 (or pauses, per setting). Speed is not part of the simulation, so it never affects outcomes.
+**Auto-slow.** On a new hostile contact, a launch against own forces, or an ROE approval request, the engine emits `AutoSlow` for that side; the client drops to ×1 (or pauses, per setting) for the active side's events (doc 12 §3 covers the waiting side in hot-seat). Speed is not part of the simulation, so it never affects outcomes; nor do side switching and hot-seat handover, which only pause the clock.
 
 **Day and night** come from a solar position calculation at each target's location. Weather is a later phase; v1 is clear sky.
 
@@ -140,7 +140,7 @@ track   = 2 detections in last 3 scans; dropped after 3 misses
 
 ## 8. Fog of war: contacts, fusion, sharing
 
-Each side has a **picture** (COP) of contacts. The UI and the AI read only pictures.
+Each side has a **picture** (COP) of contacts. The UI and the AI read only pictures. The single exception is the opt-in umpire view of Command both mode (doc 12 §1, ADR-044), which `wb-ai` cannot reach.
 
 ```text
 Contact {
