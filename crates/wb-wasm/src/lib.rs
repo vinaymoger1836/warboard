@@ -142,7 +142,10 @@ impl Engine {
     /// Encodes the side view; read it at `view_ptr()` for the returned length
     /// before the next call into the engine.
     pub fn encode_view(&mut self) -> usize {
-        let world = self.replay.as_ref().map_or(self.sim.world(), |r| r.sim().world());
+        let world = self
+            .replay
+            .as_ref()
+            .map_or(self.sim.world(), |r| r.sim().world());
         self.encoder.encode(world, self.side).len()
     }
 
@@ -227,7 +230,10 @@ impl Engine {
 
     /// The side's operations for the planner (`OperationView[]`).
     pub fn operations(&self) -> String {
-        json(&wb_sim::operations::views(self.current().world(), self.side))
+        json(&wb_sim::operations::views(
+            self.current().world(),
+            self.side,
+        ))
     }
 
     /// Planner validation of an `OperationSpec` (JSON): `Issue[]`, errors first.

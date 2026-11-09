@@ -2,7 +2,7 @@
 
 Every tool and dependency is pinned exactly. Upgrade only between phases (doc 08, R10) and update this file in the same change. Licences are checked against the CLAUDE.md rule 7 allowlist; Rust crates (including transitive ones) are enforced by `cargo deny check` (`deny.toml`).
 
-Last updated: 7 Nov 2026 (P6b). No new dependency in P4, P5, P6a or P6b.
+Last updated: 9 Nov 2026 (P7). No new dependency in P4, P5, P6a, P6b or P7.
 
 ## Toolchains
 
@@ -124,9 +124,9 @@ Runner image: `ubuntu-24.04`.
 | Format | Version | Defined in |
 |---|---|---|
 | Content pack schema | 6 (PF: schema 5 nations and design notes, ADR-041; schema 6 places, ADR-042; `gps` guidance renamed `satnav`). Before: 4 (P5: weapon flight, guidance, Pk and countermeasure fields; loadouts; realism `weapons`, `endgame` incl. `nominal_speed_fraction`, `countermeasures`, `damage`, `roe` incl. `territory_sigma`; P6b: radar `jam_resistance`, `ew_suite` modes with `jam_strength`, `coverage_km`, `sector_deg` and `effects`, weapon `seeker_resistance` and `nav_resistant`, realism `ew` constants; the legacy `eccm_db`, `seeker_eccm` and `j_db` are still read and migrated, number unchanged) | `crates/wb-content/src/pack.rs` |
-| State hash | 4 (P5: snapshot adds weapons in flight, magazines, health, ROE settings and requests, combat state; P6a: the effect struct changed, so P5 saves are refused, number unchanged; P6b: the unit record gains the jammer state (on or off, mode), so older saves are not expected to load, number unchanged) | `crates/wb-sim/src/snapshot.rs` |
+| State hash | 5 (P7: operations, the war state, fire missions on groups, the order log's submit tick). Before: 4 (P5: snapshot adds weapons in flight, magazines, health, ROE settings and requests, combat state; P6a: the effect struct changed, so P5 saves are refused, number unchanged; P6b: the unit record gains the jammer state (on or off, mode), so older saves are not expected to load, number unchanged) | `crates/wb-sim/src/snapshot.rs` |
 | `SideView` | 3 (P5: weapons section with shooter, target contact and tag; `RELATION`; weapon symbols 120–122; P6a: effects section filled and filtered by side, weapon contacts carry a weapon symbol, wire format unchanged; P6b: unit flag `JAMMING` and `JAMMED`, contact flag `JAMMED`, wire format unchanged) | `crates/wb-sim/src/view.rs`, doc 06 §3 |
-| `.wbsave` | 2 (after P6b: the snapshot changed in P5, P6a and P6b with the number left at 1, so old saves failed with a decode error; they are now refused as version 1) | `crates/wb-sim/src/save.rs`, doc 04 §7.1 |
+| `.wbsave` | 3 (P7: snapshot format 5, replay checkpoints in the body; version 2 saves are refused). Before: 2 (after P6b: the snapshot changed in P5, P6a and P6b with the number left at 1, so old saves failed with a decode error; they are now refused as version 1) | `crates/wb-sim/src/save.rs`, doc 04 §7.1 |
 | IndexedDB `warboard` | 2 (P3: `saves` store) | `apps/game/src/db.ts` |
 
 ### Region packs 2.0.0 (PF, built 8 Nov 2026: generated Theatre North borders, ADR-042)

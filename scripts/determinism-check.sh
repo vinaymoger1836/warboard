@@ -7,7 +7,8 @@
 # sensor goldens G1–G5 and a save/reload of the demo war with contacts in the
 # pictures. P6b adds a save/reload of G11 with an active jammer. Since PF the
 # goldens run on the generic fixtures (ADR-035): each scenario gets the pack of
-# its `content:` folder, and the quick start stands in for the demo war.
+# its `content:` folder, and the quick start stands in for the demo war. P7 adds the
+# Rising Sun operation (G14) and a save/reload in the middle of it.
 # Needs crates/wb-wasm/pkg built first: pnpm --filter @warboard/wb-wasm build:wasm
 set -euo pipefail
 
@@ -83,6 +84,17 @@ native=$($wb run --content "$fixpack" --scenario "$s" --ticks 400 --save-at 200 
 compare "save/reload native ($s, save at 200)" "$whole" "$native"
 wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$fixpack" --scenario "$s" --ticks 400 --save-at 200)
 compare "save/reload wasm   ($s, save at 200)" "$whole" "$wasm"
+
+# P7 (G14): the Rising Sun operation, native vs WASM over 6,000 ticks (fire missions,
+# phase starts and ends), and saved mid-operation and continued in both.
+s=scenarios/golden/rising-sun.yaml
+whole=$($wb run --content "$fixpack" --scenario "$s" --ticks 6000 --print-hash)
+wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$fixpack" --scenario "$s" --ticks 6000)
+compare "G14 native vs wasm ($s, 6000 ticks)" "$whole" "$wasm"
+native=$($wb run --content "$fixpack" --scenario "$s" --ticks 6000 --save-at 3000 --print-hash)
+compare "save/reload native ($s, save at 3000)" "$whole" "$native"
+wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$fixpack" --scenario "$s" --ticks 6000 --save-at 3000)
+compare "save/reload wasm   ($s, save at 3000)" "$whole" "$wasm"
 
 # Geo queries (P2): only when the region packs have been built (they are not in git).
 packs=${WB_PACKS:-build/packs}
