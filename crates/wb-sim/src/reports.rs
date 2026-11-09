@@ -34,8 +34,8 @@ pub struct War {
     pub ended: Option<Stamp>,
 }
 
-/// `EndWar`: the truth review unlocks; every side is told.
-pub fn end_war(world: &mut World) {
+/// `EndWar` from `by`: the truth review unlocks; every side is told.
+pub fn end_war(world: &mut World, by: u8) {
     let c = world.resource::<SimClock>();
     let stamp = Stamp {
         tick: c.tick,
@@ -44,7 +44,7 @@ pub fn end_war(world: &mut World) {
     world.resource_mut::<War>().ended = Some(stamp);
     let n = world.resource::<Sides>().len() as u8;
     for s in 0..n {
-        emit(world, s, EventKind::WarEnded);
+        emit(world, s, EventKind::WarEnded { side: by });
     }
 }
 

@@ -259,8 +259,10 @@ pub enum EventKind {
         state: crate::operations::PhaseState,
         reason: String,
     },
-    /// The side ended the war (`EndWar`): the truth review unlocks (doc 03 §12).
-    WarEnded,
+    /// `side` ended the war (`EndWar`): the truth review unlocks (doc 03 §12).
+    WarEnded {
+        side: u8,
+    },
     /// Truth only (no side sees it, `sides` 0): a weapon hit a unit. The truth
     /// review after the war reads it; side reports never do (CLAUDE.md rule 1).
     TruthHit {

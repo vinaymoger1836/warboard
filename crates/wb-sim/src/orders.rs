@@ -1592,7 +1592,7 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
         }
         Resolved::Decide { request, approve } => crate::roe::decide(world, side, request, approve),
         Resolved::Operation(cmd) => crate::operations::apply(world, side, cmd),
-        Resolved::EndWar => crate::reports::end_war(world),
+        Resolved::EndWar => crate::reports::end_war(world, side),
         Resolved::Doctrine {
             groups,
             launch,
