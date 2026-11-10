@@ -75,6 +75,7 @@ export interface DrawnContact {
 
 export interface DrawnSatellite {
   id: number;
+  symbol: number;
   position: LonLat;
   alt: number;
   label: string;
@@ -150,6 +151,16 @@ export function splitAntimeridian<P extends readonly number[]>(pts: P[]): P[][] 
   return out;
 }
 
+/** Whether a contact of our picture is identified enough to inspect close up (ADR-047): not
+ *  estimated, not stale, not bearing-only, identity and class known. */
+export function identifiedContact(view: SideView, strings: StringTable, id: number): boolean {
+  const i = view.contactIndex.get(id);
+  if (i === undefined) return false;
+  const flags = view.contacts.flags[i] ?? 0;
+  if (flags & (CFLAG.ESTIMATED | CFLAG.STALE | CFLAG.BEARING_ONLY)) return false;
+  return (view.contacts.identity[i] ?? 0) !== 0 && (view.contacts.symbol[i] ?? 0) !== 0 && strings.contactType(id) !== '';
+}
+
 /** Builds everything of the side picture both views draw. */
 export function buildScene(view: SideView, strings: StringTable, o: SceneOptions): Scene {
   const u = view.units;
@@ -190,6 +201,7 @@ export function buildScene(view: SideView, strings: StringTable, o: SceneOptions
       const owner = strings.owners.get(id) ?? '';
       satellites.push({
         id,
+        symbol,
         position: at(i),
         alt: u.altM[i] ?? 0,
         label: `${owner} ${strings.name(id)}\n${strings.payloads.get(id) ?? ''}`.trim(),
@@ -272,7 +284,7 @@ export function buildScene(view: SideView, strings: StringTable, o: SceneOptions
       symbol,
       side,
       estimated,
-      identified: !estimated && !stale && identity !== 0 && symbol !== 0 && typeName !== '',
+      identified: identifiedContact(view, strings, id),
       position: pos,
       alt: cv.altM[i] ?? 0,
       heading: cv.headingDeg[i] ?? 0,

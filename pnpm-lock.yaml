@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@cesium/core': 0.1.0
+
 importers:
 
   .:
@@ -78,6 +81,9 @@ importers:
 
   apps/game:
     dependencies:
+      '@cesium/core':
+        specifier: 0.1.0
+        version: 0.1.0
       '@cesium/engine':
         specifier: 26.4.0
         version: 26.4.0
@@ -231,9 +237,9 @@ packages:
   '@cacheable/utils@2.5.0':
     resolution: {integrity: sha512-buipgOVDkkPXNR5+xBpDw7Zk2n1EvU7qBJCNUcL7rhQ//kfpOXPAvQ511Os0vpLYJ1pZnvudNytkQt2hst3wqA==}
 
-  '@cesium/core@0.1.1':
-    resolution: {integrity: sha512-2twC6bAYWdrJ4YVS2UPCpgkE7EZWHl+GVuh5n9IT6gVL9W9OYPas29Vh+wrUVI/9Hs8TeiNtis+Du2U9b+ce6A==}
-    engines: {node: '>=22.17.0'}
+  '@cesium/core@0.1.0':
+    resolution: {integrity: sha512-SD5H3dnWMIiJs04YQnV71ziFzAKcigPEwUFUv9mCX7Y0X7wZXgxGvNz4NCqmoVqHqfSQgdTDzP52fRHl7Jthpg==}
+    engines: {node: '>=22.0.0'}
 
   '@cesium/engine@26.4.0':
     resolution: {integrity: sha512-OQkL54hPRBkOto0NmArLkEpbWZzTaWAhsx/mGNw85jXdr/nl/OvTqLC8QZv5wKSv4imuzHq/kT6IIy8/B3QLFQ==}
@@ -1551,15 +1557,11 @@ snapshots:
       hashery: 1.5.1
       keyv: 5.6.0
 
-  '@cesium/core@0.1.1':
-    dependencies:
-      earcut: 3.0.2
-      mersenne-twister: 1.1.0
-      urijs: 1.19.11
+  '@cesium/core@0.1.0': {}
 
   '@cesium/engine@26.4.0':
     dependencies:
-      '@cesium/core': 0.1.1
+      '@cesium/core': 0.1.0
       '@cesium/wasm-splats': 0.1.0-alpha.2
       '@spz-loader/core': 0.3.1
       '@tweenjs/tween.js': 25.0.0

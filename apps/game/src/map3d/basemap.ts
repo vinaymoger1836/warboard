@@ -5,7 +5,7 @@
 // theatre pack a sharper layer over its extent.
 import { VectorTile, type VectorTileFeature } from '@mapbox/vector-tile';
 import { hex } from '@warboard/symbols';
-import Pbf from 'pbf';
+import { PbfReader } from 'pbf';
 import { FileSource, PMTiles } from 'pmtiles';
 import type { Coalition } from '../map2d/coalitions';
 import { packFile } from '../packs/opfs';
@@ -78,7 +78,7 @@ async function readTiles(file: File, box: [number, number, number, number], z: n
   for (let y = y0; y <= y1; y++)
     for (let x = x0; x <= x1; x++)
       jobs.push(
-        pm.getZxy(zoom, x, y).then((t) => (t?.data ? { z: zoom, x, y, tile: new VectorTile(new Pbf(new Uint8Array(t.data))) } : null)),
+        pm.getZxy(zoom, x, y).then((t) => (t?.data ? { z: zoom, x, y, tile: new VectorTile(new PbfReader(new Uint8Array(t.data))) } : null)),
       );
   return (await Promise.all(jobs)).filter((t): t is DecodedTile => t !== null);
 }

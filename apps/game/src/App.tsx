@@ -3,7 +3,7 @@
 // (doc 12): the side toggle and Tab, each human side's UI slice and event stream, the umpire
 // banner, and in hot-seat the handover screen, which replaces everything else while it shows.
 import type { Event, Roe, TickReport } from '@warboard/protocol';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EngineBridge } from './bridge';
 import type { ReplayInfo, WarInfo } from './engine/messages';
 import { Handover } from './Handover';
@@ -28,6 +28,9 @@ import { play, UMPIRE, usePlay } from './play';
 import { Setup } from './setup/Setup';
 import { ui, useUi } from './store';
 import { Toasts, useToasts } from './Toasts';
+
+// The 3D tactical view is its own chunk, loaded on first use (doc 06 §5).
+const Map3D = lazy(() => import('./map3d/Map3D'));
 
 /** One engine worker per page; it lives as long as the page. */
 let sharedBridge: EngineBridge | null = null;
@@ -255,6 +258,7 @@ export function App() {
   }, [bridge, manager, show]);
 
   const mapReady = hasWorld(packs.usable);
+  const mapView = useUi((s) => s.view);
   // The active side is always own (purple), the other enemy (blue); the umpire view shows side A as own.
   const coalition = useMemo(() => coalitionOf(war, umpire ? 0 : active), [war, active, umpire]);
   const places = useMemo(() => war?.places ?? [], [war]);
@@ -313,7 +317,11 @@ export function App() {
       {replay.active && <ReplayBar bridge={bridge} info={replay} onInfo={setReplay} toast={show} />}
 
       <main className="board">
-        {mapReady ? (
+        {mapReady && mapView === '3d' ? (
+          <Suspense fallback={<div className="map-empty"><p>Opening the 3D view…</p></div>}>
+            <Map3D packs={packs.usable} bridge={bridge} coalition={coalition} onToast={show} />
+          </Suspense>
+        ) : mapReady ? (
           <MapView
             packs={packs.usable}
             bridge={bridge}

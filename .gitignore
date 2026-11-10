@@ -16,6 +16,8 @@ dist/
 # Generated (run `pnpm gen`)
 crates/wb-wasm/pkg/
 packages/protocol/src/generated/
+# 3D class models (packages/symbols/models/build-models.ts)
+apps/game/public/models/
 
 # Python bytecode (geodata pipeline)
 __pycache__/

@@ -12,6 +12,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@cesium/core": "0.1.0",
     "@cesium/engine": "26.4.0",
     "@deck.gl/core": "9.4.0",
     "@deck.gl/extensions": "9.4.0",

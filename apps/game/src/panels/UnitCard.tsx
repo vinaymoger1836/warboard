@@ -19,7 +19,9 @@ import { useEffect, useState } from 'react';
 import type { EngineBridge } from '../bridge';
 import { patrolRadiusKm, sendCommand, sendCommandAck, sendTask } from '../orders';
 import { distance } from '../scene/geo';
-import { type LonLat, type StrikeAim, ui, useUi } from '../store';
+import { play } from '../play';
+import { identifiedContact } from '../scene/scene';
+import { type CamTarget, type LonLat, type StrikeAim, ui, useUi } from '../store';
 import { duration, fuelColour, healthColour, statusColour, weaponFacts, weaponTags } from './format';
 import { CloseGlyph, EngageGlyph, RadiusGlyph, SensorGlyph } from './glyphs';
 
@@ -68,7 +70,11 @@ export function UnitCard({ bridge, toast }: CardProps) {
   if (contact) {
     return (
       <aside className="unit-card panel" aria-label="Contact card">
-        <ContactCard c={contact} symbol={contactSymbol(bridge, contact.contact_id)} />
+        <ContactCard
+          c={contact}
+          symbol={contactSymbol(bridge, contact.contact_id)}
+          inspectable={!!bridge.frame && identifiedContact(bridge.frame.view, bridge.strings, contact.contact_id)}
+        />
       </aside>
     );
   }
@@ -93,6 +99,7 @@ function Header({
   side = 'own',
   estimate = false,
   onClose = () => ui.select(null),
+  inspect = null,
 }: {
   symbol: SymbolName;
   title: string;
@@ -100,6 +107,8 @@ function Header({
   side?: IconSide;
   estimate?: boolean;
   onClose?: () => void;
+  /** Opens the 3D inspect view on this object (ADR-047); null when it cannot be inspected. */
+  inspect?: CamTarget | null;
 }) {
   return (
     <header className="card-header">
@@ -108,6 +117,18 @@ function Header({
         <h2>{title}</h2>
         <p>{subtitle}</p>
       </div>
+      {inspect && (
+        <button
+          type="button"
+          className="cmd small inspect-3d"
+          onClick={() => {
+            ui.set({ cam3d: { mode: 'inspect', target: inspect } });
+            play.switchView('3d');
+          }}
+        >
+          INSPECT 3D
+        </button>
+      )}
       <button type="button" className="close" aria-label="Close card" onClick={onClose}>
         <CloseGlyph />
       </button>
@@ -138,7 +159,7 @@ const IDENTITY_TEXT: Record<string, string> = { hostile: 'Hostile', neutral: 'Ne
 const IDENTITY_TOKEN: Record<string, TokenName> = { hostile: 'side.enemy', neutral: 'side.neutral', friendly: 'side.own', unknown: 'side.unknown' };
 const QUALITY_TEXT: Record<string, string> = { fire_control: 'Fire-control track', track: 'Track', report: 'Report only' };
 
-function ContactCard({ c, symbol }: { c: ContactDetails; symbol: number }) {
+function ContactCard({ c, symbol, inspectable }: { c: ContactDetails; symbol: number; inspectable: boolean }) {
   const threatRings = useUi((s) => s.threatRings);
   const label = contactLabel({
     symbol,
@@ -160,6 +181,7 @@ function ContactCard({ c, symbol }: { c: ContactDetails; symbol: number }) {
         side={IDENTITY_SIDE[c.identity] ?? 'unknown'}
         estimate={c.estimated}
         onClose={() => ui.selectContact(null)}
+        inspect={inspectable ? { kind: 'contact', id: c.contact_id } : null}
       />
       <div className="card-body">
         <div className="pill-row">
@@ -274,7 +296,12 @@ const PAYLOAD_SYMBOL: Record<string, SymbolName> = {
 function SatelliteCard({ d }: { d: SatelliteDetails }) {
   return (
     <>
-      <Header symbol={PAYLOAD_SYMBOL[d.payload] ?? 'satellite_eo'} title={`${d.owner} ${d.name}`} subtitle={d.payload_label} />
+      <Header
+        symbol={PAYLOAD_SYMBOL[d.payload] ?? 'satellite_eo'}
+        title={`${d.owner} ${d.name}`}
+        subtitle={d.payload_label}
+        inspect={{ kind: 'unit', id: d.id }}
+      />
       <div className="card-body">
         <div className="card-row">
           <span>
@@ -701,7 +728,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   const health = groupHealth(d);
   return (
     <>
-      <Header symbol={CATEGORY_SYMBOL[d.category] ?? 'unknown'} title={title} subtitle={subtitle} />
+      <Header symbol={CATEGORY_SYMBOL[d.category] ?? 'unknown'} title={title} subtitle={subtitle} inspect={{ kind: 'unit', id: d.id }} />
       <div className="card-body">
         {d.strike_note && <p className="card-note">{d.strike_note}</p>}
         <div className="card-row">

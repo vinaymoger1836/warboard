@@ -3,6 +3,7 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import type { EngineBridge } from '../bridge';
+import { play } from '../play';
 import { ui, useUi } from '../store';
 import { TERRAIN_CLASSES } from './terrainOverlay';
 
@@ -104,7 +105,7 @@ export interface MapChromeProps {
   onToast: (text: string) => void;
 }
 
-export function MapChrome({ map, bridge, geoReady, terrainOverlay, onTerrainOverlay, credits, onToast }: MapChromeProps) {
+export function MapChrome({ map, bridge, geoReady, terrainOverlay, onTerrainOverlay, credits }: MapChromeProps) {
   const [layersOpen, setLayersOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
   return (
@@ -112,7 +113,7 @@ export function MapChrome({ map, bridge, geoReady, terrainOverlay, onTerrainOver
       <button
         type="button"
         className="chrome-button open-3d"
-        onClick={() => onToast('The 3D tactical view is not built yet')}
+        onClick={() => play.switchView('3d')}
       >
         OPEN 3D TACTICAL VIEW
       </button>

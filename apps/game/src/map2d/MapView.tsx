@@ -2,7 +2,6 @@
 // with a deck.gl overlay for game layers. No default MapLibre controls (doc 10 §12);
 // the chrome is ours.
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { buildAtlas, type IconAtlas } from '@warboard/symbols';
 import { addProtocol, Map as MapLibreMap, setWorkerUrl } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -10,28 +9,25 @@ import { FileSource, PMTiles, Protocol } from 'pmtiles';
 import { useEffect, useRef, useState } from 'react';
 import type { EngineBridge } from '../bridge';
 import type { PlaceLabel } from '../engine/messages';
-import { patrolRadiusKm, sendTask } from '../orders';
 import { packFile } from '../packs/opfs';
 import { fileFor, type InstalledPack } from '../packs/types';
 import { ContextMenu } from '../panels/ContextMenu';
 import { play } from '../play';
-import { type Tool, ui } from '../store';
+import { atlasAndFonts } from '../scene/atlas';
+import type { ContextRequest } from '../scene/scene';
+import { makeToolDone } from '../scene/tools';
+import { ui } from '../store';
 import type { Coalition } from './coalitions';
 import { LayerHub } from './layerHub';
 import { MapChrome } from './MapChrome';
 import { applyCoalition, buildStyle, type MapPack } from './style';
 import { useTerrainOverlay } from './terrainOverlay';
-import type { ContextRequest } from '../scene/scene';
 import { UnitLayers } from './units/UnitLayers';
 
 setWorkerUrl(workerUrl);
 
 const protocol = new Protocol();
 addProtocol('pmtiles', protocol.tile);
-
-/** One atlas per page, built on first use (ADR-020). */
-let atlasPromise: Promise<IconAtlas> | null = null;
-const atlas = () => (atlasPromise ??= buildAtlas());
 
 async function toMapPacks(packs: InstalledPack[]): Promise<MapPack[]> {
   const out: MapPack[] = [];
@@ -156,40 +152,10 @@ export function MapView({ packs, bridge, coalition, places, geoReady, terrainOve
     if (!map || !hub) return;
     let layers: UnitLayers | null = null;
     let cancelled = false;
-    const done = (tool: Tool) => {
-      const s = ui.get();
-      ui.set({ tool: null });
-      // Drawing for the operation planner: hand the route over, order nothing.
-      if (s.capture) {
-        ui.set({ capture: false, planTool: tool });
-        return;
-      }
-      const d = s.details;
-      if (d?.kind !== 'group') return;
-      if (tool.kind === 'route') {
-        if (tool.patrol && tool.points.length < 2) {
-          onToast('A patrol route needs at least two waypoints');
-          return;
-        }
-        void sendTask(
-          bridge,
-          [d.id],
-          tool.patrol ? { kind: 'patrol_route', waypoints: tool.points, loop: true } : { kind: 'move', waypoints: tool.points },
-          onToast,
-        );
-      } else if (tool.kind === 'circle' && tool.centre) {
-        void sendTask(
-          bridge,
-          [d.id],
-          { kind: 'patrol_circle', centre: tool.centre, radius_km: Math.round(tool.radiusKm) || patrolRadiusKm(d.domain) },
-          onToast,
-        );
-      }
-    };
+    const done = makeToolDone(bridge, onToast);
     // The label font atlas is built once; build it with the bundled fonts, not a fallback.
-    const fonts = ['italic 400 32px "Noto Sans"', '400 32px "Noto Sans"', '600 32px "Noto Sans"', '600 32px "JetBrains Mono"'];
-    Promise.all([atlas(), ...fonts.map((f) => document.fonts.load(f))])
-      .then(([a]) => {
+    atlasAndFonts()
+      .then((a) => {
         if (!cancelled) layers = new UnitLayers(map, hub, bridge, a, setMenu, done);
       })
       .catch((err: unknown) => onToast(`Icons failed to load: ${String(err)}`));

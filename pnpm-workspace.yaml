@@ -2,3 +2,8 @@ packages:
   - apps/*
   - packages/*
   - crates/wb-wasm
+
+# One copy of CesiumJS's core package for the engine and the 3D view (P10): pinned to the
+# release that shipped with @cesium/engine 26.4.0 (CesiumJS 1.146), at least two weeks old.
+overrides:
+  '@cesium/core': 0.1.0
