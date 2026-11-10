@@ -1,4 +1,4 @@
-// SideView v3 decoder (doc 06 §3; layout in crates/wb-sim/src/view.rs). Columns are
+// SideView v4 decoder (doc 06 §3; layout in crates/wb-sim/src/view.rs). Columns are
 // typed-array views onto the transferred buffer, so decoding copies nothing but strings.
 import { CFLAG, FLAG, STATUS, STRING_KIND, VIEW_HEADER_BYTES, VIEW_MAGIC, VIEW_VERSION } from './generated/symbols';
 
@@ -17,6 +17,8 @@ export interface UnitColumns {
   sensorKm: Uint16Array;
   /** 0–100, 255 when the unit has no fuel state. */
   fuelPct: Uint8Array;
+  /** Owning side. The viewer's own side, except in the umpire view (v4). */
+  side: Uint8Array;
 }
 
 /** Contacts of the side's picture: estimates only (ADR-003, ADR-026). */
@@ -66,6 +68,8 @@ export interface WeaponColumns {
   symbol: Uint16Array;
   /** `RELATION` value. */
   relation: Uint8Array;
+  /** Owning side (v4); the viewer's own side except in the umpire view. */
+  side: Uint8Array;
 }
 
 /** Visual combat effects (doc 10 §5: launch flash, intercept burst, hit burst). */
@@ -80,7 +84,10 @@ export interface EffectColumns {
 
 export interface SideView {
   buffer: ArrayBuffer;
+  /** The viewer's side; 255 in the umpire view. */
   side: number;
+  /** Both sides exact, read-only (doc 12, ADR-044). */
+  umpire: boolean;
   tick: number;
   simTimeMs: number;
   units: UnitColumns;
@@ -182,6 +189,7 @@ export function decodeSideView(buffer: ArrayBuffer, strings: StringTable): SideV
     symbol: u16(n),
     sensorKm: u16(n),
     fuelPct: u8(n),
+    side: u8(n),
   };
   const contacts: ContactColumns = {
     count: nc,
@@ -218,6 +226,7 @@ export function decodeSideView(buffer: ArrayBuffer, strings: StringTable): SideV
     speedMps: f32(nw),
     symbol: u16(nw),
     relation: u8(nw),
+    side: u8(nw),
   };
   const ne = nEffects;
   const effects: EffectColumns = {
@@ -245,6 +254,7 @@ export function decodeSideView(buffer: ArrayBuffer, strings: StringTable): SideV
   return {
     buffer,
     side: dv.getUint8(6),
+    umpire: (dv.getUint8(7) & 1) === 1,
     tick: Number(dv.getBigUint64(8, true)),
     simTimeMs: Number(dv.getBigInt64(16, true)),
     units,

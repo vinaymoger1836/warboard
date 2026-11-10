@@ -1,35 +1,55 @@
-// War board (doc 06 §7): top bar, map with forces panel and unit card, bottom dock.
-import type { Roe, TickReport } from '@warboard/protocol';
+// The game shell (doc 06 §1 `shell`): main menu and war setup until a war starts, then the war
+// board (doc 06 §7: top bar, map with forces panel and unit card, bottom dock). Play modes
+// (doc 12): the side toggle and Tab, each human side's UI slice and event stream, the umpire
+// banner, and in hot-seat the handover screen, which replaces everything else while it shows.
+import type { Event, Roe, TickReport } from '@warboard/protocol';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EngineBridge } from './bridge';
 import type { ReplayInfo, WarInfo } from './engine/messages';
+import { Handover } from './Handover';
 import { coalitionOf } from './map2d/coalitions';
 import { MapView } from './map2d/MapView';
+import { sendCommand } from './orders';
 import { PackManager, type PackState } from './packs/manager';
 import { PackPanel } from './packs/PackPanel';
 import { fileFor, type InstalledPack } from './packs/types';
+import { DeployPanel } from './panels/DeployPanel';
 import { Dock } from './panels/Dock';
+import { ForcesPanel } from './panels/ForcesPanel';
+import { isAlert, isIntel } from './panels/format';
 import { Planner } from './panels/Planner';
 import { ReplayBar } from './panels/ReplayBar';
 import { Reports } from './panels/Reports';
-import { ForcesPanel } from './panels/ForcesPanel';
-import { sendCommand } from './orders';
-import { isAlert, isIntel } from './panels/format';
 import { SavesPanel } from './panels/SavesPanel';
+import { SideToggle } from './panels/SideToggle';
 import { TopBar } from './panels/TopBar';
 import { UnitCard } from './panels/UnitCard';
+import { play, UMPIRE, usePlay } from './play';
+import { Setup } from './setup/Setup';
 import { ui, useUi } from './store';
 import { Toasts, useToasts } from './Toasts';
 
 /** One engine worker per page; it lives as long as the page. */
 let sharedBridge: EngineBridge | null = null;
-const engineBridge = () => (sharedBridge ??= new EngineBridge());
+const engineBridge = () => {
+  if (!sharedBridge) {
+    sharedBridge = new EngineBridge();
+    // For the browser tests (handover: the clock must not move): side views only, no truth.
+    (window as unknown as { __wbBridge?: EngineBridge }).__wbBridge = sharedBridge;
+  }
+  return sharedBridge;
+};
 
 /** The unit card refreshes this often while something is selected. */
 const DETAILS_MS = 500;
 
 const hasWorld = (packs: InstalledPack[]) =>
   packs.some((p) => p.manifest.extent[0] <= -180 && p.manifest.extent[2] >= 180);
+
+/** Events that make a waiting hot-seat side take the device (doc 12 §3): a launch against its
+ *  forces or a new approval request. The handover screen never says which. */
+const urgent = (e: Event) =>
+  'AutoSlow' in e.kind && (e.kind.AutoSlow.cause === 'launch_against_us' || e.kind.AutoSlow.cause === 'roe_request');
 
 export function App() {
   const bridge = useMemo(() => engineBridge(), []);
@@ -38,8 +58,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [speed, setSpeed] = useState(1);
   const [war, setWar] = useState<WarInfo | null>(null);
-  // Side default ROE: from the war when it starts or loads, then from accepted SetRoe orders.
-  const [sideRoe, setSideRoe] = useState<Roe | null>(null);
+  // Side default ROE per side: from the war when it starts or loads, then from accepted SetRoe orders.
+  const [sideRoe, setSideRoe] = useState<Record<number, Roe>>({});
   const manager = useMemo(() => new PackManager(), []);
   const [packs, setPacks] = useState<PackState>(manager.snapshot);
   const [packsOpen, setPacksOpen] = useState(false);
@@ -51,6 +71,12 @@ export function App() {
   const selectedContact = useUi((s) => s.selectedContact);
   const planner = useUi((s) => s.planner);
   const reportsOpen = useUi((s) => s.reportsOpen);
+  const active = usePlay((s) => s.active);
+  const view = usePlay((s) => s.view);
+  const handover = usePlay((s) => s.handover);
+  const deploying = usePlay((s) => s.deploying);
+  const mode = usePlay((s) => s.mode);
+  const umpire = view === UMPIRE;
   const [replay, setReplay] = useState<ReplayInfo>({ active: false });
   const toggleReplay = useCallback(() => {
     const req = replay.active ? { type: 'replayStop' as const } : { type: 'replayStart' as const };
@@ -71,6 +97,7 @@ export function App() {
     },
     [bridge],
   );
+  useEffect(() => play.registerSpeed(() => speedRef.current, choose), [choose]);
 
   useEffect(() => {
     bridge.setSpeed(speedRef.current);
@@ -79,16 +106,27 @@ export function App() {
       setError(s.error);
     });
     const offWar = bridge.onWar((w) => {
-      ui.clearLog();
       setWar(w);
-      setSideRoe(w.sides[w.side]?.roe ?? null);
+      setSideRoe(Object.fromEntries(w.sides.map((s, i) => [i, s.roe])));
+      setReplay({ active: false });
+      play.startWar(w, bridge.report?.simTimeMs ?? 0);
+      setSavesOpen(false);
     });
-    const offEvents = bridge.onEvents((events) => {
-      ui.addEvents(events, isAlert, isIntel);
+    const offEvents = bridge.onEvents((events, side) => {
+      ui.addEventsFor(side, events, isAlert, isIntel);
+      const p = play.get();
+      if (side !== p.active || p.handover !== null) {
+        // A waiting hot-seat side: urgent events interrupt (pause and hand over), the rest waits.
+        if (p.mode === 'hot_seat' && p.hotSeat.urgent === 'interrupt' && p.handover === null && events.some(urgent)) {
+          play.handOver(side);
+        }
+        return;
+      }
+      // Auto-slow follows the active side's events only (doc 12 §3).
       const slow = events.find((e) => 'AutoSlow' in e.kind);
       if (slow && 'AutoSlow' in slow.kind) {
-        const mode = ui.get().autoSlow;
-        if (mode !== 'off' && speedRef.current !== 0) choose(mode === 'pause' ? 0 : 1);
+        const m = ui.get().autoSlow;
+        if (m !== 'off' && speedRef.current !== 0) choose(m === 'pause' ? 0 : 1);
         show(`Auto-slow: ${slow.kind.AutoSlow.reason}`);
       }
     });
@@ -106,6 +144,29 @@ export function App() {
       window.removeEventListener('pagehide', hidden);
     };
   }, [bridge, choose, show]);
+
+  // Tab moves the side toggle (doc 12 §2), unless typing in a field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA')) return;
+      const p = play.get();
+      if (!p.war || p.handover !== null || p.mode === 'vs_ai' || p.mode === null) return;
+      e.preventDefault();
+      play.cycle(bridge).catch((err: unknown) => show(err instanceof Error ? err.message : String(err)));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [bridge, show]);
+
+  // Hot-seat turns: hand over every N sim minutes (doc 12 §3).
+  useEffect(() => {
+    const p = play.get();
+    const turns = p.hotSeat.hand_over;
+    if (p.mode !== 'hot_seat' || p.handover !== null || typeof turns === 'string' || !report) return;
+    if (report.simTimeMs - p.turnStartMs >= turns.Turns.minutes * 60_000) play.handOver();
+  }, [report]);
 
   // Unit card details, refreshed while something is selected.
   useEffect(() => {
@@ -127,7 +188,7 @@ export function App() {
       live = false;
       clearInterval(t);
     };
-  }, [bridge, selected]);
+  }, [bridge, selected, active]);
 
   // Contact card details, refreshed while a contact is selected.
   useEffect(() => {
@@ -144,7 +205,7 @@ export function App() {
       live = false;
       clearInterval(t);
     };
-  }, [bridge, selectedContact]);
+  }, [bridge, selectedContact, active]);
 
   // Packs: the engine worker holds the engine files open; release them before any change.
   useEffect(() => {
@@ -183,11 +244,7 @@ export function App() {
     window.addEventListener('pageshow', onShow);
     manager
       .refresh()
-      .then(() => {
-        const s = manager.snapshot;
-        open(s.usable);
-        if (!hasWorld(s.usable)) setPacksOpen(true);
-      })
+      .then(() => open(manager.snapshot.usable))
       .catch((err: unknown) => show(String(err)));
     return () => {
       offChanged();
@@ -198,8 +255,36 @@ export function App() {
   }, [bridge, manager, show]);
 
   const mapReady = hasWorld(packs.usable);
-  const coalition = useMemo(() => coalitionOf(war), [war]);
+  // The active side is always own (purple), the other enemy (blue); the umpire view shows side A as own.
+  const coalition = useMemo(() => coalitionOf(war, umpire ? 0 : active), [war, active, umpire]);
   const places = useMemo(() => war?.places ?? [], [war]);
+  const overlays = (
+    <>
+      {packsOpen && <PackPanel manager={manager} state={packs} onClose={() => setPacksOpen(false)} />}
+      {savesOpen && <SavesPanel bridge={bridge} toast={show} onClose={() => setSavesOpen(false)} />}
+    </>
+  );
+
+  // Hot-seat handover: nothing else is rendered (no map, panels, alerts or toasts).
+  if (war && handover !== null) return <Handover bridge={bridge} />;
+
+  if (!war) {
+    return (
+      <div className="app">
+        <main className="board">
+          <Setup
+            bridge={bridge}
+            packs={packs.usable}
+            toast={show}
+            onPacks={() => setPacksOpen(true)}
+            onSaves={() => setSavesOpen(true)}
+          />
+          {overlays}
+          <Toasts toasts={toasts} sticky={[]} />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -212,16 +297,18 @@ export function App() {
         packsOpen={packsOpen}
         onSaves={() => setSavesOpen((o) => !o)}
         onPacks={() => setPacksOpen((o) => !o)}
-        sideRoe={sideRoe}
+        sideRoe={umpire || mode === 'watch' ? null : (sideRoe[active] ?? null)}
         onRoe={(roe) => {
+          const side = active;
           void sendCommand(bridge, { type: 'SetRoe', roe }, show).then((ok) => {
-            if (ok) setSideRoe(roe);
+            if (ok) setSideRoe((r) => ({ ...r, [side]: roe }));
           });
         }}
         reportsOpen={reportsOpen}
         onReports={() => ui.set((s) => ({ reportsOpen: !s.reportsOpen }))}
         replaying={replay.active}
         onReplay={toggleReplay}
+        sideToggle={<SideToggle bridge={bridge} toast={show} />}
       />
       {replay.active && <ReplayBar bridge={bridge} info={replay} onInfo={setReplay} toast={show} />}
 
@@ -242,13 +329,20 @@ export function App() {
             <p>Install the world pack to show the map.</p>
           </div>
         )}
-        <ForcesPanel bridge={bridge} />
-        <UnitCard bridge={bridge} toast={show} />
-        {packsOpen && <PackPanel manager={manager} state={packs} onClose={() => setPacksOpen(false)} />}
-        {savesOpen && <SavesPanel bridge={bridge} toast={show} onClose={() => setSavesOpen(false)} />}
-        {planner && <Planner bridge={bridge} toast={show} />}
+        {umpire && (
+          <div className="umpire-banner" role="status">
+            Umpire view: both sides visible
+          </div>
+        )}
+        {!umpire && (deploying ? <DeployPanel bridge={bridge} toast={show} /> : <ForcesPanel bridge={bridge} />)}
+        {!umpire && <UnitCard bridge={bridge} toast={show} />}
+        {overlays}
+        {planner && !umpire && <Planner bridge={bridge} toast={show} />}
         {reportsOpen && <Reports bridge={bridge} toast={show} />}
-        <Toasts toasts={toasts} sticky={speed === 0 ? ['Simulation paused'] : []} />
+        <Toasts
+          toasts={toasts}
+          sticky={deploying ? ['Deployment: the clock is paused'] : speed === 0 ? ['Simulation paused'] : []}
+        />
       </main>
       <Dock bridge={bridge} toast={show} now={report?.simTimeMs ?? 0} />
     </div>

@@ -8,7 +8,7 @@ seed: 2027
 start_utc: 2026-10-27T08:00:00Z
 sides:
   - { name: Island Accord, nations: [tlv, cnd], player: true }
-  - { name: Southern Front, nations: [kld, ost] }
+  - { name: Southern Front, nations: [kld, ost], controller: ai }
 units:
   - { id: 10, name: Fjord Flight, platform: mf-4, nation: tlv, count: 2, base: tlv-handal-air, loadout: mf-4-air }
   - { id: 20, name: Strand Battery, system: cb-2-strand, nation: tlv, lat_deg: 58.5, lon_deg: 16.9, heading_deg: 120 }

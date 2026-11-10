@@ -27,6 +27,12 @@ __pycache__/
 .eslintcache
 coverage/
 
+# Browser test output (Playwright, apps/game/e2e)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 # Secrets and credentials
 .env
 .env.*

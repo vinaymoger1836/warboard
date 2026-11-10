@@ -283,6 +283,10 @@ pub struct Report {
     #[cfg_attr(feature = "ts", ts(type = "number"))]
     pub start_utc_ms: i64,
     pub war_ended: bool,
+    /// The umpire view was used in this war (doc 12). Set by the caller that
+    /// holds the session; the report builder only reads the world.
+    #[serde(default)]
+    pub umpire_used: bool,
     pub totals: Totals,
     pub intel: Vec<IntelLine>,
     pub salvos: Vec<SalvoLine>,
@@ -813,6 +817,7 @@ pub fn build(world: &World, events: &[Event], side: u8, truth: bool) -> Result<R
         sim_time_ms: clock.sim_time_ms,
         start_utc_ms: clock.start_utc_ms,
         war_ended: war.ended.is_some(),
+        umpire_used: false,
         totals,
         intel,
         salvos,
@@ -1339,6 +1344,9 @@ pub fn to_html(r: &Report) -> String {
             "war in progress: our side's knowledge only"
         }
     );
+    if r.umpire_used {
+        o.push_str("<p class=\"meta\"><b>Umpire view used:</b> both sides were visible to the player at some point in this war.</p>");
+    }
     let t = &r.totals;
     let _ = write!(
         o,

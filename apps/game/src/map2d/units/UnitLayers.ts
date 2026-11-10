@@ -53,6 +53,8 @@ export interface DrawnUnit {
   label: string;
   mark: string;
   base: boolean;
+  /** Umpire view (doc 12): side B's units are drawn in the enemy colour. */
+  enemy?: boolean;
 }
 
 export interface MapPick {
@@ -431,13 +433,15 @@ export class UnitLayers {
       const v = u.speedMps[i] ?? 0;
       return v > 0 && dtS > 0 ? destination(p, u.headingDeg[i] ?? 0, v * dtS) : p;
     };
+    // The umpire view carries both sides exactly: side A as own, side B as enemy (doc 10 §8).
+    const enemyRow = (i: number) => view.umpire && (u.side[i] ?? 0) !== 0;
     for (let i = 0; i < u.count; i++) {
       const flags = u.flags[i] ?? 0;
       const id = u.id[i] ?? 0;
       const symbol = u.symbol[i] ?? 0;
       if (flags & FLAG.BASE) {
         if (zoom < BASE_ZOOM && id !== state.selected) continue;
-        drawn.push({ id, symbol, position: at(i), label: unitLabel({ symbol, typeName: '', name: strings.name(id), count: 1 }), mark: '', base: true });
+        drawn.push({ id, symbol, position: at(i), label: unitLabel({ symbol, typeName: '', name: strings.name(id), count: 1 }), mark: '', base: true, enemy: enemyRow(i) });
         continue;
       }
       if (flags & FLAG.AT_BASE) continue;
@@ -453,7 +457,7 @@ export class UnitLayers {
       if (flags & FLAG.TARGETED) targetedRows.push(i);
       const group = u.group[i] ?? 0;
       if (zoom >= MEMBERS_ZOOM || group === 0) {
-        drawn.push({ id: group || id, symbol, position: at(i), label: strings.name(id), mark: markAbove(symbol), base: false });
+        drawn.push({ id: group || id, symbol, position: at(i), label: strings.name(id), mark: markAbove(symbol), base: false, enemy: enemyRow(i) });
         continue;
       }
       const g = groups.get(group);
@@ -473,7 +477,7 @@ export class UnitLayers {
         label += ` [${statusOf(u.flags[i] ?? 0)}]${fuel <= 100 ? ` ${fuel}%` : ''}`;
       }
       if ((u.flags[i] ?? 0) & FLAG.JAMMED) label += ' [JAMMED]';
-      drawn.push({ id: group, symbol, position: at(i), label, mark: markAbove(symbol), base: false });
+      drawn.push({ id: group, symbol, position: at(i), label, mark: markAbove(symbol), base: false, enemy: enemyRow(i) });
     }
     this.drawn = drawn;
 
@@ -811,7 +815,7 @@ export class UnitLayers {
         data: drawn,
         iconAtlas: this.atlas.image,
         iconMapping: this.atlas.mapping,
-        getIcon: (d) => iconKey(d.symbol, 'own'),
+        getIcon: (d) => iconKey(d.symbol, d.enemy ? 'enemy' : 'own'),
         getPosition: (d) => d.position,
         getSize: size,
         sizeUnits: 'pixels',

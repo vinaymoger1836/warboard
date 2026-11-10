@@ -8,7 +8,7 @@ seed: 2026
 start_utc: 2026-10-27T06:00:00Z
 sides:
   - { name: Straits League, nations: [ald, hlv, mrv], player: true }
-  - { name: Eastern Pact, nations: [vsm, kld] }
+  - { name: Eastern Pact, nations: [vsm, kld], controller: ai }
 units:
   - { id: 10, name: Hollin Flight, platform: mf-4, nation: ald, count: 2, base: ald-skaermere-air, loadout: mf-4-air }
   - { id: 20, name: Vantor Flight, platform: vf-5, nation: mrv, count: 2, base: mrv-raront-air, loadout: vf-5-air }

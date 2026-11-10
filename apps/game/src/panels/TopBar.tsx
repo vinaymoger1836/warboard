@@ -1,5 +1,6 @@
 // Top bar (doc 10 §8, doc 03 §9): clock, speeds, achieved speed, auto-slow, side ROE.
 import type { Roe, TickReport } from '@warboard/protocol';
+import type { ReactNode } from 'react';
 import { ui, useUi } from '../store';
 import { elapsed, utcClock } from './format';
 import { PauseGlyph } from './glyphs';
@@ -22,6 +23,8 @@ interface Props {
   reportsOpen: boolean;
   onReplay: () => void;
   replaying: boolean;
+  /** Side toggle (doc 10 §8): first item of the bar in Command both, Hot-seat and Watch. */
+  sideToggle?: ReactNode;
 }
 
 /** Side ROE buttons (doc 10 §8): letter, value and what it means (doc 03 §7). */
@@ -52,6 +55,7 @@ export function TopBar({
   reportsOpen,
   onReplay,
   replaying,
+  sideToggle,
 }: Props) {
   const autoSlow = useUi((s) => s.autoSlow);
   const achieved = report
@@ -61,6 +65,7 @@ export function TopBar({
     : 'Starting engine';
   return (
     <header className="top-bar">
+      {sideToggle}
       <span className="brand">WARBOARD</span>
       <span className="clock" aria-label="Sim clock">
         {report ? (

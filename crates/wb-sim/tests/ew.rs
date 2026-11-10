@@ -116,7 +116,7 @@ fn contact_flags(view: &[u8]) -> Vec<u32> {
     let pad8 = |n: usize| (n + 7) & !7;
     let u32_at = |o: usize| u32::from_le_bytes(view[o..o + 4].try_into().unwrap()) as usize;
     let (nu, nc) = (u32_at(24), u32_at(28));
-    let units = pad8(8 * nu) * 2 + pad8(4 * nu) * 6 + pad8(2 * nu) * 2 + pad8(nu);
+    let units = pad8(8 * nu) * 2 + pad8(4 * nu) * 6 + pad8(2 * nu) * 2 + pad8(nu) * 2; // fuel, then side (v4)
     let flags = wb_sim::view::HEADER_BYTES + units + pad8(8 * nc) * 2 + pad8(4 * nc);
     (0..nc).map(|i| u32_at(flags + 4 * i) as u32).collect()
 }

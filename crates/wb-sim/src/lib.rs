@@ -10,6 +10,7 @@ pub mod bases;
 pub mod clock;
 pub mod components;
 pub mod damage;
+pub mod deployment;
 pub mod details;
 pub mod endgame;
 pub mod engage;
@@ -33,6 +34,8 @@ pub mod satellites;
 pub mod save;
 pub mod scenario;
 pub mod sensors;
+pub mod session;
+pub mod setup;
 pub mod snapshot;
 pub mod tasks;
 pub mod testbench;
@@ -100,6 +103,9 @@ pub struct Sim {
     checkpoints: Vec<(u64, [u8; 32])>,
     /// Replay checkpoints every 10 sim minutes (P7).
     recorder: replay::Recorder,
+    /// Active side, hot-seat settings, PINs, umpire use (doc 12). Beside the
+    /// world, not in it: never hashed, never part of a replay.
+    session: session::Session,
 }
 
 impl Sim {
@@ -151,6 +157,7 @@ impl Sim {
         world.resource_mut::<orders::OrderLog>().0 = body.order_log;
         world.resource_mut::<events::EventLog>().0 = body.events;
         let mut sim = Self::from_world(world, geo);
+        sim.session = body.session;
         sim.recorder.checkpoints = body.checkpoints;
         sim.recorder.start(&sim.world);
         Ok(sim)
@@ -158,12 +165,14 @@ impl Sim {
 
     /// A sim around a built world (replays; no checkpoints recorded).
     pub fn from_world(world: World, geo: Option<Rc<Geo>>) -> Self {
+        let session = session::Session::new(world.resource::<world::Sides>());
         let mut sim = Self {
             world,
             accum_ms: 0.0,
             geo: None,
             checkpoints: Vec::new(),
             recorder: replay::Recorder::default(),
+            session,
         };
         sim.set_geo(geo);
         sim
@@ -212,6 +221,7 @@ impl Sim {
             order_log: self.world.resource::<orders::OrderLog>().0.clone(),
             events: self.world.resource::<events::EventLog>().0.clone(),
             checkpoints: self.recorder.checkpoints.clone(),
+            session: self.session.clone(),
         };
         save::encode(&header, &body)
     }
@@ -266,6 +276,10 @@ impl Sim {
         if !(real_dt_ms.is_finite() && speed.is_finite()) || real_dt_ms <= 0.0 || speed <= 0.0 {
             return 0;
         }
+        // Deploy yourself: the clock is held until every deploying side is done.
+        if self.world.resource::<deployment::Deployment>().is_active() {
+            return 0;
+        }
         self.accum_ms += real_dt_ms.min(MAX_REAL_DT_MS) * speed;
         let mut ran = 0;
         loop {
@@ -280,9 +294,58 @@ impl Sim {
         ran
     }
 
-    /// Validates and queues an order; the reason if rejected.
+    /// Validates and queues a client order; the reason if rejected.
     pub fn submit(&mut self, order: &Order) -> Result<OrderAck, String> {
         orders::submit(&mut self.world, self.geo.as_deref(), order)
+    }
+
+    /// Like [`Sim::submit`], with the typed rejection (tests, order log).
+    pub fn submit_typed(&mut self, order: &Order) -> Result<OrderAck, orders::Rejection> {
+        orders::submit_from(
+            &mut self.world,
+            self.geo.as_deref(),
+            order,
+            orders::Origin::Client,
+        )
+    }
+
+    pub fn session(&self) -> &session::Session {
+        &self.session
+    }
+
+    /// Moves the screen to another side (doc 12 §2.1). Never touches the war.
+    pub fn set_active_side(&mut self, side: u8) -> Result<(), String> {
+        let sides = self.world.resource::<world::Sides>().clone();
+        self.session.set_active_side(&sides, side)
+    }
+
+    /// Turns the umpire view on or off (Command both only).
+    pub fn set_umpire(&mut self, on: bool) -> Result<(), String> {
+        let sides = self.world.resource::<world::Sides>().clone();
+        self.session.set_umpire(&sides, on)
+    }
+
+    pub fn set_hot_seat(&mut self, hot_seat: session::HotSeat) -> Result<(), String> {
+        let sides = self.world.resource::<world::Sides>().clone();
+        self.session.set_hot_seat(&sides, hot_seat)
+    }
+
+    pub fn set_pin(&mut self, side: u8, pin: Option<&str>, salt: [u8; 16]) -> Result<(), String> {
+        let sides = self.world.resource::<world::Sides>().clone();
+        self.session.set_pin(&sides, side, pin, salt)
+    }
+
+    /// The umpire view: both sides exactly (doc 12 §1). Refused unless the
+    /// mode is Command both and the player turned it on; the first use marks
+    /// the war `umpire_used`. The one place truth reaches a client.
+    pub fn umpire_view<'e>(
+        &mut self,
+        encoder: &'e mut view::ViewEncoder,
+    ) -> Result<&'e [u8], String> {
+        let sides = self.world.resource::<world::Sides>();
+        self.session.umpire_allowed(sides)?;
+        self.session.umpire_used = true;
+        Ok(encoder.encode_umpire(&self.world))
     }
 
     pub fn clock(&self) -> &SimClock {

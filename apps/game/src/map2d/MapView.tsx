@@ -14,11 +14,12 @@ import { patrolRadiusKm, sendTask } from '../orders';
 import { packFile } from '../packs/opfs';
 import { fileFor, type InstalledPack } from '../packs/types';
 import { ContextMenu } from '../panels/ContextMenu';
+import { play } from '../play';
 import { type Tool, ui } from '../store';
 import type { Coalition } from './coalitions';
 import { LayerHub } from './layerHub';
 import { MapChrome } from './MapChrome';
-import { buildStyle, type MapPack } from './style';
+import { applyCoalition, buildStyle, type MapPack } from './style';
 import { useTerrainOverlay } from './terrainOverlay';
 import { type ContextRequest, UnitLayers } from './units/UnitLayers';
 
@@ -75,6 +76,11 @@ export function MapView({ packs, bridge, coalition, places, geoReady, terrainOve
   const [menu, setMenu] = useState<ContextRequest | null>(null);
   const packKey = packs.map((p) => `${p.id}@${p.version}`).join();
   const coalitionKey = `${coalition.own.join()}|${coalition.enemy.join()}`;
+  // The coalition the map was built with; later changes (a side switch) re-tint in place.
+  const coalitionRef = useRef(coalition);
+  useEffect(() => {
+    coalitionRef.current = coalition;
+  }, [coalition]);
   const placesKey = places.map((p) => `${p.name}@${p.lon},${p.lat}`).join(';');
 
   useEffect(() => {
@@ -86,11 +92,13 @@ export function MapView({ packs, bridge, coalition, places, geoReady, terrainOve
       .then((mapPacks) => {
         if (cancelled) return;
         const glyphs = new URL('fonts/glyphs/', document.baseURI).href;
+        // The side on screen keeps its camera (doc 12 §2); a first look starts on the theatre.
+        const cam = ui.get().camera;
         created = new MapLibreMap({
           container: el,
-          style: buildStyle(mapPacks, coalition, glyphs, places),
-          center: [18.5, 54.0],
-          zoom: 6,
+          style: buildStyle(mapPacks, coalitionRef.current, glyphs, places),
+          center: cam?.center ?? [18.5, 54.0],
+          zoom: cam?.zoom ?? 6,
           minZoom: 1,
           maxZoom: 12,
           attributionControl: false,
@@ -115,9 +123,30 @@ export function MapView({ packs, bridge, coalition, places, geoReady, terrainOve
       setMap(null);
       created?.remove();
     };
-    // packKey, coalitionKey and placesKey stand for packs, coalition and places; onToast is stable.
+    // packKey and placesKey stand for packs and places; onToast is stable. The coalition is read
+    // through its ref: a side switch re-tints the map below instead of rebuilding it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [packKey, coalitionKey, placesKey]);
+  }, [packKey, placesKey]);
+
+  // Side switch: the other coalition becomes own (purple), without rebuilding the map.
+  useEffect(() => {
+    if (!map) return;
+    const apply = () => applyCoalition(map, coalitionRef.current);
+    if (map.isStyleLoaded()) apply();
+    else map.once('styledata', apply);
+  }, [map, coalitionKey]);
+
+  // Each side keeps its camera: the switch reads it here and moves the map back.
+  useEffect(() => {
+    if (!map) return;
+    return play.registerCamera(
+      () => {
+        const c = map.getCenter();
+        return { center: [c.lng, c.lat], zoom: map.getZoom() };
+      },
+      (cam) => map.jumpTo({ center: cam.center, zoom: cam.zoom }),
+    );
+  }, [map]);
 
   useTerrainOverlay(map, hub, bridge, geoReady && terrainOverlay, onToast);
 

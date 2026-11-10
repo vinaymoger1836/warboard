@@ -330,6 +330,23 @@ pub enum Command {
     },
     /// Ends the war: the truth review unlocks (doc 03 §12–13).
     EndWar,
+    /// Deploy yourself (doc 03 §2): station `count` of a platform or system
+    /// of your inventory at one of your preset bases, with the clock held.
+    /// Takes effect when accepted. Aircraft and ships need a suitable base
+    /// with room; sites and ground forces are set up beside the base.
+    DeployForce {
+        /// Content id of the platform or system.
+        force: String,
+        count: u32,
+        base: BaseTarget,
+        /// Content loadout id; the platform's default when absent.
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        loadout: Option<String>,
+    },
+    /// The side has stationed everything it wants to; when every deploying
+    /// side has finished, the clock may run.
+    FinishDeployment,
     /// Launch doctrine of groups, overriding their nation's (doc 03 §5).
     SetDoctrine {
         units: Vec<u32>,
@@ -420,6 +437,15 @@ pub enum Resolved {
     },
     Operation(crate::operations::OpCommand),
     EndWar,
+    /// Applied when accepted (ADR-046), never queued.
+    Deploy {
+        force: wb_content::compiled::ForceIx,
+        nation: NationIx,
+        count: u32,
+        base: UnitId,
+        loadout: Option<LoadoutIx>,
+    },
+    FinishDeploy,
 }
 
 /// Members of one group an order applies to; all members means the group
@@ -465,9 +491,89 @@ pub struct OrderAck {
     pub note: Option<String>,
 }
 
-/// Validates and queues an order.
+/// Where an order comes from (doc 12, ADR-044). Only the engine's own AI
+/// adapter submits as `Ai`; clients are always `Client`, and a client may not
+/// command an AI-controlled side.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Origin {
+    /// A person at a client.
+    Client,
+    /// A scenario's scripted orders (tests, goldens, quick starts).
+    Scenario,
+    /// The AI of the order's side.
+    Ai,
+}
+
+/// Why an order was refused, for tests and the umpire's log. Clients only
+/// ever see [`Rejection::reason`], which reads the same for an unknown id and
+/// for another side's id, so a rejection is no oracle for enemy ids
+/// (rule 1, ADR-026).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum RejectKind {
+    /// Not valid for some other reason; the text says why.
+    Invalid,
+    /// Names a unit, group, base or satellite of another side.
+    OtherSideUnit(u32),
+    /// Names a contact id that exists only in another side's picture.
+    OtherSideContact(u32),
+    /// Names another side's approval request.
+    OtherSideRequest(u32),
+    /// Names another side's operation.
+    OtherSideOperation(u32),
+    /// The side is controlled by the AI.
+    AiControlled,
+}
+
+impl RejectKind {
+    /// Names something that belongs to another side.
+    pub fn is_other_side(&self) -> bool {
+        matches!(
+            self,
+            RejectKind::OtherSideUnit(_)
+                | RejectKind::OtherSideContact(_)
+                | RejectKind::OtherSideRequest(_)
+                | RejectKind::OtherSideOperation(_)
+        )
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Rejection {
+    /// Plain English, safe to show the player.
+    pub reason: String,
+    pub kind: RejectKind,
+}
+
+/// Validates and queues a client order; the reason if rejected.
 pub fn submit(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<OrderAck, String> {
-    let mut cmd = validate(world, geo, order)?;
+    submit_from(world, geo, order, Origin::Client).map_err(|r| r.reason)
+}
+
+/// Like [`submit`], with the origin and a typed rejection.
+pub fn submit_from(
+    world: &mut World,
+    geo: Option<&Geo>,
+    order: &Order,
+    origin: Origin,
+) -> Result<OrderAck, Rejection> {
+    let sides = world.resource::<Sides>();
+    if origin == Origin::Client && usize::from(order.side) < sides.len() && sides.is_ai(order.side)
+    {
+        return Err(Rejection {
+            reason: format!(
+                "Order rejected: {} is controlled by the AI",
+                sides.sides[usize::from(order.side)].name
+            ),
+            kind: RejectKind::AiControlled,
+        });
+    }
+    let mut cmd = match validate(world, geo, order) {
+        Ok(c) => c,
+        Err(reason) => {
+            let kind = classify(world, order);
+            return Err(Rejection { reason, kind });
+        }
+    };
     let seq = world.resource::<OrderQueue>().next_seq;
     if let Resolved::Operation(crate::operations::OpCommand::Create { op, .. }) = &mut cmd {
         op.id = seq as u32;
@@ -503,6 +609,25 @@ pub fn submit(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Ord
         _ => None,
     };
     let submitted = world.resource::<SimClock>().tick;
+    // Deployment orders take effect now: the clock is held, so no tick would
+    // apply them. They are logged but not queued.
+    if matches!(cmd, Resolved::Deploy { .. } | Resolved::FinishDeploy) {
+        let queued = QueuedOrder {
+            seq,
+            tick: order.tick,
+            submitted,
+            side: order.side,
+            cmd: cmd.clone(),
+        };
+        world.resource_mut::<OrderQueue>().next_seq = seq + 1;
+        apply(world, order.side, cmd);
+        world.resource_mut::<OrderLog>().0.push(queued);
+        return Ok(OrderAck {
+            seq,
+            tick: order.tick,
+            note: None,
+        });
+    }
     let mut q = world.resource_mut::<OrderQueue>();
     q.next_seq = seq + 1;
     let queued = QueuedOrder {
@@ -520,6 +645,83 @@ pub fn submit(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Ord
         tick: order.tick,
         note,
     })
+}
+
+/// Works out, after a rejection, whether the order named something of another
+/// side. The player never sees the answer (the text is the same for unknown
+/// ids); tests and the order log do.
+fn classify(world: &World, order: &Order) -> RejectKind {
+    let side = order.side;
+    let unit = |raw: u32| -> Option<RejectKind> {
+        let e = entity(world, UnitId(raw))?;
+        let owner = world.get::<Allegiance>(e)?.side;
+        (owner != side).then_some(RejectKind::OtherSideUnit(raw))
+    };
+    let units = |ids: &[u32]| ids.iter().find_map(|&r| unit(r));
+    let contact = |raw: u32| -> Option<RejectKind> {
+        let pics = world.resource::<crate::picture::SidePictures>();
+        let own = pics
+            .sides
+            .get(usize::from(side))
+            .is_some_and(|p| p.get(ContactId(raw)).is_some());
+        let other = pics
+            .sides
+            .iter()
+            .enumerate()
+            .any(|(i, p)| i != usize::from(side) && p.get(ContactId(raw)).is_some());
+        (!own && other).then_some(RejectKind::OtherSideContact(raw))
+    };
+    let base = |b: &BaseTarget| match b {
+        BaseTarget::Id(id) => unit(*id),
+        BaseTarget::Content(_) => None,
+    };
+    let task = |t: &TaskOrder| match t {
+        TaskOrder::Rtb { base: Some(b) } => base(b),
+        TaskOrder::Land { base: b } | TaskOrder::Transfer { base: b } => base(b),
+        TaskOrder::Intercept { contact: c } => contact(*c),
+        TaskOrder::Strike {
+            contact: Some(c), ..
+        }
+        | TaskOrder::Suppress {
+            contact: Some(c), ..
+        } => contact(*c),
+        _ => None,
+    };
+    let found = match &order.command {
+        Command::AssignTask { units: u, task: t } => units(u).or_else(|| task(t)),
+        Command::SetBehaviour { units: u, .. }
+        | Command::SetEmcon { units: u, .. }
+        | Command::SetJammer { units: u, .. }
+        | Command::SetLoadout { units: u, .. }
+        | Command::SetDoctrine { units: u, .. } => units(u),
+        Command::SetRoe { units: Some(u), .. } => units(u),
+        Command::TestDestroyUnit { unit: u } => unit(*u),
+        Command::DeployForce { base: b, .. } => base(b),
+        Command::TaskSatellite { satellite, .. } => unit(*satellite),
+        Command::ApproveEngagement { request } | Command::DenyEngagement { request } => world
+            .resource::<crate::roe::RoeRequests>()
+            .open
+            .iter()
+            .any(|r| r.id == *request && r.side != side)
+            .then_some(RejectKind::OtherSideRequest(*request)),
+        Command::StartOperation { operation }
+        | Command::PauseOperation { operation }
+        | Command::ResumeOperation { operation }
+        | Command::AbortOperation { operation }
+        | Command::PhaseGo { operation, .. }
+        | Command::EndPhase { operation, .. } => world
+            .resource::<crate::operations::Operations>()
+            .get(*operation)
+            .is_some_and(|o| o.side != side)
+            .then_some(RejectKind::OtherSideOperation(*operation)),
+        Command::CreateOperation { operation, .. } => operation
+            .phases
+            .iter()
+            .flat_map(|p| &p.tasks)
+            .find_map(|t| units(&t.units).or_else(|| task(&t.task))),
+        _ => None,
+    };
+    found.unwrap_or(RejectKind::Invalid)
 }
 
 /// `DD HH:MMZ` (day of month and UTC time): passes are at most two days ahead.
@@ -643,6 +845,23 @@ fn validate(world: &mut World, geo: Option<&Geo>, order: &Order) -> Result<Resol
                 shots_per_target: *shots_per_target,
                 salvo: *salvo,
             })
+        }
+        Command::DeployForce {
+            force,
+            count,
+            base,
+            loadout,
+        } => crate::deployment::validate(world, side, force, *count, base, loadout.as_deref()),
+        Command::FinishDeployment => {
+            if world
+                .resource::<crate::deployment::Deployment>()
+                .active
+                .contains(&side)
+            {
+                Ok(Resolved::FinishDeploy)
+            } else {
+                Err("Your side is not deploying".to_owned())
+            }
         }
         Command::CreateOperation {
             operation,
@@ -1593,6 +1812,14 @@ fn apply(world: &mut World, side: u8, cmd: Resolved) {
         Resolved::Decide { request, approve } => crate::roe::decide(world, side, request, approve),
         Resolved::Operation(cmd) => crate::operations::apply(world, side, cmd),
         Resolved::EndWar => crate::reports::end_war(world, side),
+        Resolved::Deploy {
+            force,
+            nation,
+            count,
+            base,
+            loadout,
+        } => crate::deployment::apply(world, side, force, nation, count, base, loadout),
+        Resolved::FinishDeploy => crate::deployment::finish(world, side),
         Resolved::Doctrine {
             groups,
             launch,

@@ -26,7 +26,8 @@ use crate::world::{ForceFineTick, Sides, UnitIdAlloc, UnitIndex};
 const MAGIC: &[u8; 8] = b"WB-STATE";
 /// Bump when the snapshot layout changes: every hash changes with it.
 /// 5 (P7): operations, the war state, fire missions on groups.
-pub const FORMAT_VERSION: u8 = 5;
+/// 6 (P9): controllers, difficulty and the play mode in the sides.
+pub const FORMAT_VERSION: u8 = 6;
 
 /// All components of one unit, group or base.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -70,6 +71,7 @@ pub struct Snapshot {
     pub test_territory_areas: Option<TestTerritory>,
     pub operations: crate::operations::Operations,
     pub war: crate::reports::War,
+    pub deployment: crate::deployment::Deployment,
     pub units: Vec<UnitRecord>,
 }
 
@@ -119,6 +121,7 @@ pub fn capture(world: &World) -> Snapshot {
         test_territory_areas: world.get_resource::<TestTerritory>().cloned(),
         operations: world.resource::<crate::operations::Operations>().clone(),
         war: world.resource::<crate::reports::War>().clone(),
+        deployment: world.resource::<crate::deployment::Deployment>().clone(),
         units,
     }
 }
@@ -136,6 +139,7 @@ pub fn base_resources(world: &mut World, rules: Rules) {
     world.insert_resource(RoeRequests::default());
     world.insert_resource(crate::operations::Operations::default());
     world.insert_resource(crate::reports::War::default());
+    world.insert_resource(crate::deployment::Deployment::default());
 }
 
 /// Builds a world from a snapshot (in `UnitId` order). The order log and
@@ -154,6 +158,7 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
     world.insert_resource(snap.roe_requests);
     world.insert_resource(snap.operations);
     world.insert_resource(snap.war);
+    world.insert_resource(snap.deployment);
     if let Some(t) = snap.test_territory_areas {
         world.insert_resource(t);
     }

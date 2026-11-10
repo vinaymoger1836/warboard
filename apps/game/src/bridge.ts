@@ -21,7 +21,7 @@ export class EngineBridge {
   private error: string | null = null;
   private readonly listeners = new Set<BridgeListener>();
   private readonly viewListeners = new Set<(f: ViewFrame) => void>();
-  private readonly eventListeners = new Set<(e: Event[]) => void>();
+  private readonly eventListeners = new Set<(e: Event[], side: number) => void>();
   private readonly warListeners = new Set<(w: WarInfo) => void>();
   private readonly autosaveListeners = new Set<() => void>();
   private nextReq = 1;
@@ -67,7 +67,7 @@ export class EngineBridge {
         return;
       }
       case 'events':
-        for (const l of this.eventListeners) l(msg.events);
+        for (const l of this.eventListeners) l(msg.events, msg.side);
         return;
       case 'autosaved':
         for (const l of this.autosaveListeners) l();
@@ -120,7 +120,8 @@ export class EngineBridge {
     return () => this.viewListeners.delete(listener);
   }
 
-  onEvents(listener: (e: Event[]) => void): () => void {
+  /** Events of one side at a time (each human side's stream is separate, doc 12 §2). */
+  onEvents(listener: (e: Event[], side: number) => void): () => void {
     this.eventListeners.add(listener);
     return () => this.eventListeners.delete(listener);
   }

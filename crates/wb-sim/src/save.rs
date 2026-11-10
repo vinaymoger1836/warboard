@@ -19,7 +19,9 @@ pub const MAGIC: [u8; 4] = *b"WBSG";
 /// older saves are refused with this reason instead of a decode error.
 /// 3 (P7): operations and the war state in the snapshot, the order log's
 /// submit ticks, replay checkpoints.
-pub const SAVE_VERSION: u16 = 3;
+/// 4 (P9, ADR-044): controllers and the play mode in the setup (the snapshot),
+/// and a session section beside it.
+pub const SAVE_VERSION: u16 = 4;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
@@ -48,6 +50,9 @@ pub struct SaveBody {
     pub events: Vec<Event>,
     /// Replay checkpoints, pruned (doc 04 §7.1).
     pub checkpoints: Vec<crate::replay::Checkpoint>,
+    /// Active side, hot-seat settings, PIN hashes, `umpire_used`. Not part of
+    /// the state hash (doc 12 §1).
+    pub session: crate::session::Session,
 }
 
 #[derive(Debug, thiserror::Error)]

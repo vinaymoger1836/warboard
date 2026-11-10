@@ -2,8 +2,8 @@
 // the side view about 10 times a second in one of two transfer buffers (doc 06 §2–3).
 // It also owns the region packs' engine files, read synchronously from OPFS (doc 05 §4,
 // ADR-019), and writes save slots (autosave every 5 sim minutes, doc 03 §13).
-import type { Event, SaveHeader, TickReport } from '@warboard/protocol';
-import init, { Engine, GeoQuery, map_labels, save_header } from '@warboard/wb-wasm';
+import type { Event, NationOption, PlayMode, SaveHeader, SideInfo, TickReport } from '@warboard/protocol';
+import init, { Engine, GeoQuery, map_labels, nation_options, preview_setup, save_header } from '@warboard/wb-wasm';
 import wasmUrl from '@warboard/wb-wasm/wb_wasm_bg.wasm?url';
 // The war and its content pack are chosen at build time (vite.config.ts: WB_SCENARIO,
 // WB_CONTENT_PACK); by default the Theatre North straits quick start on build/content.wbpack.
@@ -29,7 +29,15 @@ const contentPack = fetch(contentUrl).then(async (r) => {
 const post = (msg: FromWorker, transfer: Transferable[] = []) => self.postMessage(msg, { transfer });
 
 let engine: Engine | null = null;
-const warName = /^name:\s*(.+?)\s*$/m.exec(scenarioYaml)?.[1] ?? 'War';
+/** The side whose orders and picture the client works with (doc 12 §2). */
+let activeSide = 0;
+/** Sides whose events the client keeps: every human side, or both in Watch (doc 12 §2). */
+let streams: number[] = [];
+const quickStartName = /^name:\s*(.+?)\s*$/m.exec(scenarioYaml)?.[1] ?? 'War';
+let warName = quickStartName;
+
+/** The side a request is about: the one it names, else the active side. */
+const sideOf = (req: { side?: number }) => req.side ?? activeSide;
 let installed: PackFiles[] = [];
 
 // ---- Region packs -------------------------------------------------------------------
@@ -137,19 +145,63 @@ async function handle(req: WorkerRequest): Promise<{ data: ReplyData[WorkerReque
     }
     case 'point':
       return { data: geo ? Array.from(geo.point(req.lat, req.lon)) : [] };
+    case 'nationOptions':
+      return { data: JSON.parse(nation_options(await contentPackReady())) as ReplyData['nationOptions'] };
+    case 'previewSetup':
+      return { data: JSON.parse(preview_setup(JSON.stringify(req.setup), await contentPackReady())) as ReplyData['previewSetup'] };
+    case 'newWar': {
+      const pack = await contentPackReady();
+      const next = Engine.create_from_setup(JSON.stringify(req.setup), pack);
+      if (req.hotSeat) next.set_hot_seat(JSON.stringify(req.hotSeat));
+      for (const p of req.pins ?? []) {
+        if (p.pin) next.set_pin(p.side, p.pin, crypto.getRandomValues(new Uint8Array(16)));
+      }
+      warName = req.setup.name;
+      start(next, pack);
+      return { data: null };
+    }
+    case 'quickStart': {
+      const pack = await contentPackReady();
+      warName = quickStartName;
+      start(Engine.create(scenarioYaml, pack), pack);
+      return { data: null };
+    }
+    case 'setActiveSide':
+      if (!engine) throw new Error('No war is running');
+      engine.set_active_side(req.side);
+      activeSide = req.side;
+      return { data: null };
+    case 'setViewSide':
+      if (!engine) throw new Error('No war is running');
+      engine.set_view_side(req.side);
+      return { data: null };
+    case 'setUmpire':
+      if (!engine) throw new Error('No war is running');
+      engine.set_umpire(req.on);
+      return { data: null };
+    case 'setPin':
+      if (!engine) throw new Error('No war is running');
+      engine.set_pin(req.side, req.pin, crypto.getRandomValues(new Uint8Array(16)));
+      return { data: null };
+    case 'checkPin':
+      if (!engine) throw new Error('No war is running');
+      return { data: engine.check_pin(req.side, req.pin) };
+    case 'deployment':
+      if (!engine) throw new Error('No war is running');
+      return { data: JSON.parse(engine.deployment(sideOf(req))) as ReplyData['deployment'] };
     case 'details':
       if (!engine) throw new Error('No war is running');
-      return { data: JSON.parse(engine.details(req.id)) as ReplyData['details'] };
+      return { data: JSON.parse(engine.details(sideOf(req), req.id)) as ReplyData['details'] };
     case 'contactDetails':
       if (!engine) throw new Error('No war is running');
-      return { data: JSON.parse(engine.contact_details(req.id)) as ReplyData['contactDetails'] };
+      return { data: JSON.parse(engine.contact_details(sideOf(req), req.id)) as ReplyData['contactDetails'] };
     case 'approvals':
       if (!engine) throw new Error('No war is running');
-      return { data: JSON.parse(engine.approvals()) as ReplyData['approvals'] };
+      return { data: JSON.parse(engine.approvals(sideOf(req))) as ReplyData['approvals'] };
     case 'groundTrack':
       if (!engine) throw new Error('No war is running');
       return {
-        data: JSON.parse(engine.ground_track(req.id, req.beforeMin, req.afterMin, 60)) as ReplyData['groundTrack'],
+        data: JSON.parse(engine.ground_track(sideOf(req), req.id, req.beforeMin, req.afterMin, 60)) as ReplyData['groundTrack'],
       };
     case 'order':
       if (!engine) throw new Error('No war is running');
@@ -159,16 +211,16 @@ async function handle(req: WorkerRequest): Promise<{ data: ReplyData[WorkerReque
       };
     case 'operations':
       if (!engine) throw new Error('No war is running');
-      return { data: JSON.parse(engine.operations()) as ReplyData['operations'] };
+      return { data: JSON.parse(engine.operations(sideOf(req))) as ReplyData['operations'] };
     case 'checkOperation':
       if (!engine) throw new Error('No war is running');
       return { data: JSON.parse(engine.check_operation(JSON.stringify(req.spec))) as ReplyData['checkOperation'] };
     case 'report':
       if (!engine) throw new Error('No war is running');
-      return { data: JSON.parse(engine.report(req.truth, 'json')) as ReplyData['report'] };
+      return { data: JSON.parse(engine.report(sideOf(req), req.truth, 'json')) as ReplyData['report'] };
     case 'reportText':
       if (!engine) throw new Error('No war is running');
-      return { data: engine.report(req.truth, req.format) };
+      return { data: engine.report(sideOf(req), req.truth, req.format) };
     case 'replayStart':
       if (!engine) throw new Error('No war is running');
       return { data: JSON.parse(engine.replay_start()) as ReplyData['replayStart'] };
@@ -182,8 +234,10 @@ async function handle(req: WorkerRequest): Promise<{ data: ReplyData[WorkerReque
       return { data: await saveTo(req.slot) };
     case 'load': {
       const bytes = await readSave(req.slot);
-      const pack = await contentPack;
-      start(Engine.load(bytes, pack), pack);
+      const pack = await contentPackReady();
+      const next = Engine.load(bytes, pack);
+      warName = (JSON.parse(save_header(bytes)) as SaveHeader).war_name;
+      start(next, pack);
       return { data: null };
     }
     case 'exportSave': {
@@ -260,9 +314,16 @@ function start(next: Engine, pack: Uint8Array): void {
     };
   };
 
-  const war = JSON.parse(engine.sides()) as Omit<WarInfo, 'warName' | 'places'>;
+  const war = JSON.parse(engine.sides()) as Omit<WarInfo, 'warName' | 'places' | 'nations' | 'deploying'> & {
+    mode: PlayMode;
+    sides: SideInfo[];
+  };
+  activeSide = war.side;
+  streams = war.sides.map((_, i) => i).filter((i) => war.mode === 'watch' || war.sides[i]?.controller === 'human');
   const places = JSON.parse(map_labels(pack)) as PlaceLabel[];
-  post({ type: 'ready', report: report(engine), war: { ...war, warName, places } });
+  const nations = JSON.parse(nation_options(pack)) as NationOption[];
+  const deploying = (JSON.parse(engine.deployment(activeSide)) as { clock_held: boolean }).clock_held;
+  post({ type: 'ready', report: report(engine), war: { ...war, warName, places, nations, deploying } });
 
   let lastFrame = performance.now();
   let lastView = -Infinity;
@@ -282,8 +343,10 @@ function start(next: Engine, pack: Uint8Array): void {
       lastView = now;
       postView(e, memory);
       post({ type: 'tick', report: report(e) });
-      const events = JSON.parse(e.take_events()) as Event[];
-      if (events.length > 0) post({ type: 'events', events });
+      for (const side of streams) {
+        const events = JSON.parse(e.take_events(side)) as Event[];
+        if (events.length > 0) post({ type: 'events', side, events });
+      }
     }
     const block = Math.floor(e.sim_time_ms() / AUTOSAVE_SIM_MS);
     if (block > autosaveBlock) {
@@ -297,11 +360,16 @@ function start(next: Engine, pack: Uint8Array): void {
 
 let wasmMemory: WebAssembly.Memory | null = null;
 
-async function boot(): Promise<void> {
+/** The engine module is ready and the content pack loaded. No war starts until the menu asks
+ *  for one (doc 03 §1): a quick start, a new war from the setup screens, or a save. */
+async function contentPackReady(): Promise<Uint8Array> {
   const exports = await wasm;
   wasmMemory = exports.memory;
-  const pack = await contentPack;
-  start(Engine.create(scenarioYaml, pack), pack);
+  return contentPack;
+}
+
+async function boot(): Promise<void> {
+  await contentPackReady();
 }
 
 boot().catch((err: unknown) => {

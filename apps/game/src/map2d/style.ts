@@ -4,7 +4,7 @@
 // (land, water, coast); its real labels and boundaries stay hidden. Borders come from the
 // packs' generated territory (doc 11 §2.2) and labels from the content's places (§2.4).
 import { cssRgba, hex } from '@warboard/symbols';
-import type { ExpressionSpecification, LayerSpecification, StyleSpecification } from 'maplibre-gl';
+import type { ExpressionSpecification, LayerSpecification, Map as MapLibreMap, StyleSpecification } from 'maplibre-gl';
 import type { PlaceLabel } from '../engine/messages';
 import type { Coalition } from './coalitions';
 
@@ -40,6 +40,29 @@ function placesGeoJson(places: PlaceLabel[]) {
 
 const kindIs = (...kinds: string[]): ExpressionSpecification => ['in', ['get', 'kind'], ['literal', kinds]];
 
+/** Territory of the war's coalitions (land and 12 nm waters). */
+export function tintFilter(coalition: Coalition): ExpressionSpecification {
+  return ['in', ['get', 'code'], ['literal', [...coalition.own, ...coalition.enemy]]];
+}
+
+/** Own colour for the side on screen, enemy colour for the rest (doc 12 §2). */
+export function tintColour(coalition: Coalition, ownColor: string, enemyColor: string): ExpressionSpecification {
+  return ['case', ['in', ['get', 'code'], ['literal', coalition.own]], ownColor, enemyColor];
+}
+
+/** Re-tints the territory in place after a side switch, so the map (and its camera) stays. */
+export function applyCoalition(map: MapLibreMap, coalition: Coalition): void {
+  for (const layer of map.getStyle().layers) {
+    if (layer.id.endsWith('-territory-fill')) {
+      map.setFilter(layer.id, tintFilter(coalition));
+      map.setPaintProperty(layer.id, 'fill-color', tintColour(coalition, hex('terr.own.fill'), hex('terr.enemy.fill')));
+    } else if (layer.id.endsWith('-territory-line')) {
+      map.setFilter(layer.id, tintFilter(coalition));
+      map.setPaintProperty(layer.id, 'line-color', tintColour(coalition, hex('terr.own.line'), hex('terr.enemy.line')));
+    }
+  }
+}
+
 export function buildStyle(
   packs: MapPack[],
   coalition: Coalition,
@@ -61,15 +84,8 @@ export function buildStyle(
     p.isWorld ? {} : { minzoom: p.zoom[0] };
   const polyRange = (p: MapPack): Partial<LayerSpecification> =>
     p.isWorld ? (handover !== null ? { maxzoom: handover } : {}) : { minzoom: p.zoom[0] };
-  const own = coalition.own;
-  const enemy = coalition.enemy;
-  const tinted: ExpressionSpecification = ['in', ['get', 'code'], ['literal', [...own, ...enemy]]];
-  const pick = (ownColor: string, enemyColor: string): ExpressionSpecification => [
-    'case',
-    ['in', ['get', 'code'], ['literal', own]],
-    ownColor,
-    enemyColor,
-  ];
+  const tinted = tintFilter(coalition);
+  const pick = (ownColor: string, enemyColor: string) => tintColour(coalition, ownColor, enemyColor);
 
   const layers: LayerSpecification[] = [{ id: 'background', type: 'background', paint: { 'background-color': hex('map.sea') } }];
 

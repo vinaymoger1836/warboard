@@ -8,7 +8,8 @@
 # pictures. P6b adds a save/reload of G11 with an active jammer. Since PF the
 # goldens run on the generic fixtures (ADR-035): each scenario gets the pack of
 # its `content:` folder, and the quick start stands in for the demo war. P7 adds the
-# Rising Sun operation (G14) and a save/reload in the middle of it.
+# Rising Sun operation (G14) and a save/reload in the middle of it. P9 adds the play-modes
+# check of the WebAssembly API (sides, umpire view, PINs, hot-seat save, war setup, deployment).
 # Needs crates/wb-wasm/pkg built first: pnpm --filter @warboard/wb-wasm build:wasm
 set -euo pipefail
 
@@ -95,6 +96,15 @@ native=$($wb run --content "$fixpack" --scenario "$s" --ticks 6000 --save-at 300
 compare "save/reload native ($s, save at 3000)" "$whole" "$native"
 wasm=$(node crates/wb-wasm/node/run-scenario.mjs --content "$fixpack" --scenario "$s" --ticks 6000 --save-at 3000)
 compare "save/reload wasm   ($s, save at 3000)" "$whole" "$wasm"
+
+# Play modes (P9, doc 12): the browser's entry points for sides, orders, the umpire view,
+# per-side events, PINs and a hot-seat save, run on the generic fixtures.
+if node crates/wb-wasm/node/play-modes-check.mjs --content "$fixpack" --game-content "$pack"; then
+  echo "ok       play modes (wasm API)"
+else
+  echo "FAILED   play modes (wasm API)"
+  status=1
+fi
 
 # Geo queries (P2): only when the region packs have been built (they are not in git).
 packs=${WB_PACKS:-build/packs}

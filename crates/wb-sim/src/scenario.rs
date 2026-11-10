@@ -36,7 +36,8 @@ use crate::probe::ProbeState;
 use crate::rules::Rules;
 use crate::snapshot::base_resources;
 use crate::world::{
-    FIRST_ENGINE_ID, ForceFineTick, SideInfo, Sides, UnitIdAlloc, entity, spawn_unit,
+    Controller, Difficulty, FIRST_ENGINE_ID, ForceFineTick, PlayMode, SideInfo, Sides, UnitIdAlloc,
+    entity, spawn_unit,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -67,7 +68,8 @@ pub enum ScenarioError {
     BaseStock { base: String, reason: String },
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
 #[serde(rename_all = "snake_case")]
 pub enum StartMode {
     /// Preset bases of each side's nations are active at start (doc 03 §2).
@@ -94,6 +96,14 @@ pub struct Scenario {
     pub sides: Vec<SideSpec>,
     #[serde(default)]
     pub start_mode: StartMode,
+    /// Play mode (doc 12); derived from the controllers when absent.
+    #[serde(default)]
+    pub mode: Option<PlayMode>,
+    /// Sides that deploy themselves (doc 03 §2): their inventory waits in a
+    /// pool and they station it at their bases with `DeployForce` before the
+    /// clock runs. Preset bases are open either way.
+    #[serde(default)]
+    pub deploy_sides: Vec<u8>,
     #[serde(default)]
     pub units: Vec<ScenarioUnit>,
     #[serde(default)]
@@ -130,6 +140,12 @@ pub struct SideSpec {
     pub nations: Vec<String>,
     #[serde(default)]
     pub player: bool,
+    /// Who gives this side's orders; a person when absent (doc 12).
+    #[serde(default)]
+    pub controller: Controller,
+    /// AI difficulty (Normal when absent).
+    #[serde(default)]
+    pub difficulty: Difficulty,
     /// Side default ROE; Charlie when absent.
     #[serde(default)]
     pub roe: Option<Roe>,
@@ -410,6 +426,11 @@ impl Scenario {
         for b in &self.base_stock {
             set_stock(&mut world, &rules, b)?;
         }
+        world.insert_resource(crate::deployment::Deployment::new(
+            &rules,
+            world.resource::<Sides>(),
+            &self.deploy_sides,
+        ));
         let mut units: Vec<&ScenarioUnit> = self.units.iter().collect();
         units.sort_by_key(|u| u.id);
         for u in units {
@@ -449,13 +470,12 @@ impl Scenario {
         let n_sides = world.resource::<Sides>().len();
         world.insert_resource(SidePictures::new(n_sides));
         for (index, o) in self.orders.iter().enumerate() {
-            crate::orders::submit(&mut world, geo, o).map_err(|reason| {
-                ScenarioError::InvalidOrder {
+            crate::orders::submit_from(&mut world, geo, o, crate::orders::Origin::Scenario)
+                .map_err(|r| ScenarioError::InvalidOrder {
                     index,
                     tick: o.tick,
-                    reason,
-                }
-            })?;
+                    reason: r.reason,
+                })?;
         }
         Ok(world)
     }
@@ -485,6 +505,8 @@ impl Scenario {
                 name: s.name.clone(),
                 nations: s.nations.clone(),
                 player: s.player,
+                controller: s.controller,
+                difficulty: s.difficulty,
                 roe: s.roe.unwrap_or(Roe::Charlie),
                 self_defence: s.self_defence.unwrap_or(true),
             });
@@ -495,7 +517,20 @@ impl Scenario {
                 reason: "at most 8 sides".into(),
             });
         }
-        Ok(Sides { sides, nation_ix })
+        let controllers: Vec<Controller> = sides.iter().map(|s| s.controller).collect();
+        let mode = match self.mode {
+            Some(m) => {
+                m.fits(&controllers)
+                    .map_err(|reason| ScenarioError::InvalidSide { side: 0, reason })?;
+                m
+            }
+            None => PlayMode::derive(&controllers),
+        };
+        Ok(Sides {
+            sides,
+            mode,
+            nation_ix,
+        })
     }
 
     fn spawn(
@@ -504,13 +539,27 @@ impl Scenario {
         rules: &Rules,
         u: &ScenarioUnit,
     ) -> Result<(), ScenarioError> {
+        spawn_unit_spec(world, rules, u, false)
+    }
+}
+
+/// Spawns one scenario unit entry (a group of platforms, a system, a
+/// satellite). `engine_ids`: the ids come from the engine's own allocator
+/// (deployment orders), so the scenario id limit does not apply.
+pub(crate) fn spawn_unit_spec(
+    world: &mut World,
+    rules: &Rules,
+    u: &ScenarioUnit,
+    engine_ids: bool,
+) -> Result<(), ScenarioError> {
+    {
         let bad = |reason: String| ScenarioError::InvalidUnit {
             id: u.id,
             name: u.name.clone(),
             reason,
         };
         if let Some(sid) = &u.system {
-            return spawn_system(world, rules, u, sid);
+            return spawn_system(world, rules, u, sid, engine_ids);
         }
         let Some(pid) = &u.platform else {
             // P0 bare unit.
@@ -676,6 +725,7 @@ fn spawn_system(
     rules: &Rules,
     u: &ScenarioUnit,
     sid: &str,
+    engine_ids: bool,
 ) -> Result<(), ScenarioError> {
     let bad = |reason: String| ScenarioError::InvalidUnit {
         id: u.id,
@@ -704,7 +754,7 @@ fn spawn_system(
         return Err(bad("a system needs 1–64 components".into()));
     }
     for id in u.id + 1..=u.id + total {
-        if id >= FIRST_ENGINE_ID || entity(world, UnitId(id)).is_some() {
+        if (!engine_ids && id >= FIRST_ENGINE_ID) || entity(world, UnitId(id)).is_some() {
             return Err(ScenarioError::DuplicateUnit(id));
         }
     }

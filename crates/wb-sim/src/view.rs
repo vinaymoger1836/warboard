@@ -1,4 +1,4 @@
-//! `SideView` v3 encoder (doc 06 §3, ADR-002): what one side may see, as a
+//! `SideView` v4 encoder (doc 06 §3, ADR-002): what one side may see, as a
 //! little-endian structure of arrays the UI decodes without copying.
 //!
 //! The side's own platforms, satellites and bases, the contacts of its
@@ -13,14 +13,16 @@
 //!
 //! ```text
 //! header (48 bytes)
-//!   0  magic "WBSV"        4  version u16       6  side u8      7  reserved u8
+//!   0  magic "WBSV"        4  version u16       6  side u8      7  flags u8
+//!      (flags bit 0, `UMPIRE`: both sides exact, see [`ViewEncoder::encode_umpire`];
+//!      `side` is then 255)
 //!   8  tick u64           16  sim_time_ms i64
 //!  24  units u32          28  contacts u32     32  weapons u32  36  effects u32
 //!  40  strings u32        44  string bytes u32
 //! sections, each column padded to 8 bytes:
 //!   units:    lon f64, lat f64, id u32, flags u32, group u32, alt_m f32,
 //!             heading_deg f32, speed_mps f32, symbol u16, sensor_km u16,
-//!             fuel_pct u8
+//!             fuel_pct u8, side u8 (owner; the viewer's side except in the umpire view)
 //!   contacts: lon f64, lat f64, contact_id u32, flags u32, alt_m f32,
 //!             heading_deg f32, speed_mps f32, ellipse_a_m f32, ellipse_b_m f32,
 //!             ellipse_rot_deg f32, age_s f32, threat_m f32, symbol u16,
@@ -30,7 +32,7 @@
 //!   weapons:  lon f64, lat f64, id u32, salvo u32, shooter u32,
 //!             target u32 (own contact id, 0: a point), tag u32 (`M-n` /
 //!             `INT-n`), alt_m f32, heading_deg f32, speed_mps f32,
-//!             symbol u16, relation u8
+//!             symbol u16, relation u8, side u8 (owner, as for units)
 //!   effects:  lon f64, lat f64, alt_m f32, age_ms u32, kind u8
 //!   strings:  (id u32, kind u8, len u16, utf-8 bytes)*  — new or changed only
 //! ```
@@ -52,7 +54,11 @@ use crate::rules::Rules;
 use crate::world::{UnitIndex, entity};
 
 pub const MAGIC: [u8; 4] = *b"WBSV";
-pub const VERSION: u16 = 3;
+pub const VERSION: u16 = 4;
+/// Header `flags` bit 0: the umpire view (doc 12 §1).
+pub const HEADER_UMPIRE: u8 = 1;
+/// `side` in the header of an umpire view.
+pub const UMPIRE_SIDE: u8 = 255;
 /// Drawn length of a bearing-only strobe, metres (display only).
 const STROBE_M: f32 = 300_000.0;
 pub const HEADER_BYTES: usize = 48;
@@ -395,6 +401,7 @@ struct Row {
     symbol: u16,
     sensor_km: u16,
     fuel: u8,
+    side: u8,
 }
 
 /// One row of the contacts section.
@@ -432,6 +439,7 @@ struct WRow {
     speed: f32,
     symbol: u16,
     relation: u8,
+    side: u8,
 }
 
 /// One row of the effects section.
@@ -448,6 +456,16 @@ struct EffectRow {
 pub struct ViewEncoder {
     sent: BTreeMap<(u32, u8), String>,
     buf: Vec<u8>,
+    /// The viewer of the last view (a side, or [`UMPIRE_SIDE`]). Contact ids
+    /// are per side, so a different viewer gets every string again.
+    last_viewer: Option<u8>,
+}
+
+/// Whose eyes a view is built for.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ViewAs {
+    Side(u8),
+    Umpire,
 }
 
 impl ViewEncoder {
@@ -465,7 +483,28 @@ impl ViewEncoder {
         self.buf.as_ptr()
     }
 
+    /// One side's view: its own units and bases, the contacts of its picture.
     pub fn encode(&mut self, world: &World, side: u8) -> &[u8] {
+        self.encode_as(world, ViewAs::Side(side))
+    }
+
+    /// Both sides' units and weapons exactly, no contacts and no ellipses
+    /// (doc 12 §1). Crate-private: reach it through
+    /// [`Sim::umpire_view`](crate::Sim::umpire_view), which checks the mode and
+    /// marks the war `umpire_used`. `wb-ai` never sees this type.
+    pub(crate) fn encode_umpire(&mut self, world: &World) -> &[u8] {
+        self.encode_as(world, ViewAs::Umpire)
+    }
+
+    fn encode_as(&mut self, world: &World, view: ViewAs) -> &[u8] {
+        let (side, umpire) = match view {
+            ViewAs::Side(s) => (s, false),
+            ViewAs::Umpire => (UMPIRE_SIDE, true),
+        };
+        if self.last_viewer != Some(side) {
+            self.sent.clear();
+            self.last_viewer = Some(side);
+        }
         let rules = world.resource::<Rules>();
         let clock = world.resource::<SimClock>();
         let mut rows: Vec<Row> = Vec::new();
@@ -481,7 +520,9 @@ impl ViewEncoder {
         // Own units a weapon of the side's picture is judged aimed at (the
         // red halo). Picture only: the weapon must still be a live contact of
         // this side, so the flag drops as soon as the weapon is gone.
-        let targeted: BTreeSet<UnitId> = {
+        let targeted: BTreeSet<UnitId> = if umpire {
+            BTreeSet::new()
+        } else {
             let pic = world
                 .get_resource::<SidePictures>()
                 .and_then(|p| p.sides.get(usize::from(side)));
@@ -499,7 +540,10 @@ impl ViewEncoder {
         let jammers = crate::sensors::active_jammers(world, rules);
 
         for (&uid, &e) in &world.resource::<UnitIndex>().0 {
-            if world.get::<Allegiance>(e).map(|a| a.side) != Some(side) {
+            let Some(owner) = world.get::<Allegiance>(e).map(|a| a.side) else {
+                continue;
+            };
+            if !umpire && owner != side {
                 continue;
             }
             let Some(ident) = world.get::<Identity>(e) else {
@@ -525,6 +569,7 @@ impl ViewEncoder {
                     symbol: base_symbol(b),
                     sensor_km: 0,
                     fuel: 255,
+                    side: owner,
                 });
                 continue;
             }
@@ -540,8 +585,10 @@ impl ViewEncoder {
                     id: uid.0,
                     salvo: f.salvo,
                     shooter: f.shooter.0,
+                    // A contact id means something only in its own side's
+                    // namespace, so the umpire view leaves it out.
                     target: match f.target {
-                        WeaponTarget::Track { contact, .. } => contact.0,
+                        WeaponTarget::Track { contact, .. } if !umpire => contact.0,
                         _ => 0,
                     },
                     tag: f.tag,
@@ -556,6 +603,7 @@ impl ViewEncoder {
                     } else {
                         relation::OURS
                     },
+                    side: owner,
                 });
                 continue;
             }
@@ -628,7 +676,7 @@ impl ViewEncoder {
                 .any(|m| rules.db.sensors[m.sensor.0 as usize].radar.is_some());
             if has_radar
                 && jammers.iter().any(|j| {
-                    j.side != side
+                    j.side != owner
                         && (j.effects.is_empty()
                             || j.effects.contains(&wb_content::source::EwEffect::Radar))
                         && wb_core::geo::distance_m(j.pos, k.pos()) <= j.coverage_m
@@ -652,6 +700,7 @@ impl ViewEncoder {
                         .round()
                         .clamp(0.0, 100.0) as u8
                 }),
+                side: owner,
             });
         }
 
@@ -661,6 +710,7 @@ impl ViewEncoder {
         if let Some(pic) = world
             .get_resource::<SidePictures>()
             .and_then(|p| p.sides.get(usize::from(side)))
+            .filter(|_| !umpire)
         {
             for c in pic.contacts.values() {
                 let label = if c.level >= ContactLevel::Type {
@@ -778,6 +828,9 @@ impl ViewEncoder {
         let now = clock.sim_time_ms;
         let mut erows: Vec<EffectRow> = Vec::new();
         for eff in combat.effects.iter().filter(|e| {
+            if umpire {
+                return e.sides != 0;
+            }
             e.sides
                 .checked_shr(u32::from(side))
                 .is_some_and(|b| b & 1 == 1)
@@ -804,7 +857,7 @@ impl ViewEncoder {
         b.extend_from_slice(&MAGIC);
         b.extend_from_slice(&VERSION.to_le_bytes());
         b.push(side);
-        b.push(0);
+        b.push(if umpire { HEADER_UMPIRE } else { 0 });
         b.extend_from_slice(&clock.tick.to_le_bytes());
         b.extend_from_slice(&(clock.sim_time_ms as i64).to_le_bytes());
         b.extend_from_slice(&(n as u32).to_le_bytes());
@@ -863,6 +916,10 @@ impl ViewEncoder {
             b.push(r.fuel);
         }
         pad(b);
+        for r in &rows {
+            b.push(r.side);
+        }
+        pad(b);
         macro_rules! col {
             ($field:ident) => {
                 for r in &crows {
@@ -908,6 +965,7 @@ impl ViewEncoder {
         wcol!(speed);
         wcol!(symbol);
         wcol!(relation);
+        wcol!(side);
         for e in &erows {
             b.extend_from_slice(&e.lon.to_le_bytes());
         }

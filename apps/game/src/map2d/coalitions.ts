@@ -1,5 +1,5 @@
-// Coalitions for the territory tint, from the war's sides (the scenario in P3, war setup
-// from P9): own = the player's side, enemy = every other side.
+// Coalitions for the territory tint, from the war's sides: own = the side on screen (the
+// active side, or side A in the umpire view; doc 12 §2), enemy = every other side.
 import type { WarInfo } from '../engine/messages';
 
 export interface Coalition {
@@ -10,10 +10,10 @@ export interface Coalition {
 
 export const NO_COALITION: Coalition = { own: [], enemy: [] };
 
-export function coalitionOf(war: WarInfo | null): Coalition {
+export function coalitionOf(war: WarInfo | null, side: number): Coalition {
   if (!war) return NO_COALITION;
   return {
-    own: war.sides[war.side]?.nations ?? [],
-    enemy: war.sides.filter((_, i) => i !== war.side).flatMap((s) => s.nations),
+    own: war.sides[side]?.nations ?? [],
+    enemy: war.sides.filter((_, i) => i !== side).flatMap((s) => s.nations),
   };
 }
