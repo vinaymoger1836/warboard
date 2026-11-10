@@ -77,6 +77,13 @@ export const play = {
       camera.set = () => undefined;
     };
   },
+  /** 2D ↔ 3D (doc 06 §5): the selection and the clock live outside the views; the centre
+   *  goes through `ui.camera`, which the next view starts from. */
+  switchView(view: '2d' | '3d'): void {
+    if (ui.get().view === view) return;
+    const cam = camera.get();
+    ui.set(cam ? { camera: cam, view } : { view });
+  },
   registerSpeed(get: () => number, setSpeed: (s: number) => void): void {
     speed.get = get;
     speed.set = setSpeed;

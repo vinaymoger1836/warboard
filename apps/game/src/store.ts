@@ -39,6 +39,20 @@ export interface EventLine {
   event: Event;
 }
 
+/** What a 3D camera mode looks at (doc 06 §5, ADR-047): an own group/unit/base or satellite,
+ *  a contact of our picture, or one of our weapons in flight. */
+export interface CamTarget {
+  kind: 'unit' | 'contact' | 'weapon';
+  id: number;
+}
+
+/** 3D camera (doc 06 §5): free; follow the selection; watch an engagement (shooter and
+ *  target framed); inspect one object close up (ADR-047). */
+export interface Cam3d {
+  mode: 'free' | 'follow' | 'watch' | 'inspect';
+  target: CamTarget | null;
+}
+
 /** Map camera of a side (restored when the side comes back). */
 export interface Camera {
   center: LonLat;
@@ -84,6 +98,10 @@ export interface UiState {
   side: number;
   /** Where that side last left the map; null until it has looked. */
   camera: Camera | null;
+  /** Which map is on screen; only one renders at a time (doc 06 §5). */
+  view: '2d' | '3d';
+  /** The side's 3D camera mode and target. */
+  cam3d: Cam3d;
 }
 
 /** Fields kept per side (doc 12 §2). */
@@ -105,6 +123,7 @@ const SIDE_KEYS = [
   'planDrawing',
   'reportsOpen',
   'camera',
+  'cam3d',
 ] as const;
 type SideKey = (typeof SIDE_KEYS)[number];
 export type SideSlice = Pick<UiState, SideKey>;
@@ -127,6 +146,7 @@ const freshSlice = (): SideSlice => ({
   planDrawing: null,
   reportsOpen: false,
   camera: null,
+  cam3d: { mode: 'free', target: null },
 });
 
 const MAX_EVENTS = 500;
@@ -138,6 +158,7 @@ let state: UiState = {
   threatRings: true,
   autoSlow: 'x1',
   side: 0,
+  view: '2d',
 };
 const listeners = new Set<() => void>();
 let nextKey = 1;
