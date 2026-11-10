@@ -190,7 +190,9 @@ impl GeoQuery {
         size: usize,
     ) -> Result<Vec<f32>, JsError> {
         let size = size.clamp(2, 257);
-        self.geo.heightmap([west, south, east, north], size, size).map_err(err)
+        self.geo
+            .heightmap([west, south, east, north], size, size)
+            .map_err(err)
     }
 
     /// Terrain cells in a box for the map overlay, packed as

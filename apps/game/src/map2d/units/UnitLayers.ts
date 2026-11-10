@@ -31,7 +31,9 @@ import {
   MAX_EXTRAPOLATE_MS,
   type MapPick,
   type Path,
+  type Scene,
   SMALL_ZOOM,
+  selectableIds,
   type TextItem,
   weaponLabelClusters,
 } from '../../scene/scene';
@@ -60,6 +62,8 @@ export class UnitLayers {
   /** Last non-zero achieved speed (sim s per real s), for the effects' real-time scale. */
   private effectSpeed = 1;
   private readonly offs: (() => void)[] = [];
+  /** The scene drawn last frame (parity hooks, doc 09 P10). */
+  private lastScene: Scene | null = null;
 
   constructor(
     private readonly map: MapLibreMap,
@@ -112,6 +116,34 @@ export class UnitLayers {
         map.getCanvas().style.cursor = tool ? 'crosshair' : '';
       }),
     );
+    // Test hooks (Playwright parity test): what this view can select, and whether a click at
+    // an object's screen position reaches it.
+    const hooks = {
+      selectables: () => (this.lastScene ? selectableIds(this.lastScene) : []),
+      windowPosition: (id: string) => {
+        const at = this.positionOfKey(id);
+        if (!at) return null;
+        const p = map.project(at);
+        return { x: p.x, y: p.y };
+      },
+      pickable: (id: string) => {
+        const at = this.positionOfKey(id);
+        if (!at) return false;
+        const p = map.project(at);
+        const hits = this.hub.deck.pickMultipleObjects({
+          x: p.x,
+          y: p.y,
+          radius: 3,
+          depth: 20,
+          layerIds: ['unit-icons', 'contact-icons', 'enemy-weapon-icons', 'satellite-dots'],
+        }) as PickingInfo<DrawnUnit | DrawnContact | DrawnSatellite>[];
+        const [kind] = id.split(':');
+        const layers = kind === 'u' ? ['unit-icons'] : kind === 'c' ? ['contact-icons', 'enemy-weapon-icons'] : ['satellite-dots'];
+        return hits.some((h) => h.layer && layers.includes(h.layer.id) && `${kind}:${h.object?.id}` === id);
+      },
+    };
+    (window as unknown as { __wbMap2d?: typeof hooks }).__wbMap2d = hooks;
+    this.offs.push(() => delete (window as unknown as { __wbMap2d?: typeof hooks }).__wbMap2d);
     const loop = () => {
       this.render();
       this.raf = requestAnimationFrame(loop);
@@ -227,6 +259,17 @@ export class UnitLayers {
     return findContact(this.bridge.frame?.view, id);
   }
 
+  /** Where a selectable id (`u:1`, `c:2`, `s:3`) is drawn this frame. */
+  private positionOfKey(id: string): LonLat | null {
+    const s = this.lastScene;
+    if (!s) return null;
+    const [kind, raw] = id.split(':');
+    const n = Number(raw);
+    if (kind === 'u') return (s.units.find((d) => d.id === n && d.lead) ?? s.units.find((d) => d.id === n))?.position ?? null;
+    if (kind === 'c') return s.contacts.find((d) => d.id === n)?.position ?? null;
+    return s.satellites.find((d) => d.id === n)?.position ?? null;
+  }
+
   /** Position of a unit or group as drawn this frame. */
   positionOf(id: number): LonLat | null {
     return this.drawn.find((d) => d.id === id)?.position ?? null;
@@ -250,6 +293,7 @@ export class UnitLayers {
       threatRings: state.threatRings,
       allSensorRings: state.allSensorRings,
     });
+    this.lastScene = scene;
     const { units: drawn, satellites, contacts, contactPaths: ellipses, threatLabels } = scene;
     this.drawn = drawn;
     this.contacts = contacts;

@@ -135,6 +135,8 @@ export default function Map3D({ packs, bridge, coalition, onToast }: Map3DProps)
           camera: () => cameras.current(),
         };
         (window as unknown as { __wbGlobe?: GlobeHooks }).__wbGlobe = hooks;
+        // Dev builds only: the renderer itself, for debugging in the console.
+        if (import.meta.env.DEV) (window as unknown as { __wbRenderer?: Renderer3d }).__wbRenderer = renderer;
       })
       .catch((err: unknown) => onToast(`The 3D view failed to start: ${String(err)}`));
     return () => {

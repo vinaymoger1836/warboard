@@ -376,8 +376,16 @@ impl Geo {
         h: usize,
     ) -> Result<Vec<f32>, GeoError> {
         let mut out = Vec::with_capacity(w * h);
-        let dx = if w > 1 { (east - west) / (w - 1) as f64 } else { 0.0 };
-        let dy = if h > 1 { (north - south) / (h - 1) as f64 } else { 0.0 };
+        let dx = if w > 1 {
+            (east - west) / (w - 1) as f64
+        } else {
+            0.0
+        };
+        let dy = if h > 1 {
+            (north - south) / (h - 1) as f64
+        } else {
+            0.0
+        };
         for r in 0..h {
             let lat = north - dy * r as f64;
             for c in 0..w {

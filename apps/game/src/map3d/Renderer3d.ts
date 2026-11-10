@@ -402,7 +402,8 @@ export class Renderer3d {
     const visible = new Set<string>();
 
     // Positions once per object.
-    const unitPos = new Map(s.units.map((d) => [d.id, this.cart(d.position, d.alt)]));
+    // Units are pooled per drawn unit (`uid`): zoomed in, a flight's members share the group id.
+    const unitPos = new Map(s.units.map((d) => [d.uid, this.cart(d.position, d.alt)]));
     const contactPos = new Map(s.contacts.map((d) => [d.id, this.cart(d.position, d.alt)]));
     const onScreenCount =
       [...unitPos.values(), ...contactPos.values()].filter((c) => occluder.isPointVisible(c) && onScreen(c)).length + w.weapons.length;
@@ -412,11 +413,12 @@ export class Renderer3d {
     // Units and bases.
     const selected = state.selected;
     for (const d of s.units) {
-      const pos = unitPos.get(d.id) as Cartesian3;
+      const pos = unitPos.get(d.uid) as Cartesian3;
       const pid: PickId = { kind: 'unit', id: d.id, base: d.base, symbol: d.symbol };
-      const k = key(pid);
+      const sk = key(pid);
+      const k = `u:${d.uid}`;
       const px = onScreen(pos);
-      const asModel = !d.base && this.useModel(k, d.symbol, models);
+      const asModel = !d.base && this.useModel(sk, d.symbol, models);
       const b = this.bb.get(k, f);
       const iconK = iconKey(d.symbol, d.enemy ? 'enemy' : 'own');
       this.setImage(b, iconK, iconImage(this.atlas, iconK));
@@ -425,18 +427,18 @@ export class Renderer3d {
       b.id = pid;
       b.show = !asModel || !this.modelReady(k);
       if (asModel) this.placeModel(k, d.symbol, pos, d.heading, d.enemy ? 'side.enemy' : 'side.own', pid, f);
-      if (px) visible.add(k);
+      if (px) visible.add(sk);
       if (d.mark) this.label(`m:${k}`, f, pos, d.mark, MARK_FONT, 'side.own.text', -size * 0.62 - 9, pid);
       if (d.alt > STALK_MIN_ALT) this.stalk(k, f, d.position, d.alt, d.enemy ? 'side.enemy' : 'side.own');
-      if (d.id === selected) this.ring(`sel:${k}`, f, pos, size * 0.7, 2, 'weapon.offensive');
+      if (d.id === selected && d.lead && this.forceModel !== sk) this.ring(`sel:${k}`, f, pos, size * 0.7, 2, 'weapon.offensive');
     }
     const labelled = declutter(
       s.units.filter((d) => zoom >= BASE_LABEL_ZOOM || !d.base || d.id === selected),
       selected,
       size,
-      (d) => onScreen(unitPos.get(d.id) as Cartesian3) ?? null,
+      (d) => onScreen(unitPos.get(d.uid) as Cartesian3) ?? null,
     );
-    for (const d of labelled) this.label(`l:u:${d.id}`, f, unitPos.get(d.id) as Cartesian3, d.label, LABEL_FONT, 'label.unit', size * 0.55 + 7, { kind: 'unit', id: d.id, base: d.base, symbol: d.symbol });
+    for (const d of labelled) this.label(`l:u:${d.uid}`, f, unitPos.get(d.uid) as Cartesian3, d.label, LABEL_FONT, 'label.unit', size * 0.55 + 7, { kind: 'unit', id: d.id, base: d.base, symbol: d.symbol });
 
     // Satellites: yellow dot and two-line label; orbit arcs come with the ground lines.
     for (const d of s.satellites) {
@@ -483,7 +485,7 @@ export class Renderer3d {
         if (d.label) this.label(`l:${k}`, f, pos, d.label, LABEL_FONT, 'label.unit', size * 0.55 + 7, pid);
       }
       if (d.alt > STALK_MIN_ALT && !d.isWeapon) this.stalk(k, f, d.position, d.alt, tint);
-      if (d.id === state.selectedContact) this.ring(`sel:${k}`, f, pos, size * 0.7, 2, 'weapon.offensive');
+      if (d.id === state.selectedContact && this.forceModel !== k) this.ring(`sel:${k}`, f, pos, size * 0.7, 2, 'weapon.offensive');
     }
     const hostile = s.contacts.filter((d) => d.isWeapon);
     weaponLabelClusters(hostile, (d) => onScreen(contactPos.get(d.id) as Cartesian3) ?? null).forEach((l, i) =>
@@ -780,7 +782,7 @@ export class Renderer3d {
     const [kind, raw] = id.split(':');
     const n = Number(raw);
     const d =
-      kind === 'u' ? s.units.find((x) => x.id === n) : kind === 'c' ? s.contacts.find((x) => x.id === n) : s.satellites.find((x) => x.id === n);
+      kind === 'u' ? (s.units.find((x) => x.id === n && x.lead) ?? s.units.find((x) => x.id === n)) : kind === 'c' ? s.contacts.find((x) => x.id === n) : s.satellites.find((x) => x.id === n);
     if (!d) return null;
     const pos = this.cart(d.position, d.alt);
     const occluder = new EllipsoidalOccluder(Ellipsoid.WGS84, this.widget.scene.camera.positionWC);
@@ -801,7 +803,8 @@ export class Renderer3d {
 
   /** Last-frame state of a drawn unit, for the cameras and the inspect HUD. */
   unit(id: number): DrawnUnit | null {
-    return this.last?.scene.units.find((d) => d.id === id) ?? null;
+    const all = this.last?.scene.units.filter((d) => d.id === id) ?? [];
+    return all.find((d) => d.lead) ?? all[0] ?? null;
   }
 
   contact(id: number): DrawnContact | null {

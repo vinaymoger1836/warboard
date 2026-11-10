@@ -1,0 +1,17 @@
+# P10 3D benchmark (doc 08 §4, doc 09 P10): 500 single-unit groups patrolling inside one view, so
+# the 3D view draws 500 visible units (icons, labels, stalks) at once. Not gameplay:
+# generated_units exists for benchmarks only. The browser bench boots it with
+#   WB_SCENARIO=scenarios/bench/view-500.yaml  (see apps/game/playwright.config.ts, project perf3d)
+name: Benchmark 500 units in view
+seed: 10
+start_utc: 2026-10-27T06:00:00Z
+sides:
+  - { name: West, nations: [ald, tlv, hlv, mrv, cnd], player: true }
+  - { name: East, nations: [vsm, kld, ost] }
+generated_units:
+  count: 500
+  group_size: 1
+  platforms: [vf-5, mf-4, hf-4, ud-9, tk-3, halvard]
+  nation: ald
+  area: [54.0, 15.0, 56.5, 20.0]
+  patrol_radius_km: [10, 40]

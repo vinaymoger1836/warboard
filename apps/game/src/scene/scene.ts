@@ -24,6 +24,10 @@ export const c = (t: TokenName, a = 1): Rgba => rgba(t, a);
 export interface DrawnUnit {
   /** Group id for flights and ships, base id for bases. */
   id: number;
+  /** The unit drawn: a member's own id (zoomed in), the group lead's (collapsed), or the base. */
+  uid: number;
+  /** The group's lead (or a unit without a group): cameras follow it. */
+  lead: boolean;
   symbol: number;
   position: LonLat;
   /** Altitude above sea level, m (0 for ships and ground units). */
@@ -186,6 +190,8 @@ export function buildScene(view: SideView, strings: StringTable, o: SceneOptions
       if (zoom < BASE_ZOOM && id !== o.selected) continue;
       units.push({
         id,
+        uid: id,
+        lead: true,
         symbol,
         position: at(i),
         ...row(i),
@@ -211,7 +217,18 @@ export function buildScene(view: SideView, strings: StringTable, o: SceneOptions
     if (flags & FLAG.TARGETED) targetedRows.push(i);
     const group = u.group[i] ?? 0;
     if (zoom >= MEMBERS_ZOOM || group === 0) {
-      units.push({ id: group || id, symbol, position: at(i), ...row(i), label: strings.name(id), mark: markAbove(symbol), base: false, enemy: enemyRow(i) });
+      units.push({
+        id: group || id,
+        uid: id,
+        lead: group === 0 || (flags & FLAG.GROUP_LEAD) !== 0,
+        symbol,
+        position: at(i),
+        ...row(i),
+        label: strings.name(id),
+        mark: markAbove(symbol),
+        base: false,
+        enemy: enemyRow(i),
+      });
       continue;
     }
     const g = groups.get(group);
@@ -231,7 +248,7 @@ export function buildScene(view: SideView, strings: StringTable, o: SceneOptions
       label += ` [${statusOf(u.flags[i] ?? 0)}]${fuel <= 100 ? ` ${fuel}%` : ''}`;
     }
     if ((u.flags[i] ?? 0) & FLAG.JAMMED) label += ' [JAMMED]';
-    units.push({ id: group, symbol, position: at(i), ...row(i), label, mark: markAbove(symbol), base: false, enemy: enemyRow(i) });
+    units.push({ id: group, uid: id, lead: true, symbol, position: at(i), ...row(i), label, mark: markAbove(symbol), base: false, enemy: enemyRow(i) });
   }
 
   // Contacts of our picture: estimates only.
@@ -371,11 +388,12 @@ export function buildScene(view: SideView, strings: StringTable, o: SceneOptions
 /** What a view can select (the parity set, doc 09 P10): `u:<id>`, `c:<id>`, `s:<id>`.
  *  Bearing-only contacts are lines, not selectable; own weapons are not selectable. */
 export function selectableIds(scene: Scene): string[] {
-  return [
+  const ids = new Set([
     ...scene.units.map((d) => `u:${d.id}`),
     ...scene.contacts.map((d) => `c:${d.id}`),
     ...scene.satellites.map((d) => `s:${d.id}`),
-  ].sort();
+  ]);
+  return [...ids].sort();
 }
 
 /** Labels give way when crowded, icons never do (doc 10 §4.1): greedy by priority
