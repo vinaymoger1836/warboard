@@ -39,6 +39,12 @@ pub enum RngPurpose {
     DatalinkLoss = 14,
     /// Enemy AI choices (reaction delay on Easy, P9).
     Ai = 15,
+    /// Variation of ground combat losses and their rounding (doc 02 §14).
+    GroundCombat = 16,
+    /// Vehicles a strike removes from a formation (doc 02 §13).
+    GroundStrike = 17,
+    /// Outcome of a sabotage raid on a base.
+    Sabotage = 18,
 }
 
 const GOLDEN: u64 = 0x9E37_79B9_7F4A_7C15;

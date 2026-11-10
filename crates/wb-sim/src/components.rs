@@ -1,6 +1,7 @@
 //! ECS components (doc 02 §2): movement, fuel, groups, tasks and bases (P3),
 //! emission control, satellites and scripted targets (P4), per-station
-//! magazines, countermeasures, base stock and weapons in flight (P5).
+//! magazines, countermeasures, base stock and weapons in flight (P5), ground
+//! formations and their tasks (P11).
 //!
 //! Components refer to each other by [`UnitId`] only, never by bevy `Entity`,
 //! so a loaded world is identical to the saved one whatever the archetype
@@ -13,7 +14,7 @@ use wb_content::compiled::{
     BaseIx, CountermeasureIx, LoadoutIx, NationIx, PlatformIx, SystemIx, WeaponIx,
 };
 use wb_content::source::Emcon;
-use wb_content::source::realism::{BaseComponentKind, BaseKind, Subsystem};
+use wb_content::source::realism::{BaseComponentKind, BaseKind, GroundPosture, Subsystem};
 use wb_content::source::system::ComponentRole;
 use wb_content::source::world::LaunchDoctrine;
 use wb_core::geo::LatLon;
@@ -294,6 +295,132 @@ pub enum Task {
         count: Option<u32>,
         fired: u32,
     },
+    /// A ground formation's task (doc 03 §5, P11).
+    Ground(GroundOrder),
+}
+
+/// The ground tasks of doc 03 §5.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]
+#[serde(rename_all = "snake_case")]
+pub enum GroundKind {
+    /// March to a point in column.
+    Move,
+    /// Advance on a point or a contact and fight what is met.
+    Attack,
+    /// Go to a point (or stay) and dig in; gives way when broken.
+    Defend,
+    /// Stay and dig in; gives way only when its strength is gone.
+    Hold,
+    /// Break contact and fall back to a point or the nearest own base.
+    Withdraw,
+    /// Go and watch a point or a contact from a stand-off distance.
+    Recon,
+    /// Special forces: sabotage the enemy base at a point, then come back.
+    Raid,
+    /// Mark a contact for strikes.
+    Designate,
+}
+
+impl GroundKind {
+    pub fn name(self) -> &'static str {
+        match self {
+            GroundKind::Move => "ground_move",
+            GroundKind::Attack => "attack",
+            GroundKind::Defend => "defend",
+            GroundKind::Hold => "hold",
+            GroundKind::Withdraw => "withdraw",
+            GroundKind::Recon => "recon",
+            GroundKind::Raid => "raid",
+            GroundKind::Designate => "designate",
+        }
+    }
+}
+
+/// A ground task as the engine runs it. The route is found on the H3 grid
+/// when the formation starts (and again when its target moves), so a
+/// formation's order holds only where it should go.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct GroundOrder {
+    pub kind: GroundKind,
+    /// Where to go; none stays in place.
+    pub dest: Option<LatLon>,
+    /// The contact attacked, watched or designated.
+    pub contact: Option<ContactId>,
+    /// Cell centres still to pass, the goal last (`Group::wp` counts them).
+    pub path: Vec<LatLon>,
+    /// The goal the route was found for.
+    pub routed_to: Option<LatLon>,
+    /// At the goal (or nowhere to go).
+    pub arrived: bool,
+    /// Where a raid started: it returns there.
+    pub origin: Option<LatLon>,
+    /// When a raid reached its target, ms.
+    pub at_target_ms: Option<u64>,
+    /// The task's own work is finished (a raid's sabotage).
+    pub done: bool,
+}
+
+impl GroundOrder {
+    pub fn new(kind: GroundKind, dest: Option<LatLon>, contact: Option<ContactId>) -> Self {
+        Self {
+            kind,
+            dest,
+            contact,
+            path: Vec::new(),
+            routed_to: None,
+            arrived: dest.is_none() && contact.is_none(),
+            origin: None,
+            at_target_ms: None,
+            done: false,
+        }
+    }
+}
+
+/// One kind of equipment of a formation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EquipmentLine {
+    pub platform: PlatformIx,
+    pub count: u32,
+    pub full: u32,
+}
+
+/// A ground formation (doc 02 §2 `FormationStrength`, §14): equipment
+/// counts, personnel, posture, morale and supply of the one map object that
+/// stands for a battalion, battery or team. On the formation's platform
+/// entity (the first equipment line gives its `PlatformRef`).
+#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Formation {
+    /// In the system's component order.
+    pub equipment: Vec<EquipmentLine>,
+    pub personnel: u32,
+    pub personnel_full: u32,
+    pub posture: GroundPosture,
+    /// Halted since this sim time, ms (the defence postures build on it).
+    pub halted_ms: Option<u64>,
+    /// 0–1.
+    pub morale: f64,
+    pub supply: f64,
+    pub fatigue: f64,
+    /// Fights at reduced strength until this sim time (a strike), ms.
+    pub suppressed_until_ms: u64,
+    /// Last resolution step it fought in, ms.
+    pub last_combat_ms: Option<u64>,
+    /// A hostile formation is within contact range (checked every second).
+    pub in_contact: bool,
+    /// `SupplyLow` was raised and supply has not recovered since.
+    pub supply_low: bool,
+}
+
+impl Formation {
+    /// Vehicles, guns, sections and teams left.
+    pub fn items(&self) -> u32 {
+        self.equipment.iter().map(|e| e.count).sum()
+    }
+
+    pub fn items_full(&self) -> u32 {
+        self.equipment.iter().map(|e| e.full).sum()
+    }
 }
 
 /// What a strike is aimed at.
@@ -335,6 +462,7 @@ impl Task {
             Task::Strike { .. } => "strike",
             Task::Jam { .. } => "jam",
             Task::Suppress { .. } => "suppress",
+            Task::Ground(o) => o.kind.name(),
         }
     }
 }

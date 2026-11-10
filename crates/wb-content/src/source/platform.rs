@@ -165,10 +165,44 @@ source_type! {
         /// Refuel and rearm time at base.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub turnaround_min: Option<f64>,
+        /// Ground combat stats; required for `ground/armour`, `ground/artillery`
+        /// and `ground/infantry`, which fight as formations (doc 02 §14).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub ground: Option<GroundStats>,
         /// Orbit of a satellite; required for `satellite/*`.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         pub orbit: Option<Orbit>,
         pub design: Design,
+    }
+
+    /// Ground combat stats of one vehicle, gun, section or team (doc 02 §14).
+    /// Game balance values in the range of the class, not data about a real
+    /// system.
+    #[serde(deny_unknown_fields)]
+    pub struct GroundStats {
+        /// Direct-fire strength of one item.
+        pub combat_value: f64,
+        /// Protection against strikes: 1 is a soft vehicle, a tank about 4.
+        pub protection: f64,
+        /// Indirect-fire support one item adds to a friendly formation in
+        /// contact with an enemy inside `support_range_km` (tube artillery).
+        #[serde(default)]
+        pub support_value: f64,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub support_range_km: Option<f64>,
+        /// Heavy equipment: cannot enter marsh.
+        #[serde(default)]
+        pub heavy: bool,
+        /// Fights at full strength at night.
+        #[serde(default)]
+        pub night_capable: bool,
+        /// Chance that a raid by this team puts a base component out of
+        /// action (special forces).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub sabotage_skill: Option<f64>,
+        /// Can designate a target for strikes out to this distance.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        pub designate_km: Option<f64>,
     }
 
     /// A two-line element set (the standard TLE format, authored in content), propagated

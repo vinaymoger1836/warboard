@@ -9,11 +9,13 @@
 mod cells;
 mod codec;
 mod dem;
+pub mod path;
 pub mod source;
 pub mod synthetic;
 
 pub use cells::{CellInfo, TerrainFile, TerritoryFile};
 pub use dem::Dem;
+pub use path::{GroundPath, PathError};
 pub use source::{BytesSource, PackSource};
 
 #[cfg(not(target_arch = "wasm32"))]

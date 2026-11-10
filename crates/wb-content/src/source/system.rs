@@ -10,6 +10,9 @@ source_enum! {
         Site,
         /// A mobile group moving together.
         Group,
+        /// A ground formation (doc 02 §14): one object on the map whose
+        /// components are its equipment counts.
+        Formation,
     }
 
     #[serde(rename_all = "snake_case")]
@@ -19,6 +22,8 @@ source_enum! {
         C2,
         Launcher,
         Support,
+        /// Fighting equipment of a formation.
+        Combat,
     }
 }
 

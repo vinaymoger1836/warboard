@@ -233,17 +233,58 @@ spatial:                             # doc 02 §16, ADR-023
   los_memo_capacity: 200000
 
 bases:                               # doc 03 §3
-  air_base:     { site: preset, match_radius_km: 3, setup_min: 60 }
+  air_base:     { site: preset, match_radius_km: 3, setup_min: 60, ground_supply: true }
   road_strip:   { site: terrain, terrain: [open], own_territory: true, max_slope_deg: 3, setup_min: 360, aircraft_capacity: 6, road_capable_only: true }
   heliport:     { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, arctic], max_slope_deg: 5.71, setup_min: 120, aircraft_capacity: 8, rotary_only: true }
-  naval_base:   { site: preset, match_radius_km: 5, setup_min: 60, vls_reload: true }
+  naval_base:   { site: preset, match_radius_km: 5, setup_min: 60, vls_reload: true, ground_supply: true }
   anchorage:    { site: terrain, terrain: [water], own_territory: true, setup_min: 120, ship_berths: 4 }
-  army_base:    { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, arctic], own_territory: true, setup_min: 360 }
+  army_base:    { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, arctic], own_territory: true, setup_min: 360, ground_supply: true }
   sam_site:     { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, marsh, arctic], setup_min: 5 }
   missile_site: { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, marsh, arctic], setup_min: 30 }
   hq:           { site: terrain, terrain: [open, forest, jungle, urban, desert, mountain, marsh, arctic], setup_min: 60 }
 
-ground:                              # doc 02 §14 (Phase 11 placeholders)
-  lanchester_coefficient: 0.05
+ground:                              # doc 02 §5, §13–14 (P11, ADR-048); game balance values
+  lanchester_coefficient: 0.012      # value removed per 60 s step per unit of enemy strength
   random_variation: 0.2
-  defender_terrain_factor: { open: 1.0, forest: 1.5, urban: 2.0, mountain: 2.0 }
+  defender_terrain_factor: { open: 1.0, forest: 1.4, mountain: 1.7, urban: 2.2 }
+  # Speed by H3 terrain class (doc 05 §3); water is not listed: no entry.
+  speed_factor: { open: 1.0, desert: 0.9, forest: 0.5, jungle: 0.35, urban: 0.5, mountain: 0.3, marsh: 0.25, arctic: 0.5 }
+  heavy_blocked: [marsh]
+  posture:
+    moving:   { speed_factor: 1.0, protection: 0.7, exposure: 1.0, size_factor: 1.0 }
+    attack:   { speed_factor: 0.5, protection: 1.0, exposure: 0.8, size_factor: 1.0 }
+    hasty:    { speed_factor: 0, protection: 1.3, exposure: 0.6, size_factor: 0.7 }
+    prepared: { speed_factor: 0, protection: 1.8, exposure: 0.35, size_factor: 0.5 }
+  contact_range_m: 3000              # neighbouring resolution-7 cells
+  hasty_after_s: 300
+  prepared_after_s: 7200
+  path_max_cells: 200000
+  morale_loss_factor: 1.5
+  morale_recovery_per_h: 0.1
+  retreat_morale: 0.3
+  retreat_strength: 0.4
+  destroyed_strength: 0.1
+  retreat_distance_m: 10000
+  morale_floor_factor: 0.5
+  supply_combat_per_h: 0.15
+  supply_move_per_h: 0.04
+  supply_idle_per_h: 0.01
+  resupply_per_h: 0.5
+  supply_radius_m: 30000
+  supply_floor_factor: 0.3
+  fatigue_move_per_h: 0.06
+  fatigue_combat_per_h: 0.15
+  fatigue_recovery_per_h: 0.12
+  fatigue_penalty: 0.3
+  night_factor: 0.6
+  ew_c2_factor: 0.85
+  suppression_s: 300
+  suppression_factor: 0.7
+  strike_kg_per_kill: 120            # a 430 kg blast warhead destroys about 3.6 soft vehicles of a column
+  strike_max_fraction: 0.5
+  strike_radius_m: 600
+  default_crew: 4
+  sabotage_radius_m: 3000
+  sabotage_time_s: 600
+  designation_cep_factor: 0.3
+  recon_standoff_m: 1500

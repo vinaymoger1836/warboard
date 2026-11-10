@@ -163,6 +163,23 @@ pub(crate) fn validate(set: &ContentSet) -> Vec<ContentError> {
                     }
                     let platform = cx.platform_ref(&format!("{path}.platform"), &c.platform);
                     cx.magazine(&path, platform, &c.magazine);
+                    if s.deploy_as == crate::source::system::DeployAs::Formation {
+                        if platform.is_some_and(|p| p.ground.is_none()) {
+                            cx.err(
+                                &format!("{path}.platform"),
+                                format!(
+                                    "`{}` has no `ground` stats, so it cannot be equipment of a formation",
+                                    c.platform
+                                ),
+                            );
+                        }
+                        if i > 0 && !c.magazine.is_empty() {
+                            cx.err(
+                                &format!("{path}.magazine"),
+                                "only the first component of a formation carries a magazine".into(),
+                            );
+                        }
+                    }
                 }
             }
             Entry::Sensor(s) => cx.sensor(s),
@@ -477,7 +494,23 @@ impl<'a> Cx<'a, '_> {
                     );
                 }
             }
-            Domain::Ground => require(self, "road_speed_kmh", m.road_speed_kmh, "ground"),
+            Domain::Ground => {
+                require(self, "road_speed_kmh", m.road_speed_kmh, "ground");
+                use crate::source::platform::PlatformCategory as C;
+                let fights = matches!(
+                    p.category,
+                    C::GroundArmour | C::GroundArtillery | C::GroundInfantry
+                );
+                if fights && p.ground.is_none() {
+                    self.err(
+                        "ground",
+                        format!(
+                            "is required for `{}` platforms (combat_value, protection)",
+                            p.category.as_str()
+                        ),
+                    );
+                }
+            }
             Domain::Space => {}
         }
         match (&p.orbit, domain) {
@@ -494,6 +527,33 @@ impl<'a> Cx<'a, '_> {
                 }
             }
             (None, _) => {}
+        }
+        if let Some(g) = &p.ground {
+            if domain != Domain::Ground {
+                self.err("ground", "is only allowed for ground platforms".into());
+            }
+            if !(g.combat_value.is_finite() && g.combat_value >= 0.0) {
+                self.err(
+                    "ground.combat_value",
+                    format!("must be zero or positive (got {})", g.combat_value),
+                );
+            }
+            self.positive("ground.protection", g.protection);
+            if !(g.support_value.is_finite() && g.support_value >= 0.0) {
+                self.err(
+                    "ground.support_value",
+                    format!("must be zero or positive (got {})", g.support_value),
+                );
+            }
+            if g.support_value > 0.0 && g.support_range_km.is_none() {
+                self.err(
+                    "ground.support_range_km",
+                    "is required when support_value is set".into(),
+                );
+            }
+            if let Some(s) = g.sabotage_skill {
+                self.probability("ground.sabotage_skill", s);
+            }
         }
         let rcs = &p.signature.rcs_m2;
         for (aspect, v) in [
@@ -1114,6 +1174,81 @@ impl<'a> Cx<'a, '_> {
             r.logistics.fuel_reserve_fraction,
         );
         self.probability("ground.random_variation", r.ground.random_variation);
+        {
+            let g = &r.ground;
+            for (path, v) in [
+                ("ground.lanchester_coefficient", g.lanchester_coefficient),
+                ("ground.contact_range_m", g.contact_range_m),
+                ("ground.prepared_after_s", g.prepared_after_s),
+                ("ground.retreat_distance_m", g.retreat_distance_m),
+                ("ground.supply_radius_m", g.supply_radius_m),
+                ("ground.strike_kg_per_kill", g.strike_kg_per_kill),
+                ("ground.strike_radius_m", g.strike_radius_m),
+                ("ground.sabotage_radius_m", g.sabotage_radius_m),
+                ("ground.designation_cep_factor", g.designation_cep_factor),
+            ] {
+                self.positive(path, v);
+            }
+            for (path, v) in [
+                ("ground.retreat_morale", g.retreat_morale),
+                ("ground.retreat_strength", g.retreat_strength),
+                ("ground.destroyed_strength", g.destroyed_strength),
+                ("ground.morale_floor_factor", g.morale_floor_factor),
+                ("ground.supply_floor_factor", g.supply_floor_factor),
+                ("ground.fatigue_penalty", g.fatigue_penalty),
+                ("ground.night_factor", g.night_factor),
+                ("ground.ew_c2_factor", g.ew_c2_factor),
+                ("ground.suppression_factor", g.suppression_factor),
+                ("ground.strike_max_fraction", g.strike_max_fraction),
+            ] {
+                self.probability(path, v);
+            }
+            if g.path_max_cells == 0 {
+                self.err("ground.path_max_cells", "must be at least 1".into());
+            }
+            use crate::source::realism::{GroundPosture, TerrainClass};
+            for t in [
+                TerrainClass::Open,
+                TerrainClass::Forest,
+                TerrainClass::Urban,
+                TerrainClass::Mountain,
+            ] {
+                match g.defender_terrain_factor.get(&t) {
+                    Some(v) => {
+                        self.positive(&format!("ground.defender_terrain_factor.{}", key(&t)), *v)
+                    }
+                    None => self.err(
+                        "ground.defender_terrain_factor",
+                        format!("must list `{}`", key(&t)),
+                    ),
+                }
+            }
+            for p in [
+                GroundPosture::Moving,
+                GroundPosture::Attack,
+                GroundPosture::Hasty,
+                GroundPosture::Prepared,
+            ] {
+                match g.posture.get(&p) {
+                    Some(rule) => {
+                        let path = format!("ground.posture.{}", key(&p));
+                        self.positive(&format!("{path}.protection"), rule.protection);
+                        self.positive(&format!("{path}.exposure"), rule.exposure);
+                        self.positive(&format!("{path}.size_factor"), rule.size_factor);
+                        if !(rule.speed_factor.is_finite() && rule.speed_factor >= 0.0) {
+                            self.err(
+                                &format!("{path}.speed_factor"),
+                                "must be zero or positive".into(),
+                            );
+                        }
+                    }
+                    None => self.err("ground.posture", format!("must list `{}`", key(&p))),
+                }
+            }
+            for (c, v) in &g.speed_factor {
+                self.positive(&format!("ground.speed_factor.{}", key(c)), *v);
+            }
+        }
 
         let m = &r.movement;
         for (path, v) in [

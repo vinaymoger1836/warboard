@@ -264,6 +264,16 @@ impl Compiler<'_> {
                 .orbit
                 .as_ref()
                 .map(|o| (self.st.id(&o.tle_line1), self.st.id(&o.tle_line2))),
+            ground: x.ground.as_ref().map(|g| c::GroundStats {
+                combat_value: g.combat_value,
+                protection: g.protection,
+                support_value: g.support_value,
+                support_range_m: g.support_range_km.map_or(0.0, km_to_m),
+                heavy: g.heavy,
+                night_capable: g.night_capable,
+                sabotage_skill: g.sabotage_skill,
+                designate_m: g.designate_km.map(km_to_m),
+            }),
             design: self.design(&x.design, custom),
         }
     }
@@ -729,6 +739,7 @@ impl Compiler<'_> {
                             road_capable_only: b.road_capable_only,
                             rotary_only: b.rotary_only,
                             vls_reload: b.vls_reload,
+                            ground_supply: b.ground_supply,
                         },
                     )
                 })

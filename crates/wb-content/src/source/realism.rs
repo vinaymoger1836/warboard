@@ -63,6 +63,19 @@ source_enum! {
         Precise,
     }
 
+    /// Posture of a ground formation (doc 02 §13–14).
+    #[serde(rename_all = "snake_case")]
+    pub enum GroundPosture {
+        /// On the move in column: fast and exposed.
+        Moving,
+        /// Advancing to fight.
+        Attack,
+        /// Halted, hasty defence.
+        Hasty,
+        /// Dug in.
+        Prepared,
+    }
+
     /// Where a hit on a ship lands (doc 02 §13). `hull` damages points only.
     #[serde(rename_all = "snake_case")]
     pub enum Subsystem {
@@ -553,17 +566,103 @@ source_type! {
         /// VLS cells can be reloaded here.
         #[serde(default)]
         pub vls_reload: bool,
+        /// Ground formations near this kind of base are resupplied (P11).
+        #[serde(default)]
+        pub ground_supply: bool,
     }
 
-    /// Ground combat (doc 02 §14, Phase 11). Placeholders until then.
+    /// Ground forces (doc 02 §5, §13–14; P11). Distances in metres and times
+    /// in seconds, so the section is stored in the pack unchanged.
     #[serde(deny_unknown_fields)]
     pub struct GroundRealism {
-        /// Lanchester attrition coefficient per resolution step.
+        /// Lanchester attrition: combat value removed from the enemy per
+        /// resolution step, per unit of the firer's effective strength.
         pub lanchester_coefficient: f64,
         /// Bounded random variation (± fraction) of each step's losses.
         pub random_variation: f64,
-        /// Defender combat value multiplier by terrain.
+        /// Protection of a formation that is not attacking, by terrain.
         pub defender_terrain_factor: BTreeMap<TerrainClass, f64>,
+        /// Speed multiplier by terrain class of the H3 cell. A class that is
+        /// not listed (water) cannot be entered.
+        pub speed_factor: BTreeMap<CellClass, f64>,
+        /// Classes that formations with heavy equipment cannot enter.
+        pub heavy_blocked: Vec<CellClass>,
+        /// Speed, protection, exposure to strikes and visibility by posture.
+        pub posture: BTreeMap<GroundPosture, PostureRule>,
+        /// Hostile formations this close are in contact (adjacent cells).
+        pub contact_range_m: f64,
+        /// A halted formation is in hasty defence after this long ...
+        pub hasty_after_s: f64,
+        /// ... and in prepared defence after this long.
+        pub prepared_after_s: f64,
+        /// Most cells the route search opens before it gives up.
+        pub path_max_cells: u32,
+        /// Morale lost per fraction of strength lost in a step or a strike.
+        pub morale_loss_factor: f64,
+        /// Morale regained per hour out of contact.
+        pub morale_recovery_per_h: f64,
+        /// A formation retreats below this morale ...
+        pub retreat_morale: f64,
+        /// ... or below this fraction of its full strength,
+        pub retreat_strength: f64,
+        /// and is destroyed below this fraction.
+        pub destroyed_strength: f64,
+        /// How far a retreat goes when no own base is near.
+        pub retreat_distance_m: f64,
+        /// Strength factor at zero morale (1 at full morale).
+        pub morale_floor_factor: f64,
+        /// Supply used per hour in combat, on the move and halted.
+        pub supply_combat_per_h: f64,
+        pub supply_move_per_h: f64,
+        pub supply_idle_per_h: f64,
+        /// Supply regained per hour within `supply_radius_m` of an own army
+        /// base or FOB.
+        pub resupply_per_h: f64,
+        pub supply_radius_m: f64,
+        /// Strength factor with no supply (1 when full).
+        pub supply_floor_factor: f64,
+        /// Fatigue gained per hour on the move and in combat, lost per hour halted.
+        pub fatigue_move_per_h: f64,
+        pub fatigue_combat_per_h: f64,
+        pub fatigue_recovery_per_h: f64,
+        /// Strength lost at full fatigue (fraction).
+        pub fatigue_penalty: f64,
+        /// Strength factor at night of equipment that is not night capable.
+        pub night_factor: f64,
+        /// Strength factor inside an enemy communications jammer's coverage.
+        pub ew_c2_factor: f64,
+        /// A struck formation fights at `suppression_factor` for this long.
+        pub suppression_s: f64,
+        pub suppression_factor: f64,
+        /// Effective warhead kg that destroys one unprotected vehicle of a
+        /// moving column (doc 02 §13).
+        pub strike_kg_per_kill: f64,
+        /// Most of a formation one weapon can destroy (fraction).
+        pub strike_max_fraction: f64,
+        /// A burst on a point this close to a formation strikes it.
+        pub strike_radius_m: f64,
+        /// Crew of an item whose platform gives none.
+        pub default_crew: u32,
+        /// A raid sabotages a base within this distance, after this long.
+        pub sabotage_radius_m: f64,
+        pub sabotage_time_s: f64,
+        /// CEP factor of a weapon on a target a team designates.
+        pub designation_cep_factor: f64,
+        /// A recon or designation team stops this far from its target.
+        pub recon_standoff_m: f64,
+    }
+
+    /// One posture of a ground formation.
+    #[serde(deny_unknown_fields)]
+    pub struct PostureRule {
+        /// Speed multiplier (0 for the halted postures).
+        pub speed_factor: f64,
+        /// Divides the losses taken in ground combat.
+        pub protection: f64,
+        /// Multiplies the losses taken from strikes.
+        pub exposure: f64,
+        /// Multiplies the size sensors see (dug-in units are harder to find).
+        pub size_factor: f64,
     }
 }
 

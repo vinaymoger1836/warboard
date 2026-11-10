@@ -139,7 +139,21 @@ pub struct Platform {
     pub turnaround_s: Option<f64>,
     /// Two-line elements (satellites), parsed by `wb_core::orbit`.
     pub orbit: Option<(StrId, StrId)>,
+    pub ground: Option<GroundStats>,
     pub design: Design,
+}
+
+/// Ground combat stats of one item of equipment (doc 02 §14).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GroundStats {
+    pub combat_value: f64,
+    pub protection: f64,
+    pub support_value: f64,
+    pub support_range_m: f64,
+    pub heavy: bool,
+    pub night_capable: bool,
+    pub sabotage_skill: Option<f64>,
+    pub designate_m: Option<f64>,
 }
 
 /// Aircraft speeds stay in Mach; surface and ground speeds are m/s.
@@ -666,6 +680,7 @@ pub struct BaseRule {
     pub road_capable_only: bool,
     pub rotary_only: bool,
     pub vls_reload: bool,
+    pub ground_supply: bool,
 }
 
 impl ContentDb {

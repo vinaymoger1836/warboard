@@ -4,7 +4,9 @@
 //!
 //! The DEM is flat sea-level-or-`base_m` ground with straight ridges of a
 //! triangular profile. The terrain and territory files hold one open cell in
-//! the south-west corner, so every other point is open water without an owner.
+//! the south-west corner, so every other point is open water without an owner,
+//! unless the pack is given land [`Patch`]es (P11: ground movement and combat
+//! need terrain classes).
 
 use crate::source::{BytesSource, PackSource};
 use crate::{GeoError, Pack};
@@ -27,6 +29,20 @@ pub struct Ridge {
     pub to: LatLon,
     pub height_m: f64,
     pub half_width_m: f64,
+}
+
+/// A box of land of one terrain class, `[west, south, east, north]` degrees.
+/// Later patches override earlier ones; a `Water` patch cuts a lake.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Patch {
+    pub class: crate::TerrainClass,
+    pub bbox: [f64; 4],
+}
+
+impl Patch {
+    pub fn new(class: crate::TerrainClass, bbox: [f64; 4]) -> Self {
+        Self { class, bbox }
+    }
 }
 
 /// A zstd frame made of raw (stored) blocks: valid zstd without an encoder.
@@ -122,27 +138,72 @@ fn dem(west: i16, south: i16, cols: u16, rows: u16, base_m: i16, ridges: &[Ridge
     out
 }
 
-/// A one-block `.wbh3` / `.bin` file with no nations.
-fn blocked(magic: &[u8; 4], cell: u64, block: &[u8]) -> Vec<u8> {
+/// A `.wbh3` / `.bin` file with no nations from `(first cell, cell count,
+/// block bytes)` blocks in cell order.
+fn blocked(magic: &[u8; 4], cells: u64, blocks: &[(u64, u32, Vec<u8>)]) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(magic);
     out.extend_from_slice(&1u16.to_le_bytes());
     out.push(H3_RES);
     out.push(0);
-    out.extend_from_slice(&1u64.to_le_bytes());
-    out.extend_from_slice(&1u32.to_le_bytes());
-    out.extend_from_slice(&4096u32.to_le_bytes());
+    out.extend_from_slice(&cells.to_le_bytes());
+    out.extend_from_slice(&(blocks.len() as u32).to_le_bytes());
+    out.extend_from_slice(&(BLOCK_CELLS as u32).to_le_bytes());
     out.extend_from_slice(&1u16.to_le_bytes());
     out.resize(32, 0);
     out.extend_from_slice(&[0u8; 4]);
-    let blob = zstd_raw(block);
-    let data_at = out.len() as u64 + 24;
-    out.extend_from_slice(&cell.to_le_bytes());
-    out.extend_from_slice(&data_at.to_le_bytes());
-    out.extend_from_slice(&(blob.len() as u32).to_le_bytes());
-    out.extend_from_slice(&1u32.to_le_bytes());
-    out.extend_from_slice(&blob);
+    let blobs: Vec<Vec<u8>> = blocks.iter().map(|b| zstd_raw(&b.2)).collect();
+    let mut data_at = out.len() as u64 + 24 * blocks.len() as u64;
+    for ((first, count, _), blob) in blocks.iter().zip(&blobs) {
+        out.extend_from_slice(&first.to_le_bytes());
+        out.extend_from_slice(&data_at.to_le_bytes());
+        out.extend_from_slice(&(blob.len() as u32).to_le_bytes());
+        out.extend_from_slice(&count.to_le_bytes());
+        data_at += blob.len() as u64;
+    }
+    for blob in &blobs {
+        out.extend_from_slice(blob);
+    }
     out
+}
+
+/// Cells per terrain block (doc 05 §2.2).
+const BLOCK_CELLS: usize = 4096;
+
+/// Terrain cells of the patches: every cell with a sample point inside a
+/// patch takes the class of the last such patch; `Water` removes the cell.
+fn patch_cells(
+    res: h3o::Resolution,
+    patches: &[Patch],
+) -> Result<std::collections::BTreeMap<u64, crate::TerrainClass>, GeoError> {
+    let mut out = std::collections::BTreeMap::new();
+    let step = res.edge_length_km() / 111.32 * 0.4;
+    for p in patches {
+        let [west, south, east, north] = p.bbox;
+        if !(west < east && south < north) {
+            return Err(GeoError::Pack(
+                "a terrain patch needs west < east and south < north".into(),
+            ));
+        }
+        let mut lat = south;
+        while lat <= north {
+            let lon_step = step / cos(deg_to_rad(lat)).max(0.05);
+            let mut lon = west;
+            while lon <= east {
+                let ll = h3o::LatLng::from_radians(deg_to_rad(lat), deg_to_rad(lon))
+                    .map_err(|e| GeoError::Pack(e.to_string()))?;
+                let cell = u64::from(ll.to_cell(res));
+                if p.class == crate::TerrainClass::Water {
+                    out.remove(&cell);
+                } else {
+                    out.insert(cell, p.class);
+                }
+                lon += lon_step;
+            }
+            lat += step;
+        }
+    }
+    Ok(out)
 }
 
 /// A pack covering `cols × rows` 1° tiles from (`west`, `south`), degrees.
@@ -154,6 +215,21 @@ pub fn ridge_pack(
     rows: u16,
     base_m: i16,
     ridges: &[Ridge],
+) -> Result<Pack, GeoError> {
+    terrain_pack(id, west, south, cols, rows, base_m, ridges, &[])
+}
+
+/// Like [`ridge_pack`], with land patches of given terrain classes.
+#[allow(clippy::too_many_arguments)]
+pub fn terrain_pack(
+    id: &str,
+    west: i16,
+    south: i16,
+    cols: u16,
+    rows: u16,
+    base_m: i16,
+    ridges: &[Ridge],
+    patches: &[Patch],
 ) -> Result<Pack, GeoError> {
     if cols == 0 || rows == 0 || cols > 4 || rows > 4 {
         return Err(GeoError::Pack(
@@ -167,13 +243,36 @@ pub fn ridge_pack(
     .map_err(|e| GeoError::Pack(e.to_string()))?;
     let res = h3o::Resolution::try_from(H3_RES).map_err(|e| GeoError::Pack(e.to_string()))?;
     let cell = u64::from(corner.to_cell(res));
-    // cell, class (open), elevation, slope, flags, nation.
-    let mut terrain = cell.to_le_bytes().to_vec();
-    terrain.push(1);
-    terrain.extend_from_slice(&base_m.to_le_bytes());
-    terrain.push(0);
-    terrain.push(0);
-    terrain.extend_from_slice(&0u16.to_le_bytes());
+    let mut cells = patch_cells(res, patches)?;
+    // The corner cell is always open land (packs before P11 had only it).
+    cells.insert(cell, crate::TerrainClass::Open);
+    let list: Vec<(u64, crate::TerrainClass)> = cells.into_iter().collect();
+    // Structure of arrays per block: cells, class, elevation, slope, flags, nation.
+    let blocks: Vec<(u64, u32, Vec<u8>)> = list
+        .chunks(BLOCK_CELLS)
+        .map(|chunk| {
+            let mut b = Vec::with_capacity(chunk.len() * 15);
+            for (c, _) in chunk {
+                b.extend_from_slice(&c.to_le_bytes());
+            }
+            for (_, class) in chunk {
+                b.push(*class as u8);
+            }
+            for _ in chunk {
+                b.extend_from_slice(&base_m.to_le_bytes());
+            }
+            b.extend(std::iter::repeat_n(0u8, chunk.len()));
+            for (_, class) in chunk {
+                b.push(if *class == crate::TerrainClass::Urban {
+                    crate::cells::FLAG_URBAN
+                } else {
+                    0
+                });
+            }
+            b.extend(std::iter::repeat_n(0u8, chunk.len() * 2));
+            (chunk[0].0, chunk.len() as u32, b)
+        })
+        .collect();
     let mut territory = cell.to_le_bytes().to_vec();
     territory.extend_from_slice(&0u32.to_le_bytes());
     territory.extend_from_slice(&[0u8; 4]);
@@ -183,8 +282,8 @@ pub fn ridge_pack(
     Pack::new(
         id,
         src("dem", dem(west, south, cols, rows, base_m, ridges)),
-        src("terrain", blocked(b"WBH3", cell, &terrain)),
-        src("territory", blocked(b"WBTR", cell, &territory)),
+        src("terrain", blocked(b"WBH3", list.len() as u64, &blocks)),
+        src("territory", blocked(b"WBTR", 1, &[(cell, 1, territory)])),
     )
 }
 
