@@ -8,6 +8,7 @@ import type { CesiumWidget } from '@cesium/engine';
 import { RELATION, statusOf } from '@warboard/protocol';
 import { useEffect, useRef, useState } from 'react';
 import type { EngineBridge } from '../bridge';
+import type { PlaceLabel } from '../engine/messages';
 import type { Coalition } from '../map2d/coalitions';
 import type { InstalledPack } from '../packs/types';
 import { ContextMenu } from '../panels/ContextMenu';
@@ -19,12 +20,15 @@ import { type Cam3d, type CamTarget, ui, useUi } from '../store';
 import { Cameras, targetState } from './cameras';
 import { addSurface, createWidget } from './globe';
 import { loadAtlas, loadGlyphs } from './icons3d';
+import { addPlaces } from './places3d';
 import { Renderer3d } from './Renderer3d';
 
 export interface Map3DProps {
   packs: InstalledPack[];
   bridge: EngineBridge;
   coalition: Coalition;
+  /** Map labels of the war's content (doc 11 §2.4). */
+  places: PlaceLabel[];
   onToast: (text: string) => void;
 }
 
@@ -83,7 +87,7 @@ function inspectTarget(r: Renderer3d | null, sel: { selected: number | null; sel
   return null;
 }
 
-export default function Map3D({ packs, bridge, coalition, onToast }: Map3DProps) {
+export default function Map3D({ packs, bridge, coalition, places, onToast }: Map3DProps) {
   const container = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState<Live | null>(null);
   const [menu, setMenu] = useState<ContextRequest | null>(null);
@@ -178,6 +182,9 @@ export default function Map3D({ packs, bridge, coalition, onToast }: Map3DProps)
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [live, packKey, coalitionKey]);
+
+  // The war's place labels.
+  useEffect(() => (live ? addPlaces(live.widget, places) : undefined), [live, places]);
 
   // The side's camera slot (side switches, handover) and click-to-locate.
   useEffect(() => {

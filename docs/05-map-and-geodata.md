@@ -9,7 +9,7 @@ All free for a personal project. Licences checked 27 Oct 2026; the in-game credi
 | Basemap (land, water, coastlines, land cover) | Protomaps basemap, built from OpenStreetMap + Natural Earth, PMTiles | ODbL (tiles), CC0 (styles), BSD-3 (code) | 2D map, **physical layers only**; its real labels and boundaries are hidden (doc 11 §2.4). **Attribute "© OpenStreetMap"** |
 | Elevation | Copernicus DEM GLO-90 | Free licence with attribution ("produced using Copernicus WorldDEM-90 © DLR e.V.") | Line of sight, terrain classes, 3D terrain |
 | Land cover | ESA WorldCover 10 m | CC-BY 4.0 ("© ESA WorldCover project / contains modified Copernicus Sentinel data") | Terrain classes, border growth costs, city and base proposals |
-| 3D imagery | Natural Earth II / NASA Blue Marble rasters, low resolution | Public domain | Globe texture in the 3D view |
+| 3D imagery | None: the globe texture is drawn in the browser from the packs' basemap and territory tiles (ADR-047, replaces the Natural Earth II / Blue Marble raster) | — | Globe texture in the 3D view |
 | Nations, borders, places, bases | `content/world/`, `content/bases/` | Our data | Fictional territory, labels and bases (doc 11) |
 | Real borders (check only) | Natural Earth admin-0 | Public domain | Build-time border-overlap check (doc 11 §2.2); not shipped |
 

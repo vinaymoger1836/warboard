@@ -218,7 +218,12 @@ All fonts bundled with the app (offline), all free (OFL).
 
 ## 11. 3D view
 
-Same tokens, atlas and label grammar. Trails and trajectories at true altitude; units get a thin vertical stalk to the ground; satellites show orbit arcs in `sat`. The 3D button reads `OPEN 2D MAP` there.
+Same tokens, atlas and label grammar. Trails and trajectories at true altitude; units get a thin vertical stalk to the ground; satellites show orbit arcs in `sat` above their dashed `sat.track` ground track. The 3D button reads `OPEN 2D MAP` there.
+
+- **Camera modes** (ADR-047): `FREE` · `FOLLOW` · `WATCH` · `INSPECT` as a row of chrome buttons top centre (style of §9); the active one is pressed, unavailable ones muted. `Esc` returns to `FREE`.
+- **Inspect:** the unit card header carries `INSPECT 3D` (`.cmd small`) for own groups and satellites in the air or at sea and for identified contacts, never for an estimate. The data strip sits top centre under the modes (`panel` surface, JetBrains Mono 12 px): `INSPECT`, the name (own) or class (contact), `EXIT INSPECT`, then label/value pairs in `text.secondary` / `text.primary`. Contacts show only what their card shows.
+- **Models:** low-poly class models tinted with the side colour (own, enemy, neutral, unknown); icons come back when more than 200 objects are on screen or the view is farther than z9. The inspected object has no selection ring.
+- **Globe:** `map.sea` water, `map.land` land, `terr.*` territory, `map.border` borders, place labels as on the 2D map; no sky box, atmosphere, sun or moon.
 
 ## 12. Do not
 

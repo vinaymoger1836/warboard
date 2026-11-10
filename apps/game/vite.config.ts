@@ -69,6 +69,15 @@ function cesiumFiles(): string[] {
   });
 }
 
+/**
+ * CesiumJS bundles `urijs`, whose public-suffix table lists one country's second-level domains,
+ * among them real city names that the denylist forbids in the shipped app (CLAUDE.md rule 6, doc 11
+ * §3.1). The table only splits internet host names into domains, which this offline app never
+ * does for such hosts, so the build empties that one entry in the 3D chunk and Cesium's
+ * prebuilt workers (ADR-047). `wb content denylist apps/game/dist` checks the result in CI.
+ */
+const scrubSecondLevelDomains = (code: string) => code.replace(/(["'`]?\bpl["'`]?\s*:\s*)(["'`])[^"'`]*\2/g, '$1$2$2');
+
 const MIME: Record<string, string> = {
   '.js': 'text/javascript',
   '.json': 'application/json',
@@ -95,9 +104,14 @@ function cesiumAssets(): Plugin {
   return {
     name: 'warboard-cesium-assets',
     configureServer: (server) => void server.middlewares.use(handler),
-    generateBundle() {
+    generateBundle(_options, bundle) {
       for (const f of cesiumFiles()) {
-        this.emitFile({ type: 'asset', fileName: `cesium/${f}`, source: readFileSync(resolve(cesiumBuild, f)) });
+        const raw = readFileSync(resolve(cesiumBuild, f));
+        const source = f.endsWith('.js') ? scrubSecondLevelDomains(raw.toString('utf8')) : raw;
+        this.emitFile({ type: 'asset', fileName: `cesium/${f}`, source });
+      }
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type === 'chunk' && chunk.code.includes('bialystok')) chunk.code = scrubSecondLevelDomains(chunk.code);
       }
     },
   };

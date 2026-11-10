@@ -2,7 +2,7 @@
 
 Every tool and dependency is pinned exactly. Upgrade only between phases (doc 08, R10) and update this file in the same change. Licences are checked against the CLAUDE.md rule 7 allowlist; Rust crates (including transitive ones) are enforced by `cargo deny check` (`deny.toml`).
 
-Last updated: 10 Nov 2026 (P9). No new dependency in P4, P5, P6a, P6b, P7 or P8. P9 adds one dev dependency, `@playwright/test` (owner's approval, browser tests only), and the workspace crate `wb-ai` gains its first dependencies (`wb-core`, `serde`).
+Last updated: 10 Nov 2026 (P10). P10 adds four npm dependencies for the 3D view (owner's approval): `@cesium/engine`, `@cesium/core`, `@mapbox/vector-tile` and `pbf`. Before that, last updated 10 Nov 2026 (P9). No new dependency in P4, P5, P6a, P6b, P7 or P8. P9 adds one dev dependency, `@playwright/test` (owner's approval, browser tests only), and the workspace crate `wb-ai` gains its first dependencies (`wb-core`, `serde`).
 
 ## Toolchains
 
@@ -63,6 +63,10 @@ Transitive crates are recorded in `Cargo.lock`; `cargo deny check` passes (licen
 | `@luma.gl/core`, `@luma.gl/engine` | 9.4.2 | apps/game (deck.gl peers) | MIT |
 | `@loaders.gl/core` | 4.5.4 | apps/game (deck.gl peer) | MIT |
 | `@deck.gl/extensions` | 9.4.0 | apps/game (P3, approved: `PathStyleExtension` for dashed rings and patrol circles; no new transitive packages) | MIT |
+| `@cesium/engine` | 26.4.0 | apps/game, lazy 3D chunk (P10, approved: the engine package of CesiumJS 1.146.0, 1 Oct 2026; the `cesium` meta-package is not used because it ships the widgets doc 10 §12 forbids). Static files self-hosted by `vite.config.ts` (`Workers/`, `ThirdParty/`, `Assets/Images`, `Assets/IAU2006_XYS`, `approximateTerrainHeights.json`; ≈ 6.1 MB). Transitive licences: Apache-2.0, MIT, BSD, ISC, plus `dompurify` 3.4.17 (MPL-2.0 OR Apache-2.0, taken under Apache-2.0) and `pako` 3.0.3 (MIT AND Zlib) | Apache-2.0 |
+| `@cesium/core` | 0.1.0 | apps/game (P10, approved with Cesium: the maths and transforms CesiumJS 1.146 moved out of the engine). 0.1.1 is 8 days old, so 0.1.0 is pinned and forced for the engine too by `overrides` in `pnpm-workspace.yaml` (one copy) | Apache-2.0 |
+| `@mapbox/vector-tile` | 3.0.0 | apps/game, 3D view (P10, approved: decodes the packs' vector tiles to draw the globe surface and borders). Brings `@mapbox/point-geometry` 1.1.0 (ISC) and `@types/geojson` (MIT) | BSD-3-Clause |
+| `pbf` | 5.1.2 | apps/game, 3D view (P10, approved: protobuf reader for `@mapbox/vector-tile`). Brings `resolve-protobuf-schema` and `protocol-buffers-schema` (MIT) | BSD-3-Clause |
 | `@playwright/test` | 1.59.1 | apps/game, dev only (P9, approved: browser tests in `apps/game/e2e`, run on the installed Chrome with `channel: 'chrome'`, so no browser download). Brings `playwright` and `playwright-core` 1.59.1 (Apache-2.0) and the optional `fsevents` 2.3.2 (MIT, macOS only) | Apache-2.0 |
 
 Notes:
@@ -116,7 +120,7 @@ Runner image: `ubuntu-24.04`.
 |---|---|
 | `wb_wasm_bg.wasm` (release, no wasm-opt) | P1: 968 KB (279 KB gzip). P2 with `wb-geo`, `h3o`, `ruzstd`, BLAKE3 hasher: 1,211,216 bytes (354,344 gzip). P3 with the engine (bevy_ecs world, content, saves): 2,066,441 bytes (575,295 gzip). P4 with sensors, pictures and SGP4: 2,657,338 bytes. P5 with weapons, endgame, damage and ROE: 3,421,497 bytes (901 KB gzip). PF (places, `map_labels`): 3,625,278 bytes (935,972 gzip) |
 | `build/content.wbpack` | P1 seed set, 67 entries: 22,401 bytes. P2 with 312 imported bases, 379 entries: 85,086 bytes. P3, schema 2 (realism `movement`, `fuel`, `bases`): 86,607 bytes. P4, schema 3, 395 entries (10 sensors and 6 satellites added): 94,258 bytes. P5, schema 4, 397 entries (weapons, loadouts, countermeasures, realism `weapons`, `endgame`, `damage`, `roe`): 97,300 bytes. PF, schema 6, 188 entries (fictional catalogue, 45 bases, places, no real content): 27,067 bytes |
-| App shell (`apps/game/dist`) | P2: main chunk 1.97 MB (557 KB gzip), MapLibre worker 519 KB, fonts 2.3 MB (glyph PBFs 2.1 MB). P3: main chunk 2.16 MB, plus the content pack (87 KB) and the WASM engine (2.07 MB) as assets. P4: main chunk 2.17 MB, content pack 94 KB, engine 2.66 MB. P5: main chunk 2.18 MB (611 KB gzip), content pack 97 KB, engine 3.42 MB. PF: main chunk 2.20 MB |
+| App shell (`apps/game/dist`) | P2: main chunk 1.97 MB (557 KB gzip), MapLibre worker 519 KB, fonts 2.3 MB (glyph PBFs 2.1 MB). P3: main chunk 2.16 MB, plus the content pack (87 KB) and the WASM engine (2.07 MB) as assets. P4: main chunk 2.17 MB, content pack 94 KB, engine 2.66 MB. P5: main chunk 2.18 MB (611 KB gzip), content pack 97 KB, engine 3.42 MB. PF: main chunk 2.20 MB. P10: main chunk 2.27 MB; lazy 3D chunk (`Map3D`, CesiumJS engine) 3.96 MB; self-hosted Cesium files 6.1 MB; class models 23 files, 392 KB (3,016 triangles) |
 | Side view (`SideView` v1) | P3 benchmark, 2,000 platforms + 500 groups + 316 bases: 93,880 bytes per view. P5 (v3): `patrol-2000` 98,248 bytes, `sensors-2000` 55,288 bytes |
 | `.wbsave` | P3 `scenarios/save-load.yaml` at tick 900 (≈ 150 entities with all bases, events): 17,109 bytes. P4 demo war (removed in PF) at tick 1800, with contacts on both sides: 26,395 bytes |
 

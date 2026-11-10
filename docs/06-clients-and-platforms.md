@@ -83,10 +83,11 @@ Full detail for the selected unit or contact (task, loadout, sensors, magazines,
 
 ## 5. 3D view
 
-- **CesiumJS self-hosted:** static assets served from the app; `CESIUM_BASE_URL` set; no Cesium ion token, geocoder or default imagery.
-- **Terrain:** `CustomHeightmapTerrainProvider` reading the same DEM tiles as the engine. **Imagery:** low-resolution public-domain globe texture plus vector borders as polylines.
-- **Objects:** `BillboardCollection` for icons (same atlas), `PolylineCollection` for trails and trajectories in true altitude, glTF models (Blender, low-poly) when zoomed in with ≤ 200 on screen; satellites with orbit paths.
-- **Cameras:** free, follow unit, watch engagement (frames shooter and target).
+- **CesiumJS self-hosted:** `@cesium/engine` and `@cesium/core` (no widgets package), static assets served from the app; `CESIUM_BASE_URL` set; no Cesium ion token, geocoder or default imagery. A lazy chunk (`apps/game/src/map3d/`).
+- **One scene with 2D (ADR-047):** both views render the same drawable items from `apps/game/src/scene/`; the 3D camera distance maps to the 2D zoom, so level of detail and the selectable set are the same.
+- **Terrain:** `CustomHeightmapTerrainProvider` reading the same DEM tiles as the engine, through the engine worker. **Surface:** a dark texture drawn in the browser from the packs' vector tiles in the 2D tokens (ADR-047), plus vector borders as polylines and the war's place labels.
+- **Objects:** `BillboardCollection` for icons (same atlas), `PolylineCollection` for trails and trajectories in true altitude, low-poly glTF class models (script-generated, replaceable by Blender exports of the same name) when zoomed in with ≤ 200 on screen; satellites with orbit paths.
+- **Cameras:** free, follow unit, watch engagement (frames shooter and target), inspect (close-up orbit around one own object, own weapon or identified contact; ADR-047).
 - **Switching:** 2D ↔ 3D keeps selection, time and the camera centre. Only one view renders at a time.
 
 ## 6. Symbology

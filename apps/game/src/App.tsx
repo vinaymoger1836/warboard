@@ -319,7 +319,7 @@ export function App() {
       <main className="board">
         {mapReady && mapView === '3d' ? (
           <Suspense fallback={<div className="map-empty"><p>Opening the 3D view…</p></div>}>
-            <Map3D packs={packs.usable} bridge={bridge} coalition={coalition} onToast={show} />
+            <Map3D packs={packs.usable} bridge={bridge} coalition={coalition} places={places} onToast={show} />
           </Suspense>
         ) : mapReady ? (
           <MapView

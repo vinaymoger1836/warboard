@@ -19,11 +19,12 @@ export async function installWorld(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Close region packs' }).click();
 }
 
-/** QUICK START, then the clock paused so the picture holds still. */
+/** QUICK START, run until the MF-4 flights are airborne, then pause so the picture holds still. */
 export async function quickStartPaused(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'QUICK START' }).click();
   await expect(page.locator('.top-bar')).toBeVisible();
   await expect(page.locator('.map-root')).toBeVisible();
+  await expect(page.locator('.force-row', { hasText: 'MF-4 Sellis' }).filter({ hasText: 'TRANSIT' }).first()).toBeVisible({ timeout: 60_000 });
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   // Hide the dock: the map gets the full height.
   const hide = page.getByRole('button', { name: 'HIDE' });
