@@ -170,6 +170,10 @@ export class Renderer3d {
   modelsOn = false;
   /** The inspect target is always drawn as a model (ADR-047). */
   forceModel: string | null = null;
+  /** Materials and colours are made once per token: building one per frame is expensive. */
+  private readonly materials = new Map<string, Material>();
+  private readonly colours = new Map<string, Color>();
+  private readonly offsets = new Map<string, Cartesian2>();
 
   constructor(
     private readonly widget: CesiumWidget,
@@ -391,10 +395,17 @@ export class Renderer3d {
 
     const occluder = new EllipsoidalOccluder(Ellipsoid.WGS84, cam.positionWC);
     const canvas = scene.canvas;
+    // One projection per position per frame (the count, the icons and the labels share it).
+    const projected = new Map<Cartesian3, Cartesian2 | null>();
     const onScreen = (c: Cartesian3) => {
-      if (!occluder.isPointVisible(c)) return null;
-      const px = SceneTransforms.worldToWindowCoordinates(scene, c);
-      if (!px || px.x < 0 || px.y < 0 || px.x > canvas.clientWidth || px.y > canvas.clientHeight) return null;
+      const hit = projected.get(c);
+      if (hit !== undefined) return hit;
+      let px: Cartesian2 | null = null;
+      if (occluder.isPointVisible(c)) {
+        const w = SceneTransforms.worldToWindowCoordinates(scene, c);
+        if (w && w.x >= 0 && w.y >= 0 && w.x <= canvas.clientWidth && w.y <= canvas.clientHeight) px = w;
+      }
+      projected.set(c, px);
       return px;
     };
     const size = zoom < SMALL_ZOOM ? 24 : 30;
@@ -406,7 +417,7 @@ export class Renderer3d {
     const unitPos = new Map(s.units.map((d) => [d.uid, this.cart(d.position, d.alt)]));
     const contactPos = new Map(s.contacts.map((d) => [d.id, this.cart(d.position, d.alt)]));
     const onScreenCount =
-      [...unitPos.values(), ...contactPos.values()].filter((c) => occluder.isPointVisible(c) && onScreen(c)).length + w.weapons.length;
+      [...unitPos.values(), ...contactPos.values()].filter((c) => onScreen(c)).length + w.weapons.length;
     const models = zoom >= MODEL_ZOOM && onScreenCount <= MODEL_LIMIT;
     this.modelsOn = models;
 
@@ -550,8 +561,8 @@ export class Renderer3d {
       if (!p.material || (p as { wbInterceptor?: boolean }).wbInterceptor !== t.interceptor) {
         (p as { wbInterceptor?: boolean }).wbInterceptor = t.interceptor;
         p.material = t.interceptor
-          ? Material.fromType('PolylineDash', { color: colour('weapon.interceptor'), dashLength: 8 })
-          : Material.fromType('Color', { color: colour('weapon.offensive') });
+          ? this.lineMaterial(rgba('weapon.interceptor'), true)
+          : this.solid('weapon.offensive');
         p.width = t.interceptor ? 2 : 1.5;
       }
     }
@@ -624,9 +635,7 @@ export class Renderer3d {
         positions: Cartesian3.fromDegreesArray(p.path.flat()),
         width: p.width,
         id: p.tip ? ({ kind: 'line', id: 0, tip: p.tip } satisfies PickId) : undefined,
-        material: p.dashed
-          ? Material.fromType('PolylineDash', { color: new Color(p.color[0] / 255, p.color[1] / 255, p.color[2] / 255, p.color[3] / 255), dashLength: 8 })
-          : Material.fromType('Color', { color: new Color(p.color[0] / 255, p.color[1] / 255, p.color[2] / 255, p.color[3] / 255) }),
+        material: this.lineMaterial(p.color, p.dashed),
       });
     };
     for (const p of s.contactPaths) add(p);
@@ -639,7 +648,7 @@ export class Renderer3d {
           this.orbits.add({
             positions: Cartesian3.fromDegreesArrayHeights(path.flat()),
             width: 1.5,
-            material: Material.fromType('Color', { color: colour('sat', 0.85) }),
+            material: this.solid('sat', 0.85),
           });
       }
     this.groundTexts = { texts: o.texts, waypoints: o.waypoints, threats: s.threatLabels };
@@ -658,6 +667,48 @@ export class Renderer3d {
   }
 
   // ---- Primitive helpers --------------------------------------------------------------
+
+  private colourOf(token: TokenName, a = 1): Color {
+    const k = `${token}:${a}`;
+    let c = this.colours.get(k);
+    if (!c) {
+      c = colour(token, a);
+      this.colours.set(k, c);
+    }
+    return c;
+  }
+
+  private solid(token: TokenName, a = 1): Material {
+    const k = `${token}:${a}`;
+    let m = this.materials.get(k);
+    if (!m) {
+      m = Material.fromType('Color', { color: colour(token, a) });
+      this.materials.set(k, m);
+    }
+    return m;
+  }
+
+  /** A solid or dashed line material for an RGBA colour (0–255), made once per colour. */
+  private lineMaterial(c: [number, number, number, number], dashed: boolean): Material {
+    const k = `${c.join(',')}:${dashed}`;
+    let m = this.materials.get(k);
+    if (!m) {
+      const color = new Color(c[0] / 255, c[1] / 255, c[2] / 255, c[3] / 255);
+      m = dashed ? Material.fromType('PolylineDash', { color, dashLength: 8 }) : Material.fromType('Color', { color });
+      this.materials.set(k, m);
+    }
+    return m;
+  }
+
+  private offset(dx: number, dy: number): Cartesian2 {
+    const k = `${dx}:${dy}`;
+    let o = this.offsets.get(k);
+    if (!o) {
+      o = new Cartesian2(dx, dy);
+      this.offsets.set(k, o);
+    }
+    return o;
+  }
 
   private setImage(b: Billboard, k: string, img: HTMLCanvasElement | null): void {
     const tagged = b as Billboard & { wbImage?: string };
@@ -684,8 +735,8 @@ export class Renderer3d {
     if (l.font !== font) l.font = font;
     l.fillColor = rgbaColour
       ? new Color(rgbaColour[0] / 255, rgbaColour[1] / 255, rgbaColour[2] / 255, rgbaColour[3] / 255)
-      : colour(token ?? 'label.unit');
-    l.pixelOffset = new Cartesian2(dx, dy);
+      : this.colourOf(token ?? 'label.unit');
+    l.pixelOffset = this.offset(dx, dy);
     l.horizontalOrigin = dx ? HorizontalOrigin.LEFT : HorizontalOrigin.CENTER;
     l.verticalOrigin = dx ? VerticalOrigin.CENTER : VerticalOrigin.TOP;
     l.id = id;
@@ -698,7 +749,7 @@ export class Renderer3d {
     this.setImage(b, `ring:${Math.round(px)}:${width}`, img);
     b.position = pos;
     b.scale = 1;
-    b.color = colour(token);
+    b.color = this.colourOf(token);
     b.id = undefined;
     b.show = true;
   }
@@ -706,7 +757,8 @@ export class Renderer3d {
   private stalk(k: string, f: number, at: LonLat, alt: number, token: TokenName): void {
     const p = this.st.get(k, f);
     p.positions = [this.cart(at, alt), this.cart(at, 0)];
-    p.material = Material.fromType('Color', { color: colour(token, 0.55) });
+    const m = this.solid(token, 0.55);
+    if (p.material !== m) p.material = m;
   }
 
   // ---- Models -------------------------------------------------------------------------
