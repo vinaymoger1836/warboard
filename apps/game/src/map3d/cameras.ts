@@ -58,6 +58,8 @@ export class Cameras {
   private target: CamTarget | null = null;
   /** The watched weapon's last frame, so a camera can hold while the weapon is resolved. */
   private watchRange = 0;
+  /** A mode asked for before the renderer drew its first frame (opening 3D in inspect). */
+  private pending: Cam3d | null = null;
   private readonly defaults: { min: number; max: number };
 
   constructor(
@@ -73,6 +75,11 @@ export class Cameras {
 
   /** Switches mode; called when the store's `cam3d` changes. */
   set(cam: Cam3d): void {
+    if (!this.renderer.last) {
+      this.pending = cam;
+      return;
+    }
+    this.pending = null;
     const same = cam.mode === this.mode && cam.target?.kind === this.target?.kind && cam.target?.id === this.target?.id;
     if (same) return;
     this.release();
@@ -119,6 +126,7 @@ export class Cameras {
 
   /** Every frame, after the renderer: keeps the camera on its target. */
   update(): void {
+    if (this.pending && this.renderer.last) this.set(this.pending);
     if (this.mode === 'free' || !this.target) return;
     const camera = this.widget.scene.camera;
     if (this.mode === 'watch') {

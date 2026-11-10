@@ -20,7 +20,7 @@ import type { EngineBridge } from '../bridge';
 import { patrolRadiusKm, sendCommand, sendCommandAck, sendTask } from '../orders';
 import { distance } from '../scene/geo';
 import { play } from '../play';
-import { identifiedContact } from '../scene/scene';
+import { drawnInView, identifiedContact } from '../scene/scene';
 import { type CamTarget, type LonLat, type StrikeAim, ui, useUi } from '../store';
 import { duration, fuelColour, healthColour, statusColour, weaponFacts, weaponTags } from './format';
 import { CloseGlyph, EngageGlyph, RadiusGlyph, SensorGlyph } from './glyphs';
@@ -84,7 +84,7 @@ export function UnitCard({ bridge, toast }: CardProps) {
       {details.kind === 'group' ? (
         <GroupCard d={details} bridge={bridge} toast={toast} />
       ) : details.kind === 'satellite' ? (
-        <SatelliteCard d={details} />
+        <SatelliteCard d={details} inspectable={!!bridge.frame && drawnInView(bridge.frame.view, details.id)} />
       ) : (
         <BaseCard d={details} />
       )}
@@ -293,14 +293,14 @@ const PAYLOAD_SYMBOL: Record<string, SymbolName> = {
   sigint: 'satellite_sigint',
 };
 
-function SatelliteCard({ d }: { d: SatelliteDetails }) {
+function SatelliteCard({ d, inspectable }: { d: SatelliteDetails; inspectable: boolean }) {
   return (
     <>
       <Header
         symbol={PAYLOAD_SYMBOL[d.payload] ?? 'satellite_eo'}
         title={`${d.owner} ${d.name}`}
         subtitle={d.payload_label}
-        inspect={{ kind: 'unit', id: d.id }}
+        inspect={inspectable ? { kind: 'unit', id: d.id } : null}
       />
       <div className="card-body">
         <div className="card-row">
@@ -728,7 +728,12 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   const health = groupHealth(d);
   return (
     <>
-      <Header symbol={CATEGORY_SYMBOL[d.category] ?? 'unknown'} title={title} subtitle={subtitle} inspect={{ kind: 'unit', id: d.id }} />
+      <Header
+        symbol={CATEGORY_SYMBOL[d.category] ?? 'unknown'}
+        title={title}
+        subtitle={subtitle}
+        inspect={bridge.frame && drawnInView(bridge.frame.view, d.id) ? { kind: 'unit', id: d.id } : null}
+      />
       <div className="card-body">
         {d.strike_note && <p className="card-note">{d.strike_note}</p>}
         <div className="card-row">

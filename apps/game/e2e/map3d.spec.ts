@@ -31,6 +31,9 @@ async function central(page: Page, which: '__wbMap2d' | '__wbGlobe', ids: string
 const unpickable = (page: Page, which: '__wbMap2d' | '__wbGlobe', ids: string[]) =>
   page.evaluate(({ w, ids }) => ids.filter((id) => !(window as unknown as Record<string, ViewHooks>)[w]?.pickable(id)), { w: which, ids });
 
+/** An MF-4 flight in the air (the forces list may also hold one parked at its base). */
+const airborneFlight = (page: Page) => page.locator('.force-row', { hasText: 'MF-4 Sellis' }).filter({ hasText: 'TRANSIT' }).first();
+
 const cardTitle = (page: Page) => page.locator('.unit-card h2').first().textContent();
 
 test('2D ↔ 3D keeps selection, time and centre, and both draw the same selectable objects', async ({ page }) => {
@@ -45,7 +48,7 @@ test('2D ↔ 3D keeps selection, time and centre, and both draw the same selecta
 
   // A fixed 2D view and a selection.
   await page.evaluate(({ c, z }) => (window as unknown as { __wbMap: { jumpTo: (o: unknown) => void } }).__wbMap.jumpTo({ center: c, zoom: z }), { c: CENTRE, z: ZOOM });
-  await page.locator('.forces').getByText('2 × MF-4 Sellis').click();
+  await airborneFlight(page).click();
   await expect(page.locator('.unit-card')).toBeVisible();
   const title = await cardTitle(page);
   // Selecting from the forces list centres the map on the group (a 600 ms ease); then the
@@ -103,7 +106,7 @@ test('inspect opens on an own group, follows it, and is never offered on an esti
   await quickStartPaused(page);
 
   // From the unit card in 2D: INSPECT 3D switches to the 3D view in inspect mode.
-  await page.locator('.forces').getByText('2 × MF-4 Sellis').click();
+  await airborneFlight(page).click();
   await page.locator('.unit-card').getByRole('button', { name: 'INSPECT 3D' }).click();
   await expect(page.getByRole('button', { name: 'OPEN 2D MAP' })).toBeVisible();
   const hud = page.getByRole('status', { name: 'Inspect' });

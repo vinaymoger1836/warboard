@@ -165,6 +165,16 @@ export function identifiedContact(view: SideView, strings: StringTable, id: numb
   return (view.contacts.identity[i] ?? 0) !== 0 && (view.contacts.symbol[i] ?? 0) !== 0 && strings.contactType(id) !== '';
 }
 
+/** Whether an own group, unit, base or satellite is drawn on the map (not parked at a base),
+ *  so the inspect view has something to look at. */
+export function drawnInView(view: SideView, id: number): boolean {
+  const u = view.units;
+  for (let i = 0; i < u.count; i++) {
+    if ((u.id[i] === id || u.group[i] === id) && ((u.flags[i] ?? 0) & FLAG.AT_BASE) === 0) return true;
+  }
+  return false;
+}
+
 /** Builds everything of the side picture both views draw. */
 export function buildScene(view: SideView, strings: StringTable, o: SceneOptions): Scene {
   const u = view.units;

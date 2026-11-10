@@ -23,7 +23,7 @@ test('after one visit, the 3D view opens and draws with the network off', async 
   await open3d(page);
   // The picture is drawn on the globe and a model loads close up (all from the cache).
   await expect.poll(() => page.evaluate(() => (window as unknown as { __wbGlobe: { visible: () => string[] } }).__wbGlobe.visible().length)).toBeGreaterThan(0);
-  await page.locator('.forces').getByText('2 × MF-4 Sellis').click();
+  await page.locator('.force-row', { hasText: 'MF-4 Sellis' }).filter({ hasText: 'TRANSIT' }).first().click();
   await page.getByRole('button', { name: 'INSPECT', exact: true }).click();
   await expect(page.getByRole('status', { name: 'Inspect' })).toBeVisible();
   await expect(page.locator('.toast', { hasText: /failed/i })).toHaveCount(0);
