@@ -21,7 +21,8 @@ import { LayerHub } from './layerHub';
 import { MapChrome } from './MapChrome';
 import { applyCoalition, buildStyle, type MapPack } from './style';
 import { useTerrainOverlay } from './terrainOverlay';
-import { type ContextRequest, UnitLayers } from './units/UnitLayers';
+import type { ContextRequest } from '../scene/scene';
+import { UnitLayers } from './units/UnitLayers';
 
 setWorkerUrl(workerUrl);
 

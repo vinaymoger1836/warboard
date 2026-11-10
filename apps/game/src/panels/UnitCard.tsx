@@ -18,7 +18,7 @@ import { contactLabel, cssVar, ESTIMATE_LINE, iconDataUrl, type IconSide, type T
 import { useEffect, useState } from 'react';
 import type { EngineBridge } from '../bridge';
 import { patrolRadiusKm, sendCommand, sendCommandAck, sendTask } from '../orders';
-import { distance } from '../map2d/units/geo';
+import { distance } from '../scene/geo';
 import { type LonLat, type StrikeAim, ui, useUi } from '../store';
 import { duration, fuelColour, healthColour, statusColour, weaponFacts, weaponTags } from './format';
 import { CloseGlyph, EngageGlyph, RadiusGlyph, SensorGlyph } from './glyphs';

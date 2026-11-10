@@ -3,7 +3,7 @@
 // contact; task an own imaging satellite on the point (next pass, doc 02 §7.3).
 import { SYMBOLS } from '@warboard/protocol';
 import type { EngineBridge } from '../bridge';
-import type { ContextRequest } from '../map2d/units/UnitLayers';
+import type { ContextRequest } from '../scene/scene';
 import { patrolRadiusKm, sendTask } from '../orders';
 
 /** Radius of the area a satellite images on "Task … here", km. */

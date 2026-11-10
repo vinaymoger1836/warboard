@@ -31,7 +31,7 @@ import type { EngineBridge } from '../../bridge';
 import { type LonLat, type PlanRoute, type Tool, ui } from '../../store';
 import type { LayerHub } from '../layerHub';
 import { effectLayers, haloLayer } from './effectLayers';
-import { destination, distance, geodesicCircle } from './geo';
+import { destination, distance, geodesicCircle } from '../../scene/geo';
 import { WeaponLayers } from './weaponLayers';
 
 /** Zoom below which icons shrink to 24 px (doc 10 §4). */
