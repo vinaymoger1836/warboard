@@ -314,3 +314,10 @@ As built in P3 (`wb-sim/src/orders.rs`): points are `[lon, lat]` in degrees as a
 | `AutoSlow` | reason |
 
 Every event has `tick`, `sim_time`, and a visibility mask with per-side reveal times.
+
+## P11 additions: ground forces (ADR-048)
+
+- **Platform `ground` block** (required for `ground/armour`, `ground/artillery`, `ground/infantry`): `combat_value`, `protection`, and optionally `support_value` with `support_range_km`, `heavy`, `night_capable`, `sabotage_skill`, `designate_km`. Game balance values in the range of the class.
+- **System `deploy_as: formation`**: the components are the formation's equipment lines (role `combat` or any other); only the first line may carry a `magazine` (its rounds per vehicle). Every component platform needs a `ground` block.
+- **Realism `ground`**: speed factors by terrain class, posture rules, the attrition, morale, supply, fatigue, strike and special-forces constants. Base rules gain `ground_supply`.
+- Pack schema 7.

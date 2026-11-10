@@ -66,7 +66,9 @@ fn march_goes_round_water_and_slows_in_mountains() {
         speed: None,
     };
     // Refused with a reason: into the lake, two destinations, another side's unit.
-    let err = sim.submit(&task(0, 0, &[10], mv([16.5, 55.3]))).unwrap_err();
+    let err = sim
+        .submit(&task(0, 0, &[10], mv([16.5, 55.3])))
+        .unwrap_err();
     assert!(err.contains("not on passable ground"), "{err}");
     let err = sim
         .submit(&task(
@@ -81,10 +83,19 @@ fn march_goes_round_water_and_slows_in_mountains() {
         ))
         .unwrap_err();
     assert!(err.contains("one destination"), "{err}");
-    let err = sim.submit(&task(0, 1, &[10], mv([16.3, 55.3]))).unwrap_err();
+    let err = sim
+        .submit(&task(0, 1, &[10], mv([16.3, 55.3])))
+        .unwrap_err();
     assert_eq!(err, "Unknown unit 10");
     let err = sim
-        .submit(&task(0, 0, &[10], TaskOrder::Raid { point: [16.3, 55.3] }))
+        .submit(&task(
+            0,
+            0,
+            &[10],
+            TaskOrder::Raid {
+                point: [16.3, 55.3],
+            },
+        ))
         .unwrap_err();
     assert!(err.contains("not trained for raids"), "{err}");
 
@@ -113,7 +124,10 @@ fn march_goes_round_water_and_slows_in_mountains() {
             t_mountain = Some(t);
         }
         if t_open.is_none()
-            && distance_m(formation(&sim, 30).unwrap().0, LatLon::from_deg(55.65, 16.7)) < 100.0
+            && distance_m(
+                formation(&sim, 30).unwrap().0,
+                LatLon::from_deg(55.65, 16.7),
+            ) < 100.0
         {
             t_open = Some(t);
         }
@@ -125,7 +139,10 @@ fn march_goes_round_water_and_slows_in_mountains() {
     assert!(distance_m(at, dest) < 100.0, "the tanks arrive");
     assert!(northmost > 55.6, "round the lake's north end ({northmost})");
     assert_eq!(f.items(), 31);
-    let (tm, to) = (t_mountain.expect("climbers arrive"), t_open.expect("walkers arrive"));
+    let (tm, to) = (
+        t_mountain.expect("climbers arrive"),
+        t_open.expect("walkers arrive"),
+    );
     assert!(
         tm as f64 > 1.5 * to as f64,
         "mountain cells are slower: {tm} s against {to} s"
@@ -150,7 +167,10 @@ fn bases_and_a_placed_fob_resupply() {
         },
     };
     let err = sim.submit(&place(55.3, 16.5)).unwrap_err();
-    assert!(err.contains("water"), "a FOB cannot stand in the lake: {err}");
+    assert!(
+        err.contains("water"),
+        "a FOB cannot stand in the lake: {err}"
+    );
     sim.submit(&place(55.3, 16.22)).unwrap();
     // Five hours: the FOB (6 h to set up) is not open yet.
     sim.run_ticks(5 * 3_600);
@@ -161,7 +181,10 @@ fn bases_and_a_placed_fob_resupply() {
     // Two hours after it opens the battalion is full again.
     sim.run_ticks(3 * 3_600);
     let far2 = formation(&sim, 20).unwrap().1.supply;
-    assert!(far2 > far && far2 > 0.99, "the FOB resupplies: {far} → {far2}");
+    assert!(
+        far2 > far && far2 > 0.99,
+        "the FOB resupplies: {far} → {far2}"
+    );
     assert!(
         sim.events()
             .iter()
@@ -178,8 +201,15 @@ fn raid_sabotages_a_base_and_comes_home() {
     );
     let mut sim = sim(&yaml);
     let start = formation(&sim, 10).unwrap().0;
-    sim.submit(&task(0, 0, &[10], TaskOrder::Raid { point: [20.9, 55.6] }))
-        .unwrap();
+    sim.submit(&task(
+        0,
+        0,
+        &[10],
+        TaskOrder::Raid {
+            point: [20.9, 55.6],
+        },
+    ))
+    .unwrap();
     sim.run_ticks(3 * 3_600);
     let ev = sim.events();
     let (tick, success, component) = ev
@@ -219,7 +249,11 @@ fn a_team_designates_what_it_watches() {
     sim.run_ticks(30);
     let contact = {
         let pics = sim.world().resource::<SidePictures>();
-        let c = pics.sides[0].contacts.values().next().expect("the team sees the column");
+        let c = pics.sides[0]
+            .contacts
+            .values()
+            .next()
+            .expect("the team sees the column");
         assert_eq!(c.count, (12, 12), "its scope counts the tanks");
         c.id.0
     };
@@ -233,7 +267,10 @@ fn a_team_designates_what_it_watches() {
     let err = sim
         .submit(&task(31, 1, &[100], TaskOrder::Designate { contact: 1 }))
         .unwrap_err();
-    assert!(err.contains("Unknown contact") || err.contains("designator"), "{err}");
+    assert!(
+        err.contains("Unknown contact") || err.contains("designator"),
+        "{err}"
+    );
     sim.submit(&task(31, 0, &[10], TaskOrder::Designate { contact }))
         .unwrap();
     sim.run_ticks(600);
@@ -246,7 +283,10 @@ fn a_team_designates_what_it_watches() {
     let state = sim.world().resource::<wb_sim::ground::GroundState>();
     assert_eq!(state.designations.len(), 1);
     // It closed to inside its designator's reach, and no nearer than needed.
-    let d = distance_m(formation(&sim, 10).unwrap().0, formation(&sim, 100).unwrap().0);
+    let d = distance_m(
+        formation(&sim, 10).unwrap().0,
+        formation(&sim, 100).unwrap().0,
+    );
     assert!((1_000.0..8_000.0).contains(&d), "{d}");
 }
 
@@ -266,7 +306,11 @@ fn battle_survives_a_save_and_tells_each_side_only_its_own() {
     assert_eq!(a.state_hash(), b.state_hash());
     a.run_ticks(600);
     b.run_ticks(600);
-    assert_eq!(a.state_hash(), b.state_hash(), "the battle continues the same");
+    assert_eq!(
+        a.state_hash(),
+        b.state_hash(),
+        "the battle continues the same"
+    );
 
     // Ground events name only formations of the side that sees them, and a
     // fight was explained to both.

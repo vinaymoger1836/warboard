@@ -42,6 +42,8 @@ Nations without inventory can be selected, but have nothing to deploy.
 
 The placement validator checks terrain class (H3), territory, coast adjacency for naval bases, runway class against aircraft, and capacity. It explains rejections ("Naval base must be at a port"). The rules of the table above are data: one row per base kind in the realism profile (`bases`: site rule `preset` / `terrain`, match radius, allowed terrain classes, own territory, coast, slope, setup time, capacity). Preset bases are checked from content alone; terrain rules need the region packs and are refused without them (P3). The `real_airfield` and `real_port` rules built in P3 became `preset` in PF (doc 11 §2.5): air and naval bases must match a preset base of content; the other kinds keep their terrain rules (ADR-042). Territory means the coalition's land plus 12 nm territorial waters; captured ground arrives with Phase 11.
 
+**FOBs (P11).** An army base placed with `PlaceBase` is the FOB: once active it resupplies ground formations within the realism `ground.supply_radius_m`, as preset air and naval bases do (`ground_supply` on the base kind).
+
 Every base has damageable components (runway, shelters, fuel, munitions store, radar, C2) and a **munitions stock** drawn from the nation inventory.
 
 ## 4. Inventory and deployment
@@ -60,6 +62,8 @@ Every base has damageable components (runway, shelters, fuel, munitions store, r
 | Ground (Phase 11) | Move, Attack, Defend, Hold, Withdraw, Recon, Raid, Designate |
 | Sites | EMCON on / off / blink, Engage (manual), Relocate (mobile systems) |
 | Space | Task imaging on an area (next pass), SIGINT is automatic |
+
+**Ground tasks as built (P11, ADR-048).** Orders `move` (one destination), `attack` (contact or point), `defend` (point or in place), `hold`, `withdraw` (point, or away from the enemy), `recon` (contact or point, from a stand-off distance), `raid` (special forces: the enemy base at a point) and `designate` (a contact). Formations with weapons (rocket artillery) also take `strike` and fire missions. Orders are refused with a reason when there is no route ("The destination is not on passable ground"), when the formation lacks the skill ("… is not trained for raids") or when it is mixed with other units.
 
 **Patrol** units fly their circle or waypoint loop until bingo, then refuel from a tanker on their side if one is reachable, otherwise return to base, turn around, and (optionally) resume.
 
@@ -130,6 +134,8 @@ The defending Kest-class corvettes run TEWA: each engages missiles aimed at itse
 2. Event trigger → UD-9 Longwatch retasked to the area; its EO/IR camera upgrades the contact to *Type: MBT-3, count 12*.
 3. Event trigger → 2 × VF-5 Vantor launch from an air base with 2 × GB-900 + 2 × AR-7 each, Strike task on the contact; nearby RA-6 rocket artillery can be added as a parallel phase if in range.
 4. Intel is shared over the data link: the fighters receive the drone's track in flight; the guided bombs fly to the latest coordinates.
+
+Built on the fixtures as `scenarios/golden/strike-chain.yaml` (G17, P11).
 
 ## 9. Time control and alerts
 

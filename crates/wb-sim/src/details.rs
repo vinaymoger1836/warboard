@@ -667,7 +667,10 @@ fn group(world: &World, side: u8, gid: UnitId, ge: Entity) -> Option<GroupDetail
         type_name: db.str(p.name).to_owned(),
         category: p.category.as_str().to_owned(),
         domain: if rules.is_air(p) { "air" } else { "surface" }.to_owned(),
-        count: g.members.len() as u32,
+        // A formation counts its equipment, not its one map object.
+        count: world
+            .get::<crate::components::Formation>(lead)
+            .map_or(g.members.len() as u32, |f| f.items()),
         crew,
         status: status(g, world.get::<Posture>(lead)).as_str().to_owned(),
         bingo,

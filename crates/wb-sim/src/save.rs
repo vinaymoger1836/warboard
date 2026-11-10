@@ -21,7 +21,8 @@ pub const MAGIC: [u8; 4] = *b"WBSG";
 /// submit ticks, replay checkpoints.
 /// 4 (P9, ADR-044): controllers and the play mode in the setup (the snapshot),
 /// and a session section beside it.
-pub const SAVE_VERSION: u16 = 4;
+/// 5 (P11): snapshot format 7 (ground formations and the ground state).
+pub const SAVE_VERSION: u16 = 5;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS), ts(export))]

@@ -68,6 +68,8 @@ Derived per H3 cell from WorldCover majority class + DEM slope and roughness.
 
 The multipliers live in the realism profile, not in code.
 
+**As built (P11).** Ground speed factors per class are `ground.speed_factor` (a class not listed cannot be entered; `ground.heavy_blocked` for heavy equipment); defence factors are `ground.defender_terrain_factor` over open, forest (also jungle and marsh), mountain and urban. Routes are found by `Geo::ground_path` (A* over the cells of the finest pack). Scenarios without packs can give their `test_terrain` a `land` list of boxes with a class and an owner.
+
 ## 4. Elevation and line of sight
 
 - Theatre DEM at 15″ (~450 m) is enough for radar masking and long-range line of sight; ground engagements inside a cell use the terrain class instead.

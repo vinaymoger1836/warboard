@@ -87,6 +87,8 @@ Stored in `scenarios/golden/` with expected bands. All of them use **generic tes
 | G13 | Six-phase test operation shaped like Rising Sun, on fixtures in the test sea area | Runs end to end; phases 4 and 5 start on the same tick |
 | G14 | G13 native vs WASM | Identical state hash |
 | G15 | 2,000-unit benchmark | ≤ 6 ms average tick |
+| G17 | Strike chain of doc 03 §8.2 on fixtures and test land (`strike-chain.yaml`) | Satellite report (class), drone upgrade (precise, count 12), strike and rockets on the shared track, in that order; the column loses vehicles while moving |
+| G18 | The same ground attack on open, mountain and urban cells | Attacker-to-defender loss ratio rises open < mountain < urban, each step by ≥ 20% |
 
 ## 4. Risk register
 
