@@ -6,6 +6,7 @@
 //! orders, events, saves and the side view; P4 sensors, satellites and the
 //! side pictures (fog of war); P5 loadouts and weapons in flight.
 
+pub mod ai;
 pub mod bases;
 pub mod clock;
 pub mod components;
@@ -81,6 +82,8 @@ pub const STAGES: &[Stage] = &[
     ("weapons", weapons::fly),
     ("sensors", sensors::scan),
     ("fusion", picture::fusion),
+    // AI sides decide from the picture just fused; their orders apply next tick.
+    ("ai", ai::run),
     ("engage", engage::run),
     ("fuel", fuel::burn),
     ("aar", fuel::aar),

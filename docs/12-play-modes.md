@@ -75,3 +75,10 @@ Adds a **Players** step after coalitions: for each coalition, Human or AI (with 
 - AI runs only for AI-controlled sides (the event log shows no AI decisions for human sides).
 - **G16:** the same scripted two-sided order log gives the same state hash whichever side's view (or the umpire view) was requested and however often the side was switched.
 - Watch mode runs the 24 h soak.
+
+## 6. As built (P9)
+
+- **Engine:** `SideInfo` has `controller` and `difficulty`, `Sides` the `mode` (state hash format 6). The session (`wb_sim::session`) lives beside the world in `Sim` and in its own save section (save version 4). `Sim::umpire_view` checks the mode and the switch and marks `umpire_used`; the after-action report carries it. Refused orders read like unknown ids (ADR-046).
+- **WebAssembly API:** `set_active_side`, `set_view_side` (255 = umpire), `set_umpire`, `set_hot_seat`, `set_pin`, `check_pin`, `session`; `details`, `contact_details`, `approvals`, `operations`, `report`, `inventory`, `ground_track`, `deployment` and `take_events` take the side (a human side, or either in Watch); `order` always uses the active side and refuses in the umpire view. `create_from_setup`, `nation_options` and `preview_setup` build wars from the setup screens.
+- **Client:** menu and war setup (`apps/game/src/setup`), side toggle and Tab (`panels/SideToggle.tsx`), per-side UI slices (`store.ts`), play-mode control (`play.ts`), handover screen (`Handover.tsx`), deploy panel, umpire banner. A switch re-tints the territory in place, so the map and its camera stay.
+- **Tests:** `crates/wb-sim/tests/play_modes.rs` (cross-side rejection in every mode, truth canary for both sides in Command both and Hot-seat, umpire rules, session not hashed, G16), `crates/wb-wasm/node/play-modes-check.mjs` (the browser API, run by `scripts/determinism-check.sh`), `apps/game/e2e` (Playwright: handover screen, PIN, hot-seat save, Command both switching, umpire view).

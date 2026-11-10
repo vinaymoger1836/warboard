@@ -464,6 +464,10 @@ pub struct QueuedOrder {
     pub submitted: u64,
     pub side: u8,
     pub cmd: Resolved,
+    /// Issued by the side's AI. A replay does not queue it again: the AI runs
+    /// in the replay too and issues it again on the same tick (ADR-046).
+    #[serde(default)]
+    pub ai: bool,
 }
 
 /// Accepted orders not yet applied, in (tick, seq) order.
@@ -618,6 +622,7 @@ pub fn submit_from(
             submitted,
             side: order.side,
             cmd: cmd.clone(),
+            ai: origin == Origin::Ai,
         };
         world.resource_mut::<OrderQueue>().next_seq = seq + 1;
         apply(world, order.side, cmd);
@@ -636,6 +641,7 @@ pub fn submit_from(
         submitted,
         side: order.side,
         cmd,
+        ai: origin == Origin::Ai,
     };
     q.pending.push(queued.clone());
     q.pending.sort_by_key(|o| (o.tick, o.seq));

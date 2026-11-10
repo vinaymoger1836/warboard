@@ -37,6 +37,8 @@ pub enum RngPurpose {
     Countermeasure = 13,
     /// Datalink packet loss under communications jamming (doc 02 §9).
     DatalinkLoss = 14,
+    /// Enemy AI choices (reaction delay on Easy, P9).
+    Ai = 15,
 }
 
 const GOLDEN: u64 = 0x9E37_79B9_7F4A_7C15;

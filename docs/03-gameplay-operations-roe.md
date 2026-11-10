@@ -160,6 +160,7 @@ flowchart TB
 - **v1 (Phase 9):** garrisons or deploys, maintains CAP and SAM coverage, scrambles interceptors, responds to incursions, retaliates against detected shooters and bases.
 - **v2 (Phase 12):** plans its own multi-phase operations with the same operation model, including decoys and timing.
 - **Difficulty** changes reaction delay (Easy 60–120 s, Normal 30 s, Hard 10 s) and coordination depth, never information.
+- **As built (P9, ADR-046):** `wb-ai` (depends on `wb-core` only) thinks every sim second from an `AiPicture` the engine builds from the side's own picture. Strategic every 5 min: posture (defend, hold, press) from aggression and the air balance seen, and the number of CAP stations. Operational every 30 s: CAP stations over the air bases nearest the threat, relieved after `cap_rotation_min`; IADS emitters on while hostile aircraft are within 250 km of a base, else blink or on by `emcon_discipline`; satellite imaging of where the enemy was last seen every 2 h. Every second: incursions (hostile contacts inside the side's territory) get interceptors or strikers, shooters (contacts that fired at the side) get the doctrine's strike package (`sead`, `escort`, `strike`, `jammer`; Easy flies the strike only, Normal adds one element, Hard the whole template), both after the reaction delay (doctrine `reaction_time_s` plus the difficulty's delay); approval requests are decided at once. IADS sites are not moved in v1. Every decision is an `AiDecision` event to the AI's side.
 
 ## 12. Reports (after-action)
 

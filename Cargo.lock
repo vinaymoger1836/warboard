@@ -1278,6 +1278,10 @@ dependencies = [
 [[package]]
 name = "wb-ai"
 version = "0.0.1"
+dependencies = [
+ "serde",
+ "wb-core",
+]
 
 [[package]]
 name = "wb-cli"
@@ -1342,6 +1346,7 @@ dependencies = [
  "serde_yaml",
  "thiserror",
  "ts-rs",
+ "wb-ai",
  "wb-content",
  "wb-core",
  "wb-geo",

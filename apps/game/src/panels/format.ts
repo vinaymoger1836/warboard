@@ -208,6 +208,10 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     return { category: p.state === 'aborted' ? 'Alert' : 'Op', text: `Phase ${p.phase + 1} ${p.name} ${p.state}: ${p.reason}` };
   }
   if ('WarEnded' in k) return { category: 'Op', text: 'The war has ended: the truth review is unlocked' };
+  if ('AiDecision' in k) {
+    const d = k.AiDecision;
+    return { category: 'Op', text: `AI (${d.layer}): ${d.summary}${d.refused ? ` (refused: ${d.refused})` : ''}` };
+  }
   // Truth-only (no side receives it); listed so the cases stay exhaustive.
   if ('TruthHit' in k) return { category: 'Weapon', text: 'Hit (truth record)' };
   if ('BaseComponentDamaged' in k) {

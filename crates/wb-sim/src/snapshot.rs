@@ -72,6 +72,7 @@ pub struct Snapshot {
     pub operations: crate::operations::Operations,
     pub war: crate::reports::War,
     pub deployment: crate::deployment::Deployment,
+    pub ai: crate::ai::AiBrains,
     pub units: Vec<UnitRecord>,
 }
 
@@ -122,6 +123,7 @@ pub fn capture(world: &World) -> Snapshot {
         operations: world.resource::<crate::operations::Operations>().clone(),
         war: world.resource::<crate::reports::War>().clone(),
         deployment: world.resource::<crate::deployment::Deployment>().clone(),
+        ai: world.resource::<crate::ai::AiBrains>().clone(),
         units,
     }
 }
@@ -140,6 +142,7 @@ pub fn base_resources(world: &mut World, rules: Rules) {
     world.insert_resource(crate::operations::Operations::default());
     world.insert_resource(crate::reports::War::default());
     world.insert_resource(crate::deployment::Deployment::default());
+    world.insert_resource(crate::ai::AiBrains::default());
 }
 
 /// Builds a world from a snapshot (in `UnitId` order). The order log and
@@ -159,6 +162,7 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
     world.insert_resource(snap.operations);
     world.insert_resource(snap.war);
     world.insert_resource(snap.deployment);
+    world.insert_resource(snap.ai);
     if let Some(t) = snap.test_territory_areas {
         world.insert_resource(t);
     }

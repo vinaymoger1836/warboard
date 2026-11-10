@@ -214,7 +214,7 @@ impl Replay {
         let due: Vec<QueuedOrder> = self
             .orders
             .iter()
-            .filter(|o| o.seq >= have && o.submitted <= now)
+            .filter(|o| !o.ai && o.seq >= have && o.submitted <= now)
             .cloned()
             .collect();
         for o in due {

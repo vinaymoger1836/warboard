@@ -15,6 +15,7 @@ ts = ["dep:ts-rs", "wb-core/ts", "wb-content/ts"]
 wb-core.workspace = true
 wb-content.workspace = true
 wb-geo.workspace = true
+wb-ai.workspace = true
 bevy_ecs.workspace = true
 blake3.workspace = true
 postcard.workspace = true

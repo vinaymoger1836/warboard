@@ -263,6 +263,15 @@ pub enum EventKind {
     WarEnded {
         side: u8,
     },
+    /// A decision of the side's AI (doc 03 §11, P9): what it decided and why,
+    /// and the reason if the order was refused. Goes to the AI's own side only,
+    /// so a human side never receives it (Watch mode shows both AI sides).
+    AiDecision {
+        layer: String,
+        summary: String,
+        /// Postcard stores events, so the field is always written (no skip).
+        refused: Option<String>,
+    },
     /// Truth only (no side sees it, `sides` 0): a weapon hit a unit. The truth
     /// review after the war reads it; side reports never do (CLAUDE.md rule 1).
     TruthHit {
