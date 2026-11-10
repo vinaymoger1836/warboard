@@ -153,5 +153,6 @@ export default defineConfig({
   },
   // The worker imports scenarios/*.yaml and the wasm package from outside the app folder.
   server: { fs: { allow: [repoRoot] } },
-  build: { target: 'es2023', chunkSizeWarningLimit: 2500 },
+  // The lazy 3D chunk carries CesiumJS (~4 MB minified); the main chunk stays ~2.3 MB.
+  build: { target: 'es2023', chunkSizeWarningLimit: 4200 },
 });

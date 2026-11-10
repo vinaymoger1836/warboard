@@ -46,6 +46,8 @@ export interface GlobeHooks {
   modelsOn: () => boolean;
   zoom: () => number;
   camera: () => { center: [number, number]; zoom: number } | null;
+  /** Free camera straight down at a point, at a 2D zoom's scale. */
+  lookAt: (lon: number, lat: number, zoom: number) => void;
 }
 
 const setCam = (cam: Cam3d) => ui.set({ cam3d: cam });
@@ -133,6 +135,10 @@ export default function Map3D({ packs, bridge, coalition, onToast }: Map3DProps)
           modelsOn: () => renderer.modelsOn,
           zoom: () => renderer.zoom().zoom,
           camera: () => cameras.current(),
+          lookAt: (lon, lat, zoom) => {
+            setCam({ mode: 'free', target: null });
+            Cameras.viewFrom(widget, [lon, lat], zoom);
+          },
         };
         (window as unknown as { __wbGlobe?: GlobeHooks }).__wbGlobe = hooks;
         // Dev builds only: the renderer itself, for debugging in the console.

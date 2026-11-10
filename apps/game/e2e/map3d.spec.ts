@@ -135,22 +135,33 @@ test('inspect opens on an own group, follows it, and is never offered on an esti
   );
   expect(contacts.length).toBeGreaterThan(0);
   let estimatedSeen = 0;
+  let identifiedSeen = 0;
   for (const c of contacts) {
-    // Click the contact where the globe draws it (skipped when off screen or under chrome).
+    // Centre the globe on the contact as our picture places it, then click it there.
+    const at = await page.evaluate((id) => (window as unknown as { __wbRenderer: { contact: (id: number) => { position: [number, number] } | null } }).__wbRenderer.contact(id)?.position ?? null, c.id);
+    if (!at) continue;
+    await page.evaluate(([lon, lat]) => (window as unknown as { __wbGlobe: { lookAt: (a: number, b: number, z: number) => void } }).__wbGlobe.lookAt(lon, lat, 10), at);
+    await page.waitForTimeout(500);
     const p = await page.evaluate((id) => (window as unknown as { __wbGlobe: ViewHooks }).__wbGlobe.windowPosition(`c:${id}`), c.id);
-    if (!p) continue;
     const box = await page.locator('.map-root').boundingBox();
-    if (!box || p.x < 40 || p.y < 60 || p.x > box.width - 40 || p.y > box.height - 40) continue;
+    expect(p).not.toBeNull();
+    if (!p || !box) continue;
     await page.mouse.click(box.x + p.x, box.y + p.y);
     const card = page.locator('.unit-card[aria-label="Contact card"]');
-    if (!(await card.isVisible())) continue;
+    await expect(card).toBeVisible();
     const button = card.getByRole('button', { name: 'INSPECT 3D' });
     if (c.estimated) {
       estimatedSeen++;
       await expect(button).toHaveCount(0);
     } else if (c.identified) {
+      identifiedSeen++;
       await expect(button).toBeVisible();
+      await button.click();
+      await expect(page.getByRole('status', { name: 'Inspect' })).toBeVisible();
+      await page.keyboard.press('Escape');
     }
   }
-  test.info().annotations.push({ type: 'contacts', description: `${contacts.length} contacts, ${estimatedSeen} estimated checked` });
+  expect(estimatedSeen + identifiedSeen).toBeGreaterThan(0);
+  console.log(`contacts: ${contacts.length}, estimated checked: ${estimatedSeen}, identified checked: ${identifiedSeen}`);
+  test.info().annotations.push({ type: 'contacts', description: `${contacts.length} contacts, ${estimatedSeen} estimated, ${identifiedSeen} identified` });
 });

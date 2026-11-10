@@ -170,8 +170,8 @@ export class Renderer3d {
   modelsOn = false;
   /** The inspect target is always drawn as a model (ADR-047). */
   forceModel: string | null = null;
-  /** Materials and colours are made once per token: building one per frame is expensive. */
-  private readonly materials = new Map<string, Material>();
+  /** Colours are made once per token (building them per frame is expensive). Materials are
+   *  not shared: a removed polyline destroys its material, so each polyline owns one. */
   private readonly colours = new Map<string, Color>();
   private readonly offsets = new Map<string, Cartesian2>();
 
@@ -241,7 +241,18 @@ export class Renderer3d {
         scene.canvas.style.cursor = ui.get().tool ? 'crosshair' : '';
       }),
     );
-    this.offs.push(scene.preUpdate.addEventListener(() => this.render()));
+    // A throw inside Cesium's frame stops its render loop for good: report it once, keep going.
+    let reported = false;
+    this.offs.push(
+      scene.preUpdate.addEventListener(() => {
+        try {
+          this.render();
+        } catch (err) {
+          if (!reported) console.error('3D view: drawing failed', err);
+          reported = true;
+        }
+      }),
+    );
   }
 
   dispose(): void {
@@ -558,12 +569,14 @@ export class Renderer3d {
       if (t.path.length < 2) continue;
       const p = this.tr.get(`t:${t.id}`, f);
       p.positions = Cartesian3.fromDegreesArrayHeights(t.path.flat());
-      if (!p.material || (p as { wbInterceptor?: boolean }).wbInterceptor !== t.interceptor) {
+      if ((p as { wbInterceptor?: boolean }).wbInterceptor !== t.interceptor) {
         (p as { wbInterceptor?: boolean }).wbInterceptor = t.interceptor;
+        const replaced = p.material;
         p.material = t.interceptor
           ? this.lineMaterial(rgba('weapon.interceptor'), true)
-          : this.solid('weapon.offensive');
+          : this.lineMaterial(rgba('weapon.offensive'), false);
         p.width = t.interceptor ? 2 : 1.5;
+        if (replaced && !replaced.isDestroyed()) replaced.destroy();
       }
     }
     if (zoom >= TAG_ZOOM) {
@@ -648,7 +661,7 @@ export class Renderer3d {
           this.orbits.add({
             positions: Cartesian3.fromDegreesArrayHeights(path.flat()),
             width: 1.5,
-            material: this.solid('sat', 0.85),
+            material: this.lineMaterial(rgba('sat', 0.85), false),
           });
       }
     this.groundTexts = { texts: o.texts, waypoints: o.waypoints, threats: s.threatLabels };
@@ -678,26 +691,10 @@ export class Renderer3d {
     return c;
   }
 
-  private solid(token: TokenName, a = 1): Material {
-    const k = `${token}:${a}`;
-    let m = this.materials.get(k);
-    if (!m) {
-      m = Material.fromType('Color', { color: colour(token, a) });
-      this.materials.set(k, m);
-    }
-    return m;
-  }
-
-  /** A solid or dashed line material for an RGBA colour (0–255), made once per colour. */
+  /** A new line material for an RGBA colour (0–255), solid or dashed. */
   private lineMaterial(c: [number, number, number, number], dashed: boolean): Material {
-    const k = `${c.join(',')}:${dashed}`;
-    let m = this.materials.get(k);
-    if (!m) {
-      const color = new Color(c[0] / 255, c[1] / 255, c[2] / 255, c[3] / 255);
-      m = dashed ? Material.fromType('PolylineDash', { color, dashLength: 8 }) : Material.fromType('Color', { color });
-      this.materials.set(k, m);
-    }
-    return m;
+    const color = new Color(c[0] / 255, c[1] / 255, c[2] / 255, c[3] / 255);
+    return dashed ? Material.fromType('PolylineDash', { color, dashLength: 8 }) : Material.fromType('Color', { color });
   }
 
   private offset(dx: number, dy: number): Cartesian2 {
@@ -757,8 +754,12 @@ export class Renderer3d {
   private stalk(k: string, f: number, at: LonLat, alt: number, token: TokenName): void {
     const p = this.st.get(k, f);
     p.positions = [this.cart(at, alt), this.cart(at, 0)];
-    const m = this.solid(token, 0.55);
-    if (p.material !== m) p.material = m;
+    // The polyline's own (default, solid) material: only its colour changes.
+    const tagged = p as Polyline & { wbToken?: string };
+    if (tagged.wbToken !== token) {
+      tagged.wbToken = token;
+      p.material.uniforms.color = this.colourOf(token, 0.55);
+    }
   }
 
   // ---- Models -------------------------------------------------------------------------
