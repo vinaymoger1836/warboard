@@ -367,6 +367,9 @@ fn advance(world: &mut World, rules: &Rules, clock: &SimClock, geo: Option<&Geo>
     let mut attack = false;
     if let Task::Ground(mut o) = g.task.clone() {
         attack = o.kind == GroundKind::Attack;
+        if o.kind == GroundKind::Raid && o.origin.is_none() {
+            o.origin = Some(k.pos());
+        }
         let goal = o
             .contact
             .and_then(|c| crate::tasks::estimate(world, fm.side, c).map(|e| e.0))

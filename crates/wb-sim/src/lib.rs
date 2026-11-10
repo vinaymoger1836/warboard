@@ -393,3 +393,5 @@ impl Sim {
         &mut self.world
     }
 }
+
+pub fn __lint_canary_map() -> usize { let m: std::collections::HashMap<u32, u32> = Default::default(); m.len() }

@@ -22,7 +22,8 @@ if [ ${#scenarios[@]} -eq 0 ]; then
              scenarios/quickstart-north-straits.yaml scenarios/quickstart-north-islands.yaml
              scenarios/golden/g1-frigate-vs-sea-skimmer.yaml scenarios/golden/g2-rcs-ratio.yaml
              scenarios/golden/g3-ridge-masking.yaml scenarios/golden/g4-esm-vs-sam-radar.yaml
-             scenarios/golden/g5-satellite-night.yaml)
+             scenarios/golden/g5-satellite-night.yaml
+             scenarios/golden/g18-ground-terrain.yaml scenarios/golden/strike-chain.yaml)
 fi
 
 cargo build -q --release -p wb-cli

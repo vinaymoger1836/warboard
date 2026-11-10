@@ -234,6 +234,44 @@ export function describe(e: Event, s: StringTable): { category: EventCategory; t
     const b = k.BorderCrossing;
     return { category: 'Contact', text: `${contactName(b.contact, s)} ${b.inbound ? 'entered' : 'left'} our territory` };
   }
+  // Ground forces (P11).
+  if ('PostureChanged' in k) {
+    const posture = { moving: 'on the move', attack: 'attacking', hasty: 'in hasty defence', prepared: 'dug in' };
+    return { category: 'Op', text: `${n(k.PostureChanged.formation)} ${posture[k.PostureChanged.posture]}` };
+  }
+  if ('GroundOrderFailed' in k) {
+    return { category: 'Alert', text: `${n(k.GroundOrderFailed.formation)} cannot carry out its order: ${k.GroundOrderFailed.reason}` };
+  }
+  if ('GroundContact' in k) return { category: 'Alert', text: `${n(k.GroundContact.formation)} in contact with enemy ground forces` };
+  if ('GroundCombat' in k) {
+    const c = k.GroundCombat;
+    const f = c.factors;
+    return {
+      category: 'Alert',
+      text: `${n(c.formation)} lost ${c.lost_equipment} in ground combat, strength ${Math.round(c.strength_pct)}%, morale ${Math.round(c.morale_pct)}% (${f.terrain} ground, protection ×${f.protection.toFixed(1)}, ${f.enemies} enemy formation${f.enemies === 1 ? '' : 's'})`,
+    };
+  }
+  if ('FormationStruck' in k) {
+    const c = k.FormationStruck;
+    return {
+      category: 'Alert',
+      text: `${n(c.formation)} struck: lost ${c.lost_equipment} (${c.lost_personnel} personnel), strength ${Math.round(c.strength_pct)}% (exposure ×${c.exposure.toFixed(2)})`,
+    };
+  }
+  if ('FormationRetreated' in k) return { category: 'Alert', text: `${n(k.FormationRetreated.formation)} is falling back: ${k.FormationRetreated.reason}` };
+  if ('Breakthrough' in k) return { category: 'Op', text: `${n(k.Breakthrough.formation)} broke through` };
+  if ('SupplyLow' in k) return { category: 'Alert', text: `${n(k.SupplyLow.formation)} is low on supply (${Math.round(k.SupplyLow.supply_pct)}%)` };
+  if ('Sabotage' in k) {
+    const r = k.Sabotage;
+    return {
+      category: r.success ? 'Op' : 'Alert',
+      text: r.success ? `${n(r.formation)} raid succeeded: ${r.component ?? 'component'} out of action` : `${n(r.formation)} raid failed: ${r.reason}`,
+    };
+  }
+  if ('Designation' in k) {
+    const d = k.Designation;
+    return { category: 'Op', text: `${n(d.formation)} ${d.on ? 'is designating' : 'stopped designating'} ${contactName(d.contact, s)}` };
+  }
   return { category: 'Alert', text: `Auto-slow: ${k.AutoSlow.reason}` };
 }
 
@@ -296,6 +334,7 @@ export function contactOf(e: Event): number | null {
   if ('IncomingWeapon' in k) return k.IncomingWeapon.contact;
   if ('RoeRequest' in k) return k.RoeRequest.contact;
   if ('BorderCrossing' in k) return k.BorderCrossing.contact;
+  if ('Designation' in k) return k.Designation.contact;
   return null;
 }
 
