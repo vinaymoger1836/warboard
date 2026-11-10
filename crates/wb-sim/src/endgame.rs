@@ -220,10 +220,20 @@ pub fn resolve(
                             .contains(&wb_content::source::EwEffect::Navigation))
                     && distance_m(j.pos, wk.pos()) <= j.coverage_m
             });
+        // A team designating the target tightens laser-guided weapons (P11).
+        let laser = w.guidance.terminal == Seeker::Laser
+            || w.guidance.terminal_secondary.contains(&Seeker::Laser);
+        let designated = laser
+            && matches!(f.target, crate::components::WeaponTarget::Track { contact, .. }
+                if crate::ground::designated(world, shooter_side, contact));
         let effective_cep = if nav_jammed {
             cep * rules.realism().ew.nav_jam_cep_factor
         } else {
             cep
+        } * if designated {
+            rules.realism().ground.designation_cep_factor
+        } else {
+            1.0
         };
         let f_ew = if nav_jammed {
             1.0 / rules.realism().ew.nav_jam_cep_factor

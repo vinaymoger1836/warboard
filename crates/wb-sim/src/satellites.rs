@@ -233,6 +233,18 @@ pub fn update(world: &mut World) {
                 {
                     continue;
                 }
+                // A formation must span enough ground samples to be found
+                // (small teams and dug-in units hide from coarse imagery).
+                if b.formation {
+                    let size = b
+                        .platform
+                        .and_then(|p| rules.platform(p).signature.visual_size_m)
+                        .unwrap_or(10.0)
+                        * b.size_factor;
+                    if size / gsd.max(1e-6) < pass.eo_detect_pixels {
+                        continue;
+                    }
+                }
                 let sigma = (5.0 * gsd).max(rules.realism().fusion.contact_sigma_floor_m);
                 dets.push(detection(
                     seed,

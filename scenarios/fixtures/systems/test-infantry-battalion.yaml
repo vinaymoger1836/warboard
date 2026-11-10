@@ -1,0 +1,10 @@
+id: test-infantry-battalion
+kind: system
+name: Test Infantry Battalion
+short_name: Infantry battalion
+deploy_as: formation
+setup_min: 5
+components:
+  - { platform: test-rifle-section, count: 36, role: combat }
+emcon_default: on
+design: { archetype: formation-infantry, note: "Generic test fixture (ADR-035); stats in the range of its class" }

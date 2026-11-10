@@ -1,0 +1,5 @@
+id: artillery-rocket-launcher
+kind: archetype
+name: Rocket artillery launcher
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -455,7 +455,8 @@ fn fuse(pics: &mut SidePictures, rules: &Rules, seed: u64, det: Detection, out: 
     if c.level >= fusion.identify_at && c.identity == ContactIdentity::Unknown {
         c.identity = ContactIdentity::Hostile;
     }
-    if det.count_resolved && !c.count_resolved {
+    if det.count_resolved {
+        // A later resolved look corrects the count (losses since the first).
         c.count_resolved = true;
         let n = det.group_size.max(1);
         c.count = (n, n);

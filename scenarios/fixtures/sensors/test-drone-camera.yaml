@@ -1,0 +1,11 @@
+id: test-drone-camera
+kind: sensor
+name: Test drone camera
+sensor_type: eo_ir
+role: [targeting, imaging]
+eo_ir:
+  max_range_km: 30
+  gsd_at_10km_m: 0.3
+  night_capable: true
+  field_of_regard_deg: 360
+design: { archetype: eo-ir-turret, note: "Generic test fixture (ADR-035); stats in the range of its class" }

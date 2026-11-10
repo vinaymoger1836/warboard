@@ -211,6 +211,9 @@ pub struct ScenarioUnit {
     /// Jammer mode at start.
     #[serde(default)]
     pub jammer_mode: Option<JammerMode>,
+    /// Posture a ground formation starts in (hasty defence when absent).
+    #[serde(default)]
+    pub posture: Option<wb_content::source::realism::GroundPosture>,
 }
 
 fn one() -> u32 {
@@ -273,6 +276,22 @@ pub struct TestTerrain {
     pub base_m: i16,
     #[serde(default)]
     pub ridges: Vec<RidgeSpec>,
+    /// Land for ground forces (P11); later patches override earlier ones.
+    #[serde(default)]
+    pub land: Vec<LandSpec>,
+}
+
+/// A box of land of one terrain class: `[west, south, east, north]` degrees.
+/// `water` cuts a lake or a strait.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LandSpec {
+    pub class: wb_content::source::realism::CellClass,
+    #[serde(rename = "box")]
+    pub bbox: [f64; 4],
+    /// Nation id that owns the land (base placement, own territory).
+    #[serde(default)]
+    pub nation: Option<String>,
 }
 
 fn one_u16() -> u16 {
@@ -291,7 +310,36 @@ impl TestTerrain {
                 half_width_m: r.half_width_m,
             })
             .collect();
-        let pack = wb_geo::synthetic::ridge_pack(
+        use wb_content::source::realism::CellClass as C;
+        use wb_geo::TerrainClass as T;
+        let patches = self
+            .land
+            .iter()
+            .map(|l| {
+                let class = match l.class {
+                    C::Water => T::Water,
+                    C::Open => T::Open,
+                    C::Forest => T::Forest,
+                    C::Jungle => T::Jungle,
+                    C::Urban => T::Urban,
+                    C::Desert => T::Desert,
+                    C::Mountain => T::Mountain,
+                    C::Marsh => T::Marsh,
+                    C::Arctic => T::Arctic,
+                };
+                let nation = l
+                    .nation
+                    .as_deref()
+                    .map(wb_geo::NationCode::new)
+                    .transpose()?;
+                Ok(wb_geo::synthetic::Patch {
+                    class,
+                    bbox: l.bbox,
+                    nation,
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        let pack = wb_geo::synthetic::terrain_pack(
             "test-terrain",
             self.west,
             self.south,
@@ -299,6 +347,7 @@ impl TestTerrain {
             self.rows,
             self.base_m,
             &ridges,
+            &patches,
         )
         .map_err(|e| e.to_string())?;
         let mut geo = wb_geo::Geo::new();
@@ -749,6 +798,9 @@ fn spawn_system(
         .side_of(cix)
         .ok_or_else(|| bad(format!("nation `{cid}` is on no side")))?;
     let sys = &rules.db.systems[six.0 as usize];
+    if sys.deploy_as == wb_content::source::system::DeployAs::Formation {
+        return spawn_formation(world, rules, u, six, side, cix, engine_ids);
+    }
     let total: u32 = sys.components.iter().map(|c| c.count).sum();
     if total == 0 || total > 64 {
         return Err(bad("a system needs 1–64 components".into()));
@@ -821,6 +873,86 @@ fn spawn_system(
             Allegiance { side, nation: cix },
             Group {
                 members,
+                system: Some(six),
+                ..Group::default()
+            },
+        ),
+    );
+    Ok(())
+}
+
+/// A ground formation (doc 02 §14): the group `u.id` with one platform
+/// entity `u.id + 1` that carries the equipment counts.
+fn spawn_formation(
+    world: &mut World,
+    rules: &Rules,
+    u: &ScenarioUnit,
+    six: wb_content::compiled::SystemIx,
+    side: u8,
+    cix: NationIx,
+    engine_ids: bool,
+) -> Result<(), ScenarioError> {
+    let bad = |reason: String| ScenarioError::InvalidUnit {
+        id: u.id,
+        name: u.name.clone(),
+        reason,
+    };
+    let body = UnitId(u.id + 1);
+    if (!engine_ids && body.0 >= FIRST_ENGINE_ID) || entity(world, body).is_some() {
+        return Err(ScenarioError::DuplicateUnit(body.0));
+    }
+    let (pix, formation, magazine) = crate::ground::build(rules, six, u.posture)
+        .ok_or_else(|| bad("a formation needs equipment".into()))?;
+    let at = LatLon::from_deg(u.lat_deg.unwrap_or(0.0), u.lon_deg.unwrap_or(0.0));
+    let p = rules.platform(pix);
+    let e = spawn_unit(
+        world,
+        body,
+        (
+            Identity {
+                unit: body,
+                name: u.name.clone(),
+            },
+            Allegiance { side, nation: cix },
+            PlatformRef(pix),
+            Kinematics {
+                lat: at.lat,
+                lon: at.lon,
+                alt_m: 0.0,
+                heading: normalize_bearing(deg_to_rad(u.heading_deg)),
+                speed_mps: 0.0,
+                climb_mps: 0.0,
+            },
+            Steer::default(),
+            GroupMember {
+                group: UnitId(u.id),
+                slot: 0,
+            },
+            BaseRef { home: None },
+            Posture::Moving,
+            magazine,
+            EmconState(u.emcon.unwrap_or(default_emcon(rules, cix, Some(six)))),
+            formation,
+        ),
+    );
+    if !p.ew.is_empty() {
+        let default_mode = default_jammer_mode(rules, p);
+        world.entity_mut(e).insert(JammerState {
+            active: u.jammer.unwrap_or(false),
+            mode: u.jammer_mode.unwrap_or(default_mode),
+        });
+    }
+    spawn_unit(
+        world,
+        UnitId(u.id),
+        (
+            Identity {
+                unit: UnitId(u.id),
+                name: u.name.clone(),
+            },
+            Allegiance { side, nation: cix },
+            Group {
+                members: vec![body],
                 system: Some(six),
                 ..Group::default()
             },

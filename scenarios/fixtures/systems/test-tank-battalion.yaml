@@ -1,0 +1,10 @@
+id: test-tank-battalion
+kind: system
+name: Test Tank Battalion
+short_name: Tank battalion
+deploy_as: formation
+setup_min: 5
+components:
+  - { platform: test-tank, count: 31, role: combat }
+emcon_default: on
+design: { archetype: formation-armour, note: "Generic test fixture (ADR-035); stats in the range of its class" }

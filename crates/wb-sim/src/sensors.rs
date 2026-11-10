@@ -86,6 +86,10 @@ pub(crate) struct Body {
     pub(crate) visible: bool,
     pub(crate) over_land: bool,
     pub(crate) terrain: TerrainClass,
+    /// A ground formation (P11): `group_size` is its equipment count.
+    pub(crate) formation: bool,
+    /// Multiplies the size passive sensors see (a formation's posture).
+    pub(crate) size_factor: f64,
 }
 
 fn signature(rules: &Rules, t: TypeRef) -> Option<&Signature> {
@@ -170,7 +174,7 @@ pub(crate) fn emitting(rules: &Rules, emcon: Emcon, uid: UnitId, now_ms: u64) ->
     }
 }
 
-fn wb_terrain(c: wb_geo::TerrainClass) -> TerrainClass {
+pub(crate) fn wb_terrain(c: wb_geo::TerrainClass) -> TerrainClass {
     use wb_geo::TerrainClass as G;
     match c {
         G::Forest | G::Jungle | G::Marsh => TerrainClass::Forest,
@@ -223,7 +227,18 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
             }
             None => (uid, 1, None),
         };
-        let type_ref = sys.map_or(type_ref, TypeRef::System);
+        let formation = world.get::<crate::components::Formation>(e);
+        // A formation is known by its main equipment and counted by its items.
+        let type_ref = if formation.is_some() {
+            type_ref
+        } else {
+            sys.map_or(type_ref, TypeRef::System)
+        };
+        let group_size = formation.map_or(group_size, |f| {
+            f.items().clamp(1, u32::from(u16::MAX)) as u16
+        });
+        let size_factor = formation.map_or(1.0, |f| crate::ground::size_factor(rules, f));
+        let formation = formation.is_some();
         let (ground_m, over_land, terrain) = match geo {
             Some(g) => {
                 let class = g
@@ -269,14 +284,17 @@ pub(crate) fn bodies(world: &mut World, rules: &Rules, geo: Option<&Geo>) -> Vec
             } else {
                 world.get::<EmconState>(e).map_or(Emcon::On, |x| x.0)
             },
-            fixed: sys.is_some_and(|s| {
-                rules.db.systems[s.0 as usize].deploy_as
-                    == wb_content::source::system::DeployAs::Site
-            }) || (domain == Domain::Ground && k.speed_mps < 0.5),
+            fixed: !formation
+                && (sys.is_some_and(|s| {
+                    rules.db.systems[s.0 as usize].deploy_as
+                        == wb_content::source::system::DeployAs::Site
+                }) || (domain == Domain::Ground && k.speed_mps < 0.5)),
             observer: observer && !at_base,
             visible: !at_base,
             over_land,
             terrain,
+            formation,
+            size_factor,
         });
     }
     out
@@ -704,6 +722,7 @@ fn evaluate(sc: &Scan, los: &mut Los, obs: &Body, m: &Mounted, tgt: &Body, d: f6
                 .and_then(|p| rules.platform(p).signature.visual_size_m),
         }
         .unwrap_or(10.0)
+            * tgt.size_factor
     };
     let Some(six) = m.sensor else {
         // Crew lookout.

@@ -36,9 +36,11 @@ pub fn integrate(world: &mut World) {
         &Posture,
         &Steer,
         &mut Kinematics,
+        Has<crate::components::Formation>,
     )>();
-    for (m, p, posture, steer, mut k) in q.iter_mut(world) {
-        if m.slot != 0 || *posture != Posture::Moving {
+    for (m, p, posture, steer, mut k, formation) in q.iter_mut(world) {
+        // Formations move along their route in the ground stage (P11).
+        if m.slot != 0 || *posture != Posture::Moving || formation {
             continue;
         }
         let p = rules.platform(p.0);

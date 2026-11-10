@@ -1,0 +1,5 @@
+id: tank-main-battle
+kind: archetype
+name: Main battle tank
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

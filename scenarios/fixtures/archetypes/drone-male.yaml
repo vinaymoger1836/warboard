@@ -1,0 +1,5 @@
+id: drone-male
+kind: archetype
+name: Medium-altitude long-endurance drone
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

@@ -27,7 +27,8 @@ const MAGIC: &[u8; 8] = b"WB-STATE";
 /// Bump when the snapshot layout changes: every hash changes with it.
 /// 5 (P7): operations, the war state, fire missions on groups.
 /// 6 (P9): controllers, difficulty and the play mode in the sides.
-pub const FORMAT_VERSION: u8 = 6;
+/// 7 (P11): ground formations, ground tasks, the ground state, terrain patches.
+pub const FORMAT_VERSION: u8 = 7;
 
 /// All components of one unit, group or base.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -52,6 +53,7 @@ pub struct UnitRecord {
     pub health: Option<Health>,
     pub roe: Option<RoeSetting>,
     pub jammer: Option<JammerState>,
+    pub formation: Option<crate::components::Formation>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -73,6 +75,7 @@ pub struct Snapshot {
     pub war: crate::reports::War,
     pub deployment: crate::deployment::Deployment,
     pub ai: crate::ai::AiBrains,
+    pub ground: crate::ground::GroundState,
     pub units: Vec<UnitRecord>,
 }
 
@@ -103,6 +106,7 @@ pub fn capture(world: &World) -> Snapshot {
                 health: world.get::<Health>(e).cloned(),
                 roe: world.get::<RoeSetting>(e).copied(),
                 jammer: world.get::<JammerState>(e).copied(),
+                formation: world.get::<crate::components::Formation>(e).cloned(),
             })
         })
         .collect();
@@ -124,6 +128,7 @@ pub fn capture(world: &World) -> Snapshot {
         war: world.resource::<crate::reports::War>().clone(),
         deployment: world.resource::<crate::deployment::Deployment>().clone(),
         ai: world.resource::<crate::ai::AiBrains>().clone(),
+        ground: world.resource::<crate::ground::GroundState>().clone(),
         units,
     }
 }
@@ -143,6 +148,7 @@ pub fn base_resources(world: &mut World, rules: Rules) {
     world.insert_resource(crate::reports::War::default());
     world.insert_resource(crate::deployment::Deployment::default());
     world.insert_resource(crate::ai::AiBrains::default());
+    world.insert_resource(crate::ground::GroundState::default());
 }
 
 /// Builds a world from a snapshot (in `UnitId` order). The order log and
@@ -163,6 +169,7 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
     world.insert_resource(snap.war);
     world.insert_resource(snap.deployment);
     world.insert_resource(snap.ai);
+    world.insert_resource(snap.ground);
     if let Some(t) = snap.test_territory_areas {
         world.insert_resource(t);
     }
@@ -230,6 +237,9 @@ pub fn restore(snap: Snapshot, rules: Rules) -> World {
             e.insert(c);
         }
         if let Some(c) = u.jammer {
+            e.insert(c);
+        }
+        if let Some(c) = u.formation {
             e.insert(c);
         }
         let ent = e.id();

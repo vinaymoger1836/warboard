@@ -1,0 +1,10 @@
+id: test-recon-detachment
+kind: system
+name: Test Recon Detachment
+short_name: Recon team
+deploy_as: formation
+setup_min: 5
+components:
+  - { platform: test-recon-team, count: 2, role: support }
+emcon_default: on
+design: { archetype: formation-recon, note: "Generic test fixture (ADR-035); stats in the range of its class" }

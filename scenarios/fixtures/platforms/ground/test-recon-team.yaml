@@ -1,0 +1,16 @@
+id: test-recon-team
+kind: platform
+name: Test Recon Team
+short_name: Recon team
+category: ground/infantry
+target_class: ground_vehicle
+crew: 6
+mobility: { road_speed_kmh: 40, offroad_speed_kmh: 15 }
+signature: { rcs_m2: { front: 0.5, side: 0.5, rear: 0.5, top: 0.5 }, visual_size_m: 1.5 }
+sensors:
+  - { sensor: test-team-optics, height_m: 2 }
+  - { sensor: test-team-scope, height_m: 2 }
+datalinks: [test-link]
+ground: { combat_value: 0.5, protection: 1, night_capable: true, sabotage_skill: 0.9, designate_km: 8 }
+durability: { model: ground, damage_points: 5 }
+design: { archetype: recon-team, note: "Generic test fixture (ADR-035); stats in the range of its class" }

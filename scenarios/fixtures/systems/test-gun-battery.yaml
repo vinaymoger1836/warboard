@@ -1,0 +1,10 @@
+id: test-gun-battery
+kind: system
+name: Test Gun Battery
+short_name: Gun battery
+deploy_as: formation
+setup_min: 5
+components:
+  - { platform: test-gun, count: 6, role: support }
+emcon_default: on
+design: { archetype: formation-artillery, note: "Generic test fixture (ADR-035); stats in the range of its class" }

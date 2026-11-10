@@ -1,0 +1,5 @@
+id: formation-infantry
+kind: archetype
+name: Infantry battalion
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

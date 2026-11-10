@@ -1,0 +1,29 @@
+id: test-rocket
+kind: weapon
+name: Test Artillery Rocket
+category: rocket
+targets: [ground]
+target_class: ballistic_missile
+profile:
+  kind: rocket
+  boost_s: 3
+  sustain_s: 6
+  max_speed_mach: 4.0
+  min_speed_mach: 0.5
+  coast_tau_s: { sea_level: 40, high_alt: 80 }
+  max_range_km: 40
+  min_range_km: 5
+guidance:
+  midcourse: [inertial, satnav]
+  terminal: satnav_ins
+engage_on_remote: true
+warhead_kg: 90
+warhead: blast_fragmentation
+cep_m: 30
+lethal_radius_m: 40
+mass_kg: 300
+station_category: [test_rocket_tube]
+rounds_per_cell: 1
+signature:
+  rcs_m2: { front: 0.05, side: 0.2, rear: 0.05, top: 0.2 }
+design: { archetype: rocket-artillery, note: "Generic test fixture (ADR-035); stats in the range of its class" }

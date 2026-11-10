@@ -1,0 +1,5 @@
+id: formation-artillery
+kind: archetype
+name: Artillery battery
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

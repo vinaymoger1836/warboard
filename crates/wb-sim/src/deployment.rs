@@ -461,6 +461,7 @@ pub fn apply(
         emcon: None,
         jammer: None,
         jammer_mode: None,
+        posture: None,
     };
     match force {
         ForceIx::Platform(p) => {

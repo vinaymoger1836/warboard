@@ -254,6 +254,7 @@ impl Builder<'_> {
             emcon: None,
             jammer: None,
             jammer_mode: None,
+            posture: None,
         }
     }
 

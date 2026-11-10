@@ -18,6 +18,7 @@ pub mod engage;
 pub mod events;
 pub mod flyout;
 pub mod fuel;
+pub mod ground;
 pub mod inventory;
 pub mod movement;
 pub mod operations;
@@ -75,6 +76,8 @@ pub const STAGES: &[Stage] = &[
     ("tasks", tasks::run),
     ("movement", movement::integrate),
     ("formation", movement::formation),
+    // Ground formations: routes, postures, supply and the 60 s combat step.
+    ("ground", ground::run),
     ("satellites", satellites::update),
     ("scripted", sensors::move_scripted),
     // After every mover, so a weapon's closest approach sees where its

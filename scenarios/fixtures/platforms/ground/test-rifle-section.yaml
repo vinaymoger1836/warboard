@@ -1,0 +1,12 @@
+id: test-rifle-section
+kind: platform
+name: Test Rifle Section
+short_name: Rifle section
+category: ground/infantry
+target_class: ground_vehicle
+crew: 9
+mobility: { road_speed_kmh: 60, offroad_speed_kmh: 20 }
+signature: { rcs_m2: { front: 5, side: 10, rear: 5, top: 10 }, visual_size_m: 6 }
+ground: { combat_value: 3, protection: 1.5 }
+durability: { model: ground, damage_points: 20 }
+design: { archetype: infantry-section, note: "Generic test fixture (ADR-035); stats in the range of its class" }

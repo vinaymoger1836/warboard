@@ -25,7 +25,7 @@ pub struct Placed {
     pub real_name: Option<String>,
 }
 
-fn cell_class(c: TerrainClass) -> CellClass {
+pub(crate) fn cell_class(c: TerrainClass) -> CellClass {
     match c {
         TerrainClass::Water => CellClass::Water,
         TerrainClass::Open => CellClass::Open,

@@ -1,0 +1,12 @@
+id: test-tank
+kind: platform
+name: Test Tank
+short_name: Tank
+category: ground/armour
+target_class: ground_vehicle
+crew: 3
+mobility: { road_speed_kmh: 60, offroad_speed_kmh: 30 }
+signature: { rcs_m2: { front: 10, side: 25, rear: 10, top: 30 }, visual_size_m: 7 }
+ground: { combat_value: 10, protection: 4, heavy: true, night_capable: true }
+durability: { model: ground, damage_points: 80 }
+design: { archetype: tank-main-battle, note: "Generic test fixture (ADR-035); stats in the range of its class" }

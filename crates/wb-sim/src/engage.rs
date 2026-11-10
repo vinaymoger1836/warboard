@@ -102,6 +102,7 @@ pub fn run(world: &mut World) {
         // A strike whose group is all deployed but has no rounds of the ordered weapon
         // left on working launchers can never fire: end it and say why.
         if let Task::Strike { weapon, .. } | Task::Suppress { weapon, .. } = g.task
+            && g.mode == Mode::Task
             && g.members.iter().all(|m| {
                 entity(world, *m)
                     .and_then(|e| world.get::<Posture>(e))
@@ -374,6 +375,11 @@ fn has_track(
 
     if own_source {
         return c.quality <= Quality::Track;
+    }
+    // A weapon that flies to coordinates (CEP) can be released on the side's
+    // estimate of a ground contact, whoever found it (doc 03 §8.2).
+    if w.cep_m.is_some() && c.domain == Domain::Ground && !is_autonomous {
+        return true;
     }
 
     // In autonomous mode, the site cannot use remote tracks from external units.
@@ -863,7 +869,12 @@ fn offensive(
                 .filter(|wix| strike_weapon.is_none_or(|x| x == *wix))
                 .filter(|wix| {
                     let w = &rules.db.weapons[wix.0 as usize];
-                    fits(rules, w, &c)
+                    // An ordered strike may use a CEP weapon, which rolls
+                    // against its lethal radius, not a Pk table.
+                    (fits(rules, w, &c)
+                        || (ordered.is_some()
+                            && w.cep_m.is_some()
+                            && w.targets.contains(&c.domain)))
                         && has_track(world, &c, Some(g), s.uid, w, now)
                         && range >= w.profile.min_range_m
                         && range <= doctrine_range(rules, *wix, doc, v_close, v_escape)

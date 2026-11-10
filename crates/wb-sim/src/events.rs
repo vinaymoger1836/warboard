@@ -3,7 +3,7 @@
 
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
-use wb_content::source::realism::ContactLevel;
+use wb_content::source::realism::{ContactLevel, GroundPosture};
 use wb_content::source::{Domain, Emcon};
 use wb_core::{ContactId, UnitId};
 
@@ -282,6 +282,74 @@ pub enum EventKind {
         target: UnitId,
         target_side: u8,
         target_name: String,
+    },
+    /// A formation's posture changed (doc 02 §14, P11).
+    PostureChanged {
+        formation: UnitId,
+        #[cfg_attr(
+            feature = "ts",
+            ts(type = "\"moving\" | \"attack\" | \"hasty\" | \"prepared\"")
+        )]
+        posture: GroundPosture,
+    },
+    /// A ground task could not be carried out; `reason` says why (no route).
+    GroundOrderFailed {
+        formation: UnitId,
+        reason: String,
+    },
+    /// An own formation came into contact with enemy ground forces.
+    GroundContact {
+        formation: UnitId,
+    },
+    /// An own formation lost equipment in a ground combat step, with the
+    /// factors it fought under (CLAUDE.md rule 4).
+    GroundCombat {
+        formation: UnitId,
+        lost_equipment: u32,
+        lost_personnel: u32,
+        strength_pct: f64,
+        morale_pct: f64,
+        factors: crate::ground::GroundFactors,
+    },
+    /// A weapon struck an own formation (doc 02 §13): losses by the weapon's
+    /// warhead and the posture's `exposure`. The struck side only (ADR-027).
+    FormationStruck {
+        formation: UnitId,
+        lost_equipment: u32,
+        lost_personnel: u32,
+        strength_pct: f64,
+        #[cfg_attr(
+            feature = "ts",
+            ts(type = "\"moving\" | \"attack\" | \"hasty\" | \"prepared\"")
+        )]
+        posture: GroundPosture,
+        exposure: f64,
+    },
+    /// An own formation broke and is falling back.
+    FormationRetreated {
+        formation: UnitId,
+        reason: String,
+    },
+    /// Every enemy an attacking formation was fighting broke or was destroyed.
+    Breakthrough {
+        formation: UnitId,
+    },
+    SupplyLow {
+        formation: UnitId,
+        supply_pct: f64,
+    },
+    /// A raid ended: `component` is what it put out of action.
+    Sabotage {
+        formation: UnitId,
+        success: bool,
+        component: Option<String>,
+        reason: String,
+    },
+    /// A team started or stopped designating a contact for strikes.
+    Designation {
+        formation: UnitId,
+        contact: ContactId,
+        on: bool,
     },
     /// A salvo finished: counts of hits, misses, intercepts, decoys and jammed.
     SalvoReport {

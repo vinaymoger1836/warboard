@@ -1,0 +1,15 @@
+id: test-rocket-launcher
+kind: platform
+name: Test Rocket Launcher
+short_name: Rocket launcher
+category: ground/artillery
+target_class: launcher
+crew: 4
+mobility: { road_speed_kmh: 60, offroad_speed_kmh: 25 }
+signature: { rcs_m2: { front: 10, side: 20, rear: 10, top: 25 }, visual_size_m: 8 }
+stations:
+  - { id: tubes, kind: launcher, categories: [test_rocket_tube], capacity: 12 }
+datalinks: [test-link]
+ground: { combat_value: 1, protection: 1 }
+durability: { model: ground, damage_points: 30 }
+design: { archetype: artillery-rocket-launcher, note: "Generic test fixture (ADR-035); stats in the range of its class" }

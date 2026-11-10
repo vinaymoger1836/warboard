@@ -37,13 +37,21 @@ pub struct Ridge {
 pub struct Patch {
     pub class: crate::TerrainClass,
     pub bbox: [f64; 4],
+    /// Owner of the land, if any.
+    pub nation: Option<crate::NationCode>,
 }
 
 impl Patch {
     pub fn new(class: crate::TerrainClass, bbox: [f64; 4]) -> Self {
-        Self { class, bbox }
+        Self {
+            class,
+            bbox,
+            nation: None,
+        }
     }
 }
+
+type Cells = std::collections::BTreeMap<u64, (crate::TerrainClass, Option<crate::NationCode>)>;
 
 /// A zstd frame made of raw (stored) blocks: valid zstd without an encoder.
 fn zstd_raw(data: &[u8]) -> Vec<u8> {
@@ -138,9 +146,14 @@ fn dem(west: i16, south: i16, cols: u16, rows: u16, base_m: i16, ridges: &[Ridge
     out
 }
 
-/// A `.wbh3` / `.bin` file with no nations from `(first cell, cell count,
-/// block bytes)` blocks in cell order.
-fn blocked(magic: &[u8; 4], cells: u64, blocks: &[(u64, u32, Vec<u8>)]) -> Vec<u8> {
+/// A `.wbh3` / `.bin` file from `(first cell, cell count, block bytes)`
+/// blocks in cell order; `nations` are the codes after index 0 (none).
+fn blocked(
+    magic: &[u8; 4],
+    cells: u64,
+    nations: &[crate::NationCode],
+    blocks: &[(u64, u32, Vec<u8>)],
+) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(magic);
     out.extend_from_slice(&1u16.to_le_bytes());
@@ -149,9 +162,15 @@ fn blocked(magic: &[u8; 4], cells: u64, blocks: &[(u64, u32, Vec<u8>)]) -> Vec<u
     out.extend_from_slice(&cells.to_le_bytes());
     out.extend_from_slice(&(blocks.len() as u32).to_le_bytes());
     out.extend_from_slice(&(BLOCK_CELLS as u32).to_le_bytes());
-    out.extend_from_slice(&1u16.to_le_bytes());
+    out.extend_from_slice(&(nations.len() as u16 + 1).to_le_bytes());
     out.resize(32, 0);
     out.extend_from_slice(&[0u8; 4]);
+    for n in nations {
+        let mut code = [0u8; 4];
+        let b = n.as_str().as_bytes();
+        code[..b.len()].copy_from_slice(b);
+        out.extend_from_slice(&code);
+    }
     let blobs: Vec<Vec<u8>> = blocks.iter().map(|b| zstd_raw(&b.2)).collect();
     let mut data_at = out.len() as u64 + 24 * blocks.len() as u64;
     for ((first, count, _), blob) in blocks.iter().zip(&blobs) {
@@ -172,10 +191,7 @@ const BLOCK_CELLS: usize = 4096;
 
 /// Terrain cells of the patches: every cell with a sample point inside a
 /// patch takes the class of the last such patch; `Water` removes the cell.
-fn patch_cells(
-    res: h3o::Resolution,
-    patches: &[Patch],
-) -> Result<std::collections::BTreeMap<u64, crate::TerrainClass>, GeoError> {
+fn patch_cells(res: h3o::Resolution, patches: &[Patch]) -> Result<Cells, GeoError> {
     let mut out = std::collections::BTreeMap::new();
     let step = res.edge_length_km() / 111.32 * 0.4;
     for p in patches {
@@ -196,7 +212,7 @@ fn patch_cells(
                 if p.class == crate::TerrainClass::Water {
                     out.remove(&cell);
                 } else {
-                    out.insert(cell, p.class);
+                    out.insert(cell, (p.class, p.nation));
                 }
                 lon += lon_step;
             }
@@ -245,8 +261,17 @@ pub fn terrain_pack(
     let cell = u64::from(corner.to_cell(res));
     let mut cells = patch_cells(res, patches)?;
     // The corner cell is always open land (packs before P11 had only it).
-    cells.insert(cell, crate::TerrainClass::Open);
-    let list: Vec<(u64, crate::TerrainClass)> = cells.into_iter().collect();
+    cells
+        .entry(cell)
+        .or_insert((crate::TerrainClass::Open, None));
+    let nations: Vec<crate::NationCode> = cells
+        .values()
+        .filter_map(|c| c.1)
+        .collect::<std::collections::BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    let list: Vec<(u64, (crate::TerrainClass, Option<crate::NationCode>))> =
+        cells.into_iter().collect();
     // Structure of arrays per block: cells, class, elevation, slope, flags, nation.
     let blocks: Vec<(u64, u32, Vec<u8>)> = list
         .chunks(BLOCK_CELLS)
@@ -255,21 +280,26 @@ pub fn terrain_pack(
             for (c, _) in chunk {
                 b.extend_from_slice(&c.to_le_bytes());
             }
-            for (_, class) in chunk {
+            for (_, (class, _)) in chunk {
                 b.push(*class as u8);
             }
             for _ in chunk {
                 b.extend_from_slice(&base_m.to_le_bytes());
             }
             b.extend(std::iter::repeat_n(0u8, chunk.len()));
-            for (_, class) in chunk {
+            for (_, (class, _)) in chunk {
                 b.push(if *class == crate::TerrainClass::Urban {
                     crate::cells::FLAG_URBAN
                 } else {
                     0
                 });
             }
-            b.extend(std::iter::repeat_n(0u8, chunk.len() * 2));
+            for (_, (_, nation)) in chunk {
+                let ix = nation
+                    .and_then(|n| nations.iter().position(|x| *x == n))
+                    .map_or(0u16, |i| i as u16 + 1);
+                b.extend_from_slice(&ix.to_le_bytes());
+            }
             (chunk[0].0, chunk.len() as u32, b)
         })
         .collect();
@@ -282,8 +312,14 @@ pub fn terrain_pack(
     Pack::new(
         id,
         src("dem", dem(west, south, cols, rows, base_m, ridges)),
-        src("terrain", blocked(b"WBH3", list.len() as u64, &blocks)),
-        src("territory", blocked(b"WBTR", 1, &[(cell, 1, territory)])),
+        src(
+            "terrain",
+            blocked(b"WBH3", list.len() as u64, &nations, &blocks),
+        ),
+        src(
+            "territory",
+            blocked(b"WBTR", 1, &[], &[(cell, 1, territory)]),
+        ),
     )
 }
 

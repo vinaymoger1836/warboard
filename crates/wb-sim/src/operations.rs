@@ -984,6 +984,12 @@ pub fn task_points(world: &World, side: u8, task: &Task) -> Vec<LatLon> {
             StrikeTarget::Contact(c) => contact_at(world, side, *c).into_iter().collect(),
         },
         Task::Intercept { contact } => contact_at(world, side, *contact).into_iter().collect(),
+        Task::Ground(o) => o
+            .contact
+            .and_then(|c| contact_at(world, side, c))
+            .or(o.dest)
+            .into_iter()
+            .collect(),
         Task::Idle | Task::Rtb { .. } | Task::Land { .. } | Task::Transfer { .. } => Vec::new(),
     }
 }
@@ -1642,6 +1648,7 @@ fn arrived(world: &World, t: &PhaseTask) -> bool {
                 Task::Rtb { .. } | Task::Land { .. } | Task::Transfer { .. } => {
                     matches!(g.mode, Mode::AtBase { .. })
                 }
+                Task::Ground(o) => o.arrived,
                 _ => {
                     g.on_station || (t.away.contains(gid) && matches!(g.mode, Mode::AtBase { .. }))
                 }
@@ -1686,6 +1693,9 @@ fn task_done(world: &World, t: &PhaseTask) -> bool {
                     .is_none()
                 }
                 Task::Idle => true,
+                // A raid ends as a withdrawal (another kind); the rest are
+                // done on arrival.
+                Task::Ground(o) => o.arrived,
                 _ => home,
             }
         })

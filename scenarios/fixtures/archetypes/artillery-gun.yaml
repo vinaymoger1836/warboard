@@ -1,0 +1,5 @@
+id: artillery-gun
+kind: archetype
+name: Towed or self-propelled gun
+bands: {}
+note: "Class bands from general knowledge of the class, never one real system (doc 04 §4)."

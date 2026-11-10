@@ -58,7 +58,7 @@ pub(crate) fn subsystem_name(s: Subsystem) -> &'static str {
 }
 
 /// Effective warhead kg: warhead mass × the realism multiplier of its type.
-fn effective_kg(rules: &Rules, w: &Weapon) -> f64 {
+pub(crate) fn effective_kg(rules: &Rules, w: &Weapon) -> f64 {
     let m = w
         .warhead
         .and_then(|h| rules.realism().damage.warhead_multiplier.get(&h).copied())
@@ -103,6 +103,11 @@ pub fn hit(
     }
     if world.get::<ScriptedTarget>(te).is_some() {
         destroy(world, target);
+        return;
+    }
+    // A formation loses equipment, not damage points (doc 02 §13).
+    if world.get::<crate::components::Formation>(te).is_some() {
+        crate::ground::strike(world, rules, seed, weapon, w, target);
         return;
     }
     let Some(p) = world.get::<PlatformRef>(te).map(|p| rules.platform(p.0)) else {
@@ -209,6 +214,7 @@ fn abort(world: &mut World, rules: &Rules, side: u8, te: Entity) -> bool {
 /// A burst at `at` (a point strike): damages the nearest base within
 /// `base_radius`.
 pub fn burst(world: &mut World, rules: &Rules, seed: u64, weapon: UnitId, w: &Weapon, at: LatLon) {
+    crate::ground::burst(world, rules, seed, weapon, w, at);
     let dr = &rules.realism().damage;
     let tick = world.resource::<SimClock>().tick;
     let now = world.resource::<SimClock>().sim_time_ms;
@@ -238,7 +244,50 @@ pub fn burst(world: &mut World, rules: &Rules, seed: u64, weapon: UnitId, w: &We
     let repair =
         rule.repair_min_s + (rule.repair_max_s - rule.repair_min_s) * draw(RngPurpose::Damage, 1);
     let until = now + (repair * 1_000.0) as u64;
-    let Some(be) = entity(world, b.id) else {
+    damage_component(world, rules, b.id, b.side, kind, until);
+}
+
+/// A raid's sabotage of a base (P11): one working component, by weight, is
+/// out of action for its repair time. Returns its name; none if every
+/// component is already down.
+pub(crate) fn sabotage(
+    world: &mut World,
+    rules: &Rules,
+    seed: u64,
+    base: UnitId,
+    actor: UnitId,
+) -> Option<String> {
+    let dr = &rules.realism().damage;
+    let tick = world.resource::<SimClock>().tick;
+    let now = world.resource::<SimClock>().sim_time_ms;
+    let be = entity(world, base)?;
+    let side = world.get::<Allegiance>(be)?.side;
+    let down: Vec<BaseComponentKind> = world.get::<BaseSite>(be)?.damaged.keys().copied().collect();
+    let draw = |n: u32| rng(seed, RngPurpose::Sabotage, u64::from(base.0), tick, actor.0 ^ n);
+    let table: Vec<(BaseComponentKind, f64)> = dr
+        .base_components
+        .iter()
+        .filter(|(k, _)| !down.contains(k))
+        .map(|(k, r)| (*k, r.weight))
+        .collect();
+    let kind = pick(&table, draw(1))?;
+    let rule = &dr.base_components[&kind];
+    let repair = rule.repair_min_s + (rule.repair_max_s - rule.repair_min_s) * draw(2);
+    damage_component(world, rules, base, side, kind, now + (repair * 1_000.0) as u64);
+    Some(name_of(kind).to_owned())
+}
+
+/// Puts a base component out of action until `until`.
+fn damage_component(
+    world: &mut World,
+    rules: &Rules,
+    base: UnitId,
+    side: u8,
+    kind: BaseComponentKind,
+    until: u64,
+) {
+    let dr = &rules.realism().damage;
+    let Some(be) = entity(world, base) else {
         return;
     };
     {
@@ -255,9 +304,9 @@ pub fn burst(world: &mut World, rules: &Rules, seed: u64, weapon: UnitId, w: &We
     }
     emit(
         world,
-        b.side,
+        side,
         EventKind::BaseComponentDamaged {
-            base: b.id,
+            base,
             component: name_of(kind).to_owned(),
             repaired_at_ms: until,
         },

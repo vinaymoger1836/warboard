@@ -1,0 +1,10 @@
+id: test-armour-column
+kind: system
+name: Test Armour Column
+short_name: Armour column
+deploy_as: formation
+setup_min: 5
+components:
+  - { platform: test-tank, count: 12, role: combat }
+emcon_default: on
+design: { archetype: formation-armour, note: "Generic test fixture (ADR-035); stats in the range of its class" }

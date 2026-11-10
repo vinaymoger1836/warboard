@@ -140,6 +140,11 @@ struct Measure {
     phase: Option<String>,
     #[serde(default)]
     phase_b: Option<String>,
+    /// `event_sequence`: the side's events that must follow each other, each
+    /// `Kind` or `Kind:text` (the text must occur in the event's YAML form,
+    /// e.g. `ContactClassified:level: class`).
+    #[serde(default)]
+    events: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, PartialEq, Eq)]
@@ -251,6 +256,17 @@ enum Metric {
     OperationCompleted,
     /// Own units of the side destroyed (scenario units and their members).
     UnitsLost,
+    /// 1 when the side saw `events` in that order (each after the one
+    /// before), else 0 (the strike chain, doc 03 §8.2).
+    EventSequence,
+    /// Truth: share of formation `group`'s full strength it has lost (1 when
+    /// it is destroyed).
+    StrengthLost,
+    /// Truth: `strength_lost` of formation `group` over that of formation
+    /// `target` (attacker over defender: the loss ratio of a ground fight).
+    LossRatio,
+    /// Truth: equipment items formation `group` has left.
+    EquipmentLeft,
 }
 
 impl Metric {
@@ -284,6 +300,10 @@ impl Metric {
                 | Metric::PhasesDone
                 | Metric::OperationCompleted
                 | Metric::UnitsLost
+                | Metric::EventSequence
+                | Metric::StrengthLost
+                | Metric::LossRatio
+                | Metric::EquipmentLeft
         )
     }
 
@@ -864,7 +884,62 @@ fn operation_value(sim: &Sim, m: &Measure) -> Option<f64> {
     }
 }
 
+/// A formation's truth by its scenario group id; none once it is destroyed.
+fn formation_of(sim: &Sim, group: u32) -> Option<crate::components::Formation> {
+    let world = sim.world();
+    let lead = *members_of(sim, group).first()?;
+    world
+        .get::<crate::components::Formation>(crate::world::entity(world, lead)?)
+        .cloned()
+}
+
+fn strength_lost(sim: &Sim, group: u32) -> f64 {
+    let rules = sim.world().resource::<crate::Rules>();
+    formation_of(sim, group).map_or(1.0, |f| 1.0 - crate::ground::strength(rules, &f))
+}
+
+fn ground_value(sim: &Sim, m: &Measure) -> Option<f64> {
+    match m.metric {
+        Metric::StrengthLost => Some(strength_lost(sim, m.group?)),
+        Metric::LossRatio => {
+            let d = strength_lost(sim, m.target?);
+            let a = strength_lost(sim, m.group?);
+            (d > 0.0).then_some(a / d)
+        }
+        Metric::EquipmentLeft => {
+            Some(formation_of(sim, m.group?).map_or(0.0, |f| f64::from(f.items())))
+        }
+        Metric::EventSequence => {
+            let side = m.side?;
+            let mut from = 0;
+            let events = sim.events();
+            for want in m.events.as_ref()? {
+                let (kind, text) = want.split_once(':').unwrap_or((want, ""));
+                let hit = events[from..].iter().position(|e| {
+                    side_of(e) == side && e.sides != 0 && {
+                        let yaml = serde_yaml::to_string(&e.kind).unwrap_or_default();
+                        yaml.starts_with(&format!("!{kind}
+")) && yaml.contains(text)
+                    }
+                });
+                match hit {
+                    Some(i) => from += i + 1,
+                    None => return Some(0.0),
+                }
+            }
+            Some(1.0)
+        }
+        _ => None,
+    }
+}
+
 fn combat_value(sim: &Sim, m: &Measure, log: &CombatLog) -> Option<f64> {
+    if matches!(
+        m.metric,
+        Metric::EventSequence | Metric::StrengthLost | Metric::LossRatio | Metric::EquipmentLeft
+    ) {
+        return ground_value(sim, m);
+    }
     if matches!(
         m.metric,
         Metric::PhaseStartGapTicks

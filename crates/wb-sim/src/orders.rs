@@ -156,6 +156,48 @@ pub enum TaskOrder {
         #[cfg_attr(feature = "ts", ts(optional))]
         count: Option<u32>,
     },
+    /// Ground formations (doc 03 §5, P11). `Move` with one waypoint is their
+    /// march; the route is found on the terrain grid.
+    /// Advance on a contact or a point and fight what is met.
+    Attack {
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        contact: Option<u32>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        point: Option<LonLat>,
+    },
+    /// Go to a point (or stay) and dig in.
+    Defend {
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        point: Option<LonLat>,
+    },
+    /// Stay and dig in; do not give way while strength lasts.
+    Hold,
+    /// Fall back to a point, or to the nearest own base.
+    Withdraw {
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        point: Option<LonLat>,
+    },
+    /// Watch a contact or a point from a stand-off distance.
+    Recon {
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        contact: Option<u32>,
+        #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        point: Option<LonLat>,
+    },
+    /// Special forces: sabotage the enemy base at the point, then return.
+    Raid {
+        point: LonLat,
+    },
+    /// Mark a contact for strikes.
+    Designate {
+        contact: u32,
+    },
 }
 
 fn yes() -> bool {
@@ -684,7 +726,13 @@ fn classify(world: &World, order: &Order) -> RejectKind {
     let task = |t: &TaskOrder| match t {
         TaskOrder::Rtb { base: Some(b) } => base(b),
         TaskOrder::Land { base: b } | TaskOrder::Transfer { base: b } => base(b),
-        TaskOrder::Intercept { contact: c } => contact(*c),
+        TaskOrder::Intercept { contact: c } | TaskOrder::Designate { contact: c } => contact(*c),
+        TaskOrder::Attack {
+            contact: Some(c), ..
+        }
+        | TaskOrder::Recon {
+            contact: Some(c), ..
+        } => contact(*c),
         TaskOrder::Strike {
             contact: Some(c), ..
         }
@@ -1247,6 +1295,37 @@ pub(crate) fn resolve_task(
     platforms.sort();
     platforms.dedup();
     let plats: Vec<_> = platforms.iter().map(|ix| rules.platform(*ix)).collect();
+    // Ground formations take the ground tasks (and strikes, for artillery).
+    let formations: Vec<UnitId> = picks
+        .iter()
+        .flat_map(|p| &p.members)
+        .copied()
+        .filter(|m| {
+            entity(world, *m)
+                .is_some_and(|e| world.get::<crate::components::Formation>(e).is_some())
+        })
+        .collect();
+    let n_members: usize = picks.iter().map(|p| p.members.len()).sum();
+    if !formations.is_empty() {
+        if formations.len() != n_members {
+            return Err("Ground formations take their own orders; select them on their own".to_owned());
+        }
+        if let Some(task) = resolve_ground(world, geo, &rules, side, &formations, order)? {
+            return Ok(task);
+        }
+    } else if matches!(
+        order,
+        TaskOrder::Attack { .. }
+            | TaskOrder::Defend { .. }
+            | TaskOrder::Hold
+            | TaskOrder::Withdraw { .. }
+            | TaskOrder::Recon { .. }
+            | TaskOrder::Raid { .. }
+            | TaskOrder::Designate { .. }
+    ) {
+        return Err("Only ground formations take that task".to_owned());
+    }
+    let ground = plats.iter().all(|p| p.domain == Domain::Ground);
     let air = plats.iter().all(|p| rules.is_air(p));
     let surface = plats.iter().all(|p| !rules.is_air(p));
     if !air && !surface {
@@ -1506,12 +1585,128 @@ pub(crate) fn resolve_task(
                 fired: 0,
             }
         }
+        TaskOrder::Attack { .. }
+        | TaskOrder::Defend { .. }
+        | TaskOrder::Hold
+        | TaskOrder::Withdraw { .. }
+        | TaskOrder::Recon { .. }
+        | TaskOrder::Raid { .. }
+        | TaskOrder::Designate { .. } => {
+            return Err("Only ground formations take that task".to_owned());
+        }
     };
 
-    if surface && let Some(geo) = geo {
+    if surface && !ground && let Some(geo) = geo {
         check_water(&rules, geo, &bases, lead_pos, &task)?;
     }
     Ok(task)
+}
+
+/// A ground formation's task (doc 03 §5). `None` for strikes, which
+/// formations with weapons take like any other unit. Checks that every
+/// formation picked can do it and has a route.
+fn resolve_ground(
+    world: &World,
+    geo: Option<&Geo>,
+    rules: &Rules,
+    side: u8,
+    formations: &[UnitId],
+    order: &TaskOrder,
+) -> Result<Option<Task>, String> {
+    use crate::components::{Formation, GroundKind, GroundOrder};
+    let contact_at = |raw: u32| -> Result<(ContactId, LatLon), String> {
+        let (id, _) = own_contact(world, side, raw)?;
+        let pics = world.resource::<crate::picture::SidePictures>();
+        let at = pics.sides[usize::from(side)]
+            .get(id)
+            .and_then(|c| c.est)
+            .map(|e| e.at)
+            .ok_or_else(|| format!("Unknown contact C{raw}"))?;
+        Ok((id, at))
+    };
+    let target = |contact: &Option<u32>,
+                  at: &Option<LonLat>,
+                  what: &str|
+     -> Result<(Option<ContactId>, LatLon), String> {
+        match (contact, at) {
+            (Some(c), None) => contact_at(*c).map(|(id, p)| (Some(id), p)),
+            (None, Some(p)) => Ok((None, point(*p)?)),
+            _ => Err(format!("{what} needs a contact or a point, not both")),
+        }
+    };
+    let (kind, dest, contact) = match order {
+        TaskOrder::Move { waypoints, .. } => {
+            let [p] = waypoints.as_slice() else {
+                return Err("A formation marches to one destination: give one point".to_owned());
+            };
+            (GroundKind::Move, Some(point(*p)?), None)
+        }
+        TaskOrder::Attack { contact, point: at } => {
+            let (c, p) = target(contact, at, "An attack")?;
+            (GroundKind::Attack, Some(p), c)
+        }
+        TaskOrder::Defend { point: at } => {
+            (GroundKind::Defend, at.map(point).transpose()?, None)
+        }
+        TaskOrder::Hold => (GroundKind::Hold, None, None),
+        TaskOrder::Withdraw { point: at } => {
+            (GroundKind::Withdraw, at.map(point).transpose()?, None)
+        }
+        TaskOrder::Recon { contact, point: at } => {
+            let (c, p) = target(contact, at, "Recon")?;
+            (GroundKind::Recon, Some(p), c)
+        }
+        TaskOrder::Raid { point: at } => (GroundKind::Raid, Some(point(*at)?), None),
+        TaskOrder::Designate { contact } => {
+            let (c, p) = contact_at(*contact)?;
+            (GroundKind::Designate, Some(p), Some(c))
+        }
+        TaskOrder::Strike { .. } | TaskOrder::Suppress { .. } => return Ok(None),
+        _ => {
+            return Err(
+                "Ground formations take ground tasks: move, attack, defend, hold, withdraw, recon, raid, designate or strike"
+                    .to_owned(),
+            );
+        }
+    };
+    let mut dest = dest;
+    for m in formations {
+        let e = entity(world, *m).ok_or("Unknown unit")?;
+        let f = world.get::<Formation>(e).ok_or("Unknown unit")?;
+        let name = world.get::<Identity>(e).map_or("", |i| i.name.as_str());
+        let has = |pick: &dyn Fn(&wb_content::compiled::GroundStats) -> bool| {
+            f.equipment.iter().any(|l| {
+                l.count > 0 && rules.platform(l.platform).ground.as_ref().is_some_and(pick)
+            })
+        };
+        match kind {
+            GroundKind::Raid if !has(&|s| s.sabotage_skill.is_some_and(|x| x > 0.0)) => {
+                return Err(format!("{name} is not trained for raids"));
+            }
+            GroundKind::Designate if !has(&|s| s.designate_m.is_some()) => {
+                return Err(format!("{name} has no target designator"));
+            }
+            _ => {}
+        }
+        let at = world.get::<Kinematics>(e).ok_or("Unknown unit")?.pos();
+        // A withdrawal without a point goes to the nearest own supply base
+        // (found when it starts); otherwise the route must exist.
+        if kind == GroundKind::Withdraw && dest.is_none() {
+            let gr = &rules.realism().ground;
+            dest = Some(wb_core::geo::destination_point(
+                at,
+                world.get::<Kinematics>(e).map_or(0.0, |k| k.heading) + core::f64::consts::PI,
+                gr.retreat_distance_m,
+            ));
+        }
+        if let Some(to) = dest {
+            if crate::ground::base_speed(rules, f) <= 0.0 {
+                return Err(format!("{name} cannot move"));
+            }
+            crate::ground::route(rules, geo, f, at, to).map_err(|e| format!("{name}: {e}"))?;
+        }
+    }
+    Ok(Some(Task::Ground(GroundOrder::new(kind, dest, contact))))
 }
 
 /// A contact of the side's picture with a position; its id and domain.

@@ -1,0 +1,122 @@
+# G17 (doc 08 §3, P11): the strike chain of doc 03 §8.2 on the generic
+# fixtures (ADR-035), over test land in the neutral test area.
+#
+#   1 Satellite pass  the SAR satellite images the area at about 17:30Z; its
+#                     report (30 min downlink) holds an armour column at
+#                     class level, count unknown
+#   2 Eyes on         event trigger: a ground contact at class level in the
+#                     area → the drone flies out and its EO/IR camera raises
+#                     the contact to precise, count 12
+#   3 Strike          event trigger: the contact is precise → 2 fighters take
+#                     off with 2 glide bombs each and strike the contact; the
+#                     bombs take the drone's track over the data link in flight
+#   4 Rockets         with 3: the rocket battery, in range, fires 12 rockets
+#                     at the same contact (fire mission)
+#
+# Red's column marches east in column the whole time (posture: moving, the
+# most exposed). Night: the camera is day and night, the SAR does not care.
+name: G17 strike chain
+seed: 1700
+content: scenarios/fixtures
+start_utc: 2026-10-27T17:00:00Z
+start_mode: garrisoned
+test_terrain:
+  west: 16
+  south: 55
+  cols: 2
+  rows: 1
+  base_m: 40
+  land:
+    - { class: open, box: [16.30, 55.03, 17.98, 55.45] }
+sides:
+  - { name: Blue, nations: [tst], player: true, roe: charlie, self_defence: true }
+  - { name: Red, nations: [opp], roe: charlie, self_defence: true }
+units:
+  - { id: 10, name: SAR sat, platform: test-sar-satellite, nation: tst }
+  - { id: 20, name: Eyes, platform: test-drone, nation: tst, base: test-airbase }
+  - { id: 30, name: Strikers, platform: test-fighter, nation: tst, count: 2, base: test-airbase, loadout: test-fighter-chain }
+  - { id: 40, name: Rocket battery, system: test-rocket-battery, nation: tst, lat_deg: 55.07, lon_deg: 17.45 }
+  - { id: 100, name: Red column, system: test-armour-column, nation: opp, lat_deg: 55.22, lon_deg: 16.85, heading_deg: 80 }
+base_stock:
+  - { base: test-airbase, munitions: { test-glide-bomb: 8, test-aam: 8 } }
+orders:
+  - { tick: 0, side: 1, type: AssignTask, units: [100], task: { kind: move, waypoints: [[17.92, 55.32]] } }
+  # The strikers release inside half the bomb's glide range (doc 03 §5 launch doctrine).
+  - { tick: 0, side: 0, type: SetDoctrine, units: [30], launch: close }
+  - { tick: 0, side: 0, type: TaskSatellite, satellite: 10, centre: [17.0, 55.2], radius_km: 20 }
+  - tick: 0
+    side: 0
+    type: CreateOperation
+    start: true
+    operation:
+      name: Strike chain
+      phases:
+        - id: pass
+          name: Satellite pass
+          trigger: { kind: start }
+          end: { kind: intel_report }
+        - id: eyes
+          name: Eyes on
+          tasks:
+            - units: [20]
+              task: { kind: patrol_circle, centre: [17.55, 55.27], radius_km: 10, alt_m: 6000 }
+          trigger: { kind: contacts, domain: ground, level: class, count: 1, area: { centre: [17.1, 55.22], radius_km: 60 } }
+          end:
+            kind: any
+            of:
+              - { kind: phase_ended, phase: strike }
+              - { kind: elapsed, min: 180 }
+        - id: strike
+          name: Strike
+          tasks:
+            - units: [30]
+              near_km: 80
+              task: { kind: strike, point: [17.5, 55.27], weapon: test-glide-bomb, count: 4 }
+          trigger: { kind: contacts, domain: ground, level: precise, count: 1, area: { centre: [17.4, 55.25], radius_km: 60 } }
+          end: { kind: weapons_done }
+        - id: rockets
+          name: Rockets
+          tasks:
+            - units: [40]
+              fire: true
+              near_km: 80
+              task: { kind: strike, point: [17.5, 55.27], weapon: test-rocket, count: 12 }
+          trigger: { kind: phase_started, phase: strike }
+          end: { kind: weapons_done }
+golden:
+  id: G17
+  description: strike chain of doc 03 §8.2 – satellite report, drone upgrade, strike and rockets on the shared track
+  max_ticks: 60000
+  seeds: 3
+  expect:
+    # The chain, in order, as Blue saw it.
+    - metric: event_sequence
+      side: 0
+      events:
+        - "IntelReport:imaged: true"
+        - "ContactClassified:level: class"
+        - "PhaseStarted:Eyes on"
+        - "TookOff"
+        - "ContactClassified:level: precise"
+        - "ContactCount:min: 12"
+        - "PhaseStarted:Strike"
+        - "TookOff"
+        - "WeaponLaunched:weapon_type: test-glide-bomb"
+        - "WeaponTerminated:outcome: hit"
+      aggregate: min
+      min: 1
+      max: 1
+    - { metric: launches, side: 0, weapon: test-glide-bomb, aggregate: min, min: 4, max: 4 }
+    - { metric: launches, side: 0, weapon: test-rocket, aggregate: min, min: 12, max: 12 }
+    - { metric: pk, side: 0, weapon: test-glide-bomb, aggregate: mean, min: 0.9 }
+    # Red saw its column struck while moving.
+    - metric: event_sequence
+      side: 1
+      events: ["FormationStruck:posture: moving"]
+      aggregate: min
+      min: 1
+      max: 1
+    # 4 bombs and 12 rockets on 12 tanks in column: the column is broken.
+    - { metric: equipment_left, group: 100, aggregate: max, max: 9 }
+    - { metric: phases_ended, side: 0, aggregate: min, min: 4, max: 4 }
+    - { metric: operation_completed, side: 0, aggregate: min, min: 1, max: 1 }

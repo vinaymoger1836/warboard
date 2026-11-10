@@ -83,6 +83,10 @@ fn step(world: &mut World, ctx: &Ctx, side: u8, gid: UnitId, g: &mut Group) {
         return;
     };
     let air = rules.is_air(lp);
+    // Ground formations are run by the ground stage (P11).
+    if world.get::<crate::components::Formation>(le).is_some() {
+        return;
+    }
 
     if let Mode::AtBase { base } = g.mode {
         let go = g.launch || (g.task.is_sortie() && g.behaviour.resume_after_turnaround);
@@ -618,15 +622,21 @@ fn task_steer(
                 None => hold(rules, p, k, k.pos(), None, Speed::Cruise),
             }
         }
-        Task::Idle | Task::Rtb { .. } | Task::Land { .. } | Task::Transfer { .. } => {
-            hold(rules, p, k, k.pos(), None, Speed::Cruise)
-        }
+        Task::Idle
+        | Task::Rtb { .. }
+        | Task::Land { .. }
+        | Task::Transfer { .. }
+        | Task::Ground(_) => hold(rules, p, k, k.pos(), None, Speed::Cruise),
     }
 }
 
 /// A contact's estimate in the side's picture, dead-reckoned to now:
 /// position and altitude.
-fn estimate(world: &World, side: u8, contact: wb_core::ContactId) -> Option<(LatLon, f64)> {
+pub(crate) fn estimate(
+    world: &World,
+    side: u8,
+    contact: wb_core::ContactId,
+) -> Option<(LatLon, f64)> {
     let now = world.resource::<SimClock>().sim_time_ms;
     let pics = world.resource::<crate::picture::SidePictures>();
     let c = pics.sides.get(usize::from(side))?.get(contact)?;

@@ -1,0 +1,23 @@
+id: test-glide-bomb
+kind: weapon
+name: Test Glide Bomb
+category: bomb
+targets: [ground, surface]
+profile:
+  kind: glide
+  max_speed_mach: 0.9
+  max_range_km: 25
+guidance:
+  midcourse: [inertial, satnav, datalink]
+  terminal: satnav_ins
+  terminal_secondary: [laser]
+engage_on_remote: true
+warhead_kg: 430
+warhead: blast
+cep_m: 10
+lethal_radius_m: 30
+mass_kg: 920
+station_category: [test_air_wing]
+signature:
+  rcs_m2: { front: 0.1, side: 0.5, rear: 0.1, top: 0.5 }
+design: { archetype: bomb-guided-900, note: "Generic test fixture (ADR-035): the test bomb with a data link, so it flies to the latest coordinates of a shared track (doc 03 §8.2)" }

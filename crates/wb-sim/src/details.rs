@@ -307,6 +307,8 @@ pub struct GroupDetails {
     /// Effective self-defence; the group's own setting, none when inherited.
     pub self_defence: bool,
     pub self_defence_override: Option<bool>,
+    /// Strength, posture, morale and supply of a ground formation (P11).
+    pub formation: Option<crate::ground::FormationView>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -512,6 +514,17 @@ fn group(world: &World, side: u8, gid: UnitId, ge: Entity) -> Option<GroupDetail
             target: crate::components::StrikeTarget::Point(at),
             ..
         } => (vec![lonlat(*at)], None, false, None, None),
+        Task::Ground(o) => (
+            o.path
+                .iter()
+                .skip(g.wp as usize)
+                .map(|w| lonlat(*w))
+                .collect(),
+            None,
+            false,
+            None,
+            None,
+        ),
         Task::Idle | Task::Intercept { .. } | Task::Strike { .. } | Task::Suppress { .. } => {
             (Vec::new(), None, false, None, None)
         }
@@ -769,6 +782,7 @@ fn group(world: &World, side: u8, gid: UnitId, ge: Entity) -> Option<GroupDetail
         roe_override: own_roe.roe,
         self_defence,
         self_defence_override: own_roe.self_defence,
+        formation: crate::ground::view(world, side, g.lead()?),
     })
 }
 
