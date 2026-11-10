@@ -6,162 +6,52 @@
 // the sensor rings of every own unit. P5 adds our weapons in flight (weaponLayers.ts); P6a the
 // red hostile-weapon glyphs, the targeted glow and the launch, intercept and hit effects
 // (effectLayers.ts).
-// Positions are dead-reckoned from the last
-// side view every animation frame (heading × speed × sim time since the view), and the
-// layers go straight to deck.gl, never through React state (doc 06 §1).
+// What is drawn comes from `scene/` (P10), shared with the 3D view so both select the same
+// objects; this file only turns it into deck.gl layers. Positions are dead-reckoned from the
+// last side view every animation frame, and the layers go straight to deck.gl, never through
+// React state (doc 06 §1).
 import type { Layer, PickingInfo } from '@deck.gl/core';
 import { PathStyleExtension, type PathStyleExtensionProps } from '@deck.gl/extensions';
 import { IconLayer, PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
-import { CFLAG, contactDomain, FLAG, type GroupDetails, RELATION, statusOf } from '@warboard/protocol';
-import {
-  contactLabel,
-  ESTIMATE_LINE,
-  type IconAtlas,
-  type IconSide,
-  iconKey,
-  isAircraft,
-  markAbove,
-  missileDataUrl,
-  rgba,
-  type TokenName,
-  unitLabel,
-} from '@warboard/symbols';
+import { type IconAtlas, iconKey, isAircraft, markAbove, missileDataUrl } from '@warboard/symbols';
 import type { Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
 import type { EngineBridge } from '../../bridge';
-import { type LonLat, type PlanRoute, type Tool, ui } from '../../store';
+import { distance, type LonLat } from '../../scene/geo';
+import { buildOverlays, findContact, findUnit } from '../../scene/overlays';
+import {
+  BASE_LABEL_ZOOM,
+  buildScene,
+  type ContextRequest,
+  c,
+  type DrawnContact,
+  type DrawnSatellite,
+  type DrawnUnit,
+  declutter,
+  ENEMY_WEAPON_PX,
+  MAX_EXTRAPOLATE_MS,
+  type MapPick,
+  type Path,
+  SMALL_ZOOM,
+  type TextItem,
+  weaponLabelClusters,
+} from '../../scene/scene';
+import { satelliteTrack } from '../../scene/tracks';
+import { type Tool, ui } from '../../store';
 import type { LayerHub } from '../layerHub';
 import { effectLayers, haloLayer } from './effectLayers';
-import { destination, distance, geodesicCircle } from '../../scene/geo';
 import { WeaponLayers } from './weaponLayers';
-
-/** Zoom below which icons shrink to 24 px (doc 10 §4). */
-const SMALL_ZOOM = 5;
-/** Bases are drawn from this zoom. */
-const BASE_ZOOM = 5;
-/** Group members are drawn one by one from this zoom; below it a flight is one icon. */
-const MEMBERS_ZOOM = 11;
-/** Base labels from this zoom (selected base always). */
-const BASE_LABEL_ZOOM = 7;
-/** Dead reckoning runs at most this long past a view (real ms). */
-const MAX_EXTRAPOLATE_MS = 400;
-
-export interface DrawnUnit {
-  /** Group id for flights and ships, base id for bases. */
-  id: number;
-  symbol: number;
-  position: LonLat;
-  label: string;
-  mark: string;
-  base: boolean;
-  /** Umpire view (doc 12): side B's units are drawn in the enemy colour. */
-  enemy?: boolean;
-}
-
-export interface MapPick {
-  id: number;
-  base: boolean;
-  aircraft: boolean;
-  /** A contact of our picture (id is a contact id). */
-  contact: boolean;
-  satellite: boolean;
-}
-
-interface DrawnContact {
-  id: number;
-  symbol: number;
-  side: IconSide;
-  estimated: boolean;
-  position: LonLat;
-  heading: number;
-  label: string;
-  isWeapon: boolean;
-  /** Weapon contacts: the type or class name, and the estimated speed. */
-  typeName: string;
-  speedKmh: number;
-}
-
-interface DrawnSatellite {
-  id: number;
-  position: LonLat;
-  label: string;
-}
-
-/** Satellite symbols (60–62) are drawn as yellow dots, not atlas icons (doc 10 §4). */
-const isSatellite = (symbol: number) => symbol >= 60 && symbol < 70;
-/** Ground tracks are refreshed this often (real ms), ±minutes around now. */
-const TRACK_REFRESH_MS = 30_000;
-const TRACK_BEFORE_MIN = 45;
-const TRACK_AFTER_MIN = 90;
-const IDENTITY_SIDE: IconSide[] = ['unknown', 'enemy', 'neutral', 'own'];
-
-/** Splits a lon/lat path where it crosses the antimeridian. */
-function splitAntimeridian(pts: LonLat[]): LonLat[][] {
-  const out: LonLat[][] = [];
-  let cur: LonLat[] = [];
-  for (const p of pts) {
-    const last = cur[cur.length - 1];
-    if (last && Math.abs(p[0] - last[0]) > 180) {
-      out.push(cur);
-      cur = [];
-    }
-    cur.push(p);
-  }
-  if (cur.length > 1) out.push(cur);
-  return out;
-}
-
-/** An ellipse of semi-axes `a`, `b` (m), major axis along `rotDeg`, as a closed path. */
-function ellipse(centre: LonLat, a: number, b: number, rotDeg: number): LonLat[] {
-  const pts: LonLat[] = [];
-  for (let t = 0; t <= 360; t += 10) {
-    const r = (t * Math.PI) / 180;
-    const along = destination(centre, rotDeg, a * Math.cos(r));
-    pts.push(destination(along, rotDeg + 90, b * Math.sin(r)));
-  }
-  return pts;
-}
-
-export interface ContextRequest {
-  x: number;
-  y: number;
-  at: LonLat;
-  target: MapPick | null;
-}
-
-interface Path {
-  path: LonLat[];
-  color: [number, number, number, number];
-  width: number;
-  dashed: boolean;
-  /** What the line is, shown when the cursor rests on it (doc 10 §6). */
-  tip?: string;
-}
-
-const km = (m: number) => `${Math.round(m / 1000).toLocaleString('en-GB')} km`;
-
-interface TextItem {
-  position: LonLat;
-  text: string;
-  color: [number, number, number, number];
-}
 
 const dash = new PathStyleExtension({ dash: true });
 /** A hostile weapon in our picture: the missile glyph in `weapon.enemy` (doc 10 §5, ref. 06). */
 const ENEMY_WEAPON_ICON = { url: missileDataUrl('weapon.enemy'), width: 32, height: 32, id: 'enemy-missile', mask: false };
-const ENEMY_WEAPON_PX = 20;
-/** Rough label box per character and line height, px (11 px italic Noto Sans). */
-const LABEL_CHAR_PX = 5.6;
-const LABEL_LINE_PX = 15;
 /** SDF text with room for the dark halo (doc 10 §4.1; deck's outline width is relative). */
 const SDF = { sdf: true, fontSize: 64, buffer: 10, radius: 14, cutoff: 0.18 };
-const c = (t: TokenName, a = 1) => rgba(t, a);
 
 export class UnitLayers {
   private raf = 0;
   private cursor: LonLat | null = null;
   private drawn: DrawnUnit[] = [];
   private contacts: DrawnContact[] = [];
-  private tracks = new Map<number, { paths: LonLat[][]; at: number; pending: boolean }>();
   private readonly weapons = new WeaponLayers();
   /** Ring tooltip (doc 10 §6): a DOM element over the map, not a deck.gl widget. */
   private readonly tip = document.createElement('div');
@@ -329,81 +219,12 @@ export class UnitLayers {
 
   // ---- Drawing ------------------------------------------------------------------------
 
-  /** Last reported position of a unit, group (its first member) or base. */
   private find(id: number): LonLat | null {
-    const v = this.bridge.frame?.view;
-    if (!v) return null;
-    let i = v.index.get(id);
-    if (i === undefined) {
-      for (let k = 0; k < v.units.count; k++) if (v.units.group[k] === id) i ??= k;
-    }
-    return i === undefined ? null : [v.units.lon[i] ?? 0, v.units.lat[i] ?? 0];
+    return findUnit(this.bridge.frame?.view, id);
   }
 
-  /** Last reported position of a contact. */
   private findContact(id: number): LonLat | null {
-    const v = this.bridge.frame?.view;
-    const i = v?.contactIndex.get(id);
-    return v && i !== undefined ? [v.contacts.lon[i] ?? 0, v.contacts.lat[i] ?? 0] : null;
-  }
-
-  /** Ground track of an own satellite, fetched from the engine (SGP4 lives there). */
-  private track(id: number): LonLat[][] {
-    const now = performance.now();
-    const t = this.tracks.get(id);
-    if (!t || (!t.pending && now - t.at > TRACK_REFRESH_MS)) {
-      const entry = { paths: t?.paths ?? [], at: now, pending: true };
-      this.tracks.set(id, entry);
-      this.bridge
-        .request({ type: 'groundTrack', id, beforeMin: TRACK_BEFORE_MIN, afterMin: TRACK_AFTER_MIN })
-        .then((pts) => {
-          entry.paths = splitAntimeridian(pts);
-          entry.pending = false;
-        })
-        .catch(() => {
-          entry.pending = false;
-        });
-    }
-    return this.tracks.get(id)?.paths ?? [];
-  }
-
-  /** Labels give way when crowded, icons never do (doc 10 §4.1): greedy by priority
-   *  (selection, units, bases), dropping any label whose screen box overlaps one kept. */
-  private declutter(items: DrawnUnit[], selected: number | null, size: number): DrawnUnit[] {
-    const prio = (d: DrawnUnit) => (d.id === selected ? 0 : d.base ? 2 : 1);
-    const sorted = [...items].sort((a, b) => prio(a) - prio(b) || a.id - b.id);
-    const kept: DrawnUnit[] = [];
-    const boxes: [number, number, number, number][] = [];
-    for (const d of sorted) {
-      const p = this.map.project(d.position);
-      const w = d.label.length * LABEL_CHAR_PX;
-      const y = p.y + size * 0.55;
-      const box: [number, number, number, number] = [p.x - w / 2, y, p.x + w / 2, y + LABEL_LINE_PX];
-      if (boxes.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue;
-      boxes.push(box);
-      kept.push(d);
-    }
-    return kept;
-  }
-
-  /** Labels of hostile weapons (doc 10 §4.1): `type` over `(speed)`, red. Weapons whose labels
-   *  would overlap on screen share one label with a count (`anti-ship missile ×6`), so a raid
-   *  of a dozen missiles stays legible; the glyphs are never merged. */
-  private weaponLabels(weapons: DrawnContact[]): { position: LonLat; text: string }[] {
-    const kept: { position: LonLat; type: string; speed: number; count: number; box: [number, number, number, number] }[] = [];
-    for (const d of weapons) {
-      const p = this.map.project(d.position);
-      const w = Math.max(d.typeName.length + 3, 12) * LABEL_CHAR_PX;
-      const y = p.y + ENEMY_WEAPON_PX * 0.5 + 6;
-      const box: [number, number, number, number] = [p.x - w / 2, y, p.x + w / 2, y + 2 * LABEL_LINE_PX];
-      const near = kept.find((k) => box[0] < k.box[2] && box[2] > k.box[0] && box[1] < k.box[3] && box[3] > k.box[1]);
-      if (near) near.count++;
-      else kept.push({ position: d.position, type: d.typeName, speed: d.speedKmh, count: 1, box });
-    }
-    return kept.map((k) => ({
-      position: k.position,
-      text: `${k.type}${k.count > 1 ? ` ×${k.count}` : ''}\n(${k.speed} km/h)`,
-    }));
+    return findContact(this.bridge.frame?.view, id);
   }
 
   /** Position of a unit or group as drawn this frame. */
@@ -415,7 +236,6 @@ export class UnitLayers {
     const frame = this.bridge.frame;
     if (!frame) return;
     const { view } = frame;
-    const u = view.units;
     const strings = this.bridge.strings;
     const zoom = this.map.getZoom();
     const report = this.bridge.report;
@@ -423,202 +243,39 @@ export class UnitLayers {
     const dtS = (Math.min(performance.now() - frame.receivedAt, MAX_EXTRAPOLATE_MS) / 1000) * simPerReal;
     const state = ui.get();
 
-    const drawn: DrawnUnit[] = [];
-    const satellites: DrawnSatellite[] = [];
-    const groups = new Map<number, { index: number; count: number }>();
-    /** Rows of own units the engine flags as targeted by a weapon of our picture. */
-    const targetedRows: number[] = [];
-    const at = (i: number): LonLat => {
-      const p: LonLat = [u.lon[i] ?? 0, u.lat[i] ?? 0];
-      const v = u.speedMps[i] ?? 0;
-      return v > 0 && dtS > 0 ? destination(p, u.headingDeg[i] ?? 0, v * dtS) : p;
-    };
-    // The umpire view carries both sides exactly: side A as own, side B as enemy (doc 10 §8).
-    const enemyRow = (i: number) => view.umpire && (u.side[i] ?? 0) !== 0;
-    for (let i = 0; i < u.count; i++) {
-      const flags = u.flags[i] ?? 0;
-      const id = u.id[i] ?? 0;
-      const symbol = u.symbol[i] ?? 0;
-      if (flags & FLAG.BASE) {
-        if (zoom < BASE_ZOOM && id !== state.selected) continue;
-        drawn.push({ id, symbol, position: at(i), label: unitLabel({ symbol, typeName: '', name: strings.name(id), count: 1 }), mark: '', base: true, enemy: enemyRow(i) });
-        continue;
-      }
-      if (flags & FLAG.AT_BASE) continue;
-      if (isSatellite(symbol)) {
-        const owner = strings.owners.get(id) ?? '';
-        satellites.push({
-          id,
-          position: at(i),
-          label: `${owner} ${strings.name(id)}\n${strings.payloads.get(id) ?? ''}`.trim(),
-        });
-        continue;
-      }
-      if (flags & FLAG.TARGETED) targetedRows.push(i);
-      const group = u.group[i] ?? 0;
-      if (zoom >= MEMBERS_ZOOM || group === 0) {
-        drawn.push({ id: group || id, symbol, position: at(i), label: strings.name(id), mark: markAbove(symbol), base: false, enemy: enemyRow(i) });
-        continue;
-      }
-      const g = groups.get(group);
-      if (!g) groups.set(group, { index: i, count: 1 });
-      else {
-        g.count++;
-        if (flags & FLAG.GROUP_LEAD) g.index = i;
-      }
-    }
-    for (const [group, g] of groups) {
-      const i = g.index;
-      const symbol = u.symbol[i] ?? 0;
-      const id = u.id[i] ?? 0;
-      let label = unitLabel({ symbol, typeName: strings.type(id), name: strings.name(group), count: g.count });
-      if (group === state.selected) {
-        const fuel = u.fuelPct[i] ?? 255;
-        label += ` [${statusOf(u.flags[i] ?? 0)}]${fuel <= 100 ? ` ${fuel}%` : ''}`;
-      }
-      if ((u.flags[i] ?? 0) & FLAG.JAMMED) label += ' [JAMMED]';
-      drawn.push({ id: group, symbol, position: at(i), label, mark: markAbove(symbol), base: false, enemy: enemyRow(i) });
-    }
+    const scene = buildScene(view, strings, {
+      zoom,
+      dtS,
+      selected: state.selected,
+      threatRings: state.threatRings,
+      allSensorRings: state.allSensorRings,
+    });
+    const { units: drawn, satellites, contacts, contactPaths: ellipses, threatLabels } = scene;
     this.drawn = drawn;
-
-    // Contacts of our picture: estimates only.
-    const cv = view.contacts;
-    const contacts: DrawnContact[] = [];
-    const ellipses: Path[] = [];
-    const threatLabels: TextItem[] = [];
-    for (let i = 0; i < cv.count; i++) {
-      const id = cv.id[i] ?? 0;
-      const flags = cv.flags[i] ?? 0;
-      const p: LonLat = [cv.lon[i] ?? 0, cv.lat[i] ?? 0];
-      const side = IDENTITY_SIDE[cv.identity[i] ?? 0] ?? 'unknown';
-      const colour = c(side === 'enemy' ? 'side.enemy' : side === 'neutral' ? 'side.neutral' : 'side.unknown', 0.8);
-      if (flags & CFLAG.BEARING_ONLY) {
-        ellipses.push({
-          path: [p, destination(p, cv.headingDeg[i] ?? 0, cv.ellipseA[i] ?? 0)],
-          color: colour,
-          width: 1.5,
-          dashed: true,
-          tip: 'Bearing to an emitter (passive detection, no range yet)',
-        });
-        continue;
-      }
-      const stale = (flags & CFLAG.STALE) !== 0;
-      const v = cv.speedMps[i] ?? 0;
-      const pos = !stale && v > 0 && dtS > 0 ? destination(p, cv.headingDeg[i] ?? 0, v * dtS) : p;
-      const estimated = (flags & CFLAG.ESTIMATED) !== 0;
-      const symbol = cv.symbol[i] ?? 0;
-      const isWeapon = symbol >= 120 && symbol <= 122;
-      // A hostile weapon is labelled with its type, then its speed (doc 10 §4.1, `SL-20` /
-      // `(4288 km/h)`); those labels are built per cluster in `weaponLabels`.
-      let label = isWeapon
-        ? ''
-        : contactLabel({
-            symbol,
-            typeName: strings.contactType(id),
-            domain: contactDomain(flags),
-            countMin: cv.countMin[i] ?? 1,
-            countMax: cv.countMax[i] ?? 1,
-            countKnown: (flags & CFLAG.COUNT_KNOWN) !== 0,
-          });
-      // A fixed-size ring would cut through the label at mid zoom and vanish at far zoom, so
-      // the badge alone marks an affected radar.
-      if ((flags & CFLAG.JAMMED) !== 0) label += '\n[JAMMED]';
-      if (estimated && !isWeapon) label += `\n${ESTIMATE_LINE}`;
-      contacts.push({
-        id,
-        symbol,
-        side,
-        estimated,
-        position: pos,
-        heading: cv.headingDeg[i] ?? 0,
-        label,
-        isWeapon,
-        typeName: strings.contactType(id) || 'WEAPON',
-        speedKmh: Math.round(v * 3.6),
-      });
-      const a = cv.ellipseA[i] ?? 0;
-      const b = cv.ellipseB[i] ?? 0;
-      if (estimated && a > 50) {
-        const tint = isWeapon ? c('weapon.enemy', 0.8) : colour;
-        ellipses.push({
-          path: ellipse(pos, a, Math.max(b, 50), cv.ellipseRotDeg[i] ?? 0),
-          color: tint,
-          width: 1,
-          dashed: true,
-          tip: `Position uncertainty (our estimate): ±${km(a)}`,
-        });
-      }
-      const threat = cv.threatM[i] ?? 0;
-      if (state.threatRings && threat > 0) {
-        const what = strings.contactType(id);
-        ellipses.push({
-          path: geodesicCircle(pos, threat),
-          color: c('ring.threat'),
-          width: 1.5,
-          dashed: true,
-          tip: `Threat range (our estimate): ${km(threat)}${what ? ` · ${what}` : ''}`,
-        });
-        threatLabels.push({ position: destination(pos, 0, threat), text: '(est.)', color: c('ring.threat') });
-      }
-    }
     this.contacts = contacts;
     const selectedContact = contacts.find((d) => d.id === state.selectedContact) ?? null;
-
-    // Sensor rings of every own unit (layers button).
-    if (state.allSensorRings) {
-      const rowOf = new Map<number, number>();
-      for (let k = 0; k < u.count; k++) {
-        const g = u.group[k] ?? 0;
-        if (g && !rowOf.has(g)) rowOf.set(g, k);
-      }
-      for (const d of drawn) {
-        if (d.base) continue;
-        const i = view.index.get(d.id) ?? rowOf.get(d.id);
-        const r = i === undefined ? 0 : (u.sensorKm[i] ?? 0) * 1000;
-        if (r > 0)
-          ellipses.push({
-            path: geodesicCircle(d.position, r),
-            color: c('ring.sensor', 0.45),
-            width: 1,
-            dashed: true,
-            tip: `Sensor horizon: ${km(r)} · ${strings.name(d.id)}`,
-          });
-      }
-    }
     const tracks: Path[] = satellites.flatMap((s) =>
-      this.track(s.id).map((path) => ({ path, color: c('sat.track'), width: 1.5, dashed: true, tip: `Ground track: ${strings.name(s.id)}` })),
+      satelliteTrack(this.bridge, s.id).map((path) => ({
+        path: path.map((p) => [p[0], p[1]] as LonLat),
+        color: c('sat.track'),
+        width: 1.5,
+        dashed: true,
+        tip: `Ground track: ${strings.name(s.id)}`,
+      })),
     );
 
     const selected = drawn.find((d) => d.id === state.selected) ?? null;
     const details = state.details?.kind === 'group' && state.details.id === state.selected ? state.details : null;
-    const paths: Path[] = [];
-    const texts: TextItem[] = [];
-    const waypoints: { position: LonLat; text: string }[] = [];
-    if (details && selected) this.selectionOverlays(details, selected.position, paths, texts, waypoints);
-    if (state.tool) this.toolOverlays(state.tool, paths, waypoints);
-    this.planOverlays(state.planRoutes, paths, waypoints);
-
-    // Targeted glow (doc 10 §5): own units the engine flags (a weapon of our picture is judged
-    // aimed at them), and contacts one of our own offensive weapons is flying at. Both come from
-    // the view; a collapsed group glows at its icon.
-    const halos: LonLat[] = [];
-    if (targetedRows.length > 0) {
-      const drawnAt = new Map(drawn.map((d) => [d.id, d.position]));
-      for (const i of targetedRows) {
-        const group = u.group[i] ?? 0;
-        const collapsed = group !== 0 && zoom < MEMBERS_ZOOM;
-        const p = collapsed ? drawnAt.get(group) : at(i);
-        if (p && !halos.some((h) => h[0] === p[0] && h[1] === p[1])) halos.push(p);
-      }
-    }
-    if (view.weapons.count > 0) {
-      const aimedAt = new Set<number>();
-      const w = view.weapons;
-      for (let k = 0; k < w.count; k++) {
-        if ((w.relation[k] ?? 0) === RELATION.OURS && (w.target[k] ?? 0) !== 0) aimedAt.add(w.target[k] ?? 0);
-      }
-      for (const d of contacts) if (aimedAt.has(d.id) && !d.isWeapon) halos.push(d.position);
-    }
+    const { paths, texts, waypoints } = buildOverlays({
+      state,
+      details,
+      selectedAt: selected?.position ?? null,
+      cursor: this.cursor,
+      find: (id) => this.find(id),
+      findContact: (id) => this.findContact(id),
+    });
+    const halos = scene.halos.map((h) => h.position);
+    const project = (d: { position: LonLat }) => this.map.project(d.position);
 
     const size = zoom < SMALL_ZOOM ? 24 : 30;
     const layers: Layer[] = [
@@ -697,7 +354,7 @@ export class UnitLayers {
       }),
       new TextLayer<{ position: LonLat; text: string }>({
         id: 'enemy-weapon-labels',
-        data: this.weaponLabels(contacts.filter((d) => d.isWeapon)),
+        data: weaponLabelClusters(contacts.filter((d) => d.isWeapon), project),
         getPosition: (d) => d.position,
         getText: (d) => d.text,
         getSize: 11,
@@ -834,10 +491,11 @@ export class UnitLayers {
       }),
       new TextLayer<DrawnUnit>({
         id: 'unit-labels',
-        data: this.declutter(
+        data: declutter(
           drawn.filter((d) => zoom >= BASE_LABEL_ZOOM || !d.base || d.id === state.selected),
           state.selected,
           size,
+          project,
         ),
         getPosition: (d) => d.position,
         getText: (d) => d.label,
@@ -882,174 +540,6 @@ export class UnitLayers {
     if (simPerReal > 0) this.effectSpeed = simPerReal;
     layers.push(...effectLayers(view, dtS, this.effectSpeed));
     this.hub.set('units', layers);
-  }
-
-  /** Rings (doc 10 §6–7), route or patrol circle of the selected group. */
-  private selectionOverlays(
-    d: GroupDetails,
-    pos: LonLat,
-    paths: Path[],
-    texts: TextItem[],
-    waypoints: { position: LonLat; text: string }[],
-  ): void {
-    const { rings, weaponRing } = ui.get();
-    const r = d.ranges;
-    const picked = d.weapons.find((w) => w.id === weaponRing) ?? null;
-    if (rings.sensor && r.sensor_m) {
-      paths.push({
-        path: geodesicCircle(pos, r.sensor_m),
-        color: c('ring.sensor'),
-        width: 2,
-        dashed: true,
-        tip:
-          r.surface_horizon_m != null
-            ? `Radar range: ${km(r.sensor_m)} · against aircraft; ships and ground units are hidden beyond ${km(r.surface_horizon_m)} (inner ring)`
-            : `Radar / sensor horizon: ${km(r.sensor_m)} · how far ${d.name} can see a typical target`,
-      });
-      // Earth's curvature: low targets drop below the radar horizon long before the radar's range.
-      if (r.surface_horizon_m != null)
-        paths.push({
-          path: geodesicCircle(pos, r.surface_horizon_m),
-          color: c('ring.sensor', 0.6),
-          width: 1,
-          dashed: true,
-          tip: `Radar horizon vs ships: ${km(r.surface_horizon_m)} · beyond it Earth's curvature hides ships and ground units from ${d.name}'s own radar`,
-        });
-    }
-    if (rings.engage && picked) {
-      // The weapon picked in the card's Weapons tab replaces the engagement ring.
-      const own = !picked.engage_on_remote ? ' · fires only on our own track' : '';
-      paths.push({
-        path: geodesicCircle(pos, picked.max_range_m),
-        color: c('ring.engage'),
-        width: 2.5,
-        dashed: false,
-        tip: `${picked.name}: reaches ${km(picked.max_range_m)}${picked.min_range_m > 0 ? `, not closer than ${(picked.min_range_m / 1000).toFixed(1)} km` : ''}${own}`,
-      });
-      if (picked.min_range_m >= 1000)
-        paths.push({
-          path: geodesicCircle(pos, picked.min_range_m),
-          color: c('ring.engage', 0.6),
-          width: 1,
-          dashed: true,
-          tip: `${picked.name}: minimum range ${(picked.min_range_m / 1000).toFixed(1)} km`,
-        });
-      texts.push({
-        position: destination(pos, 0, picked.max_range_m),
-        text: `${picked.name} (${km(picked.max_range_m)})`,
-        color: c('ring.engage'),
-      });
-    } else if (rings.engage && r.engage_m) {
-      const longest = d.weapons.find((w) => w.max_range_m === r.engage_m);
-      const ownTrack = longest && !longest.engage_on_remote;
-      paths.push({
-        path: geodesicCircle(pos, r.engage_m),
-        color: c('ring.engage'),
-        width: 2,
-        dashed: true,
-        tip: `Max engagement range: ${km(r.engage_m)}${longest ? ` · ${longest.name}` : ''}${
-          ownTrack ? ' · fires only on our own track, so the target must also be inside our own sensor coverage' : ''
-        }`,
-      });
-    }
-    if (rings.radius && r.combat_radius_m && d.home_base) {
-      const home: LonLat = [d.home_base.lon_deg, d.home_base.lat_deg];
-      paths.push({
-        path: geodesicCircle(home, r.combat_radius_m),
-        color: c('ring.radius'),
-        width: 1.5,
-        dashed: true,
-        tip: `Combat radius: ${km(r.combat_radius_m)} from ${d.home_base.name} · out and back on current fuel rules`,
-      });
-      texts.push({
-        position: destination(home, 315, r.combat_radius_m * 0.55),
-        text: `${d.home_base.name} Combat Radius (${Math.round(r.combat_radius_m / 1000)} km)`,
-        color: c('ring.radius.text'),
-      });
-    }
-    if (d.jammer && d.jammer.coverage_km > 0) {
-      // Coverage is a circle around the jammer (doc 02 §9): every radar inside it is affected.
-      // The sector is an angle measured at the victim radar between the jammer and the
-      // protected unit, not a direction the aircraft points, so it is not drawn as a wedge.
-      paths.push({
-        path: geodesicCircle(pos, d.jammer.coverage_km * 1000),
-        color: c('ring.sensor', 0.6),
-        width: 1.5,
-        dashed: true,
-        tip: `Jammer coverage: ${km(d.jammer.coverage_km * 1000)} · enemy radars inside are affected`,
-      });
-    }
-
-    const t = d.task;
-    const wps = t.waypoints as LonLat[];
-    if ((t.kind === 'patrol_circle' || t.kind === 'jam') && wps[0] && t.radius_m) {
-      paths.push({
-        path: geodesicCircle(wps[0], t.radius_m),
-        color: t.kind === 'jam' ? c('ring.sensor', 0.8) : c('waypoint'),
-        width: 1.5,
-        dashed: true,
-        tip: `${t.kind === 'jam' ? 'Jamming orbit' : 'Patrol circle'}: ${km(t.radius_m)} radius`,
-      });
-      return;
-    }
-    if (t.kind === 'suppress' && wps[0]) {
-      paths.push({ path: [pos, wps[0]], color: c('weapon.offensive'), width: 2, dashed: false });
-      waypoints.push({ position: wps[0], text: 'SEAD' });
-    }
-    if (t.kind === 'move' || t.kind === 'patrol_route' || t.kind === 'tanker_track') {
-      const next = Math.min(t.wp, wps.length);
-      const ahead = wps.slice(next);
-      const route: LonLat[] = t.mode === 'task' ? [pos, ...ahead] : [...ahead];
-      if (t.looped) route.push(...wps.slice(0, next + 1));
-      if (route.length > 1) paths.push({ path: route, color: c('weapon.offensive'), width: 2, dashed: false });
-      wps.forEach((w, i) => waypoints.push({ position: w, text: `WP ${i + 1}` }));
-    }
-    if ((t.mode === 'return' || t.mode === 'at_base') && t.base && t.mode === 'return') {
-      paths.push({ path: [pos, [t.base.lon_deg, t.base.lat_deg]], color: c('weapon.offensive'), width: 2, dashed: false });
-    }
-  }
-
-  /** Routes of the operation open in the planner (doc 03 §8): amber routes, dashed orbits, `P3 WP 1` labels. */
-  private planOverlays(routes: PlanRoute[], paths: Path[], waypoints: { position: LonLat; text: string }[]): void {
-    for (const r of routes) {
-      const a = r.active ? 1 : 0.55;
-      const first = r.route[0];
-      if (!first) continue;
-      const target = r.kind === 'strike' || r.kind === 'suppress' || r.kind === 'fire';
-      if (target) {
-        waypoints.push({ position: first, text: `P${r.phase} TARGET` });
-        if (r.radiusKm) paths.push({ path: geodesicCircle(first, r.radiusKm * 1000), color: c('weapon.offensive', a * 0.6), width: 1, dashed: true });
-      } else if (r.radiusKm && r.route.length === 1) {
-        paths.push({ path: geodesicCircle(first, r.radiusKm * 1000), color: c('waypoint', a), width: 1.5, dashed: true });
-        waypoints.push({ position: first, text: `P${r.phase} ${r.kind.replace('_', ' ').toUpperCase()}` });
-      } else {
-        if (r.route.length > 1) {
-          const loop = r.kind === 'patrol_route' || r.kind === 'tanker_track';
-          paths.push({ path: loop ? [...r.route, first] : r.route, color: c('weapon.offensive', a), width: 2, dashed: false });
-        }
-        r.route.forEach((p, i) => waypoints.push({ position: p, text: `P${r.phase} WP ${i + 1}` }));
-      }
-    }
-  }
-
-  private toolOverlays(tool: Tool, paths: Path[], waypoints: { position: LonLat; text: string }[]): void {
-    const cursor = this.cursor;
-    if (tool.kind === 'route') {
-      const pts = cursor ? [...tool.points, cursor] : tool.points;
-      if (pts.length > 1) paths.push({ path: pts, color: c('weapon.offensive'), width: 2, dashed: false });
-      tool.points.forEach((p, i) => waypoints.push({ position: p, text: `WP ${i + 1}` }));
-    } else if (tool.kind === 'circle' && tool.centre) {
-      const radius = cursor ? distance(tool.centre, cursor) : tool.radiusKm * 1000;
-      paths.push({ path: geodesicCircle(tool.centre, Math.max(radius, 1000)), color: c('waypoint'), width: 1.5, dashed: true });
-    } else if (tool.kind === 'strike') {
-      // Dashed amber aim line from the shooter to the target (or to the cursor while picking).
-      const selected = ui.get().selected;
-      const from = selected == null ? null : this.find(selected);
-      const aim = tool.aim;
-      const to = aim ? ('contact' in aim ? this.findContact(aim.contact) : aim.point) : cursor;
-      if (from && to) paths.push({ path: [from, to], color: c('weapon.offensive'), width: 2, dashed: true });
-      if (aim && to) waypoints.push({ position: to, text: 'TARGET' });
-    }
   }
 }
 

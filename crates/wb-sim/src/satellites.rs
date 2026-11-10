@@ -329,7 +329,8 @@ fn detection(
     }
 }
 
-/// Ground track of an own satellite, `[lon, lat]` degrees every `step_s`.
+/// Ground track of an own satellite, `[lon, lat, alt_m]` (degrees, metres above the
+/// mean sphere) every `step_s`. The 2D map draws lon/lat; the 3D view draws the orbit arc.
 pub fn ground_track(
     world: &World,
     side: u8,
@@ -337,7 +338,7 @@ pub fn ground_track(
     before_min: f64,
     after_min: f64,
     step_s: f64,
-) -> Result<Vec<[f64; 2]>, String> {
+) -> Result<Vec<[f64; 3]>, String> {
     let unknown = || format!("Unknown satellite {id}");
     let e = crate::world::entity(world, UnitId(id)).ok_or_else(unknown)?;
     if world.get::<Allegiance>(e).map(|a| a.side) != Some(side)
@@ -355,6 +356,6 @@ pub fn ground_track(
     let start = now - before_min.clamp(0.0, 600.0) * 60_000.0;
     Ok((0..=n)
         .filter_map(|i| position(&s, start + f64::from(i) * step))
-        .map(|(p, _)| [p.lon_deg(), p.lat_deg()])
+        .map(|(p, alt)| [p.lon_deg(), p.lat_deg(), alt])
         .collect())
 }

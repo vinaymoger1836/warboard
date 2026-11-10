@@ -366,6 +366,35 @@ impl Geo {
         Ok(0.0)
     }
 
+    /// Elevation grid for a 3D terrain tile (doc 06 §5): `w × h` samples, row-major from the
+    /// north-west corner, spanning `[west, east] × [south, north]` degrees with the edges on
+    /// the box edges, metres, 0 where no pack has data. Client-only (the sim never calls it).
+    pub fn heightmap(
+        &self,
+        [west, south, east, north]: [f64; 4],
+        w: usize,
+        h: usize,
+    ) -> Result<Vec<f32>, GeoError> {
+        let mut out = Vec::with_capacity(w * h);
+        let dx = if w > 1 { (east - west) / (w - 1) as f64 } else { 0.0 };
+        let dy = if h > 1 { (north - south) / (h - 1) as f64 } else { 0.0 };
+        for r in 0..h {
+            let lat = north - dy * r as f64;
+            for c in 0..w {
+                let lon = west + dx * c as f64;
+                let mut z = 0.0;
+                for pk in &self.packs {
+                    if let Some(v) = pk.dem.elevation_deg(lat, lon)? {
+                        z = v;
+                        break;
+                    }
+                }
+                out.push(z as f32);
+            }
+        }
+        Ok(out)
+    }
+
     /// The terrain cell under the point; `None` for open sea or outside every pack.
     pub fn cell_info(&self, p: LatLon) -> Result<Option<CellInfo>, GeoError> {
         let Some(i) = self.pack_at(p) else {

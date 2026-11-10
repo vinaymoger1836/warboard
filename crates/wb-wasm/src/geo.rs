@@ -179,6 +179,20 @@ impl GeoQuery {
         Ok(out)
     }
 
+    /// Heights for one 3D terrain tile (Cesium `CustomHeightmapTerrainProvider`): `size × size`
+    /// metres, row-major from the north-west corner, edges on the box edges.
+    pub fn height_tile(
+        &self,
+        west: f64,
+        south: f64,
+        east: f64,
+        north: f64,
+        size: usize,
+    ) -> Result<Vec<f32>, JsError> {
+        let size = size.clamp(2, 257);
+        self.geo.heightmap([west, south, east, north], size, size).map_err(err)
+    }
+
     /// Terrain cells in a box for the map overlay, packed as
     /// `[class, n, lon₀, lat₀, …, lonₙ₋₁, latₙ₋₁, class, n, …]`.
     /// Returns `undefined` if the box holds more than `max_cells` cells (zoom in).

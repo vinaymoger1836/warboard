@@ -135,12 +135,12 @@ export function ellipse(centre: LonLat, a: number, b: number, rotDeg: number): L
 }
 
 /** Splits a lon/lat path where it crosses the antimeridian. */
-export function splitAntimeridian(pts: LonLat[]): LonLat[][] {
-  const out: LonLat[][] = [];
-  let cur: LonLat[] = [];
+export function splitAntimeridian<P extends readonly number[]>(pts: P[]): P[][] {
+  const out: P[][] = [];
+  let cur: P[] = [];
   for (const p of pts) {
     const last = cur[cur.length - 1];
-    if (last && Math.abs(p[0] - last[0]) > 180) {
+    if (last && Math.abs((p[0] ?? 0) - (last[0] ?? 0)) > 180) {
       out.push(cur);
       cur = [];
     }

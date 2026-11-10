@@ -145,6 +145,12 @@ async function handle(req: WorkerRequest): Promise<{ data: ReplyData[WorkerReque
     }
     case 'point':
       return { data: geo ? Array.from(geo.point(req.lat, req.lon)) : [] };
+    case 'heightTile': {
+      if (!geo) return { data: null };
+      const [w, s, e, n] = req.bbox;
+      const heights = geo.height_tile(w, s, e, n, req.size);
+      return { data: heights, transfer: [heights.buffer] };
+    }
     case 'nationOptions':
       return { data: JSON.parse(nation_options(await contentPackReady())) as ReplyData['nationOptions'] };
     case 'previewSetup':

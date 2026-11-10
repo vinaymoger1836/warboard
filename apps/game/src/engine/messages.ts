@@ -77,6 +77,8 @@ export type WorkerRequest =
   | { type: 'closePacks' }
   | { type: 'terrainCells'; bbox: [number, number, number, number]; max: number }
   | { type: 'point'; lat: number; lon: number }
+  /** Heights of one 3D terrain tile, `size × size` from the north-west corner (doc 06 §5). */
+  | { type: 'heightTile'; bbox: [number, number, number, number]; size: number }
   | { type: 'details'; id: number; side?: number }
   | { type: 'contactDetails'; id: number; side?: number }
   /** Open ROE approval requests of the player's side. */
@@ -129,11 +131,13 @@ export interface ReplyData {
   terrainCells: Float64Array | null;
   /** [elevation_m, class, owner char codes…]; empty outside every pack. */
   point: number[];
+  /** Metres; null without packs (the globe stays an ellipsoid). */
+  heightTile: Float32Array | null;
   details: Details;
   contactDetails: ContactDetails;
   approvals: ApprovalView[];
-  /** `[lon, lat]` points every minute. */
-  groundTrack: [number, number][];
+  /** `[lon, lat, alt_m]` per minute. */
+  groundTrack: [number, number, number][];
   order: OrderReply;
   operations: OperationView[];
   checkOperation: Issue[];

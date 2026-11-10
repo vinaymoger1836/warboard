@@ -312,7 +312,7 @@ impl Engine {
         Ok(json(&wb_sim::roe::approvals(self.current().world(), side)))
     }
 
-    /// Ground track of an own satellite, `[[lon, lat], …]` every `step_s`.
+    /// Ground track of an own satellite, `[[lon, lat, alt_m], …]` every `step_s`.
     pub fn ground_track(
         &self,
         side: u8,
