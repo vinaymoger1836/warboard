@@ -918,8 +918,10 @@ fn ground_value(sim: &Sim, m: &Measure) -> Option<f64> {
                 let hit = events[from..].iter().position(|e| {
                     side_of(e) == side && e.sides != 0 && {
                         let yaml = serde_yaml::to_string(&e.kind).unwrap_or_default();
-                        yaml.starts_with(&format!("!{kind}
-")) && yaml.contains(text)
+                        yaml.starts_with(&format!(
+                            "!{kind}
+"
+                        )) && yaml.contains(text)
                     }
                 });
                 match hit {

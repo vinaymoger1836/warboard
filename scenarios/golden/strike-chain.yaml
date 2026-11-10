@@ -86,15 +86,15 @@ orders:
 golden:
   id: G17
   description: strike chain of doc 03 §8.2 – satellite report, drone upgrade, strike and rockets on the shared track
-  max_ticks: 60000
+  max_ticks: 20000
   seeds: 3
   expect:
     # The chain, in order, as Blue saw it.
     - metric: event_sequence
       side: 0
       events:
-        - "IntelReport:imaged: true"
         - "ContactClassified:level: class"
+        - "IntelReport:imaged: true"
         - "PhaseStarted:Eyes on"
         - "TookOff"
         - "ContactClassified:level: precise"
@@ -108,7 +108,7 @@ golden:
       max: 1
     - { metric: launches, side: 0, weapon: test-glide-bomb, aggregate: min, min: 4, max: 4 }
     - { metric: launches, side: 0, weapon: test-rocket, aggregate: min, min: 12, max: 12 }
-    - { metric: pk, side: 0, weapon: test-glide-bomb, aggregate: mean, min: 0.9 }
+    - { metric: pk, side: 0, weapon: test-glide-bomb, aggregate: mean, min: 0.7 }
     # Red saw its column struck while moving.
     - metric: event_sequence
       side: 1

@@ -1308,7 +1308,9 @@ pub(crate) fn resolve_task(
     let n_members: usize = picks.iter().map(|p| p.members.len()).sum();
     if !formations.is_empty() {
         if formations.len() != n_members {
-            return Err("Ground formations take their own orders; select them on their own".to_owned());
+            return Err(
+                "Ground formations take their own orders; select them on their own".to_owned(),
+            );
         }
         if let Some(task) = resolve_ground(world, geo, &rules, side, &formations, order)? {
             return Ok(task);
@@ -1596,7 +1598,10 @@ pub(crate) fn resolve_task(
         }
     };
 
-    if surface && !ground && let Some(geo) = geo {
+    if surface
+        && !ground
+        && let Some(geo) = geo
+    {
         check_water(&rules, geo, &bases, lead_pos, &task)?;
     }
     Ok(task)
@@ -1645,9 +1650,7 @@ fn resolve_ground(
             let (c, p) = target(contact, at, "An attack")?;
             (GroundKind::Attack, Some(p), c)
         }
-        TaskOrder::Defend { point: at } => {
-            (GroundKind::Defend, at.map(point).transpose()?, None)
-        }
+        TaskOrder::Defend { point: at } => (GroundKind::Defend, at.map(point).transpose()?, None),
         TaskOrder::Hold => (GroundKind::Hold, None, None),
         TaskOrder::Withdraw { point: at } => {
             (GroundKind::Withdraw, at.map(point).transpose()?, None)

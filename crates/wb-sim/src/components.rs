@@ -378,11 +378,14 @@ impl GroundOrder {
 }
 
 /// One kind of equipment of a formation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EquipmentLine {
     pub platform: PlatformIx,
     pub count: u32,
     pub full: u32,
+    /// Part of an item already lost in ground combat (0–1): attrition adds
+    /// up exactly from step to step.
+    pub worn: f64,
 }
 
 /// A ground formation (doc 02 §2 `FormationStrength`, §14): equipment

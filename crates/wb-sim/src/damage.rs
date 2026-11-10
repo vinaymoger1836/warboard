@@ -263,7 +263,15 @@ pub(crate) fn sabotage(
     let be = entity(world, base)?;
     let side = world.get::<Allegiance>(be)?.side;
     let down: Vec<BaseComponentKind> = world.get::<BaseSite>(be)?.damaged.keys().copied().collect();
-    let draw = |n: u32| rng(seed, RngPurpose::Sabotage, u64::from(base.0), tick, actor.0 ^ n);
+    let draw = |n: u32| {
+        rng(
+            seed,
+            RngPurpose::Sabotage,
+            u64::from(base.0),
+            tick,
+            actor.0 ^ n,
+        )
+    };
     let table: Vec<(BaseComponentKind, f64)> = dr
         .base_components
         .iter()
@@ -273,7 +281,14 @@ pub(crate) fn sabotage(
     let kind = pick(&table, draw(1))?;
     let rule = &dr.base_components[&kind];
     let repair = rule.repair_min_s + (rule.repair_max_s - rule.repair_min_s) * draw(2);
-    damage_component(world, rules, base, side, kind, now + (repair * 1_000.0) as u64);
+    damage_component(
+        world,
+        rules,
+        base,
+        side,
+        kind,
+        now + (repair * 1_000.0) as u64,
+    );
     Some(name_of(kind).to_owned())
 }
 

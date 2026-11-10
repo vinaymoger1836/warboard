@@ -215,6 +215,7 @@ pub fn build(
             platform: c.platform,
             count: c.count,
             full: c.count,
+            worn: 0.0,
         })
         .collect();
     let personnel = equipment
@@ -340,7 +341,11 @@ fn contacts(world: &mut World, rules: &Rules, list: &[Fm]) {
         if f.in_contact != now {
             f.in_contact = now;
             if now {
-                emit(world, fm.side, EventKind::GroundContact { formation: fm.gid });
+                emit(
+                    world,
+                    fm.side,
+                    EventKind::GroundContact { formation: fm.gid },
+                );
             }
         }
     }
@@ -637,10 +642,20 @@ fn raids(world: &mut World, rules: &Rules, clock: &SimClock, seed: u64, list: &[
                 "No enemy base within reach of the target point".to_owned(),
             ),
             Some(b) => {
-                let roll = rng(seed, RngPurpose::Sabotage, u64::from(fm.body.0), clock.tick, 0);
+                let roll = rng(
+                    seed,
+                    RngPurpose::Sabotage,
+                    u64::from(fm.body.0),
+                    clock.tick,
+                    0,
+                );
                 if roll < skill {
                     match crate::damage::sabotage(world, rules, seed, b.id, fm.body) {
-                        Some(c) => (true, Some(c), "A base component is out of action".to_owned()),
+                        Some(c) => (
+                            true,
+                            Some(c),
+                            "A base component is out of action".to_owned(),
+                        ),
                         None => (false, None, "Nothing left to sabotage".to_owned()),
                     }
                 } else {
@@ -765,24 +780,31 @@ struct Lost {
     personnel: u32,
 }
 
-/// Removes equipment: `expected(i, line)` items of each line, the fraction
-/// rounded up with probability `draw(i)`. Crews go with their vehicles, and
-/// the magazine shrinks with the first line.
+/// Removes equipment: `expected(i, line)` items of each line. A strike
+/// rounds the fraction up with probability `draw(i)`; ground combat (no
+/// `draw`) carries it to the next step. Crews go with their vehicles, and the
+/// magazine shrinks with the first line.
 fn remove(
     rules: &Rules,
     f: &mut Formation,
     mag: Option<&mut Magazine>,
     expected: impl Fn(usize, &EquipmentLine) -> f64,
-    draw: impl Fn(u32) -> f64,
+    draw: Option<&dyn Fn(u32) -> f64>,
 ) -> Lost {
     let mut lost = Lost::default();
     let first_before = f.equipment.first().map_or(0, |e| e.count);
     for (i, line) in f.equipment.iter_mut().enumerate() {
-        let x = expected(i, line).clamp(0.0, f64::from(line.count));
+        let mut x = expected(i, line).max(0.0);
+        if draw.is_none() {
+            x += line.worn;
+        }
+        let x = x.min(f64::from(line.count));
         let whole = x.floor();
         let mut n = whole as u32;
-        if draw(i as u32) < x - whole {
-            n += 1;
+        match draw {
+            Some(d) if d(i as u32) < x - whole => n += 1,
+            Some(_) => {}
+            None => line.worn = x - whole,
         }
         let n = n.min(line.count);
         line.count -= n;
@@ -817,7 +839,14 @@ fn destroyed(world: &mut World, rules: &Rules, body: UnitId, f: &Formation) -> b
 /// A weapon hit a formation (doc 02 §13): equipment is removed by the
 /// weapon's effective warhead and the posture's exposure, shared over the
 /// equipment lines and divided by each line's protection.
-pub fn strike(world: &mut World, rules: &Rules, seed: u64, weapon: UnitId, w: &Weapon, body: UnitId) {
+pub fn strike(
+    world: &mut World,
+    rules: &Rules,
+    seed: u64,
+    weapon: UnitId,
+    w: &Weapon,
+    body: UnitId,
+) {
     let Some(be) = entity(world, body) else {
         return;
     };
@@ -846,7 +875,7 @@ pub fn strike(world: &mut World, rules: &Rules, seed: u64, weapon: UnitId, w: &W
             (kills * share / protection)
                 .min((gr.strike_max_fraction * f64::from(line.count)).ceil())
         },
-        |n| {
+        Some(&|n| {
             rng(
                 seed,
                 RngPurpose::GroundStrike,
@@ -854,7 +883,7 @@ pub fn strike(world: &mut World, rules: &Rules, seed: u64, weapon: UnitId, w: &W
                 clock.tick,
                 weapon.0 ^ (n << 24),
             )
-        },
+        }),
     );
     let fraction = if before > 0.0 {
         1.0 - bulk(rules, &f, false) / before
@@ -911,13 +940,9 @@ struct Side {
 }
 
 /// Lanchester-style attrition between formations in contact (doc 02 §14).
-fn combat(
-    world: &mut World,
-    rules: &Rules,
-    clock: &SimClock,
-    seed: u64,
-    geo: Option<&Geo>,
-) {
+// The steps index each other's formations, so plain index loops read best.
+#[allow(clippy::needless_range_loop)]
+fn combat(world: &mut World, rules: &Rules, clock: &SimClock, seed: u64, geo: Option<&Geo>) {
     let gr = &rules.realism().ground;
     let now = clock.sim_time_ms;
     let utc = clock.start_utc_ms as f64 + now as f64;
@@ -1087,9 +1112,8 @@ fn combat(
             for &e in &cs[i].enemies {
                 let (obs, tgt) = (&cs[i], &cs[e]);
                 let ent = (u64::from(obs.fm.body.0) << 32) | u64::from(tgt.fm.body.0);
-                let z = |n: u32| {
-                    rng_normal(seed, RngPurpose::ContactError, ent, clock.tick, 900 + n)
-                };
+                let z =
+                    |n: u32| rng_normal(seed, RngPurpose::ContactError, ent, clock.tick, 900 + n);
                 let p1 = destination_point(tgt.pos, 0.0, z(0) * sigma);
                 let at = destination_point(p1, core::f64::consts::FRAC_PI_2, z(1) * sigma);
                 let det = Detection {
@@ -1138,22 +1162,13 @@ fn combat(
         } else {
             1.0
         };
-        let body = c.fm.body;
         let mut mag = world.get::<Magazine>(c.fm.be).cloned();
         let lost = remove(
             rules,
             &mut c.f,
             mag.as_mut(),
             |_, line| f64::from(line.count) * phi,
-            |n| {
-                rng(
-                    seed,
-                    RngPurpose::GroundCombat,
-                    u64::from(body.0),
-                    clock.tick,
-                    100 + n,
-                )
-            },
+            None,
         );
         c.factors.value_lost = c.loss;
         c.f.morale = (c.f.morale - phi * gr.morale_loss_factor).clamp(0.0, 1.0);
