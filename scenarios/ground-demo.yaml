@@ -1,0 +1,31 @@
+# Development scene for the ground forces UI (P11): Blue formations on test
+# land with a Red column and battalion nearby. Fixtures only (ADR-035).
+#   WB_SCENARIO=scenarios/ground-demo.yaml WB_CONTENT_PACK=build/fixtures.wbpack pnpm --filter game dev
+name: Ground demo
+seed: 1100
+content: scenarios/fixtures
+start_utc: 2026-10-27T09:00:00Z
+start_mode: garrisoned
+test_terrain:
+  west: 16
+  south: 55
+  cols: 2
+  rows: 1
+  base_m: 40
+  land:
+    - { class: open, box: [16.10, 55.05, 17.90, 55.90], nation: tst }
+    - { class: urban, box: [16.95, 55.42, 17.05, 55.48] }
+    - { class: mountain, box: [16.60, 55.60, 16.90, 55.80] }
+sides:
+  - { name: Blue, nations: [tst], player: true, roe: charlie }
+  - { name: Red, nations: [opp], roe: charlie }
+units:
+  - { id: 10, name: 1st Tank Battalion, system: test-tank-battalion, nation: tst, lat_deg: 55.40, lon_deg: 16.60 }
+  - { id: 20, name: 2nd Infantry Battalion, system: test-infantry-battalion, nation: tst, lat_deg: 55.50, lon_deg: 16.55 }
+  - { id: 30, name: Gun Battery, system: test-gun-battery, nation: tst, lat_deg: 55.38, lon_deg: 16.45 }
+  - { id: 40, name: Rocket Battery, system: test-rocket-battery, nation: tst, lat_deg: 55.30, lon_deg: 16.40 }
+  - { id: 50, name: Recon Detachment, system: test-recon-detachment, nation: tst, lat_deg: 55.44, lon_deg: 16.80 }
+  - { id: 100, name: Red Infantry, system: test-infantry-battalion, nation: opp, lat_deg: 55.45, lon_deg: 17.00, posture: prepared }
+  - { id: 110, name: Red Column, system: test-armour-column, nation: opp, lat_deg: 55.44, lon_deg: 16.88 }
+orders:
+  - { tick: 0, side: 1, type: AssignTask, units: [100], task: { kind: hold } }

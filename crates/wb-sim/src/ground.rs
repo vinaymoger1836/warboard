@@ -1281,6 +1281,10 @@ pub struct FormationView {
     pub suppressed: bool,
     /// The team is designating a contact.
     pub designating: Option<u32>,
+    /// Trained for raids (`sabotage_skill`), so the card offers the task.
+    pub can_raid: bool,
+    /// Carries a target designator.
+    pub can_designate: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -1329,6 +1333,14 @@ pub fn view(world: &World, side: u8, lead: UnitId) -> Option<FormationView> {
         in_contact: f.in_contact,
         suppressed: now < f.suppressed_until_ms,
         designating,
+        can_raid: f.equipment.iter().any(|l| {
+            l.count > 0
+                && stats(rules, l.platform)
+                    .is_some_and(|s| s.sabotage_skill.is_some_and(|x| x > 0.0))
+        }),
+        can_designate: f.equipment.iter().any(|l| {
+            l.count > 0 && stats(rules, l.platform).is_some_and(|s| s.designate_m.is_some())
+        }),
     })
 }
 

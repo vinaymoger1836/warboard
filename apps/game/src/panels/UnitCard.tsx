@@ -43,6 +43,12 @@ const CATEGORY_SYMBOL: Record<string, SymbolName> = {
   'ship/patrol': 'patrol_ship',
   'ship/auxiliary': 'auxiliary',
   'submarine/attack': 'submarine',
+  'ground/radar': 'radar',
+  'ground/launcher': 'launcher',
+  'ground/c2': 'c2',
+  'ground/armour': 'armour',
+  'ground/artillery': 'artillery',
+  'ground/infantry': 'infantry',
 };
 
 const BASE_SYMBOL: Record<string, SymbolName> = {
@@ -642,10 +648,12 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   const rings = useUi((s) => s.rings);
   const weaponRing = useUi((s) => s.weaponRing);
   const picked = d.weapons.find((w) => w.id === weaponRing) ?? null;
-  const [tab, setTab] = useState('weapons');
+  const formation = d.formation ?? null;
+  const [tab, setTab] = useState(formation ? 'force' : 'weapons');
   const air = d.domain === 'air';
   const title = d.count > 1 ? `${d.count} × ${d.type_name}` : d.type_name;
-  const subtitle = [d.name, d.crew ? `${d.crew} Personnel` : null].filter(Boolean).join(' · ');
+  const personnel = formation ? formation.personnel : d.crew;
+  const subtitle = [d.name, personnel ? `${personnel} Personnel` : null].filter(Boolean).join(' · ');
   const toggle = (k: keyof typeof rings) => ui.set({ rings: { ...rings, [k]: !rings[k] } });
   const units = [d.id];
   const rtb = () => void sendTask(bridge, units, { kind: 'rtb' }, toast);
@@ -670,7 +678,18 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
     ui.set({ tool: { kind: 'strike', aim: null } });
     toast('Click an enemy contact on the map, or open sea for a point');
   };
-  const buttons: [string, () => void][] = air
+  // Ground formations (doc 03 §5): tasks without a target are buttons; move, attack, recon,
+  // raid and designate take their target from a right-click on the map.
+  const groundTask = (task: Parameters<typeof sendTask>[2], done: string) =>
+    void sendTask(bridge, units, task, toast).then((ok) => ok && toast(`${d.name}: ${done}`));
+  const buttons: [string, () => void][] = formation
+    ? [
+        ['HOLD', () => groundTask({ kind: 'hold' }, 'holding its ground')],
+        ['DEFEND', () => groundTask({ kind: 'defend' }, 'digging in')],
+        ['WITHDRAW', () => groundTask({ kind: 'withdraw' }, 'falling back')],
+        ...(d.weapons.length > 0 ? ([['STRIKE', strikeTool]] as [string, () => void][]) : []),
+      ]
+    : air
     ? [
         ['ORDER RTB', rtb],
         ['RETASK PATROL', () => routeTool(true)],
@@ -717,6 +736,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
         ],
       ];
   const tabs: [string, string][] = [
+    ...(formation ? ([['force', 'Force']] as [string, string][]) : []),
     ['weapons', 'Weapons'],
     ['task', 'Task'],
     ['sensors', 'Sensors'],
@@ -724,7 +744,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
     ['roe', 'ROE'],
     ['specs', 'Specs'],
   ];
-  const current = tabs.some(([k]) => k === tab) ? tab : 'weapons';
+  const current = tabs.some(([k]) => k === tab) ? tab : formation ? 'force' : 'weapons';
   const health = groupHealth(d);
   return (
     <>
@@ -747,6 +767,11 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
               <b style={{ color: fuelColour(d.fuel_pct, d.bingo) }}>
                 {Math.round(d.fuel_pct)}%{d.bingo ? ' BINGO' : ''}
               </b>
+            </span>
+          ) : formation ? (
+            <span>
+              <span className="label">Strength: </span>
+              <b style={{ color: healthColour(formation.strength_pct) }}>{Math.round(formation.strength_pct)}%</b>
             </span>
           ) : (
             health && (
@@ -773,7 +798,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
             <b>{Math.round(d.heading_deg)}°</b>
           </span>
         </div>
-        <Condition d={d} />
+        {formation ? <FormationState f={formation} /> : <Condition d={d} />}
         <div className="ranges">
           <button type="button" className={`range-row sensor${rings.sensor ? '' : ' off'}`} aria-pressed={rings.sensor} onClick={() => toggle('sensor')}>
             <SensorGlyph />
@@ -802,6 +827,24 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
           ))}
         </div>
         <div className="tab-body" role="tabpanel">
+          {current === 'force' && formation && (
+            <dl className="facts">
+              {formation.equipment.map((e) => (
+                <span key={e.id} className="dl-pair">
+                  <dt>{e.name}</dt>
+                  <dd style={{ color: healthColour((100 * e.count) / Math.max(1, e.full)) }}>
+                    {e.count} / {e.full}
+                  </dd>
+                </span>
+              ))}
+              <dt>Personnel</dt>
+              <dd>
+                {formation.personnel} / {formation.personnel_full}
+              </dd>
+              <dt>Fatigue</dt>
+              <dd>{Math.round(formation.fatigue_pct)}%</dd>
+            </dl>
+          )}
           {current === 'weapons' && <WeaponsTab d={d} />}
           {current === 'task' && (
             <dl className="facts">
@@ -880,16 +923,60 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
         {striking ? (
           <StrikePanel d={d} aim={striking.aim} bridge={bridge} toast={toast} />
         ) : (
-          <div className="card-buttons">
-            {buttons.map(([label, run]) => (
-              <button key={label} type="button" className="cmd" onClick={run}>
-                {label}
-              </button>
-            ))}
-          </div>
+          <>
+            {formation && <p className="card-note">Right-click the map or a contact for move, attack and recon.</p>}
+            <div className="card-buttons">
+              {buttons.map(([label, run]) => (
+                <button key={label} type="button" className="cmd" onClick={run}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </>
+  );
+}
+
+const POSTURE_TEXT: Record<string, string> = {
+  moving: 'On the move',
+  attack: 'Attacking',
+  hasty: 'Hasty defence',
+  prepared: 'Dug in',
+};
+
+/** State of a ground formation (doc 02 §14): posture and contact pills, then strength,
+ * morale and supply bars in the style of the Condition block. */
+function FormationState({ f }: { f: NonNullable<GroupDetails['formation']> }) {
+  const bars: [string, number][] = [
+    ['Strength', f.strength_pct],
+    ['Morale', f.morale_pct],
+    ['Supply', f.supply_pct],
+  ];
+  return (
+    <div className="condition">
+      <span className="block-title">Condition</span>
+      <div className="cond-member">
+        <span className="cond-flags">
+          <span className="pill dim">{POSTURE_TEXT[f.posture] ?? f.posture}</span>
+          {f.in_contact && <span className="pill bad">In contact</span>}
+          {f.suppressed && <span className="pill warn">Suppressed</span>}
+          {f.designating != null && <span className="pill ok">Designating C{f.designating}</span>}
+        </span>
+      </div>
+      {bars.map(([label, pct]) => (
+        <div key={label} className="cond-member">
+          <span className="cond-name">{label}</span>
+          <span className="hp" title={`${label} ${Math.round(pct)}%`}>
+            <span className="hp-bar">
+              <span style={{ width: `${pct}%`, background: healthColour(pct) }} />
+            </span>
+            <b style={{ color: healthColour(pct) }}>{Math.round(pct)}%</b>
+          </span>
+        </div>
+      ))}
+    </div>
   );
 }
 

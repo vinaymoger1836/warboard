@@ -42,7 +42,22 @@ export function ContextMenu({ req, bridge, toast, onClose }: Props) {
   if (group) {
     const units = [group.id];
     const send = (task: Parameters<typeof sendTask>[2]) => void sendTask(bridge, units, task, toast);
-    if (target?.base) {
+    if (group.formation) {
+      // Ground formations (doc 03 §5): the target of the task is what was clicked.
+      const f = group.formation;
+      if (target?.contact) {
+        items.push(['Attack contact', () => send({ kind: 'attack', contact: target.id })]);
+        items.push(['Recon contact', () => send({ kind: 'recon', contact: target.id })]);
+        if (f.can_designate) items.push(['Designate contact', () => send({ kind: 'designate', contact: target.id })]);
+      } else {
+        items.push(['Move here', () => send({ kind: 'move', waypoints: [req.at] })]);
+        items.push(['Attack here', () => send({ kind: 'attack', point: req.at })]);
+        items.push(['Defend here', () => send({ kind: 'defend', point: req.at })]);
+        items.push(['Withdraw here', () => send({ kind: 'withdraw', point: req.at })]);
+        items.push(['Recon here', () => send({ kind: 'recon', point: req.at })]);
+        if (f.can_raid) items.push(['Raid here', () => send({ kind: 'raid', point: req.at })]);
+      }
+    } else if (target?.base) {
       items.push([group.domain === 'air' ? 'Land here' : 'Berth here', () => send({ kind: 'land', base: target.id })]);
       items.push(['Transfer here', () => send({ kind: 'transfer', base: target.id })]);
     } else {
