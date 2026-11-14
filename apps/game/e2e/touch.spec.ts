@@ -57,6 +57,7 @@ test('touch mode: bottom-sheet unit card, 44 px targets, long-press menu, credit
   expect(item?.height ?? 0).toBeGreaterThanOrEqual(44);
 
   // A short tap is not a long-press: the menu closes on a tap elsewhere and does not reopen.
+  await page.waitForTimeout(800); // the release that ends a long-press is not a tap
   await page.mouse.click(Math.round(map.x + map.width * 0.5), Math.round(map.y + map.height * 0.25));
   await expect(page.locator('.context-menu')).toBeHidden();
 
