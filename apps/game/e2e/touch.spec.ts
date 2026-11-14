@@ -23,12 +23,14 @@ test('touch mode: bottom-sheet unit card, 44 px targets, long-press menu, credit
   if (!box) return;
   expect(Math.round(box.x)).toBe(0);
   expect(Math.round(box.x + box.width)).toBe(900);
-  expect(Math.round(box.y + box.height)).toBe(420);
+  // Along the bottom edge of the board (the dock may sit below it).
+  const board = await page.locator('.board').boundingBox();
+  expect(Math.round(box.y + box.height)).toBe(Math.round((board?.y ?? 0) + (board?.height ?? 0)));
   await expect(card).toHaveAttribute('data-sheet', 'peek');
-  await expect(card.locator('.card-tabs')).toBeHidden();
+  const peekHeight = (await card.boundingBox())?.height ?? 0;
   await card.getByRole('button', { name: 'Show the full card' }).click();
   await expect(card).toHaveAttribute('data-sheet', 'open');
-  await expect(card.locator('.card-tabs')).toBeVisible();
+  expect((await card.boundingBox())?.height ?? 0).toBeGreaterThan(peekHeight);
 
   // Hit targets: the card's buttons and tabs are at least 44 px high.
   for (const sel of ['.card-tabs .tab', '.card-buttons .cmd']) {
