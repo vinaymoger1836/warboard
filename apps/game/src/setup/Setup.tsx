@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { EngineBridge } from '../bridge';
 import type { PinChoice, SetupPreview } from '../engine/messages';
 import type { InstalledPack } from '../packs/types';
+import { Credits } from '../panels/Credits';
 import { NationFlag } from '../panels/NationFlag';
 import { ROE_LEVELS } from '../panels/TopBar';
 
@@ -151,6 +152,7 @@ export function Setup({ bridge, packs, toast, onPacks, onSaves }: Props) {
   // The preview of the setup it was made for; a changed setup shows "checking" until its own arrives.
   const [checked, setChecked] = useState<{ key: string; result: SetupPreview } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [creditsOpen, setCreditsOpen] = useState(false);
 
   useEffect(() => {
     bridge
@@ -207,8 +209,12 @@ export function Setup({ bridge, packs, toast, onPacks, onSaves }: Props) {
             <button type="button" className="cmd" onClick={onPacks}>
               MAP PACKS
             </button>
+            <button type="button" className="cmd" onClick={() => setCreditsOpen(true)}>
+              CREDITS
+            </button>
           </div>
         </div>
+        {creditsOpen && <Credits packs={packs} onClose={() => setCreditsOpen(false)} />}
       </main>
     );
   }

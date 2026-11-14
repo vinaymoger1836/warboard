@@ -2406,3 +2406,160 @@ dl.facts dd {
   margin: 0;
   color: var(--text-primary);
 }
+
+/* ---- Touch (P12, doc 06 §11): bottom-sheet unit card, larger hit targets ---- */
+
+.sheet-handle {
+  display: none;
+}
+
+html[data-input='touch'] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html[data-input='touch'] button {
+  touch-action: manipulation;
+}
+
+/* The unit card keeps its doc 10 §7 layout; it sits along the bottom edge and opens in two steps. */
+html[data-input='touch'] .unit-card {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  max-height: 64%;
+  border-radius: 12px 12px 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+html[data-input='touch'] .sheet-handle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 28px;
+  padding: 0;
+  background: var(--panel-header);
+  border: none;
+  cursor: pointer;
+}
+
+html[data-input='touch'] .sheet-handle span {
+  width: 44px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--panel-border);
+}
+
+/* First step: title, status rows and the order buttons; the handle opens the rest. */
+html[data-input='touch'] .unit-card[data-sheet='peek'] .card-body > :not(.card-row):not(.card-note):not(.card-buttons) {
+  display: none;
+}
+
+html[data-input='touch'] .cmd,
+html[data-input='touch'] .segmented .seg,
+html[data-input='touch'] .chrome-button,
+html[data-input='touch'] .card-tabs .tab,
+html[data-input='touch'] .range-row,
+html[data-input='touch'] .dock-tab,
+html[data-input='touch'] .context-menu button {
+  min-height: 44px;
+}
+
+html[data-input='touch'] .close {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+html[data-input='touch'] .segmented .seg,
+html[data-input='touch'] .card-tabs .tab {
+  min-width: 44px;
+}
+
+html[data-input='touch'] .context-menu {
+  min-width: 220px;
+}
+
+html[data-input='touch'] .top-bar {
+  padding-top: max(8px, env(safe-area-inset-top, 0));
+  padding-left: max(12px, env(safe-area-inset-left, 0));
+  padding-right: max(12px, env(safe-area-inset-right, 0));
+}
+
+/* ---- Credits screen (P12) ---- */
+
+.credits-screen {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, calc(100% - 32px));
+  max-height: calc(100% - 48px);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.credits-body {
+  overflow: auto;
+  padding: 4px 16px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.credits-body h3 {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.credits-body h4 {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.credit-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.credit-name {
+  color: var(--text-primary);
+}
+
+.credit-meta {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* ---- Pack host field (P12): the phone can fetch packs from a PC on the same network ---- */
+
+.pack-source {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pack-source-row {
+  display: flex;
+  gap: 8px;
+}
+
+.pack-source-row input {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel-inset);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px 10px;
+}

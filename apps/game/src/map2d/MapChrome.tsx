@@ -3,6 +3,8 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'react';
 import type { EngineBridge } from '../bridge';
+import type { InstalledPack } from '../packs/types';
+import { Credits } from '../panels/Credits';
 import { play } from '../play';
 import { ui, useUi } from '../store';
 import { TERRAIN_CLASSES } from './terrainOverlay';
@@ -101,11 +103,11 @@ export interface MapChromeProps {
   geoReady: boolean;
   terrainOverlay: boolean;
   onTerrainOverlay: (on: boolean) => void;
-  credits: string[];
+  packs: InstalledPack[];
   onToast: (text: string) => void;
 }
 
-export function MapChrome({ map, bridge, geoReady, terrainOverlay, onTerrainOverlay, credits }: MapChromeProps) {
+export function MapChrome({ map, bridge, geoReady, terrainOverlay, onTerrainOverlay, packs }: MapChromeProps) {
   const [layersOpen, setLayersOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
   return (
@@ -170,23 +172,7 @@ export function MapChrome({ map, bridge, geoReady, terrainOverlay, onTerrainOver
           © OpenStreetMap · Credits
         </button>
       </div>
-      {creditsOpen && (
-        <div className="credits-panel" role="dialog" aria-label="Credits">
-          <div className="panel-title">
-            Credits
-            <button type="button" className="close" aria-label="Close credits" onClick={() => setCreditsOpen(false)}>
-              ×
-            </button>
-          </div>
-          <ul>
-            {credits.map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-            <li>Map rendering: MapLibre GL JS (BSD-3-Clause), deck.gl (MIT), PMTiles (BSD-3-Clause)</li>
-            <li>Fonts: Noto Sans and JetBrains Mono (SIL Open Font License 1.1)</li>
-          </ul>
-        </div>
-      )}
+      {creditsOpen && <Credits packs={packs} onClose={() => setCreditsOpen(false)} />}
     </>
   );
 }

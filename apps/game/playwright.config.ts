@@ -6,6 +6,8 @@
 //   default  — the dev server with the quick-start war (`pnpm --filter game e2e`).
 //   perf3d   — a second dev server whose quick start is the 500-unit 3D benchmark scene
 //              (`WB_E2E_PERF=1 pnpm --filter game e2e --project perf3d`).
+//   perf2d   — the same 500-unit scene in 2D at ×5 under CPU throttling, a stand-in for a
+//              mid-range phone (`WB_E2E_PERF2D=1 pnpm --filter game e2e --project perf2d`).
 //   offline  — a production build served by `vite preview`, with the service worker
 //              (`WB_E2E_OFFLINE=1 pnpm --filter game e2e --project offline`).
 // The extra servers start only when asked for, so the default run builds nothing.
@@ -15,6 +17,7 @@ const PORT = 5174;
 const PERF_PORT = 5175;
 const OFFLINE_PORT = 5176;
 const PERF = !!process.env.WB_E2E_PERF;
+const PERF2D = !!process.env.WB_E2E_PERF2D;
 const OFFLINE = !!process.env.WB_E2E_OFFLINE;
 const OFFLINE_DIR = '../../build/e2e-offline';
 
@@ -30,11 +33,16 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
   },
   projects: [
-    { name: 'default', testIgnore: [/perf3d\.spec\.ts/, /offline3d\.spec\.ts/], use: { baseURL: `http://localhost:${PORT}` } },
+    { name: 'default', testIgnore: [/perf3d\.spec\.ts/, /perf2d\.spec\.ts/, /offline3d\.spec\.ts/], use: { baseURL: `http://localhost:${PORT}` } },
     ...(PERF ? [{
       name: 'perf3d',
       testMatch: /perf3d\.spec\.ts/,
       // Frame rate needs the GPU: headed, so Chrome does not fall back to software WebGL.
+      use: { baseURL: `http://localhost:${PERF_PORT}`, headless: false },
+    }] : []),
+    ...(PERF2D ? [{
+      name: 'perf2d',
+      testMatch: /perf2d\.spec\.ts/,
       use: { baseURL: `http://localhost:${PERF_PORT}`, headless: false },
     }] : []),
     ...(OFFLINE ? [{ name: 'offline', testMatch: /offline3d\.spec\.ts/, use: { baseURL: `http://localhost:${OFFLINE_PORT}` } }] : []),
@@ -46,7 +54,7 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 120_000,
     },
-    ...(PERF ? [{
+    ...(PERF || PERF2D ? [{
       command: `pnpm exec vite --port ${PERF_PORT} --strictPort`,
       url: `http://localhost:${PERF_PORT}`,
       env: { WB_SCENARIO: 'scenarios/bench/view-500.yaml' },

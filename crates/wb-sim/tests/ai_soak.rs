@@ -18,8 +18,9 @@ use std::sync::Arc;
 use std::time::Instant;
 use wb_sim::Sim;
 use wb_sim::ai::AiBrains;
-use wb_sim::components::{Allegiance, PlatformRef};
+use wb_sim::components::{Allegiance, PlatformRef, Task};
 use wb_sim::events::EventKind;
+use wb_sim::operations::{Operations, PhaseState};
 use wb_sim::picture::SidePictures;
 use wb_sim::setup::{SideSetup, WarSetup, build_scenario};
 use wb_sim::world::{Controller, Difficulty, PlayMode, UnitIndex};
@@ -64,6 +65,8 @@ struct Hour {
     contacts: [usize; 2],
     alive: [usize; 2],
     decisions: [u64; 2],
+    /// Operations the AI planned, per side (P12).
+    ops: [usize; 2],
     refused: usize,
     wall_s: f64,
 }
@@ -125,6 +128,10 @@ fn sample(sim: &mut Sim, hour: u64, wall_s: f64) -> Hour {
             "threats follow the picture"
         );
     }
+    let mut ops = [0, 0];
+    for o in &w.resource::<Operations>().ops {
+        ops[usize::from(o.side.min(1))] += 1;
+    }
     Hour {
         hour,
         snapshot_kb,
@@ -133,6 +140,7 @@ fn sample(sim: &mut Sim, hour: u64, wall_s: f64) -> Hour {
         contacts,
         alive,
         decisions,
+        ops,
         refused,
         wall_s,
     }
@@ -166,6 +174,44 @@ fn watch_mode_soak() {
         last.decisions[0] > 0 && last.decisions[1] > 0,
         "both AIs decided"
     );
+    // P12 acceptance: the AI launched at least one multi-phase operation in
+    // which air-defence suppression started before the strike.
+    let mut found = Vec::new();
+    for o in &sim.world().resource::<Operations>().ops {
+        let started = |f: fn(&Task) -> bool| {
+            o.phases
+                .iter()
+                .filter(|p| p.tasks.iter().any(|t| f(&t.task)))
+                .filter_map(|p| p.started.map(|s| s.ms))
+                .min()
+        };
+        let sead = started(|t| matches!(t, Task::Suppress { .. }));
+        let strike = started(|t| matches!(t, Task::Strike { .. }));
+        eprintln!(
+            "  op side {} {:?}: {} phases {:?}, suppression started {:?} ms, strike {:?} ms",
+            o.side,
+            o.name,
+            o.phases.len(),
+            o.phases
+                .iter()
+                .map(|p| (p.key.as_str(), p.state))
+                .collect::<Vec<_>>(),
+            sead,
+            strike
+        );
+        if o.phases.len() >= 2
+            && let (Some(a), Some(b)) = (sead, strike)
+            && a <= b
+            && o.phases.iter().any(|p| p.state == PhaseState::Done)
+        {
+            found.push(o.name.clone());
+        }
+    }
+    assert!(
+        !found.is_empty(),
+        "the AI planned no multi-phase operation with suppression before the strike (needs a few hours of sim time)"
+    );
+    eprintln!("soak: operations with suppression before the strike: {found:?}");
     // AI decisions are logged, each to its own side.
     let ai_events = sim
         .events()

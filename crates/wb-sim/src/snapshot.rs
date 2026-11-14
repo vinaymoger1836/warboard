@@ -28,7 +28,8 @@ const MAGIC: &[u8; 8] = b"WB-STATE";
 /// 5 (P7): operations, the war state, fire missions on groups.
 /// 6 (P9): controllers, difficulty and the play mode in the sides.
 /// 7 (P11): ground formations, ground tasks, the ground state, terrain patches.
-pub const FORMAT_VERSION: u8 = 7;
+/// 8 (P12): the AI's operation list, serial, cooldown and planned objectives.
+pub const FORMAT_VERSION: u8 = 8;
 
 /// All components of one unit, group or base.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

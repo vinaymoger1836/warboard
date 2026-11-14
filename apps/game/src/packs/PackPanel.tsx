@@ -1,5 +1,6 @@
 // Pack manager panel (doc 06 §8): install, update, remove, re-download after eviction,
 // storage quota and persistence.
+import { useState } from 'react';
 import type { PackManager, PackState } from './manager';
 import type { PackStatus } from './types';
 
@@ -31,6 +32,15 @@ function statusText(s: PackStatus | undefined): string {
 export function PackPanel({ manager, state, onClose }: { manager: PackManager; state: PackState; onClose: () => void }) {
   const ids = [...new Set([...(state.catalog ?? []).map((c) => c.id), ...state.installed.map((p) => p.id)])];
   const busy = Object.values(state.status).some((s) => s.kind === 'installing');
+  const [source, setSource] = useState('');
+  const [sourceError, setSourceError] = useState<string | null>(null);
+  const changeSource = (text: string | null) => {
+    setSourceError(null);
+    manager.setSource(text).then(
+      () => setSource(''),
+      (err: unknown) => setSourceError(err instanceof Error ? err.message : String(err)),
+    );
+  };
   return (
     <section className="panel pack-panel" aria-labelledby="pack-panel-title">
       <h2 id="pack-panel-title" className="panel-header">
@@ -45,6 +55,33 @@ export function PackPanel({ manager, state, onClose }: { manager: PackManager; s
           offline. A war needs the world pack and the pack of its theatre.
         </p>
         {state.catalogError && <p className="warn">{state.catalogError}</p>}
+        <div className="pack-source">
+          <label htmlFor="pack-source-input">
+            Pack host{manager.customSource ? ' (chosen by you)' : ''}: <span className="pack-meta">{manager.baseUrl}</span>
+          </label>
+          <div className="pack-source-row">
+            <input
+              id="pack-source-input"
+              type="url"
+              inputMode="url"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="https://host.example/packs/"
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+            />
+            <button type="button" className="cmd" disabled={busy || source.trim() === ''} onClick={() => changeSource(source)}>
+              USE
+            </button>
+            {manager.customSource && (
+              <button type="button" className="cmd" disabled={busy} onClick={() => changeSource(null)}>
+                RESET
+              </button>
+            )}
+          </div>
+          {sourceError && <p className="warn">{sourceError}</p>}
+        </div>
         <ul className="pack-list">
           {ids.map((id) => {
             const entry = state.catalog?.find((c) => c.id === id);

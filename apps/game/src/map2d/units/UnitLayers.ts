@@ -14,7 +14,7 @@ import type { Layer, PickingInfo } from '@deck.gl/core';
 import { PathStyleExtension, type PathStyleExtensionProps } from '@deck.gl/extensions';
 import { IconLayer, PathLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import { type IconAtlas, iconKey, isAircraft, markAbove, missileDataUrl } from '@warboard/symbols';
-import type { Map as MapLibreMap, MapMouseEvent } from 'maplibre-gl';
+import type { Map as MapLibreMap, MapMouseEvent, MapTouchEvent } from 'maplibre-gl';
 import type { EngineBridge } from '../../bridge';
 import { distance, type LonLat } from '../../scene/geo';
 import { buildOverlays, findContact, findUnit } from '../../scene/overlays';
@@ -59,6 +59,8 @@ export class UnitLayers {
   private readonly tip = document.createElement('div');
   private hoverAt: [number, number] | null = null;
   private hoverQueued = false;
+  /** When the last long-press fired (`performance.now()`), to drop the events that follow it. */
+  private longPressAt = -Infinity;
   /** Last non-zero achieved speed (sim s per real s), for the effects' real-time scale. */
   private effectSpeed = 1;
   private readonly offs: (() => void)[] = [];
@@ -80,6 +82,34 @@ export class UnitLayers {
     on('click', (e) => this.click(e));
     on('dblclick', (e) => this.finishTool(e));
     on('contextmenu', (e) => this.contextMenu(e));
+    // Long-press is the touch screen's right-click (doc 06 §11): one finger held still opens the
+    // context menu at that point. A drag, a second finger or a lift cancels it.
+    let press: { timer: number; x: number; y: number } | null = null;
+    const cancelPress = () => {
+      if (press) window.clearTimeout(press.timer);
+      press = null;
+    };
+    on('touchstart', (e) => {
+      cancelPress();
+      if (e.points.length !== 1) return;
+      const { x, y } = e.point;
+      const at: LonLat = [e.lngLat.lng, e.lngLat.lat];
+      press = {
+        x,
+        y,
+        timer: window.setTimeout(() => {
+          press = null;
+          this.longPressAt = performance.now();
+          this.openContext(x, y, at);
+        }, LONG_PRESS_MS),
+      };
+    });
+    on('touchmove', (e) => {
+      if (press && (e.points.length !== 1 || Math.hypot(e.point.x - press.x, e.point.y - press.y) > PRESS_SLOP_PX)) cancelPress();
+    });
+    on('touchend', cancelPress);
+    on('touchcancel', cancelPress);
+    this.offs.push(cancelPress);
     on('mousemove', (e) => {
       this.cursor = [e.lngLat.lng, e.lngLat.lat];
       this.hoverAt = [e.point.x, e.point.y];
@@ -197,6 +227,8 @@ export class UnitLayers {
   }
 
   private click(e: MapMouseEvent): void {
+    // The release that ends a long-press is not a tap.
+    if (performance.now() - this.longPressAt < 600) return;
     this.onContext(null);
     const tool = ui.get().tool;
     const at: LonLat = [e.lngLat.lng, e.lngLat.lat];
@@ -237,16 +269,17 @@ export class UnitLayers {
 
   private contextMenu(e: MapMouseEvent): void {
     e.preventDefault();
+    // The browser's own long-press contextmenu follows ours on some devices: once is enough.
+    if (performance.now() - this.longPressAt < 800) return;
+    this.openContext(e.point.x, e.point.y, [e.lngLat.lng, e.lngLat.lat]);
+  }
+
+  private openContext(x: number, y: number, at: LonLat): void {
     if (ui.get().tool) {
       ui.set({ tool: null });
       return;
     }
-    this.onContext({
-      x: e.point.x,
-      y: e.point.y,
-      at: [e.lngLat.lng, e.lngLat.lat],
-      target: this.pick(e.point.x, e.point.y),
-    });
+    this.onContext({ x, y, at, target: this.pick(x, y) });
   }
 
   // ---- Drawing ------------------------------------------------------------------------
@@ -587,10 +620,18 @@ export class UnitLayers {
   }
 }
 
+/** How long one finger rests on the map to open the context menu, and how far it may drift. */
+const LONG_PRESS_MS = 500;
+const PRESS_SLOP_PX = 12;
+
 interface HandlerMap {
   click: (e: MapMouseEvent) => void;
   dblclick: (e: MapMouseEvent) => void;
   contextmenu: (e: MapMouseEvent) => void;
   mousemove: (e: MapMouseEvent) => void;
   mouseout: (e: MapMouseEvent) => void;
+  touchstart: (e: MapTouchEvent) => void;
+  touchmove: (e: MapTouchEvent) => void;
+  touchend: (e: MapTouchEvent) => void;
+  touchcancel: (e: MapTouchEvent) => void;
 }

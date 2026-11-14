@@ -33,6 +33,30 @@ function defaultPacksUrl(): string {
   return new URL(base, document.baseURI).href;
 }
 
+const SOURCE_KEY = 'wb.packsUrl';
+
+/** A pack host the player chose (the phone fetching from a PC on the same network, say). */
+function storedPacksUrl(): string | null {
+  try {
+    return localStorage.getItem(SOURCE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** A pack host address as a folder URL, or the reason it is not one. */
+export function parsePacksUrl(text: string): string {
+  let url: URL;
+  try {
+    url = new URL(text.trim());
+  } catch {
+    throw new Error('That is not a web address. Use something like https://example.org/packs/');
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('Pack hosts use http or https.');
+  const href = url.href;
+  return href.endsWith('/') ? href : `${href}/`;
+}
+
 async function blake3Hex(bytes: Uint8Array): Promise<string> {
   await wasmReady;
   const h = new Blake3Hasher();
@@ -43,7 +67,7 @@ async function blake3Hex(bytes: Uint8Array): Promise<string> {
 }
 
 export class PackManager {
-  readonly baseUrl: string;
+  private base: string;
   private state: PackState = {
     catalog: null,
     catalogError: null,
@@ -58,8 +82,31 @@ export class PackManager {
   private beforeChange: () => Promise<void> = async () => {};
   private readonly changed = new Set<(usable: InstalledPack[]) => void>();
 
-  constructor(baseUrl = defaultPacksUrl()) {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl = storedPacksUrl() ?? defaultPacksUrl()) {
+    this.base = baseUrl;
+  }
+
+  /** Where the pack list and pack files are fetched from. */
+  get baseUrl(): string {
+    return this.base;
+  }
+
+  /** Whether the player chose the host (not the one the app was built with). */
+  get customSource(): boolean {
+    return storedPacksUrl() !== null;
+  }
+
+  /** Uses another pack host, or the built-in one for `null`, and reloads the pack list. */
+  async setSource(text: string | null): Promise<void> {
+    const url = text === null || text.trim() === '' ? null : parsePacksUrl(text);
+    try {
+      if (url === null) localStorage.removeItem(SOURCE_KEY);
+      else localStorage.setItem(SOURCE_KEY, url);
+    } catch {
+      // Storage blocked: the choice lasts until the app closes.
+    }
+    this.base = url ?? defaultPacksUrl();
+    await this.refresh();
   }
 
   get snapshot(): PackState {

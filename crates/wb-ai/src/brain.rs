@@ -27,6 +27,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use wb_core::geo::{LatLon, destination_point, distance_m, initial_bearing};
 use wb_core::{ContactId, RngPurpose, UnitId, rng};
 
+use crate::ops;
 use crate::picture::{
     Action, Activity, AiPicture, Decision, Difficulty, Domain, Emcon, Layer, OwnGroup, Role, Seen,
 };
@@ -120,6 +121,27 @@ pub struct AiState {
     pub imaging_turn: u32,
     /// Decisions taken so far.
     pub decisions: u64,
+    /// Operations the AI planned and has not seen end (v2).
+    pub ops: Vec<AiOp>,
+    /// Operations planned so far; numbers the next one.
+    pub op_serial: u32,
+    /// Not before: the earliest the next operation may be planned.
+    pub next_op_ms: u64,
+    /// Objectives already planned against, and when.
+    pub planned: BTreeMap<ContactId, u64>,
+    /// Objectives the AI is holding back on, and since when (logged once).
+    pub postponed: BTreeMap<ContactId, u64>,
+}
+
+/// An operation the AI planned: what it targets and the groups it holds.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct AiOp {
+    /// Unique name, how the AI finds it again in its own operations list.
+    pub name: String,
+    pub objective: ContactId,
+    /// Reserved until the operation ends.
+    pub groups: Vec<UnitId>,
+    pub created_ms: u64,
 }
 
 /// The reaction delay for a contact: the doctrine's reaction time plus the
@@ -158,6 +180,7 @@ fn max_stations(d: Difficulty) -> u32 {
 pub fn think(p: &AiPicture, st: &mut AiState) -> Vec<Decision> {
     let mut out = Vec::new();
     let mut busy: BTreeSet<UnitId> = BTreeSet::new();
+    ops::sync(p, st, &mut out, &mut busy);
     approvals(p, st, &mut out);
     if p.now_ms >= st.next_strategic_ms {
         strategic(p, st, &mut out);
@@ -187,7 +210,7 @@ fn min_fuel(p: &AiPicture) -> f64 {
 }
 
 /// Free to take a new task: at base and turned round, or out with nothing to do.
-fn free(p: &AiPicture, g: &OwnGroup, busy: &BTreeSet<UnitId>) -> bool {
+pub(crate) fn free(p: &AiPicture, g: &OwnGroup, busy: &BTreeSet<UnitId>) -> bool {
     !busy.contains(&g.id)
         && g.fuel >= min_fuel(p)
         && matches!(
@@ -197,7 +220,7 @@ fn free(p: &AiPicture, g: &OwnGroup, busy: &BTreeSet<UnitId>) -> bool {
 }
 
 /// The free group nearest `at` that `fits`.
-fn nearest_free<'a>(
+pub(crate) fn nearest_free<'a>(
     p: &'a AiPicture,
     busy: &BTreeSet<UnitId>,
     at: LatLon,
@@ -211,7 +234,7 @@ fn nearest_free<'a>(
         .map(|(_, g)| g)
 }
 
-fn km(m: f64) -> String {
+pub(crate) fn km(m: f64) -> String {
     format!("{:.0} km", m / 1_000.0)
 }
 
@@ -352,7 +375,7 @@ fn track_threats(p: &AiPicture, st: &mut AiState) {
 }
 
 /// Weapons a group has for a domain.
-fn rounds_for(g: &OwnGroup, d: Domain) -> u32 {
+pub(crate) fn rounds_for(g: &OwnGroup, d: Domain) -> u32 {
     match d {
         Domain::Air => g.air_rounds,
         Domain::Surface | Domain::Subsurface => g.surface_rounds,
@@ -619,6 +642,7 @@ fn operational(
 ) {
     iads(p, st, out);
     cap(p, st, out, busy);
+    ops::plan(p, st, out, busy);
     imaging(p, st, out);
 }
 

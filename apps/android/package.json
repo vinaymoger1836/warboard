@@ -1,0 +1,19 @@
+{
+  "name": "android",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Capacitor 8 wrapper that packs the production build of apps/game into an Android app (ADR-017, ADR-050)",
+  "scripts": {
+    "sync": "cap sync android",
+    "doctor": "cap doctor android",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/core": "8.6.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.0"
+  }
+}

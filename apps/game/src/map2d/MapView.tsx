@@ -175,7 +175,7 @@ export function MapView({ packs, bridge, coalition, places, geoReady, terrainOve
           geoReady={geoReady}
           terrainOverlay={terrainOverlay}
           onTerrainOverlay={onTerrainOverlay}
-          credits={[...new Set(packs.flatMap((p) => p.manifest.attribution))]}
+          packs={packs}
           onToast={onToast}
         />
       )}

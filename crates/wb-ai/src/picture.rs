@@ -109,6 +109,8 @@ pub struct OwnGroup {
     pub ground_rounds: u32,
     /// Emitter-homing rounds.
     pub arm_rounds: u32,
+    /// Cruise speed of the slowest member, m/s (0 when it does not move).
+    pub speed_mps: f64,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -140,6 +142,48 @@ pub struct Seen {
     pub stale: bool,
     /// Estimated count range, high end.
     pub count_max: u16,
+    /// Estimated ground speed, m/s (0 for a fixed site).
+    pub speed_mps: f64,
+    /// Identified to its type (not just its class), so its threat is known.
+    pub typed: bool,
+}
+
+/// How an own operation stands (the side's own `Operations` list).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum OpStatus {
+    Planned,
+    Running,
+    Paused,
+    Completed,
+    Aborted,
+}
+
+impl OpStatus {
+    pub fn is_over(self) -> bool {
+        matches!(self, OpStatus::Completed | OpStatus::Aborted)
+    }
+}
+
+/// How one phase of an own operation stands.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PhaseStatus {
+    Waiting,
+    Running,
+    Done,
+    Aborted,
+    Cancelled,
+}
+
+/// An operation of the side (its own, planned by the AI or not).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct OwnOperation {
+    pub id: u32,
+    pub name: String,
+    pub status: OpStatus,
+    /// Phase states in plan order.
+    pub phases: Vec<PhaseStatus>,
+    /// Sim ms the operation started (`None` while planned).
+    pub started_ms: Option<u64>,
 }
 
 /// An open approval request of the side (doc 03 §7).
@@ -164,6 +208,7 @@ pub struct AiPicture {
     pub bases: Vec<OwnBase>,
     pub contacts: Vec<Seen>,
     pub requests: Vec<Request>,
+    pub operations: Vec<OwnOperation>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -216,6 +261,94 @@ pub enum Action {
         centre: LatLon,
         radius_m: f64,
     },
+    /// Plan and start an operation: the same phase graph a player builds
+    /// (ADR-013). The adapter turns it into a `CreateOperation` order.
+    Operation(OpPlan),
+    /// Abort an own operation by its id in the side's own list.
+    AbortOperation {
+        operation: u32,
+    },
+}
+
+// ---------------------------------------------------------------------------
+// Operation plans (doc 03 §8, §11, ADR-013): the AI's side of the phase graph
+// ---------------------------------------------------------------------------
+
+/// A trigger, end or abort condition of a phase.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum PlanCond {
+    All(Vec<PlanCond>),
+    Any(Vec<PlanCond>),
+    /// H + delay.
+    Start {
+        delay_min: f64,
+    },
+    /// "With phase X" (+ delay).
+    PhaseStarted {
+        phase: String,
+        delay_min: f64,
+    },
+    /// "After phase X completes" (+ delay).
+    PhaseEnded {
+        phase: String,
+        delay_min: f64,
+    },
+    /// Phase only: every strike and suppression has fired out.
+    WeaponsDone,
+    /// Phase only: time since the phase started.
+    Elapsed {
+        min: f64,
+    },
+    /// Phase only: share of the phase's units lost, percent.
+    LossesPct {
+        pct: f64,
+    },
+}
+
+/// What a phase's units do (a subset of the tasks a player can give).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum PlanAction {
+    Move {
+        waypoints: Vec<LatLon>,
+    },
+    Jam {
+        centre: LatLon,
+        radius_m: f64,
+    },
+    Cap {
+        centre: LatLon,
+        radius_m: f64,
+        commit_m: f64,
+    },
+    Strike {
+        contact: ContactId,
+    },
+    Suppress {
+        contact: ContactId,
+    },
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PlanTask {
+    pub groups: Vec<UnitId>,
+    pub action: PlanAction,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PlanPhase {
+    /// Short id other phases' conditions refer to.
+    pub id: String,
+    pub name: String,
+    pub tasks: Vec<PlanTask>,
+    pub trigger: PlanCond,
+    pub end: Option<PlanCond>,
+    pub abort: Option<PlanCond>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct OpPlan {
+    pub name: String,
+    pub phases: Vec<PlanPhase>,
 }
 
 /// The layer a decision came from (doc 03 §11).

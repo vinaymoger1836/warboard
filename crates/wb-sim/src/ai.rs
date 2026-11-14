@@ -28,6 +28,7 @@ use crate::components::{
     SatelliteState, Task,
 };
 use crate::events::{EventKind, emit};
+use crate::operations::{CondSpec, OpState, OperationSpec, PhaseSpec, PhaseState, PhaseTaskSpec};
 use crate::orders::{Command, Order, Origin, TaskOrder};
 use crate::picture::{ContactIdentity, SidePictures, TypeRef};
 use crate::rules::Rules;
@@ -162,6 +163,7 @@ pub fn picture(world: &mut World, side: u8) -> wb_ai::AiPicture {
                 surface_rounds: 0,
                 ground_rounds: 0,
                 arm_rounds: 0,
+                speed_mps: 0.0,
             });
             continue;
         }
@@ -259,6 +261,7 @@ pub fn picture(world: &mut World, side: u8) -> wb_ai::AiPicture {
             surface_rounds: surface,
             ground_rounds: ground,
             arm_rounds: arm,
+            speed_mps: rules.cruise_mps(platform, rules.cruise_alt_m(platform)),
         });
     }
 
@@ -291,6 +294,8 @@ pub fn picture(world: &mut World, side: u8) -> wb_ai::AiPicture {
                     .is_some_and(|t| now.saturating_sub(*t) <= memory_ms),
                 stale: c.lost,
                 count_max: c.count.1,
+                speed_mps: est.speed_mps,
+                typed: c.level >= ContactLevel::Type,
             });
         }
     }
@@ -303,6 +308,35 @@ pub fn picture(world: &mut World, side: u8) -> wb_ai::AiPicture {
             id: r.id,
             group: r.group,
             contact: r.contact,
+        })
+        .collect();
+    let operations = world
+        .resource::<crate::operations::Operations>()
+        .ops
+        .iter()
+        .filter(|o| o.side == side)
+        .map(|o| wb_ai::OwnOperation {
+            id: o.id,
+            name: o.name.clone(),
+            status: match o.state {
+                OpState::Planned => wb_ai::OpStatus::Planned,
+                OpState::Running => wb_ai::OpStatus::Running,
+                OpState::Paused => wb_ai::OpStatus::Paused,
+                OpState::Completed => wb_ai::OpStatus::Completed,
+                OpState::Aborted => wb_ai::OpStatus::Aborted,
+            },
+            phases: o
+                .phases
+                .iter()
+                .map(|p| match p.state {
+                    PhaseState::Waiting => wb_ai::PhaseStatus::Waiting,
+                    PhaseState::Running => wb_ai::PhaseStatus::Running,
+                    PhaseState::Done => wb_ai::PhaseStatus::Done,
+                    PhaseState::Aborted => wb_ai::PhaseStatus::Aborted,
+                    PhaseState::Cancelled => wb_ai::PhaseStatus::Cancelled,
+                })
+                .collect(),
+            started_ms: o.started.map(|s| s.ms),
         })
         .collect();
     wb_ai::AiPicture {
@@ -320,6 +354,7 @@ pub fn picture(world: &mut World, side: u8) -> wb_ai::AiPicture {
         bases,
         contacts,
         requests,
+        operations,
     }
 }
 
@@ -409,6 +444,12 @@ fn act(world: &mut World, side: u8, a: wb_ai::Action) -> Result<(), String> {
             centre: lon_lat(centre),
             radius_km: km(radius_m),
         },
+        A::Operation(plan) => Command::CreateOperation {
+            operation: operation_spec(&plan),
+            replace: None,
+            start: Some(true),
+        },
+        A::AbortOperation { operation } => Command::AbortOperation { operation },
     };
     let order = Order {
         tick: world.resource::<SimClock>().tick,
@@ -421,4 +462,97 @@ fn act(world: &mut World, side: u8, a: wb_ai::Action) -> Result<(), String> {
     crate::orders::submit_from(world, geo.as_deref(), &order, Origin::Ai)
         .map(|_| ())
         .map_err(|r| r.reason)
+}
+
+/// An AI plan as the operation a player's planner would send (ADR-013).
+fn operation_spec(plan: &wb_ai::OpPlan) -> OperationSpec {
+    OperationSpec {
+        name: plan.name.clone(),
+        phases: plan
+            .phases
+            .iter()
+            .map(|p| PhaseSpec {
+                id: p.id.clone(),
+                name: p.name.clone(),
+                tasks: p
+                    .tasks
+                    .iter()
+                    .map(|t| PhaseTaskSpec {
+                        units: t.groups.iter().map(|g| g.0).collect(),
+                        task: task_order(&t.action),
+                        fire: None,
+                        near_km: None,
+                    })
+                    .collect(),
+                trigger: cond(&p.trigger),
+                end: p.end.as_ref().map(cond),
+                abort: p.abort.as_ref().map(cond),
+            })
+            .collect(),
+    }
+}
+
+fn task_order(a: &wb_ai::PlanAction) -> TaskOrder {
+    use wb_ai::PlanAction as P;
+    match a {
+        P::Move { waypoints } => TaskOrder::Move {
+            waypoints: waypoints.iter().map(|w| lon_lat(*w)).collect(),
+            alt_m: None,
+            speed: None,
+        },
+        P::Jam { centre, radius_m } => TaskOrder::Jam {
+            centre: lon_lat(*centre),
+            radius_km: radius_m / 1_000.0,
+            alt_m: None,
+            speed: None,
+        },
+        P::Cap {
+            centre,
+            radius_m,
+            commit_m,
+        } => TaskOrder::Cap {
+            centre: lon_lat(*centre),
+            radius_km: radius_m / 1_000.0,
+            commit_km: commit_m / 1_000.0,
+            alt_m: None,
+        },
+        P::Strike { contact } => TaskOrder::Strike {
+            contact: Some(contact.0),
+            point: None,
+            weapon: None,
+            count: None,
+        },
+        P::Suppress { contact } => TaskOrder::Suppress {
+            contact: Some(contact.0),
+            point: None,
+            weapon: None,
+            count: None,
+        },
+    }
+}
+
+fn cond(c: &wb_ai::PlanCond) -> CondSpec {
+    use wb_ai::PlanCond as C;
+    match c {
+        C::All(v) => CondSpec::All {
+            of: v.iter().map(cond).collect(),
+        },
+        C::Any(v) => CondSpec::Any {
+            of: v.iter().map(cond).collect(),
+        },
+        C::Start { delay_min } => CondSpec::Start {
+            delay_min: Some(*delay_min),
+        },
+        C::PhaseStarted { phase, delay_min } => CondSpec::PhaseStarted {
+            phase: phase.clone(),
+            delay_min: Some(*delay_min),
+        },
+        C::PhaseEnded { phase, delay_min } => CondSpec::PhaseEnded {
+            phase: phase.clone(),
+            delay_min: Some(*delay_min),
+        },
+        C::WeaponsDone => CondSpec::WeaponsDone,
+        C::Elapsed { min } => CondSpec::Elapsed { min: *min },
+        C::LossesPct { pct } => CondSpec::LossesPct { pct: *pct },
+    }
 }

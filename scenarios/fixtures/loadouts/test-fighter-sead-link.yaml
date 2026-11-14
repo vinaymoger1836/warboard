@@ -1,0 +1,7 @@
+id: test-fighter-sead-link
+kind: loadout
+name: Test Fighter SEAD Loadout (data link)
+platform: test-fighter
+items:
+  - { station: wing, weapon: test-arm-link, count: 4 }
+design: { note: "Generic test fixture (ADR-035)" }

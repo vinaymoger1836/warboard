@@ -15,7 +15,7 @@ import {
   type SymbolName,
 } from '@warboard/protocol';
 import { contactLabel, cssVar, ESTIMATE_LINE, iconDataUrl, type IconSide, type TokenName } from '@warboard/symbols';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import type { EngineBridge } from '../bridge';
 import { patrolRadiusKm, sendCommand, sendCommandAck, sendTask } from '../orders';
 import { distance } from '../scene/geo';
@@ -70,23 +70,47 @@ interface CardProps {
   toast: (t: string) => void;
 }
 
+/**
+ * The card's frame. On a touch screen (`html[data-input='touch']`, set in main.tsx) the card is
+ * a bottom sheet with the same layout (doc 10 §7): it opens with its header and status rows and
+ * a handle expands it to the full card. On a mouse screen the handle is hidden and the card is
+ * the floating panel of the reference.
+ */
+function CardFrame({ label, children }: { label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <aside className="unit-card panel" aria-label={label} data-sheet={open ? 'open' : 'peek'}>
+      <button
+        type="button"
+        className="sheet-handle"
+        aria-label={open ? 'Show less of the card' : 'Show the full card'}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span aria-hidden="true" />
+      </button>
+      {children}
+    </aside>
+  );
+}
+
 export function UnitCard({ bridge, toast }: CardProps) {
   const details = useUi((s) => s.details);
   const contact = useUi((s) => s.contact);
   if (contact) {
     return (
-      <aside className="unit-card panel" aria-label="Contact card">
+      <CardFrame key={`c${contact.contact_id}`} label="Contact card">
         <ContactCard
           c={contact}
           symbol={contactSymbol(bridge, contact.contact_id)}
           inspectable={!!bridge.frame && identifiedContact(bridge.frame.view, bridge.strings, contact.contact_id)}
         />
-      </aside>
+      </CardFrame>
     );
   }
   if (!details) return null;
   return (
-    <aside className="unit-card panel" aria-label="Unit card">
+    <CardFrame key={`u${details.id}`} label="Unit card">
       {details.kind === 'group' ? (
         <GroupCard d={details} bridge={bridge} toast={toast} />
       ) : details.kind === 'satellite' ? (
@@ -94,7 +118,7 @@ export function UnitCard({ bridge, toast }: CardProps) {
       ) : (
         <BaseCard d={details} />
       )}
-    </aside>
+    </CardFrame>
   );
 }
 

@@ -45,7 +45,7 @@ fn wb_ai_depends_on_wb_core_and_serde_only() {
 
 #[test]
 fn wb_ai_names_no_engine_or_truth_api() {
-    for file in ["src/lib.rs", "src/brain.rs", "src/picture.rs"] {
+    for file in ["src/lib.rs", "src/brain.rs", "src/ops.rs", "src/picture.rs"] {
         // Code lines only: the docs say what the crate cannot see.
         let src: String = read(file)
             .lines()

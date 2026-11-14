@@ -1,0 +1,7 @@
+id: test-fighter-bombs
+kind: loadout
+name: Test Fighter Bombs-only Loadout
+platform: test-fighter
+items:
+  - { station: wing, weapon: test-glide-bomb, count: 2 }
+design: { note: "Generic test fixture (ADR-035): a strike aircraft with no air-to-air rounds, so the AI counts it as a striker" }
