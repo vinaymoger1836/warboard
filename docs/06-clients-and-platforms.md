@@ -156,6 +156,7 @@ Current Chrome, Edge and Firefox on desktop; Safari best-effort. Requires WebGL2
 - Packs are downloaded inside the app like in the browser.
 - Touch adaptations: long-press for context actions, bottom sheet for the unit card, larger hit targets.
 - Expected limits: lower unit counts at ×10 on mid-range phones; 3D view at reduced detail.
+- **As built (P12, ADR-050):** `apps/android` (Capacitor 8.6.0, `https://localhost`); `MainActivity` hides the system bars and keeps the screen on. `html[data-input='touch']`: the unit card is a bottom sheet with the doc 10 §7 layout (a handle opens it from header, status rows and order buttons to the full card), 44 px targets, long-press (500 ms) on the 2D map opens the context menu. The pack panel has a pack host field (a PC on the same network); the credits screen is built from the installed packs' manifests. The 2D layer redraw is paced and its deck layers update only positions between changes of the object set; `pnpm --filter game e2e --project perf2d` measures 500 units at ×5 under CPU throttling.
 
 ## 12. Android, step 2 — Unity client (Phase 13)
 

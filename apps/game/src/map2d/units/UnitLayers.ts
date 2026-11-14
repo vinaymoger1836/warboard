@@ -59,6 +59,10 @@ export class UnitLayers {
   private readonly tip = document.createElement('div');
   private hoverAt: [number, number] | null = null;
   private hoverQueued = false;
+  private lastRenderAt = -Infinity;
+  private lastRenderMs = 0;
+  private rendered = 0;
+  private renderedMs = 0;
   /** When the last long-press fired (`performance.now()`), to drop the events that follow it. */
   private longPressAt = -Infinity;
   /** Last non-zero achieved speed (sim s per real s), for the effects' real-time scale. */
@@ -156,6 +160,8 @@ export class UnitLayers {
         const p = map.project(at);
         return { x: p.x, y: p.y };
       },
+      /** Frames drawn and the time spent drawing them (the pacing's own counters). */
+      renderStats: () => ({ frames: this.rendered, ms: this.renderedMs }),
       pickable: (id: string) => {
         const at = this.positionOfKey(id);
         if (!at) return false;
@@ -174,9 +180,21 @@ export class UnitLayers {
     };
     (window as unknown as { __wbMap2d?: typeof hooks }).__wbMap2d = hooks;
     this.offs.push(() => delete (window as unknown as { __wbMap2d?: typeof hooks }).__wbMap2d);
-    const loop = () => {
-      this.render();
+    // Pacing (P12): a frame is drawn at most every PACE_MS, and when drawing is slow (a phone
+    // with 500 units) the gap grows to twice the last draw, so input, the engine's view buffers
+    // and the panels keep the main thread. The unit positions are extrapolated from the last
+    // view, so a longer gap never shows a stale picture.
+    const loop = (now: number) => {
       this.raf = requestAnimationFrame(loop);
+      const touch = document.documentElement.dataset.input === 'touch';
+      const gap = Math.min(MAX_GAP_MS, Math.max(touch ? TOUCH_GAP_MS : 0, this.lastRenderMs * 2));
+      if (now - this.lastRenderAt < gap) return;
+      const t0 = performance.now();
+      this.render();
+      this.lastRenderAt = now;
+      this.lastRenderMs = performance.now() - t0;
+      this.rendered++;
+      this.renderedMs += this.lastRenderMs;
     };
     this.raf = requestAnimationFrame(loop);
   }
@@ -355,6 +373,9 @@ export class UnitLayers {
     const project = (d: { position: LonLat }) => this.map.project(d.position);
 
     const size = zoom < SMALL_ZOOM ? 24 : 30;
+    // Positions are extrapolated every frame; everything else about these layers' data changes
+    // only when the set of objects does (`sameObjects`), so deck re-reads just the positions.
+    const moving = { getPosition: this.rendered };
     const layers: Layer[] = [
       haloLayer(halos, performance.now()),
       new PathLayer<Path, PathStyleExtensionProps<Path>>({
@@ -400,6 +421,8 @@ export class UnitLayers {
       new IconLayer<DrawnContact>({
         id: 'contact-icons',
         data: contacts.filter((d) => !d.isWeapon),
+        dataComparator: sameObjects<DrawnContact>((d) => `${d.id}|${d.symbol}|${d.side}|${d.estimated}`),
+        updateTriggers: moving,
         iconAtlas: this.atlas.image,
         iconMapping: this.atlas.mapping,
         getIcon: (d) => iconKey(d.symbol, d.side, d.estimated),
@@ -449,6 +472,8 @@ export class UnitLayers {
       new TextLayer<DrawnContact>({
         id: 'contact-labels',
         data: contacts.filter((d) => !d.isWeapon),
+        dataComparator: sameObjects<DrawnContact>((d) => `${d.id}|${d.label}`),
+        updateTriggers: moving,
         getPosition: (d) => d.position,
         getText: (d) => d.label,
         getSize: 11,
@@ -547,6 +572,8 @@ export class UnitLayers {
       new IconLayer<DrawnUnit>({
         id: 'unit-icons',
         data: drawn,
+        dataComparator: sameObjects<DrawnUnit>((d) => `${d.id}|${d.symbol}|${d.enemy}`),
+        updateTriggers: moving,
         iconAtlas: this.atlas.image,
         iconMapping: this.atlas.mapping,
         getIcon: (d) => iconKey(d.symbol, d.enemy ? 'enemy' : 'own'),
@@ -558,6 +585,8 @@ export class UnitLayers {
       new TextLayer<DrawnUnit>({
         id: 'unit-marks',
         data: drawn.filter((d) => d.mark),
+        dataComparator: sameObjects<DrawnUnit>((d) => `${d.id}|${d.mark}`),
+        updateTriggers: moving,
         getPosition: (d) => d.position,
         getText: (d) => d.mark,
         getSize: 9,
@@ -574,6 +603,8 @@ export class UnitLayers {
           size,
           project,
         ),
+        dataComparator: sameObjects<DrawnUnit>((d) => `${d.id}|${d.label}`),
+        updateTriggers: moving,
         getPosition: (d) => d.position,
         getText: (d) => d.label,
         getSize: 11,
@@ -619,6 +650,29 @@ export class UnitLayers {
     this.hub.set('units', layers);
   }
 }
+
+/**
+ * deck.gl re-reads every accessor of a layer (icon, text layout, size, colour) whenever its
+ * `data` is a new array, and the scene hands it a new array every frame. This comparator
+ * says the data is unchanged while the same objects are in the same order (by `key`); the
+ * layer's `updateTriggers` then move only the positions. With 500 units that is most of the
+ * main-thread time on a phone (P12).
+ */
+function sameObjects<T>(key: (d: T) => string): (a: unknown, b?: unknown) => boolean {
+  return (a, b) => {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i] as T | undefined;
+      const y = b[i] as T | undefined;
+      if (x === undefined || y === undefined || key(x) !== key(y)) return false;
+    }
+    return true;
+  };
+}
+
+/** Pacing of the layer redraw: the least gap on a touch screen (about 30 Hz) and the most. */
+const TOUCH_GAP_MS = 30;
+const MAX_GAP_MS = 100;
 
 /** How long one finger rests on the map to open the context menu, and how far it may drift. */
 const LONG_PRESS_MS = 500;

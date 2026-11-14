@@ -2,7 +2,7 @@
 // fuel bar; click selects and locates. Read from the side view twice a second.
 import { FLAG, statusOf } from '@warboard/protocol';
 import { iconDataUrl } from '@warboard/symbols';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { EngineBridge } from '../bridge';
 import { ui, useUi } from '../store';
 import { fuelColour, statusColour } from './format';
@@ -51,12 +51,60 @@ function rows(bridge: EngineBridge): Row[] {
   return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+const same = (a: Row, b: Row) =>
+  a.name === b.name &&
+  a.type === b.type &&
+  a.symbol === b.symbol &&
+  a.count === b.count &&
+  a.status === b.status &&
+  a.fuel === b.fuel &&
+  a.bingo === b.bingo;
+
+/** The new rows, reusing the old row objects that did not change, and the old list itself when
+ *  nothing did: React then skips the 500-row list (and the memoised rows) entirely. */
+function merge(prev: Row[], next: Row[]): Row[] {
+  const before = new Map(prev.map((r) => [r.group, r]));
+  let unchanged = prev.length === next.length;
+  const out = next.map((r, i) => {
+    const old = before.get(r.group);
+    if (old && same(old, r)) {
+      if (prev[i] !== old) unchanged = false;
+      return old;
+    }
+    unchanged = false;
+    return r;
+  });
+  return unchanged ? prev : out;
+}
+
+/** One group row; memoised so a refresh redraws only the rows whose state changed. */
+const ForceRow = memo(function ForceRow({ r, selected }: { r: Row; selected: boolean }) {
+  return (
+    <li>
+      <button type="button" className={selected ? 'force-row selected' : 'force-row'} onClick={() => ui.locate(r.group)}>
+        <img src={iconDataUrl(r.symbol, 'own')} alt="" width={20} height={20} />
+        <span className="force-name">
+          {r.count > 1 ? `${r.count} × ` : ''}
+          {r.type}
+          <small>{r.name}</small>
+        </span>
+        <span className="force-status" style={{ color: statusColour(r.status) }}>
+          {r.status}
+        </span>
+        <span className="fuel-bar" aria-label={r.fuel == null ? 'No fuel state' : `Fuel ${r.fuel}%`}>
+          <span style={{ width: `${r.fuel ?? 0}%`, background: fuelColour(r.fuel, r.bingo) }} />
+        </span>
+      </button>
+    </li>
+  );
+});
+
 export function ForcesPanel({ bridge }: { bridge: EngineBridge }) {
   const [list, setList] = useState<Row[]>([]);
   const [open, setOpen] = useState(true);
   const selected = useUi((s) => s.selected);
   useEffect(() => {
-    const tick = () => setList(rows(bridge));
+    const tick = () => setList((prev) => merge(prev, rows(bridge)));
     tick();
     const t = setInterval(tick, 500);
     return () => clearInterval(t);
@@ -70,26 +118,7 @@ export function ForcesPanel({ bridge }: { bridge: EngineBridge }) {
       {open && (
         <ul className="forces-list">
           {list.map((r) => (
-            <li key={r.group}>
-              <button
-                type="button"
-                className={r.group === selected ? 'force-row selected' : 'force-row'}
-                onClick={() => ui.locate(r.group)}
-              >
-                <img src={iconDataUrl(r.symbol, 'own')} alt="" width={20} height={20} />
-                <span className="force-name">
-                  {r.count > 1 ? `${r.count} × ` : ''}
-                  {r.type}
-                  <small>{r.name}</small>
-                </span>
-                <span className="force-status" style={{ color: statusColour(r.status) }}>
-                  {r.status}
-                </span>
-                <span className="fuel-bar" aria-label={r.fuel == null ? 'No fuel state' : `Fuel ${r.fuel}%`}>
-                  <span style={{ width: `${r.fuel ?? 0}%`, background: fuelColour(r.fuel, r.bingo) }} />
-                </span>
-              </button>
-            </li>
+            <ForceRow key={r.group} r={r} selected={r.group === selected} />
           ))}
         </ul>
       )}

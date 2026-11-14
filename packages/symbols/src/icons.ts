@@ -173,6 +173,16 @@ export function burstDataUrl(): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(burstSvg())}`;
 }
 
+const iconUrls = new Map<string, string>();
+
+/** The icon as a data URL. Cached by symbol, side and options: panels ask for the same few
+ *  hundred icons on every render. */
 export function iconDataUrl(symbol: number, side: IconSide, opts: IconOptions = {}): string {
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(iconSvg(symbol, side, opts))}`;
+  const key = `${symbol}/${side}/${opts.estimate ? 1 : 0}`;
+  let url = iconUrls.get(key);
+  if (url === undefined) {
+    url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(iconSvg(symbol, side, opts))}`;
+    iconUrls.set(key, url);
+  }
+  return url;
 }

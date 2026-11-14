@@ -849,6 +849,17 @@ button:focus-visible {
   gap: 2px;
 }
 
+/* 500 groups must not cost layout every frame (P12): rows below the fold are skipped until
+ * they scroll into view, and the panel's layout stays inside the panel. */
+.forces {
+  contain: layout style;
+}
+
+.forces-list > li {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 50px;
+}
+
 .force-row {
   width: 100%;
   display: grid;

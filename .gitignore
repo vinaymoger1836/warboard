@@ -52,3 +52,20 @@ desktop.ini
 .idea/
 .vscode/
 *.swp
+
+# Android app (apps/android, Capacitor): Gradle and Android Studio output, the web build copied
+# into the project, generated Capacitor config, the SDK path, signing keys and built apps.
+# (The Capacitor-generated android/.gitignore says the same; *.jks and *.keystore are above.)
+apps/android/android/.gradle/
+apps/android/android/build/
+apps/android/android/app/build/
+apps/android/android/local.properties
+apps/android/android/capacitor-cordova-android-plugins/
+apps/android/android/app/src/main/assets/public/
+apps/android/android/app/src/main/assets/capacitor.config.json
+apps/android/android/app/src/main/assets/capacitor.plugins.json
+apps/android/android/app/src/main/res/xml/config.xml
+apps/android/android/keystore.properties
+*.apk
+*.aab
+*.idsig

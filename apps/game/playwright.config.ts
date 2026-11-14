@@ -7,7 +7,8 @@
 //   perf3d   — a second dev server whose quick start is the 500-unit 3D benchmark scene
 //              (`WB_E2E_PERF=1 pnpm --filter game e2e --project perf3d`).
 //   perf2d   — the same 500-unit scene in 2D at ×5 under CPU throttling, a stand-in for a
-//              mid-range phone (`WB_E2E_PERF2D=1 pnpm --filter game e2e --project perf2d`).
+//              mid-range phone, on a production build like the one the APK packs
+//              (`WB_E2E_PERF2D=1 pnpm --filter game e2e --project perf2d`).
 //   offline  — a production build served by `vite preview`, with the service worker
 //              (`WB_E2E_OFFLINE=1 pnpm --filter game e2e --project offline`).
 // The extra servers start only when asked for, so the default run builds nothing.
@@ -16,10 +17,12 @@ import { defineConfig } from '@playwright/test';
 const PORT = 5174;
 const PERF_PORT = 5175;
 const OFFLINE_PORT = 5176;
+const PERF2D_PORT = 5177;
 const PERF = !!process.env.WB_E2E_PERF;
 const PERF2D = !!process.env.WB_E2E_PERF2D;
 const OFFLINE = !!process.env.WB_E2E_OFFLINE;
 const OFFLINE_DIR = '../../build/e2e-offline';
+const PERF2D_DIR = '../../build/e2e-perf2d';
 
 export default defineConfig({
   testDir: 'e2e',
@@ -43,7 +46,7 @@ export default defineConfig({
     ...(PERF2D ? [{
       name: 'perf2d',
       testMatch: /perf2d\.spec\.ts/,
-      use: { baseURL: `http://localhost:${PERF_PORT}`, headless: false },
+      use: { baseURL: `http://localhost:${PERF2D_PORT}`, headless: false },
     }] : []),
     ...(OFFLINE ? [{ name: 'offline', testMatch: /offline3d\.spec\.ts/, use: { baseURL: `http://localhost:${OFFLINE_PORT}` } }] : []),
   ],
@@ -54,12 +57,19 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 120_000,
     },
-    ...(PERF || PERF2D ? [{
+    ...(PERF ? [{
       command: `pnpm exec vite --port ${PERF_PORT} --strictPort`,
       url: `http://localhost:${PERF_PORT}`,
       env: { WB_SCENARIO: 'scenarios/bench/view-500.yaml' },
       reuseExistingServer: true,
       timeout: 120_000,
+    }] : []),
+    ...(PERF2D ? [{
+      command: `pnpm exec vite build --outDir ${PERF2D_DIR} --emptyOutDir && pnpm exec vite preview --outDir ${PERF2D_DIR} --port ${PERF2D_PORT} --strictPort`,
+      url: `http://localhost:${PERF2D_PORT}`,
+      env: { WB_SCENARIO: 'scenarios/bench/view-500.yaml' },
+      reuseExistingServer: true,
+      timeout: 300_000,
     }] : []),
     ...(OFFLINE ? [{
       command: `pnpm exec vite build --outDir ${OFFLINE_DIR} --emptyOutDir && pnpm exec vite preview --outDir ${OFFLINE_DIR} --port ${OFFLINE_PORT} --strictPort`,
