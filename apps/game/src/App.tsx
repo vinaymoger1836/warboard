@@ -92,6 +92,20 @@ export function App() {
       .catch((err: unknown) => show(err instanceof Error ? err.message : String(err)));
   }, [bridge, replay.active, show]);
 
+  // Leave the war for the main menu: autosave, hold the clock, close the war's panels.
+  const exitWar = useCallback(() => {
+    bridge.autosaveNow();
+    bridge.setSpeed(0);
+    if (replay.active) bridge.request({ type: 'replayStop' }).catch(() => undefined);
+    ui.select(null);
+    ui.set({ reportsOpen: false, planner: null });
+    setReplay({ active: false });
+    setSavesOpen(false);
+    setPacksOpen(false);
+    play.endWar();
+    setWar(null);
+  }, [bridge, replay.active]);
+
   const choose = useCallback(
     (s: number) => {
       speedRef.current = s;
@@ -112,6 +126,7 @@ export function App() {
       setWar(w);
       setSideRoe(Object.fromEntries(w.sides.map((s, i) => [i, s.roe])));
       setReplay({ active: false });
+      bridge.setSpeed(speedRef.current); // a new war runs at the chosen speed, also after leaving one
       play.startWar(w, bridge.report?.simTimeMs ?? 0);
       setSavesOpen(false);
     });
@@ -312,10 +327,12 @@ export function App() {
         onReports={() => ui.set((s) => ({ reportsOpen: !s.reportsOpen }))}
         replaying={replay.active}
         onReplay={toggleReplay}
+        onExit={exitWar}
         sideToggle={<SideToggle bridge={bridge} toast={show} />}
       />
       {replay.active && <ReplayBar bridge={bridge} info={replay} onInfo={setReplay} toast={show} />}
 
+      <div className="workspace">
       <main className="board">
         {mapReady && mapView === '3d' ? (
           <Suspense fallback={<div className="map-empty"><p>Opening the 3D view…</p></div>}>
@@ -353,6 +370,7 @@ export function App() {
         />
       </main>
       <Dock bridge={bridge} toast={show} now={report?.simTimeMs ?? 0} />
+      </div>
     </div>
   );
 }

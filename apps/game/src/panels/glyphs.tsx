@@ -44,3 +44,11 @@ export const PauseGlyph = () => (
     <rect x="6" y="1" width="3" height="10" fill="currentColor" />
   </svg>
 );
+
+/** Menu button: three bars. */
+export const MenuGlyph = () =>
+  svg(
+    <>
+      <path d="M2 4h12M2 8h12M2 12h12" strokeLinecap="round" />
+    </>,
+  );

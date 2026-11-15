@@ -33,15 +33,16 @@ test('switching sides keeps each side’s selection and panels', async ({ page }
   await firstA.click();
   const card = page.getByRole('complementary', { name: 'Unit card' });
   await expect(card).toBeVisible();
-  await page.getByRole('button', { name: 'REPORTS', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'REPORTS', exact: true })).toHaveAttribute('aria-expanded', 'true');
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('menuitem', { name: 'REPORTS' }).click();
+  await expect(page.locator('.reports')).toBeVisible();
 
   // Tab: side B at once, its own (empty) selection, reports closed, its own forces.
   await page.locator('body').press('Tab');
   await expect(sidePressed(page, 'VSM')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByTestId('handover')).toHaveCount(0);
   await expect(card).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'REPORTS', exact: true })).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.reports')).toHaveCount(0);
   await expect(page.locator('.force-row').first()).not.toContainText(nameA);
 
   // Back to A: its selection and reports come back.
@@ -49,7 +50,7 @@ test('switching sides keeps each side’s selection and panels', async ({ page }
   await expect(sidePressed(page, 'ALD')).toHaveAttribute('aria-pressed', 'true');
   await expect(card).toBeVisible();
   await expect(card).toContainText(nameA.replace(/^\S+ /, '').slice(0, 6));
-  await expect(page.getByRole('button', { name: 'REPORTS', exact: true })).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.reports')).toBeVisible();
 });
 
 test('the umpire view is turned on by the player and is read-only', async ({ page }) => {

@@ -114,6 +114,12 @@ export const play = {
     });
   },
 
+  /** The player left the war for the main menu. */
+  endWar(): void {
+    pendingCamera = null;
+    set({ war: null, mode: null, sides: [], active: 0, view: 0, umpireOn: false, handover: null, hasPin: [], deploying: false });
+  },
+
   setDeploying(deploying: boolean): void {
     if (deploying !== state.deploying) set({ deploying });
   },

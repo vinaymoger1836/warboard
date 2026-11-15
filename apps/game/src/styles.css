@@ -89,8 +89,8 @@ button {
 .top-bar {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 8px 16px;
+  gap: 14px;
+  padding: 4px 12px;
   background: var(--panel-bg);
   border-bottom: 1px solid var(--panel-border);
   font-family: var(--font-mono);
@@ -187,7 +187,108 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
+/* ---- Game menu (top bar) ---- */
+
+.game-menu {
+  position: relative;
+  margin-left: auto;
+}
+
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+}
+
+.menu-pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  z-index: 30;
+}
+
+.menu-item {
+  background: none;
+  border: none;
+  border-radius: 2px;
+  color: var(--text-secondary);
+  padding: 9px 10px;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+}
+
+.menu-item:hover,
+.menu-item[aria-expanded='true'],
+.menu-item[aria-pressed='true'] {
+  color: var(--text-primary);
+  background: var(--chrome-bg);
+}
+
+.menu-item.danger {
+  color: var(--state-bad);
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+}
+
+.menu-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--panel-border);
+}
+
+.menu-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.menu-confirm-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 1100px) {
+  .achieved {
+    display: none;
+  }
+}
+
 /* ---- Board and map ---- */
+
+/* Map on the left, the logs sidebar on the right. */
+.workspace {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.workspace > .board {
+  flex: 1;
+  min-width: 0;
+}
 
 .board {
   position: relative;
@@ -931,20 +1032,39 @@ button:focus-visible {
 
 .dock {
   background: var(--panel-bg);
-  border-top: 1px solid var(--panel-border);
+  border-left: 1px solid var(--panel-border);
   display: flex;
   flex-direction: column;
-  height: 180px;
+  width: 380px;
+  flex-shrink: 0;
+  min-height: 0;
 }
 
 .dock.closed {
-  height: auto;
+  width: 32px;
+}
+
+.dock-rail {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  writing-mode: vertical-rl;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+}
+
+.dock-rail:hover {
+  color: var(--text-primary);
 }
 
 .dock-tabs {
   display: flex;
-  gap: 2px;
-  padding: 0 12px;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 0 6px;
   border-bottom: 1px solid var(--panel-border);
 }
 
@@ -953,7 +1073,7 @@ button:focus-visible {
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-secondary);
-  padding: 8px 12px;
+  padding: 8px 8px;
   font-size: 13px;
   cursor: pointer;
 }
@@ -1440,7 +1560,8 @@ dl.facts dd {
 /* ---- Operations tab, timeline and planner (doc 03 §8, doc 10 §8) ---- */
 
 .dock.tall {
-  height: 300px;
+  width: 560px;
+  max-width: 60%;
 }
 
 .ops {
@@ -2573,4 +2694,21 @@ html[data-input='touch'] .top-bar {
   font-family: var(--font-mono);
   font-size: 12px;
   padding: 8px 10px;
+}
+
+/* Narrow screens: the sidebar floats over the map instead of shrinking it. */
+@media (max-width: 760px) {
+  .dock {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 5;
+    width: min(380px, calc(100% - 48px));
+    max-width: none;
+  }
+
+  .dock.closed {
+    width: 32px;
+  }
 }

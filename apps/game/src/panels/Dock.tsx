@@ -1,4 +1,4 @@
-// Bottom dock (doc 10 §8): Alerts · Approvals · Intel log · Event log · Operations. Event
+// Right sidebar (was the bottom dock, doc 10 §8): Alerts · Approvals · Intel log · Event log · Operations. Event
 // lines start with mono sim time and a coloured category chip; click locates the unit, or
 // the contact for intel lines (doc 03 §10).
 import type { StringTable } from '@warboard/protocol';
@@ -21,7 +21,7 @@ type Tab = (typeof TABS)[number][0];
 export function Dock({ bridge, toast, now }: { bridge: EngineBridge; toast: (t: string) => void; now: number }) {
   const strings = bridge.strings;
   const [tab, setTab] = useState<Tab>('events');
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => window.innerWidth > 760);
   const events = useUi((s) => s.events);
   const alerts = useUi((s) => s.alerts);
   const intel = useUi((s) => s.intel);
@@ -30,6 +30,12 @@ export function Dock({ bridge, toast, now }: { bridge: EngineBridge; toast: (t: 
   const lines = tab === 'alerts' ? alerts : tab === 'events' ? events : tab === 'intel' ? intel : [];
   return (
     <section className={open ? (tab === 'operations' ? 'dock tall' : 'dock') : 'dock closed'} aria-label="Dock">
+      {!open && (
+        <button type="button" className="dock-rail" aria-expanded={false} onClick={() => setOpen(true)}>
+          LOGS{alerts.length > 0 ? ` (${alerts.length})` : ''}{waiting > 0 ? ` · ${waiting} TO APPROVE` : ''}
+        </button>
+      )}
+      {open && (
       <div className="dock-tabs" role="tablist">
         {TABS.map(([id, label]) => (
           <button
@@ -52,6 +58,7 @@ export function Dock({ bridge, toast, now }: { bridge: EngineBridge; toast: (t: 
           {open ? 'HIDE' : 'SHOW'}
         </button>
       </div>
+      )}
       {open && (
         <div className="dock-body" role="tabpanel">
           {tab === 'operations' ? (
