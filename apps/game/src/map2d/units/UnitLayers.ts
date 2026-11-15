@@ -19,7 +19,6 @@ import type { EngineBridge } from '../../bridge';
 import { distance, type LonLat } from '../../scene/geo';
 import { buildOverlays, findContact, findUnit } from '../../scene/overlays';
 import {
-  BASE_LABEL_ZOOM,
   buildScene,
   type ContextRequest,
   c,
@@ -420,7 +419,8 @@ export class UnitLayers {
       }),
       new IconLayer<DrawnContact>({
         id: 'contact-icons',
-        data: contacts.filter((d) => !d.isWeapon),
+        // Icons only on the map; the label shows for the selected contact (its card says the type).
+        data: contacts.filter((d) => !d.isWeapon && d.id === state.selectedContact),
         dataComparator: sameObjects<DrawnContact>((d) => `${d.id}|${d.symbol}|${d.side}|${d.estimated}`),
         updateTriggers: moving,
         iconAtlas: this.atlas.image,
@@ -597,8 +597,9 @@ export class UnitLayers {
       }),
       new TextLayer<DrawnUnit>({
         id: 'unit-labels',
+        // Icons only on the map; the label shows for the selected unit (its card says the type).
         data: declutter(
-          drawn.filter((d) => zoom >= BASE_LABEL_ZOOM || !d.base || d.id === state.selected),
+          drawn.filter((d) => d.id === state.selected),
           state.selected,
           size,
           project,

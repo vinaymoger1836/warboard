@@ -51,6 +51,47 @@ const CATEGORY_SYMBOL: Record<string, SymbolName> = {
   'ground/infantry': 'infantry',
 };
 
+/** Plain-English kind of a map symbol, shown first on every card. */
+const KIND_TEXT: Partial<Record<SymbolName, string>> = {
+  unknown: 'Unidentified',
+  fighter: 'Fighter jet',
+  bomber: 'Bomber',
+  attack: 'Strike aircraft',
+  tanker: 'Aerial tanker',
+  aew: 'Airborne early warning',
+  ew_aircraft: 'Electronic warfare aircraft',
+  transport: 'Transport aircraft',
+  maritime_patrol: 'Maritime patrol aircraft',
+  drone: 'Drone',
+  helicopter_attack: 'Attack helicopter',
+  helicopter_utility: 'Utility helicopter',
+  destroyer: 'Destroyer',
+  frigate: 'Frigate',
+  corvette: 'Corvette',
+  patrol_ship: 'Patrol ship',
+  auxiliary: 'Auxiliary ship',
+  submarine: 'Submarine',
+  radar: 'Radar site',
+  launcher: 'Missile launcher',
+  c2: 'Command post',
+  armour: 'Armour',
+  artillery: 'Artillery',
+  infantry: 'Infantry',
+  air_base: 'Air base',
+  naval_base: 'Naval base',
+  air_naval_base: 'Air and naval base',
+  road_strip: 'Road strip',
+  heliport: 'Heliport',
+  anchorage: 'Anchorage',
+  army_base: 'Army base',
+  sam_site: 'SAM site',
+  missile_site: 'Missile launch site',
+  hq: 'Headquarters',
+  missile: 'Missile',
+  bomb: 'Bomb',
+  torpedo: 'Torpedo',
+};
+
 const BASE_SYMBOL: Record<string, SymbolName> = {
   'Air base': 'air_base',
   'Naval base': 'naval_base',
@@ -207,7 +248,7 @@ function ContactCard({ c, symbol, inspectable }: { c: ContactDetails; symbol: nu
       <Header
         symbol={SYMBOL_BY_CODE.get(symbol) ?? 'unknown'}
         title={title}
-        subtitle={`Contact C${c.contact_id} · ${c.domain}`}
+        subtitle={`${KIND_TEXT[SYMBOL_BY_CODE.get(symbol) ?? 'unknown'] ?? 'Unidentified'} · Contact C${c.contact_id} · ${c.domain}`}
         side={IDENTITY_SIDE[c.identity] ?? 'unknown'}
         estimate={c.estimated}
         onClose={() => ui.selectContact(null)}
@@ -677,7 +718,7 @@ function GroupCard({ d, bridge, toast }: { d: GroupDetails } & CardProps) {
   const air = d.domain === 'air';
   const title = d.count > 1 ? `${d.count} × ${d.type_name}` : d.type_name;
   const personnel = formation ? formation.personnel : d.crew;
-  const subtitle = [d.name, personnel ? `${personnel} Personnel` : null].filter(Boolean).join(' · ');
+  const subtitle = [KIND_TEXT[CATEGORY_SYMBOL[d.category] ?? 'unknown'], d.name, personnel ? `${personnel} Personnel` : null].filter(Boolean).join(' · ');
   const toggle = (k: keyof typeof rings) => ui.set({ rings: { ...rings, [k]: !rings[k] } });
   const units = [d.id];
   const rtb = () => void sendTask(bridge, units, { kind: 'rtb' }, toast);
