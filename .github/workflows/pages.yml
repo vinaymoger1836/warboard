@@ -2,8 +2,9 @@ name: Deploy to GitHub Pages
 
 # Builds the game for hosting (ADR-040) and publishes it to GitHub Pages. Run by hand
 # (Actions → Deploy to GitHub Pages → Run workflow); nothing deploys on push.
-# The hosted build opens the neutral test war on the fixtures (scenarios/hosted-test.yaml)
-# and downloads region packs from the Cloudflare R2 bucket in PACKS_URL.
+# The hosted build carries the real (fictional) content pack, build/content.wbpack, and the
+# Theatre North quick start (ADR-051, which amends ADR-040). Region packs download from the
+# Cloudflare R2 bucket in PACKS_URL.
 
 on:
   workflow_dispatch:
@@ -43,13 +44,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Generate types, build wb-wasm and the content pack
         run: pnpm gen
-      - name: Build the fixtures content pack for the test war
-        run: cargo run -q -p wb-cli -- content build --dir scenarios/fixtures --out build/fixtures.wbpack
       - name: Build the game
         run: pnpm --filter game build
         env:
-          WB_SCENARIO: scenarios/hosted-test.yaml
-          WB_CONTENT_PACK: build/fixtures.wbpack
           VITE_PACKS_URL: ${{ env.PACKS_URL }}
       - name: The hosted bundle carries no real names (doc 11 §3.1)
         run: cargo run -q -p wb-cli -- content denylist apps/game/dist
